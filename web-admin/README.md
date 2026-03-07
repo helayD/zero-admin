@@ -91,4 +91,4 @@ npm run dev
 ![image-20210427204848192](./images/log.png)
 
 ## 微信群
-![img.png](images/img.png)
+![img.png](./images/img.png)
