@@ -14,7 +14,7 @@ Rabbitmq:
   UserName: guest
   Password: guest
 Mongo:
-  Datasource: mongodb://admin:12341qweqfsd2356@127.0.0.1:27017
+  Datasource: mongodb://admin:admin123@127.0.0.1:27017
   Db: pms
 
 Log:
