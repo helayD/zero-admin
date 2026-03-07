@@ -9,7 +9,7 @@ Mysql:
   Datasource: root:12341qweqfsd2356@tcp(127.0.0.1:3306)/gozero?charset=utf8mb4&parseTime=true&loc=Asia%2FShanghai
 
 Mongo:
-  Datasource: mongodb://admin:123467@127.0.0.1:27017
+  Datasource: mongodb://admin:admin123@127.0.0.1:27017
   Db: ums
 Rabbitmq:
   Host: 127.0.0.1
