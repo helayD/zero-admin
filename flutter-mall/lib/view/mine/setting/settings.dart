@@ -18,7 +18,7 @@ class _SettingsState extends State<Settings> {
   Widget build(BuildContext context) {
     var border = BorderSide(width: 1, color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255));
     var boxDecoration = BoxDecoration(color: Colors.white, border: Border(bottom: border));
-    var list = ['个人资料', '收货地址', '实名认证', '消息推送', '清除缓存', '关于app-web', '检查更新'];
+    var list = ['个人资料', '收货地址', '实名认证', '消息推送', '清除缓存', '关于九克城', '检查更新'];
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,

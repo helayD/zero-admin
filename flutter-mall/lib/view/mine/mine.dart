@@ -113,10 +113,15 @@ class _MineState extends State<Mine> {
                           );
                         },
                         child: ClipOval(
-                          child: Image.network(
-                            "https://macro-oss.oss-cn-shenzhen.aliyuncs.com/mall/icon/github_icon_02.png",
+                          child: Container(
                             width: 70,
                             height: 70,
+                            color: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
+                            child: const Icon(
+                              Icons.person,
+                              size: 45,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
