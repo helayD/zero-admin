@@ -53,6 +53,16 @@ Load and read full config from {main_config} and resolve:
 - `project_name`, `output_folder`, `planning_artifacts`, `user_name`
 - `communication_language`, `document_output_language`, `user_skill_level`
 - `date` as system-generated current datetime
+- `auto_mode` - If `true`, skip all user prompts and use auto-select defaults
+
+**Auto Mode Handling:**
+
+If `auto_mode: true` is set in config:
+- All "Ask the user" prompts will auto-select default values
+- All "Confirm" prompts will auto-confirm
+- PRD directory will auto-increment from highest ID
+- All selection menus will auto-select the first/default option
+- Workflow proceeds without stopping for input
 
 ✅ YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the configured `{communication_language}`.
 

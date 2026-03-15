@@ -4,7 +4,7 @@ description: 'Map ALL user types that interact with the system with narrative st
 
 # File References
 nextStepFile: '{project-root}/_bmad/bmm/workflows/2-plan-workflows/create-prd/steps-c/step-05-domain.md'
-outputFile: '{planning_artifacts}/prd.md'
+outputFile: '{planning_artifacts}/{prd_dir}/prd.md'
 
 # Task References
 advancedElicitationTask: '{project-root}/_bmad/core/workflows/advanced-elicitation/workflow.xml'
@@ -159,6 +159,8 @@ Display: "**Select:** [A] Advanced Elicitation [P] Party Mode [C] Continue to Do
 - IF P: Read fully and follow: {partyModeWorkflow} with the current journeys, process the collaborative journey improvements and additions, ask user "Accept these changes to the user journeys? (y/n)", if yes update content with improvements then redisplay menu, if no keep original content then redisplay menu
 - IF C: Append the final content to {outputFile}, update frontmatter by adding this step name to the end of the stepsCompleted array, then read fully and follow: {nextStepFile}
 - IF Any other: help user respond, then redisplay menu
+
+**Auto Mode:** If auto_mode is enabled, auto-select [C] and proceed.
 
 #### EXECUTION RULES:
 - ALWAYS halt and wait for user input after presenting menu

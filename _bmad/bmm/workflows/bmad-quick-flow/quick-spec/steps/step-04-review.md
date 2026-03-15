@@ -89,7 +89,8 @@ c) **If user has questions:**
 a) Update `{wipFile}` frontmatter:
 
    ```yaml
-   ---
+   **Auto Mode:** If auto_mode is enabled, auto-select [C] and proceed.
+---
    # ... existing values ...
    status: 'ready-for-dev'
    stepsCompleted: [1, 2, 3, 4]

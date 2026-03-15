@@ -4,7 +4,7 @@ description: 'Generate and append the Executive Summary section to the PRD docum
 
 # File References
 nextStepFile: '{project-root}/_bmad/bmm/workflows/2-plan-workflows/create-prd/steps-c/step-03-success.md'
-outputFile: '{planning_artifacts}/prd.md'
+outputFile: '{planning_artifacts}/{prd_dir}/prd.md'
 
 # Task References
 advancedElicitationTask: '{project-root}/_bmad/core/workflows/advanced-elicitation/workflow.xml'
@@ -140,6 +140,7 @@ Where:
 
 ONLY WHEN [C continue option] is selected and [content appended to document], will you then read fully and follow: `{nextStepFile}` to define success criteria.
 
+**Auto Mode:** If auto_mode is enabled, auto-select [C] and proceed.
 ---
 
 ## 🚨 SYSTEM SUCCESS/FAILURE METRICS

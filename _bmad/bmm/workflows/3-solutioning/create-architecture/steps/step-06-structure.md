@@ -2,6 +2,8 @@
 
 ## MANDATORY EXECUTION RULES (READ FIRST):
 
+**Auto Mode:** If auto_mode is enabled, auto-select [C] and proceed.
+
 - 🛑 NEVER generate content without user input
 
 - 📖 CRITICAL: ALWAYS read the complete step file before taking any action - partial understanding leads to incomplete decisions
@@ -341,7 +343,7 @@ Show the generated project structure content and present choices:
 
 #### If 'C' (Continue):
 
-- Append the final content to `{planning_artifacts}/architecture.md`
+- Append the final content to `{planning_artifacts}/{prd_dir}/architecture.md`
 - Update frontmatter: `stepsCompleted: [1, 2, 3, 4, 5, 6]`
 - Load `{project-root}/_bmad/bmm/workflows/3-solutioning/create-architecture/steps/step-07-validation.md`
 

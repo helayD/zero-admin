@@ -4,7 +4,7 @@ description: 'Optimize and polish the complete PRD document for flow, coherence,
 
 # File References
 nextStepFile: '{project-root}/_bmad/bmm/workflows/2-plan-workflows/create-prd/steps-c/step-12-complete.md'
-outputFile: '{planning_artifacts}/prd.md'
+outputFile: '{planning_artifacts}/{prd_dir}/prd.md'
 purposeFile: '{project-root}/_bmad/bmm/workflows/2-plan-workflows/create-prd/data/prd-purpose.md'
 
 # Task References
@@ -173,6 +173,8 @@ Display: "**Select:** [A] Advanced Elicitation [P] Party Mode [C] Continue to Co
 - IF P: Read fully and follow: {partyModeWorkflow} with the polished document, process the collaborative refinements to flow and coherence, ask user "Accept these polish changes? (y/n)", if yes update content with improvements then redisplay menu, if no keep original polish then redisplay menu
 - IF C: Save the polished document to {outputFile}, update frontmatter by adding this step name to the end of the stepsCompleted array, then read fully and follow: {nextStepFile}
 - IF Any other: help user respond, then redisplay menu
+
+**Auto Mode:** If auto_mode is enabled, auto-select [C] and proceed.
 
 #### EXECUTION RULES:
 - ALWAYS halt and wait for user input after presenting menu

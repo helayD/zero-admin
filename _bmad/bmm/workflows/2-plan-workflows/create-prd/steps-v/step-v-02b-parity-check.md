@@ -187,6 +187,8 @@ Your PRD is missing {count} of 6 core BMAD PRD sections. The overall effort to r
 
 ---
 
+**Auto Mode:** If auto_mode is enabled, auto-select [C] and proceed.
+
 ## 🚨 SYSTEM SUCCESS/FAILURE METRICS
 
 ### ✅ SUCCESS:

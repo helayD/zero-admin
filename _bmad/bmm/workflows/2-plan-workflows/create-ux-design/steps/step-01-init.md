@@ -32,17 +32,40 @@ Initialize the UX design workflow by detecting continuation state and setting up
 
 ## INITIALIZATION SEQUENCE:
 
+### 0. PRD Directory Selection (Auto-Discovery)
+
+**CRITICAL: First, determine which PRD to work on**
+
+If `{prd_dir}` is NOT already defined in workflow memory:
+
+1. **Scan existing PRD directories** in `{planning_artifacts}/`:
+   - List directories matching pattern `{number}-*`
+   - Sort by PRD number (newest first)
+
+2. **Check auto mode**:
+   - If `auto_mode: true` is set in config.yaml:
+     - Use the newest (highest number) PRD directory
+     - Skip user prompt, proceed automatically
+   - Otherwise, ask user to select PRD
+
+3. **Ask user to select PRD** (if not auto mode):
+   - Prompt: "请选择要创建 UX 设计文档的 PRD"
+   - Show list of existing PRD directories
+   - User selects one, e.g., "384-ai-worker-chat-coze-workflow"
+
+4. **Store `{prd_dir}` in workflow memory** for use in all subsequent steps
+
 ### 1. Check for Existing Workflow
 
-First, check if the output document already exists:
+First, check if the output document already exists in the selected PRD directory:
 
-- Look for file at `{planning_artifacts}/*ux-design-specification*.md`
+- Look for file at `{planning_artifacts}/{prd_dir}/ux-design.md`
 - If exists, read the complete file including frontmatter
 - If not exists, this is a fresh workflow
 
 ### 2. Handle Continuation (If Document Exists)
 
-If the document exists and has frontmatter with `stepsCompleted`:
+If the document exists at `{planning_artifacts}/{prd_dir}/ux-design.md` and has frontmatter with `stepsCompleted`:
 
 - **STOP here** and load `{project-root}/_bmad/bmm/workflows/2-plan-workflows/create-ux-design/steps/step-01b-continue.md` immediately
 - Do not proceed with any initialization tasks
@@ -80,7 +103,7 @@ Try to discover the following:
 
 #### B. Create Initial Document
 
-Copy the template from `{installed_path}/ux-design-template.md` to `{planning_artifacts}/ux-design-specification.md`
+Copy the template from `{installed_path}/ux-design-template.md` to `{planning_artifacts}/{prd_dir}/ux-design.md`
 Initialize frontmatter in the template.
 
 #### C. Complete Initialization and Report
@@ -89,7 +112,7 @@ Complete setup and report to user:
 
 **Document Setup:**
 
-- Created: `{planning_artifacts}/ux-design-specification.md` from template
+- Created: `{planning_artifacts}/{prd_dir}/ux-design.md` from template
 - Initialized frontmatter with workflow state
 
 **Input Documents Discovered:**
@@ -110,7 +133,7 @@ Do you have any other documents you'd like me to include, or shall we continue t
 
 ## NEXT STEP:
 
-After user selects [C] to continue, ensure the file `{planning_artifacts}/ux-design-specification.md` has been created and saved, and then load `{project-root}/_bmad/bmm/workflows/2-plan-workflows/create-ux-design/steps/step-02-discovery.md` to begin the UX discovery phase.
+After user selects [C] to continue, ensure the file `{planning_artifacts}/{prd_dir}/ux-design.md` has been created and saved, and then load `{project-root}/_bmad/bmm/workflows/2-plan-workflows/create-ux-design/steps/step-02-discovery.md` to begin the UX discovery phase.
 
 Remember: Do NOT proceed to step-02 until output file has been updated and user explicitly selects [C] to continue!
 

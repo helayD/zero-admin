@@ -9,7 +9,7 @@ workflow_path: '{project-root}/_bmad/bmm/workflows/3-solutioning/create-epics-an
 thisStepFile: './step-02-design-epics.md'
 nextStepFile: './step-03-create-stories.md'
 workflowFile: '{workflow_path}/workflow.md'
-outputFile: '{planning_artifacts}/epics.md'
+outputFile: '{planning_artifacts}/{prd_dir}/epic.md'
 
 # Task References
 advancedElicitationTask: '{project-root}/_bmad/core/workflows/advanced-elicitation/workflow.xml'
@@ -210,6 +210,7 @@ Display: "**Select an Option:** [A] Advanced Elicitation [P] Party Mode [C] Cont
 
 ONLY WHEN C is selected and the approved epics_list is saved to document, will you then read fully and follow: {nextStepFile} to begin story creation step.
 
+**Auto Mode:** If auto_mode is enabled, auto-select [C] and proceed.
 ---
 
 ## 🚨 SYSTEM SUCCESS/FAILURE METRICS

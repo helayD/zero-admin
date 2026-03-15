@@ -9,7 +9,8 @@ workflow_path: '{project-root}/_bmad/bmm/workflows/3-solutioning/create-epics-an
 thisStepFile: './step-01-validate-prerequisites.md'
 nextStepFile: './step-02-design-epics.md'
 workflowFile: '{workflow_path}/workflow.md'
-outputFile: '{planning_artifacts}/epics.md'
+# Note: {prd_dir} must be resolved first (see Step 0 below)
+# Resolved output path: {planning_artifacts}/{prd_dir}/epic.md
 epicsTemplate: '{workflow_path}/templates/epics-template.md'
 
 # Task References
@@ -60,6 +61,29 @@ To validate that all required input documents exist and extract all requirements
 
 ## REQUIREMENTS EXTRACTION PROCESS:
 
+### 0. PRD Directory Selection (Auto-Discovery)
+
+**CRITICAL: First, determine which PRD to work on**
+
+If `{prd_dir}` is NOT already defined in workflow memory:
+
+1. **Scan existing PRD directories** in `{planning_artifacts}/`:
+   - List directories matching pattern `{number}-*`
+   - Sort by PRD number (newest first)
+
+2. **Check auto mode**:
+   - If `auto_mode: true` is set in config.yaml:
+     - Use the newest (highest number) PRD directory
+     - Skip user prompt, proceed automatically
+   - Otherwise, ask user to select PRD
+
+3. **Ask user to select PRD** (if not auto mode):
+   - Prompt: "请选择要创建 Epic 和 Story 的 PRD"
+   - Show list of existing PRD directories
+   - User selects one, e.g., "384-ai-worker-chat-coze-workflow"
+
+4. **Store `{prd_dir}` in workflow memory** for use in all subsequent steps
+
 ### 1. Welcome and Overview
 
 Welcome {user_name} to comprehensive epic and story creation!
@@ -74,22 +98,22 @@ Verify required documents exist and are complete:
 
 ### 2. Document Discovery and Validation
 
-Search for required documents using these patterns (sharded means a large document was split into multiple small files with an index.md into a folder) - if the whole document is found, use that instead of the sharded version:
+Search for required documents in the selected PRD directory `{planning_artifacts}/{prd_dir}/`:
 
 **PRD Document Search Priority:**
 
-1. `{planning_artifacts}/*prd*.md` (whole document)
-2. `{planning_artifacts}/*prd*/index.md` (sharded version)
+1. `{planning_artifacts}/{prd_dir}/prd.md` (main PRD)
+2. `{planning_artifacts}/{prd_dir}/index.md` (sharded version)
 
 **Architecture Document Search Priority:**
 
-1. `{planning_artifacts}/*architecture*.md` (whole document)
-2. `{planning_artifacts}/*architecture*/index.md` (sharded version)
+1. `{planning_artifacts}/{prd_dir}/architecture.md`
+2. `{planning_artifacts}/{prd_dir}/architecture/index.md` (sharded version)
 
 **UX Design Document Search (Optional):**
 
-1. `{planning_artifacts}/*ux*.md` (whole document)
-2. `{planning_artifacts}/*ux*/index.md` (sharded version)
+1. `{planning_artifacts}/{prd_dir}/ux-design.md`
+2. `{planning_artifacts}/{prd_dir}/ux-design/index.md` (sharded version)
 
 Before proceeding, Ask the user if there are any other documents to include for analysis, and if anything found should be excluded. Wait for user confirmation. Once confirmed, create the {outputFile} from the {epicsTemplate} and in the front matter list the files in the array of `inputDocuments: []`.
 

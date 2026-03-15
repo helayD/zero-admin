@@ -2,6 +2,8 @@
 
 ## MANDATORY EXECUTION RULES (READ FIRST):
 
+**Auto Mode:** If auto_mode is enabled, auto-select [C] and proceed.
+
 - 🛑 NEVER generate content without user input
 - ✅ ALWAYS treat this as collaborative discovery between technical peers
 - 📋 YOU ARE A FACILITATOR, not a content generator

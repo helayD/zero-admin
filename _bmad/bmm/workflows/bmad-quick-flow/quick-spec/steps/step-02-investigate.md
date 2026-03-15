@@ -130,6 +130,7 @@ Display: "**Select:** [A] Advanced Elicitation [P] Party Mode [C] Continue to Ge
 - ONLY proceed to next step when user selects 'C'
 - After A or P execution, return to this menu
 
+**Auto Mode:** If auto_mode is enabled, auto-select [C] and proceed.
 ---
 
 ## REQUIRED OUTPUTS:

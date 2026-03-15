@@ -4,7 +4,7 @@ description: 'Detect and explore innovative aspects of the product (optional ste
 
 # File References
 nextStepFile: '{project-root}/_bmad/bmm/workflows/2-plan-workflows/create-prd/steps-c/step-07-project-type.md'
-outputFile: '{planning_artifacts}/prd.md'
+outputFile: '{planning_artifacts}/{prd_dir}/prd.md'
 
 # Data Files
 projectTypesCSV: '{project-root}/_bmad/bmm/workflows/2-plan-workflows/create-prd/data/project-types.csv'
@@ -160,6 +160,8 @@ Display: "**Select:** [A] Advanced Elicitation [P] Party Mode [C] Continue to Pr
 - IF C: Append the final content to {outputFile}, update frontmatter by adding this step name to the end of the stepsCompleted array, then read fully and follow: {nextStepFile}
 - IF Any other: help user respond, then redisplay menu
 
+**Auto Mode:** If auto_mode is enabled, auto-select [C] and proceed.
+
 #### EXECUTION RULES:
 - ALWAYS halt and wait for user input after presenting menu
 - ONLY proceed to next step when user selects 'C'
@@ -177,6 +179,8 @@ Display: "**Select:** [A] Advanced Elicitation - Let's try to find innovative an
 ### Menu Handling Logic:
 - IF A: Proceed with content generation anyway, then return to menu
 - IF C: Skip this step, then read fully and follow: {nextStepFile}
+
+**Auto Mode:** If auto_mode is enabled, auto-select [C] and proceed.
 
 ### EXECUTION RULES:
 - ALWAYS halt and wait for user input after presenting menu

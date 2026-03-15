@@ -51,7 +51,18 @@ This uses **step-file architecture** for disciplined execution:
 Load and read full config from {project-root}/_bmad/bmm/config.yaml and resolve:
 
 - `project_name`, `output_folder`, `planning_artifacts`, `user_name`, `communication_language`, `document_output_language`
-- ✅ YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the config `{communication_language}`
+- `auto_mode` - If `true`, skip all user prompts and use auto-select defaults
+
+**Auto Mode Handling:**
+
+If `auto_mode: true` is set in config:
+- All "Ask the user" prompts will auto-select default values
+- All "Confirm" prompts will auto-confirm
+- PRD selection will auto-select the newest (highest number) PRD
+- All selection menus will auto-select the first/default option
+- Workflow proceeds without stopping for input
+
+✅ YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the config `{communication_language}`
 
 ### 2. First Step EXECUTION
 

@@ -201,6 +201,7 @@ Display: **Select an Option:** [A] Advanced Elicitation [P] Party Mode [C] Conti
 - IF user provides additional document: Load it, update report, redisplay summary
 - IF Any other: help user, then redisplay menu
 
+**Auto Mode:** If auto_mode is enabled, auto-select [C] and proceed.
 ---
 
 ## 🚨 SYSTEM SUCCESS/FAILURE METRICS

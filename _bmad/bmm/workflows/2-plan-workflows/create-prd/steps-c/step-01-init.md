@@ -5,7 +5,8 @@ description: 'Initialize the PRD workflow by detecting continuation state and se
 # File References
 nextStepFile: './step-02-discovery.md'
 continueStepFile: './step-01b-continue.md'
-outputFile: '{planning_artifacts}/prd.md'
+# Note: {prd_dir} is auto-discovered in Step 0 (e.g., "385-async-task-support")
+# Resolved output path: {planning_artifacts}/{prd_dir}/prd.md
 
 # Template Reference
 prdTemplate: '../templates/prd-template.md'
@@ -59,23 +60,67 @@ Initialize the PRD workflow by detecting continuation state, discovering input d
 
 ## Sequence of Instructions (Do not deviate, skip, or optimize)
 
+### 0. PRD Directory Discovery (Auto-Discovery)
+
+**CRITICAL: First, discover or create `{prd_dir}` variable**
+
+If `{prd_dir}` is NOT already defined in workflow memory:
+
+1. **Scan existing PRD directories** in `{planning_artifacts}/`:
+   - List directories matching pattern `{number}-*`
+   - Find the highest PRD number to suggest next ID
+
+2. **Check auto mode**:
+   - If `auto_mode: true` is set in config.yaml:
+     - Auto-increment from highest existing ID
+     - Use placeholder name "new-feature" → `385-new-feature`
+     - Skip user prompt, proceed automatically
+   - Otherwise, ask user for PRD info
+
+3. **Ask user for new PRD info** (if not auto mode):
+   - Prompt: "请提供新 PRD 的信息"
+   - Ask for: PRD ID (数字，如 385) and 中文名称（如：异步任务支持）
+   - If user just provides name, auto-increment from highest existing ID
+
+4. **Convert Chinese name to English**:
+   - All lowercase
+   - Chinese → English/Pinyin translation
+   - Spaces → hyphens `-`
+   - Special characters (parentheses, etc.) → remove
+   - Example: "异步任务支持" → "async-task-support"
+   - Final format: `{id}-{name-en}`, e.g., `385-async-task-support`
+
+5. **Create PRD directory structure**:
+   ```
+   {planning_artifacts}/
+   └── {prd_dir}/
+       ├── prd.md
+       ├── epic.md
+       ├── ux-design.md
+       ├── architecture.md
+       ├── stories/
+       └── (tech-specs in root)
+   ```
+
+6. **Store `{prd_dir}` in workflow memory** for use in all subsequent steps
+
 ### 1. Check for Existing Workflow State
 
-First, check if the output document already exists:
+First, check if the output document already exists at resolved path `{planning_artifacts}/{prd_dir}/prd.md`:
 
 **Workflow State Detection:**
 
-- Look for file at `{outputFile}`
+- Look for file at `{planning_artifacts}/{prd_dir}/prd.md`
 - If exists, read the complete file including frontmatter
-- If not exists, this is a fresh workflow
+- If not exists, this is a fresh workflow for this PRD
 
 ### 2. Handle Continuation (If Document Exists)
 
-If the document exists and has frontmatter with `stepsCompleted` BUT `step-11-complete` is NOT in the list, follow the Continuation Protocol since the document is incomplete:
+If the document exists at `{planning_artifacts}/{prd_dir}/prd.md` and has frontmatter with `stepsCompleted` BUT `step-11-complete` is NOT in the list, follow the Continuation Protocol since the document is incomplete:
 
 **Continuation Protocol:**
 
-- **STOP immediately** and load `{continueStepFile}`
+- **STOP immediately** and load `{continueStepFile}` (step-01b-continue.md)
 - Do not proceed with any initialization tasks
 - Let step-01b handle all continuation logic
 - This is an auto-proceed situation - no user choice needed
@@ -114,8 +159,12 @@ Try to discover the following:
 
 **Document Setup:**
 
-- Copy the template from `{prdTemplate}` to `{outputFile}`
-- Initialize frontmatter with proper structure including inputDocuments array.
+- Copy the template from `{prdTemplate}` to `{planning_artifacts}/{prd_dir}/prd.md`
+- Initialize frontmatter with proper structure including:
+  - `prd_dir: "{prd_dir}"` - Store the PRD directory for reference
+  - `inputDocuments: []` - Array to track loaded documents
+  - `documentCounts: {}` - Object to track document counts
+  - `stepsCompleted: []` - Array for workflow progress
 
 #### C. Present Initialization Results
 
@@ -123,10 +172,12 @@ Try to discover the following:
 
 "Welcome {{user_name}}! I've set up your PRD workspace for {{project_name}}.
 
+**PRD Directory:** `{prd_dir}`
+
 **Document Setup:**
 
-- Created: `{outputFile}` from template
-- Initialized frontmatter with workflow state
+- Created: `{planning_artifacts}/{prd_dir}/prd.md` from template
+- Initialized frontmatter with workflow state and prd_dir
 
 **Input Documents Discovered:**
 
