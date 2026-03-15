@@ -2,6 +2,8 @@
 
 ## MANDATORY EXECUTION RULES (READ FIRST):
 
+**Auto Mode:** If auto_mode is enabled, auto-select [C] and proceed.
+
 - 🛑 NEVER generate content without web search verification
 
 - 📖 CRITICAL: ALWAYS read the complete step file before taking any action - partial understanding leads to incomplete decisions

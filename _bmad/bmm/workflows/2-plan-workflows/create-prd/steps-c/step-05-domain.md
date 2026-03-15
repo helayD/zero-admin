@@ -4,7 +4,7 @@ description: 'Explore domain-specific requirements for complex domains (optional
 
 # File References
 nextStepFile: '{project-root}/_bmad/bmm/workflows/2-plan-workflows/create-prd/steps-c/step-06-innovation.md'
-outputFile: '{planning_artifacts}/prd.md'
+outputFile: '{planning_artifacts}/{prd_dir}/prd.md'
 domainComplexityCSV: '{project-root}/_bmad/bmm/workflows/2-plan-workflows/create-prd/data/domain-complexity.csv'
 
 # Task References
@@ -180,6 +180,7 @@ If step was skipped, append nothing and proceed.
 
 ONLY WHEN [C continue option] is selected and [content saved or skipped], will you then read fully and follow: `{nextStepFile}` to explore innovation.
 
+**Auto Mode:** If auto_mode is enabled, auto-select [C] and proceed.
 ---
 
 ## 🚨 SYSTEM SUCCESS/FAILURE METRICS

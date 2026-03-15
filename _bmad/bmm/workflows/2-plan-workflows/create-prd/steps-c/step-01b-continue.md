@@ -3,7 +3,7 @@ name: 'step-01b-continue'
 description: 'Resume an interrupted PRD workflow from the last completed step'
 
 # File References
-outputFile: '{planning_artifacts}/prd.md'
+outputFile: '{planning_artifacts}/{prd_dir}/prd.md'
 ---
 
 # Step 1B: Workflow Continuation
@@ -131,6 +131,7 @@ Display: "**Select an Option:** [C] Continue to {next step name}"
 
 ONLY WHEN [C continue option] is selected and [current state confirmed], will you then read fully and follow: {nextStepFile} to resume the workflow.
 
+**Auto Mode:** If auto_mode is enabled, auto-select [C] and proceed.
 ---
 
 ## 🚨 SYSTEM SUCCESS/FAILURE METRICS

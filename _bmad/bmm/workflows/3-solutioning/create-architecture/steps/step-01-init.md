@@ -32,17 +32,40 @@ Initialize the Architecture workflow by detecting continuation state, discoverin
 
 ## INITIALIZATION SEQUENCE:
 
+### 0. PRD Directory Selection (Auto-Discovery)
+
+**CRITICAL: First, determine which PRD to work on**
+
+If `{prd_dir}` is NOT already defined in workflow memory:
+
+1. **Scan existing PRD directories** in `{planning_artifacts}/`:
+   - List directories matching pattern `{number}-*`
+   - Sort by PRD number (newest first)
+
+2. **Check auto mode**:
+   - If `auto_mode: true` is set in config.yaml:
+     - Use the newest (highest number) PRD directory
+     - Skip user prompt, proceed automatically
+   - Otherwise, ask user to select PRD
+
+3. **Ask user to select PRD** (if not auto mode):
+   - Prompt: "请选择要创建架构文档的 PRD"
+   - Show list of existing PRD directories
+   - User selects one, e.g., "384-ai-worker-chat-coze-workflow"
+
+4. **Store `{prd_dir}` in workflow memory** for use in all subsequent steps
+
 ### 1. Check for Existing Workflow
 
-First, check if the output document already exists:
+First, check if the output document already exists in the selected PRD directory:
 
-- Look for existing {planning_artifacts}/`*architecture*.md`
+- Look for existing `{planning_artifacts}/{prd_dir}/architecture.md`
 - If exists, read the complete file(s) including frontmatter
 - If not exists, this is a fresh workflow
 
 ### 2. Handle Continuation (If Document Exists)
 
-If the document exists and has frontmatter with `stepsCompleted`:
+If the document exists at `{planning_artifacts}/{prd_dir}/architecture.md` and has frontmatter with `stepsCompleted`:
 
 - **STOP here** and load `{project-root}/_bmad/bmm/workflows/3-solutioning/create-architecture/steps/step-01b-continue.md` immediately
 - Do not proceed with any initialization tasks
@@ -95,7 +118,7 @@ Before proceeding, verify we have the essential inputs:
 
 #### C. Create Initial Document
 
-Copy the template from `{installed_path}/architecture-decision-template.md` to `{planning_artifacts}/architecture.md`
+Copy the template from `{installed_path}/architecture-decision-template.md` to `{planning_artifacts}/{prd_dir}/architecture.md`
 
 #### D. Complete Initialization and Report
 
@@ -103,7 +126,7 @@ Complete setup and report to user:
 
 **Document Setup:**
 
-- Created: `{planning_artifacts}/architecture.md` from template
+- Created: `{planning_artifacts}/{prd_dir}/architecture.md` from template
 - Initialized frontmatter with workflow state
 
 **Input Documents Discovered:**

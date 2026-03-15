@@ -8,7 +8,6 @@ description: 'Plan UX patterns and design specifications. Use when the user says
 **Goal:** Create comprehensive UX design specifications through collaborative visual exploration and informed decision-making where you act as a UX facilitator working with a product stakeholder.
 
 ---
-
 ## WORKFLOW ARCHITECTURE
 
 This uses **micro-file architecture** for disciplined execution:
@@ -29,12 +28,22 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
 - `project_name`, `output_folder`, `planning_artifacts`, `user_name`
 - `communication_language`, `document_output_language`, `user_skill_level`
 - `date` as system-generated current datetime
+- `auto_mode` - If `true`, skip all user prompts and use auto-select defaults
+
+**Auto Mode Handling:**
+
+If `auto_mode: true` is set in config:
+- All "Ask the user" prompts will auto-select default values
+- All "Confirm" prompts will auto-confirm
+- PRD selection will auto-select the newest (highest number) PRD
+- All selection menus will auto-select the first/default option
+- Workflow proceeds without stopping for input
 
 ### Paths
 
 - `installed_path` = `{project-root}/_bmad/bmm/workflows/2-plan-workflows/create-ux-design`
 - `template_path` = `{installed_path}/ux-design-template.md`
-- `default_output_file` = `{planning_artifacts}/ux-design-specification.md`
+- `default_output_file` = `{planning_artifacts}/{prd_dir}/ux-design.md`
 
 ## EXECUTION
 

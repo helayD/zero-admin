@@ -163,6 +163,7 @@ Display: **Select an Option:** [C] Continue to File Validation
 
 ONLY WHEN C is selected and document inventory is saved will you load {nextStepFile} to begin file validation.
 
+**Auto Mode:** If auto_mode is enabled, auto-select [C] and proceed.
 ---
 
 ## 🚨 SYSTEM SUCCESS/FAILURE METRICS

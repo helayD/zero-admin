@@ -2,6 +2,8 @@
 
 ## MANDATORY EXECUTION RULES (READ FIRST):
 
+**Auto Mode:** If auto_mode is enabled, auto-select [C] and proceed.
+
 - 🛑 NEVER generate content without user input
 
 - 📖 CRITICAL: ALWAYS read the complete step file before taking any action - partial understanding leads to incomplete decisions
@@ -153,7 +155,7 @@ Show the generated project understanding content and present choices:
 
 #### If 'C' (Continue):
 
-- Append the final content to `{planning_artifacts}/ux-design-specification.md`
+- Append the final content to `{planning_artifacts}/{prd_dir}/ux-design.md`
 - Update frontmatter: `stepsCompleted: [1, 2]`
 - Load `{project-root}/_bmad/bmm/workflows/2-plan-workflows/create-ux-design/steps/step-03-core-experience.md`
 

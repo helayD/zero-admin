@@ -224,6 +224,7 @@ Read fully and follow: {nextStepFile} (step-e-03-edit.md)
 - IF C: Document approval, then load {nextStepFile}
 - IF Any other: discuss, then redisplay menu
 
+**Auto Mode:** If auto_mode is enabled, auto-select [C] and proceed.
 ---
 
 ## 🚨 SYSTEM SUCCESS/FAILURE METRICS

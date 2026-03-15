@@ -4,7 +4,7 @@ description: 'Discover the product vision and differentiator through collaborati
 
 # File References
 nextStepFile: '{project-root}/_bmad/bmm/workflows/2-plan-workflows/create-prd/steps-c/step-02c-executive-summary.md'
-outputFile: '{planning_artifacts}/prd.md'
+outputFile: '{planning_artifacts}/{prd_dir}/prd.md'
 
 # Task References
 advancedElicitationTask: '{project-root}/_bmad/core/workflows/advanced-elicitation/workflow.xml'
@@ -127,6 +127,7 @@ Display: "**Select:** [A] Advanced Elicitation [P] Party Mode [C] Continue to Ex
 
 ONLY WHEN [C continue option] is selected and [stepsCompleted updated], will you then read fully and follow: `{nextStepFile}` to generate the Executive Summary.
 
+**Auto Mode:** If auto_mode is enabled, auto-select [C] and proceed.
 ---
 
 ## 🚨 SYSTEM SUCCESS/FAILURE METRICS

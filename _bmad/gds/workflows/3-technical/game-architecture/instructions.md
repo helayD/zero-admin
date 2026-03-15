@@ -685,7 +685,7 @@ Enforcement: "All agents MUST follow this pattern"
 
   </check>
 
-<action>Save document to {planning_artifacts}/architecture.md</action>
+<action>Save document to {planning_artifacts}/{prd_dir}/architecture.md</action>
 
   <check if="standalone_mode != true">
     <action>Load the FULL file: {output_folder}/gds-workflow-status.yaml</action>

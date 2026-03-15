@@ -138,6 +138,7 @@ Display: "Ready to continue with Step {nextStepNumber}: {nextStepTitle}?
 
 ONLY WHEN [C continue option] is selected and [current state confirmed], will you then read fully and follow the appropriate next step file to resume the workflow.
 
+**Auto Mode:** If auto_mode is enabled, auto-select [C] and proceed.
 ---
 
 ## 🚨 SYSTEM SUCCESS/FAILURE METRICS

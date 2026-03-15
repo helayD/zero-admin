@@ -4,7 +4,7 @@ description: 'Discover project type, domain, and context through collaborative d
 
 # File References
 nextStepFile: '{project-root}/_bmad/bmm/workflows/2-plan-workflows/create-prd/steps-c/step-02b-vision.md'
-outputFile: '{planning_artifacts}/prd.md'
+outputFile: '{planning_artifacts}/{prd_dir}/prd.md'
 
 # Data Files
 projectTypesCSV: '../data/project-types.csv'
@@ -199,6 +199,7 @@ Display: "**Select:** [A] Advanced Elicitation [P] Party Mode [C] Continue to Pr
 
 ONLY WHEN [C continue option] is selected and [classification saved to frontmatter], will you then read fully and follow: `{nextStepFile}` to explore product vision.
 
+**Auto Mode:** If auto_mode is enabled, auto-select [C] and proceed.
 ---
 
 ## 🚨 SYSTEM SUCCESS/FAILURE METRICS

@@ -4,7 +4,7 @@ description: 'Conduct project-type specific discovery using CSV-driven guidance'
 
 # File References
 nextStepFile: '{project-root}/_bmad/bmm/workflows/2-plan-workflows/create-prd/steps-c/step-08-scoping.md'
-outputFile: '{planning_artifacts}/prd.md'
+outputFile: '{planning_artifacts}/{prd_dir}/prd.md'
 
 # Data Files
 projectTypesCSV: '../data/project-types.csv'
@@ -176,6 +176,8 @@ Display: "**Select:** [A] Advanced Elicitation [P] Party Mode [C] Continue to Sc
 - IF P: Read fully and follow: {partyModeWorkflow} with the current project-type requirements, process the collaborative technical expertise and validation, ask user "Accept these changes to the technical requirements? (y/n)", if yes update content with improvements then redisplay menu, if no keep original content then redisplay menu
 - IF C: Append the final content to {outputFile}, update frontmatter by adding this step name to the end of the stepsCompleted array, then read fully and follow: {nextStepFile}
 - IF Any other: help user respond, then redisplay menu
+
+**Auto Mode:** If auto_mode is enabled, auto-select [C] and proceed.
 
 #### EXECUTION RULES:
 - ALWAYS halt and wait for user input after presenting menu
