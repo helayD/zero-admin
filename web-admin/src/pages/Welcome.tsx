@@ -1,9 +1,8 @@
-import {Card, Col, Row, Statistic, Typography} from 'antd';
+import {Card, Col, Row, Statistic} from 'antd';
 import ReactEcharts from 'echarts-for-react';
 // import { useState } from "react";
 import {ArrowDownOutlined, ArrowUpOutlined} from '@ant-design/icons';
 import {PageContainer} from '@ant-design/pro-layout';
-const { Link } = Typography;
 
 const Welcome: React.FC = () => {
   // const [sales, setSales] = useState<number[]>([5, 20, 36, 10, 10, 20]);
@@ -110,72 +109,6 @@ const Welcome: React.FC = () => {
   return (
     <PageContainer>
       <Row gutter={8}>
-        <Col span={6}>
-          <span
-            onClick={() => {
-              window.open('https://github.com/feihua/zero-admin');
-            }}
-          >
-          <Card bordered={false} hoverable title={"zero-admin"} style={{height: 200}}>
-            Zero-Admin是一套基于go-zero框架实现的电商系统，包括前台商城系统和后台管理系统，提供了完整的电商解决方案。
-            <br/>
-            <Link>
-                 zero-admin github 地址
-             </Link>
-          </Card>
-          </span>
-        </Col>
-        <Col span={6} style={{height: 200}}>
-          <span
-            onClick={() => {
-              window.open('https://github.com/feihua/zero-admin-ui');
-            }}
-          >
-            <Card bordered={false} hoverable title={"zero-admin-ui"} style={{height: 200}}>
-              Zero-Admin-UI是一个基于React实现的电商后台管理系统的前端项目，为管理者提供了便捷高效的操作界面。
-              <br/>
-              <br/>
-            <Link>
-                 zero-admin-ui github 地址
-             </Link>
-            </Card>
-          </span>
-        </Col>
-        <Col span={6}>
-          <span
-            onClick={() => {
-              window.open('https://github.com/feihua/flutter_mall');
-            }}
-          >
-            <Card bordered={false} hoverable title={"flutter_mall"} style={{height: 200}}>
-              Flutter Mall是一个基于Flutter框架实现的电商系统移动端项目，旨在提供全面的购物体验。
-              <br/>
-              <br/>
-            <Link>
-                 flutter_mall github 地址
-             </Link>
-            </Card>
-          </span>
-        </Col>
-        <Col span={6}>
-          <span
-            onClick={() => {
-              window.open('https://feihua.github.io');
-            }}
-          >
-            <Card bordered={false} hoverable title={"项目文档"} style={{height: 200}}>
-              基于vuepress和markdown编写的项目文档
-              <br/>
-              <br/>
-              <br/>
-            <Link>
-                 文档地址
-             </Link>
-            </Card>
-            </span>
-        </Col>
-      </Row>
-      <Row gutter={8} style={{marginTop: 10}}>
         <Col span={6}>
           <Card bordered={false} hoverable>
             <Statistic
