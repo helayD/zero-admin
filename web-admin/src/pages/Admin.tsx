@@ -1,43 +1,22 @@
 import React from 'react';
-import { HeartTwoTone, SmileTwoTone } from '@ant-design/icons';
-import { Card, Typography, Alert } from 'antd';
+import { SafetyCertificateOutlined } from '@ant-design/icons';
+import { Card, Typography } from 'antd';
 import { PageHeaderWrapper } from '@ant-design/pro-layout';
-import { useIntl } from 'umi';
 
 const Admin: React.FC = () => {
-  const intl = useIntl();
   return (
     <PageHeaderWrapper
-      content={intl.formatMessage({
-        id: 'pages.admin.subPage.title',
-        defaultMessage: 'This page can only be viewed by admin',
-      })}
+      content="此页面仅管理员可查看"
     >
       <Card>
-        <Alert
-          message={intl.formatMessage({
-            id: 'pages.welcome.alertMessage',
-            defaultMessage: 'Faster and stronger heavy-duty components have been released.',
-          })}
-          type="success"
-          showIcon
-          banner
-          style={{
-            margin: -12,
-            marginBottom: 48,
-          }}
-        />
-        <Typography.Title level={2} style={{ textAlign: 'center' }}>
-          <SmileTwoTone /> Ant Design Pro <HeartTwoTone twoToneColor="#eb2f96" /> You
+        <Typography.Title level={3} style={{ textAlign: 'center', color: '#1a1a2e' }}>
+          <SafetyCertificateOutlined style={{ marginRight: 8 }} />
+          九克城管理后台
         </Typography.Title>
+        <Typography.Paragraph style={{ textAlign: 'center', color: '#8c8c8c' }}>
+          欢迎使用九克城企业级管理系统，请通过左侧菜单导航至相应功能模块。
+        </Typography.Paragraph>
       </Card>
-      <p style={{ textAlign: 'center', marginTop: 24 }}>
-        Want to add more pages? Please refer to{' '}
-        <a href="https://pro.ant.design/docs/block-cn" target="_blank" rel="noopener noreferrer">
-          use block
-        </a>
-        。
-      </p>
     </PageHeaderWrapper>
   );
 };
