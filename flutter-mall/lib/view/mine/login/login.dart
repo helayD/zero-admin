@@ -61,14 +61,24 @@ class _LoginState extends State<Login> {
           children: [
             const SizedBox(height: 150),
             Image.asset(
-              "images/shopping_cart.png",
-              width: 150,
-              height: 105,
+              "images/icon_main_logo.png",
+              width: 80,
+              height: 80,
               fit: BoxFit.contain,
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              "九克城",
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1a1a2e),
+                letterSpacing: 2,
+              ),
             ),
             const SizedBox(height: 6),
             const Text(
-              "未注册的手机号登陆成功后将自动注册",
+              "未注册的手机号登录成功后将自动注册",
               style: TextStyle(color: Colors.grey, fontSize: 14),
             ),
             const SizedBox(height: 28),

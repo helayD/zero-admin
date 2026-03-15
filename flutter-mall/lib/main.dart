@@ -41,7 +41,7 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         // 设置全局的navigatorKey，以便在应用的任何地方进行导航
         navigatorKey: NavKey.navKey,
-        title: 'shopping',
+        title: '九克城',
         theme: ThemeData(
           // 设置应用的主题颜色和使用Material 3设计
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),

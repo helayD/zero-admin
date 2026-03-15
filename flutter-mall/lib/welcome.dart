@@ -37,16 +37,35 @@ class _WelcomeState extends State<Welcome> {
   Widget build(BuildContext context) {
     return Container(
         color: Colors.white,
-        // decoration: const BoxDecoration(
-        //   color: Colors.white,
-        // ),
-        // padding: const EdgeInsets.all(50.0),
         alignment: Alignment.center,
-        child: Image.asset(
-          "images/shopping_cart.png",
-          width: 200,
-          height: 105,
-          fit: BoxFit.contain,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(
+              "images/icon_main_logo.png",
+              width: 100,
+              height: 100,
+              fit: BoxFit.contain,
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              "九克城",
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1a1a2e),
+                letterSpacing: 4,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              "品质生活，从这里开始",
+              style: TextStyle(
+                fontSize: 14,
+                color: Color(0xFF909399),
+              ),
+            ),
+          ],
         ));
   }
 }
