@@ -22,7 +22,7 @@ class HttpUtil {
     if (_dio == null) {
       // 配置Dio实例
       BaseOptions options = BaseOptions(
-        baseUrl: "https://api.example.com", // 你的API地址
+        baseUrl: "", // API地址通过各接口的完整URL指定
         connectTimeout: const Duration(milliseconds: 5000), // 设置连接超时时间为5秒
         receiveTimeout: const Duration(milliseconds: 5000), // 设置接收数据超时时间为5秒
       );
