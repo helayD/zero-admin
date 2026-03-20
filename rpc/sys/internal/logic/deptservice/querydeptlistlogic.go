@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/feihua/zero-admin/pkg/time_util"
-	"github.com/feihua/zero-admin/rpc/sys/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/sys/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/sys/internal/svc"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -33,8 +33,18 @@ func NewQueryDeptListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Que
 
 // QueryDeptList 查询部门列表
 func (l *QueryDeptListLogic) QueryDeptList(in *sysclient.QueryDeptListReq) (*sysclient.QueryDeptListResp, error) {
+	currentScope, err := logiccommon.NormalizeProtoScope(in.Scope)
+	if err != nil {
+		return nil, err
+	}
+	scopeWhere, scopeArgs := logiccommon.ScopeFilterSQL("", currentScope)
 
-	result, err := query.SysDept.WithContext(l.ctx).Find()
+	var result []logiccommon.ScopedDept
+	err = l.svcCtx.DB.WithContext(l.ctx).
+		Table("sys_dept").
+		Select("id, parent_id, ancestors, dept_name, sort, leader, phone, email, status, del_flag, remark, create_by, create_time, update_by, update_time, platform_id, tenant_id, merchant_id").
+		Where(scopeWhere, scopeArgs...).
+		Find(&result).Error
 
 	if err != nil {
 		logc.Errorf(l.ctx, "查询部门列表失败,参数:%+v,异常:%s", in, err.Error())
@@ -44,6 +54,7 @@ func (l *QueryDeptListLogic) QueryDeptList(in *sysclient.QueryDeptListReq) (*sys
 	var list = make([]*sysclient.DeptListData, 0, len(result))
 
 	for _, dept := range result {
+		itemScope := logiccommon.DefaultScope(dept.PlatformID, dept.TenantID, dept.MerchantID)
 		list = append(list, &sysclient.DeptListData{
 			Id:         dept.ID,                                 // 部门id
 			ParentId:   dept.ParentID,                           // 上级部门id
@@ -60,6 +71,7 @@ func (l *QueryDeptListLogic) QueryDeptList(in *sysclient.QueryDeptListReq) (*sys
 			CreateTime: time_util.TimeToStr(dept.CreateTime),    // 创建时间
 			UpdateBy:   dept.UpdateBy,                           // 更新者
 			UpdateTime: time_util.TimeToString(dept.UpdateTime), // 更新时间
+			Scope:      logiccommon.ProtoScope(itemScope),
 		})
 	}
 

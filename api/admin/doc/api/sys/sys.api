@@ -1,4 +1,5 @@
 import "./user.api"
+import "./tenant.api"
 import "./role.api"
 import "./menu.api"
 import "./dict_type.api"

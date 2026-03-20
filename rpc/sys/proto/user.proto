@@ -20,6 +20,9 @@ message AddUserReq {
   string create_by = 12; //创建者
   repeated int64 PostIds = 13; //岗位ids
   repeated int64 RoleIds = 14; //角色ids
+  GovernanceScope scope = 15; //主体范围
+  string activation_status = 16; //激活状态
+  string role_mode = 17; //角色模式
 }
 
 message AddUserResp {
@@ -50,6 +53,9 @@ message UpdateUserReq {
   string update_by = 12; //更新者
   repeated int64 PostIds = 13; //岗位ids
   repeated int64 RoleIds = 14; //角色ids
+  GovernanceScope scope = 15; //主体范围
+  string activation_status = 16; //激活状态
+  string role_mode = 17; //角色模式
 }
 
 message UpdateUserResp {
@@ -95,6 +101,9 @@ message QueryUserDetailResp {
   string update_time = 21; //更新时间
   repeated int64 PostIds = 22; //岗位ids
   repeated int64 RoleIds = 23; //角色ids
+  GovernanceScope scope = 24; //主体范围
+  string activation_status = 25; //激活状态
+  string role_mode = 26; //角色模式
 }
 
 // 分页查询用户信息列表
@@ -116,6 +125,7 @@ message QueryUserListReq {
   int32 del_flag = 15; //删除标志（0代表删除 1代表存在）
   int64 page_num = 16; //第几页
   int64 page_size = 17; //每页的数量
+  GovernanceScope scope = 18; //主体范围筛选
 }
 
 message UserListData {
@@ -140,6 +150,8 @@ message UserListData {
   string update_by = 20; //更新者
   string update_time = 21; //更新时间
   repeated int64 PostIds = 22; //岗位ids
+  GovernanceScope scope = 23; //主体范围
+  string activation_status = 24; //激活状态
 }
 
 message QueryUserListResp {
@@ -231,7 +243,7 @@ message QueryUserRoleListResp {
 }
 
 message QueryDeptAndPostListReq {
-
+  GovernanceScope scope = 1; //主体范围
 }
 
 message QueryDeptAndPostListResp {
@@ -255,6 +267,7 @@ message DeptData {
   string create_time = 13; //创建时间
   string update_by = 14; //更新者
   string update_time = 15; //更新时间
+  GovernanceScope scope = 16; //主体范围
 
 }
 
@@ -269,6 +282,7 @@ message PostData {
   string create_time = 8; //创建时间
   string update_by = 9; //更新者
   string update_time = 10; //更新时间
+  GovernanceScope scope = 11; //主体范围
 
 
 }

@@ -1,0 +1,95 @@
+syntax = "proto3";
+
+package main;
+
+option go_package = "./proto";
+
+message CreateTenantReq {
+  string tenant_name = 1;
+  string tenant_short_name = 2;
+  string contact_name = 3;
+  string contact_mobile = 4;
+  string contact_email = 5;
+  repeated string available_channels = 6;
+  int32 data_retention_days = 7;
+  repeated string feature_flags = 8;
+  string admin_user_name = 9;
+  string admin_nick_name = 10;
+  string admin_mobile = 11;
+  string admin_email = 12;
+  string admin_password = 13;
+  string create_by = 14;
+  int64 operator_id = 15;
+}
+
+message CreateTenantResp {
+  int64 tenant_id = 1;
+  string tenant_code = 2;
+  int64 admin_user_id = 3;
+  string admin_activation_status = 4;
+}
+
+message QueryTenantDetailReq {
+  int64 id = 1;
+}
+
+message QueryTenantListReq {
+  string tenant_name = 1;
+  string tenant_code = 2;
+  int32 status = 3;
+  string channel = 4;
+  int64 page_num = 5;
+  int64 page_size = 6;
+}
+
+message TenantData {
+  int64 id = 1;
+  string tenant_code = 2;
+  string tenant_name = 3;
+  string tenant_short_name = 4;
+  string contact_name = 5;
+  string contact_mobile = 6;
+  string contact_email = 7;
+  repeated string available_channels = 8;
+  int32 data_retention_days = 9;
+  repeated string feature_flags = 10;
+  int32 status = 11;
+  string status_reason = 12;
+  int64 primary_admin_user_id = 13;
+  string primary_admin_user_name = 14;
+  string primary_admin_mobile = 15;
+  string admin_activation_status = 16;
+  string created_by = 17;
+  string created_at = 18;
+  string updated_by = 19;
+  string updated_at = 20;
+}
+
+message QueryTenantDetailResp {
+  TenantData data = 1;
+}
+
+message QueryTenantListResp {
+  int64 total = 1;
+  repeated TenantData list = 2;
+}
+
+message ChangeTenantStatusReq {
+  repeated int64 ids = 1;
+  string status_reason = 2;
+  string update_by = 3;
+  int64 operator_id = 4;
+}
+
+message ChangeTenantStatusResp {
+  string pong = 1;
+}
+
+service TenantService {
+  rpc CreateTenant(CreateTenantReq) returns (CreateTenantResp) {}
+  rpc QueryTenantDetail(QueryTenantDetailReq) returns (QueryTenantDetailResp) {}
+  rpc QueryTenantList(QueryTenantListReq) returns (QueryTenantListResp) {}
+  rpc EnableTenant(ChangeTenantStatusReq) returns (ChangeTenantStatusResp) {}
+  rpc DisableTenant(ChangeTenantStatusReq) returns (ChangeTenantStatusResp) {}
+  rpc ArchiveTenant(ChangeTenantStatusReq) returns (ChangeTenantStatusResp) {}
+}

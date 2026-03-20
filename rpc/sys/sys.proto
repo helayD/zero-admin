@@ -16,6 +16,7 @@ message AddDeptReq {
   int32 status = 8; //部门状态（0：停用，1:正常）
   string remark = 9; //备注信息
   string create_by = 10; //创建者
+  GovernanceScope scope = 11; //主体范围
 }
 
 message AddDeptResp {
@@ -43,6 +44,7 @@ message UpdateDeptReq {
   int32 status = 8; //部门状态（0：停用，1:正常）
   string remark = 9; //备注信息
   string update_by = 10; //更新者
+  GovernanceScope scope = 11; //主体范围
 }
 
 message UpdateDeptResp {
@@ -81,12 +83,13 @@ message QueryDeptDetailResp {
   string create_time = 13; //创建时间
   string update_by = 14; //更新者
   string update_time = 15; //更新时间
+  GovernanceScope scope = 16; //主体范围
 
 }
 
 // 分页查询部门列表
 message QueryDeptListReq {
-
+  GovernanceScope scope = 1; //主体范围筛选
 }
 
 message DeptListData {
@@ -105,6 +108,7 @@ message DeptListData {
   string create_time = 13; //创建时间
   string update_by = 14; //更新者
   string update_time = 15; //更新时间
+  GovernanceScope scope = 16; //主体范围
 
 }
 
@@ -130,7 +134,6 @@ service DeptService {
 
 }
 
-
 // 添加字典数据
 message AddDictItemReq {
   int64 id = 1; //字典数据id
@@ -144,6 +147,8 @@ message AddDictItemReq {
   int32 status = 9; //状态（0：停用，1:正常）
   string remark = 10; //备注
   string create_by = 11; //创建者
+  int64 dict_type_id = 12; //字典类型ID
+  GovernanceScope scope = 13; //主体范围
 }
 
 message AddDictItemResp {
@@ -172,6 +177,8 @@ message UpdateDictItemReq {
   int32 status = 9; //状态（0：停用，1:正常）
   string remark = 10; //备注
   string update_by = 13; //更新者
+  int64 dict_type_id = 14; //字典类型ID
+  GovernanceScope scope = 15; //主体范围
 }
 
 message UpdateDictItemResp {
@@ -209,6 +216,8 @@ message QueryDictItemDetailResp {
   string create_time = 12; //创建时间
   string update_by = 13; //更新者
   string update_time = 14; //更新时间
+  int64 dict_type_id = 15; //字典类型ID
+  GovernanceScope scope = 16; //主体范围
 
 }
 
@@ -219,6 +228,8 @@ message QueryDictItemListReq {
   int32 status = 3; //状态（0：停用，1:正常）
   int64 page_num = 4; //第几页
   int64 page_size = 59; //每页的数量
+  int64 dict_type_id = 60; //字典类型ID
+  GovernanceScope scope = 61; //主体范围筛选
 }
 
 message DictItemListData {
@@ -236,6 +247,8 @@ message DictItemListData {
   string create_time = 12; //创建时间
   string update_by = 13; //更新者
   string update_time = 14; //更新时间
+  int64 dict_type_id = 15; //字典类型ID
+  GovernanceScope scope = 16; //主体范围
 
 }
 
@@ -262,7 +275,6 @@ service DictItemService {
 
 }
 
-
 // 添加字典类型
 message AddDictTypeReq {
   int64 id = 1; //字典id
@@ -271,6 +283,7 @@ message AddDictTypeReq {
   int32 status = 4; //状态（0：停用，1:正常）
   string remark = 5; //备注
   string create_by = 6; //创建者
+  GovernanceScope scope = 7; //主体范围
 }
 
 message AddDictTypeResp {
@@ -294,6 +307,7 @@ message UpdateDictTypeReq {
   int32 status = 4; //状态（0：停用，1:正常）
   string remark = 5; //备注
   string update_by = 8; //更新者
+  GovernanceScope scope = 9; //主体范围
 }
 
 message UpdateDictTypeResp {
@@ -326,6 +340,7 @@ message QueryDictTypeDetailResp {
   string create_time = 7; //创建时间
   string update_by = 8; //更新者
   string update_time = 9; //更新时间
+  GovernanceScope scope = 10; //主体范围
 
 }
 
@@ -336,6 +351,7 @@ message QueryDictTypeListReq {
   int32 status = 3; //状态（0：停用，1:正常）
   int64 page_num = 4; //第几页
   int64 page_size = 5; //每页的数量
+  GovernanceScope scope = 6; //主体范围筛选
 }
 
 message DictTypeListData {
@@ -348,6 +364,7 @@ message DictTypeListData {
   string create_time = 7; //创建时间
   string update_by = 8; //更新者
   string update_time = 9; //更新时间
+  GovernanceScope scope = 10; //主体范围
 
 }
 
@@ -374,6 +391,13 @@ service DictTypeService {
 
 }
 
+message GovernanceScope {
+  string scope_type = 1; // 主体范围(platform/tenant/merchant)
+  int64 platform_id = 2; // 平台ID
+  int64 tenant_id = 3; // 租户ID
+  int64 merchant_id = 4; // 商户ID
+  string scope_label = 5; // 主体范围标签
+}
 
 // 删除系统登录日志
 message DeleteLoginLogReq {
@@ -458,8 +482,6 @@ service LoginLogService {
 
 
 }
-
-
 
 // 添加菜单信息表
 message AddMenuReq {
@@ -628,7 +650,118 @@ service MenuService {
 
 }
 
+// 添加菜单模板
+message AddMenuTemplateReq {
+  string name = 1; //模板名称
+  string scope_type = 2; //适用作用域类型（tenant:租户级 merchant:商户级）
+  int64 platform_id = 3; //平台ID
+  int32 status = 4; //状态(1:正常，0:禁用)
+  string remark = 5; //备注
+  string create_by = 6; //创建者
+  repeated int64 menu_ids = 7; //菜单ID列表
+}
 
+message AddMenuTemplateResp {
+  string pong = 1;
+}
+
+// 删除菜单模板
+message DeleteMenuTemplateReq {
+  repeated int64 ids = 1;
+}
+
+message DeleteMenuTemplateResp {
+  string pong = 1;
+}
+
+// 更新菜单模板
+message UpdateMenuTemplateReq {
+  int64 id = 1; //模板id
+  string name = 2; //模板名称
+  string scope_type = 3; //适用作用域类型
+  int64 platform_id = 4; //平台ID
+  int32 status = 5; //状态(1:正常，0:禁用)
+  string remark = 6; //备注
+  string update_by = 7; //更新者
+  repeated int64 menu_ids = 8; //菜单ID列表
+}
+
+message UpdateMenuTemplateResp {
+  string pong = 1;
+}
+
+// 查询菜单模板详情
+message QueryMenuTemplateDetailReq {
+  int64 id = 1;
+}
+
+message QueryMenuTemplateDetailResp {
+  int64 id = 1; //模板id
+  string name = 2; //模板名称
+  string scope_type = 3; //适用作用域类型
+  int64 platform_id = 4; //平台ID
+  int32 status = 5; //状态
+  string remark = 6; //备注
+  string create_by = 7; //创建者
+  string create_time = 8; //创建时间
+  string update_by = 9; //更新者
+  string update_time = 10; //更新时间
+  repeated int64 menu_ids = 11; //关联菜单ID列表
+}
+
+// 分页查询菜单模板列表
+message QueryMenuTemplateListReq {
+  int64 page_num = 1; //第几页
+  int64 page_size = 2; //每页的数量
+  string name = 3; //模板名称
+  string scope_type = 4; //适用作用域类型过滤
+  int32 status = 5; //状态过滤
+}
+
+message MenuTemplateListData {
+  int64 id = 1; //模板id
+  string name = 2; //模板名称
+  string scope_type = 3; //适用作用域类型
+  int64 platform_id = 4; //平台ID
+  int32 status = 5; //状态
+  string remark = 6; //备注
+  string create_by = 7; //创建者
+  string create_time = 8; //创建时间
+  string update_by = 9; //更新者
+  string update_time = 10; //更新时间
+  int32 menu_count = 11; //关联菜单数量
+}
+
+message QueryMenuTemplateListResp {
+  int64 total = 1;
+  repeated MenuTemplateListData list = 2;
+}
+
+// 根据作用域类型查询可用菜单模板（用于角色分配菜单时获取模板限制范围）
+message QueryMenuTemplateByScope {
+  string scope_type = 1; //作用域类型
+  int64 platform_id = 2; //平台ID
+}
+
+message QueryMenuTemplateByScopeResp {
+  repeated int64 menu_ids = 1; //该作用域下所有模板允许的菜单ID并集
+}
+
+// 菜单模板服务
+service MenuTemplateService {
+  // 添加菜单模板
+  rpc AddMenuTemplate(AddMenuTemplateReq) returns (AddMenuTemplateResp){}
+  // 删除菜单模板
+  rpc DeleteMenuTemplate(DeleteMenuTemplateReq) returns (DeleteMenuTemplateResp){}
+  // 更新菜单模板
+  rpc UpdateMenuTemplate(UpdateMenuTemplateReq) returns (UpdateMenuTemplateResp){}
+  // 查询菜单模板详情
+  rpc QueryMenuTemplateDetail(QueryMenuTemplateDetailReq) returns (QueryMenuTemplateDetailResp){}
+  // 查询菜单模板列表
+  rpc QueryMenuTemplateList(QueryMenuTemplateListReq) returns (QueryMenuTemplateListResp){}
+  // 根据作用域查询可用菜单ID
+  rpc QueryMenuIdsByScope(QueryMenuTemplateByScope) returns (QueryMenuTemplateByScopeResp){}
+}
 
 // 添加通知公告表请求参数
 message AddNoticeReq {
@@ -638,6 +771,7 @@ message AddNoticeReq {
   int32 status = 5; //公告状态（0:关闭,1:正常 ）
   string remark = 6; //备注
   string create_by = 7; //创建者
+  GovernanceScope scope = 8; //主体范围
 
 }
 message AddNoticeResp {
@@ -662,6 +796,7 @@ message UpdateNoticeReq {
   int32 status = 5; //公告状态（0:关闭,1:正常 ）
   string remark = 6; //备注
   string update_by = 7; //更新者
+  GovernanceScope scope = 8; //主体范围
 }
 
 message UpdateNoticeResp {
@@ -697,6 +832,7 @@ message QueryNoticeDetailResp {
   string create_time = 8; //创建时间
   string update_by = 9; //更新者
   string update_time = 10; //更新时间
+  GovernanceScope scope = 11; //主体范围
 }
 
 // 分页查询通知公告表列表请求参数
@@ -706,6 +842,7 @@ message QueryNoticeListReq {
   string notice_title = 3; //公告标题
   int32 notice_type = 4; //公告类型（1:通知,2:公告）
   int32 status = 5; //公告状态（0:关闭,1:正常 ）
+  GovernanceScope scope = 6; //主体范围筛选
 
 }
 
@@ -726,6 +863,7 @@ message QueryNoticeListData {
   string create_time = 8; //创建时间
   string update_by = 9; //更新者
   string update_time = 10; //更新时间
+  GovernanceScope scope = 11; //主体范围
 }
 
 // 通知公告表服务
@@ -745,7 +883,6 @@ service NoticeService {
   rpc QueryNoticeList(QueryNoticeListReq) returns(QueryNoticeListResp) {}
 
 }
-
 
 // 添加系统操作日志
 message AddOperateLogReq {
@@ -897,7 +1034,6 @@ service OperateLogService {
 
 }
 
-
 // 添加岗位信息
 message AddPostReq {
   int64 id = 1; //岗位id
@@ -907,6 +1043,7 @@ message AddPostReq {
   int32 status = 5; //岗位状态（0：停用，1:正常）
   string remark = 6; //备注
   string create_by = 7; //创建者
+  GovernanceScope scope = 8; //主体范围
 }
 
 message AddPostResp {
@@ -931,6 +1068,7 @@ message UpdatePostReq {
   int32 status = 5; //岗位状态（0：停用，1:正常）
   string remark = 6; //备注
   string update_by = 9; //更新者
+  GovernanceScope scope = 10; //主体范围
 }
 
 message UpdatePostResp {
@@ -964,6 +1102,7 @@ message QueryPostDetailResp {
   string create_time = 8; //创建时间
   string update_by = 9; //更新者
   string update_time = 10; //更新时间
+  GovernanceScope scope = 11; //主体范围
 
 }
 
@@ -974,6 +1113,7 @@ message QueryPostListReq {
   int32 status = 3; //岗位状态（0：停用，1:正常）
   int64 page_num = 4; //第几页
   int64 page_size = 5; //每页的数量
+  GovernanceScope scope = 6; //主体范围筛选
 }
 
 message PostListData {
@@ -987,6 +1127,7 @@ message PostListData {
   string create_time = 8; //创建时间
   string update_by = 9; //更新者
   string update_time = 10; //更新时间
+  GovernanceScope scope = 11; //主体范围
 
 }
 
@@ -1013,7 +1154,6 @@ service PostService {
 
 }
 
-
 // 添加角色信息
 message AddRoleReq {
   int64 id = 1; //角色id
@@ -1024,6 +1164,11 @@ message AddRoleReq {
   string remark = 6; //备注
   int32 del_flag = 7; //删除标志（0代表删除 1代表存在）
   string create_by = 8; //创建者
+  string scope_type = 20; //作用域类型（platform:平台级 tenant:租户级 merchant:商户级）
+  int64 platform_id = 21; //平台ID
+  int64 tenant_id = 22; //租户ID
+  int64 merchant_id = 23; //商户ID
+  int32 is_admin = 24; //是否超级管理员角色（1:是 0:否）
 }
 
 message AddRoleResp {
@@ -1049,6 +1194,11 @@ message UpdateRoleReq {
   string remark = 6; //备注
   int32 del_flag = 7; //删除标志（0代表删除 1代表存在）
   string update_by = 10; //更新者
+  string scope_type = 20; //作用域类型（platform:平台级 tenant:租户级 merchant:商户级）
+  int64 platform_id = 21; //平台ID
+  int64 tenant_id = 22; //租户ID
+  int64 merchant_id = 23; //商户ID
+  int32 is_admin = 24; //是否超级管理员角色（1:是 0:否）
 }
 
 message UpdateRoleResp {
@@ -1083,7 +1233,11 @@ message QueryRoleDetailResp {
   string create_time = 9; //创建时间
   string update_by = 10; //更新者
   string update_time = 11; //更新时间
-
+  string scope_type = 20; //作用域类型
+  int64 platform_id = 21; //平台ID
+  int64 tenant_id = 22; //租户ID
+  int64 merchant_id = 23; //商户ID
+  int32 is_admin = 24; //是否超级管理员角色
 }
 
 // 分页查询角色信息列表
@@ -1095,6 +1249,9 @@ message QueryRoleListReq {
   int32 del_flag = 5; //删除标志（0代表删除 1代表存在）
   int64 page_num = 6; //第几页
   int64 page_size = 7; //每页的数量
+  string scope_type = 20; //作用域类型过滤
+  int64 tenant_id = 21; //租户ID过滤
+  int64 merchant_id = 22; //商户ID过滤
 }
 
 message RoleListData {
@@ -1109,7 +1266,11 @@ message RoleListData {
   string create_time = 9; //创建时间
   string update_by = 10; //更新者
   string update_time = 11; //更新时间
-
+  string scope_type = 20; //作用域类型
+  int64 platform_id = 21; //平台ID
+  int64 tenant_id = 22; //租户ID
+  int64 merchant_id = 23; //商户ID
+  int32 is_admin = 24; //是否超级管理员角色
 }
 
 message QueryRoleListResp {
@@ -1236,6 +1397,95 @@ service RoleService {
 
 }
 
+message CreateTenantReq {
+  string tenant_name = 1;
+  string tenant_short_name = 2;
+  string contact_name = 3;
+  string contact_mobile = 4;
+  string contact_email = 5;
+  repeated string available_channels = 6;
+  int32 data_retention_days = 7;
+  repeated string feature_flags = 8;
+  string admin_user_name = 9;
+  string admin_nick_name = 10;
+  string admin_mobile = 11;
+  string admin_email = 12;
+  string admin_password = 13;
+  string create_by = 14;
+  int64 operator_id = 15;
+}
+
+message CreateTenantResp {
+  int64 tenant_id = 1;
+  string tenant_code = 2;
+  int64 admin_user_id = 3;
+  string admin_activation_status = 4;
+}
+
+message QueryTenantDetailReq {
+  int64 id = 1;
+}
+
+message QueryTenantListReq {
+  string tenant_name = 1;
+  string tenant_code = 2;
+  int32 status = 3;
+  string channel = 4;
+  int64 page_num = 5;
+  int64 page_size = 6;
+}
+
+message TenantData {
+  int64 id = 1;
+  string tenant_code = 2;
+  string tenant_name = 3;
+  string tenant_short_name = 4;
+  string contact_name = 5;
+  string contact_mobile = 6;
+  string contact_email = 7;
+  repeated string available_channels = 8;
+  int32 data_retention_days = 9;
+  repeated string feature_flags = 10;
+  int32 status = 11;
+  string status_reason = 12;
+  int64 primary_admin_user_id = 13;
+  string primary_admin_user_name = 14;
+  string primary_admin_mobile = 15;
+  string admin_activation_status = 16;
+  string created_by = 17;
+  string created_at = 18;
+  string updated_by = 19;
+  string updated_at = 20;
+}
+
+message QueryTenantDetailResp {
+  TenantData data = 1;
+}
+
+message QueryTenantListResp {
+  int64 total = 1;
+  repeated TenantData list = 2;
+}
+
+message ChangeTenantStatusReq {
+  repeated int64 ids = 1;
+  string status_reason = 2;
+  string update_by = 3;
+  int64 operator_id = 4;
+}
+
+message ChangeTenantStatusResp {
+  string pong = 1;
+}
+
+service TenantService {
+  rpc CreateTenant(CreateTenantReq) returns (CreateTenantResp) {}
+  rpc QueryTenantDetail(QueryTenantDetailReq) returns (QueryTenantDetailResp) {}
+  rpc QueryTenantList(QueryTenantListReq) returns (QueryTenantListResp) {}
+  rpc EnableTenant(ChangeTenantStatusReq) returns (ChangeTenantStatusResp) {}
+  rpc DisableTenant(ChangeTenantStatusReq) returns (ChangeTenantStatusResp) {}
+  rpc ArchiveTenant(ChangeTenantStatusReq) returns (ChangeTenantStatusResp) {}
+}
 
 // 添加用户信息
 message AddUserReq {
@@ -1253,6 +1503,9 @@ message AddUserReq {
   string create_by = 12; //创建者
   repeated int64 PostIds = 13; //岗位ids
   repeated int64 RoleIds = 14; //角色ids
+  GovernanceScope scope = 15; //主体范围
+  string activation_status = 16; //激活状态
+  string role_mode = 17; //角色模式
 }
 
 message AddUserResp {
@@ -1283,6 +1536,9 @@ message UpdateUserReq {
   string update_by = 12; //更新者
   repeated int64 PostIds = 13; //岗位ids
   repeated int64 RoleIds = 14; //角色ids
+  GovernanceScope scope = 15; //主体范围
+  string activation_status = 16; //激活状态
+  string role_mode = 17; //角色模式
 }
 
 message UpdateUserResp {
@@ -1328,6 +1584,9 @@ message QueryUserDetailResp {
   string update_time = 21; //更新时间
   repeated int64 PostIds = 22; //岗位ids
   repeated int64 RoleIds = 23; //角色ids
+  GovernanceScope scope = 24; //主体范围
+  string activation_status = 25; //激活状态
+  string role_mode = 26; //角色模式
 }
 
 // 分页查询用户信息列表
@@ -1349,6 +1608,7 @@ message QueryUserListReq {
   int32 del_flag = 15; //删除标志（0代表删除 1代表存在）
   int64 page_num = 16; //第几页
   int64 page_size = 17; //每页的数量
+  GovernanceScope scope = 18; //主体范围筛选
 }
 
 message UserListData {
@@ -1373,6 +1633,8 @@ message UserListData {
   string update_by = 20; //更新者
   string update_time = 21; //更新时间
   repeated int64 PostIds = 22; //岗位ids
+  GovernanceScope scope = 23; //主体范围
+  string activation_status = 24; //激活状态
 }
 
 message QueryUserListResp {
@@ -1464,7 +1726,7 @@ message QueryUserRoleListResp {
 }
 
 message QueryDeptAndPostListReq {
-
+  GovernanceScope scope = 1; //主体范围
 }
 
 message QueryDeptAndPostListResp {
@@ -1488,6 +1750,7 @@ message DeptData {
   string create_time = 13; //创建时间
   string update_by = 14; //更新者
   string update_time = 15; //更新时间
+  GovernanceScope scope = 16; //主体范围
 
 }
 
@@ -1502,6 +1765,7 @@ message PostData {
   string create_time = 8; //创建时间
   string update_by = 9; //更新者
   string update_time = 10; //更新时间
+  GovernanceScope scope = 11; //主体范围
 
 
 }

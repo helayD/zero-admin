@@ -6,7 +6,7 @@ import (
 
 	"github.com/feihua/zero-admin/pkg/errorx"
 	"github.com/feihua/zero-admin/pkg/time_util"
-	"github.com/feihua/zero-admin/rpc/sys/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/sys/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/sys/internal/svc"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -35,7 +35,12 @@ func NewQueryNoticeDetailLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 
 // QueryNoticeDetail 查询通知公告详情
 func (l *QueryNoticeDetailLogic) QueryNoticeDetail(in *sysclient.QueryNoticeDetailReq) (*sysclient.QueryNoticeDetailResp, error) {
-	item, err := query.SysNotice.WithContext(l.ctx).Where(query.SysNotice.ID.Eq(in.Id)).First()
+	var item logiccommon.ScopedNotice
+	err := l.svcCtx.DB.WithContext(l.ctx).
+		Table("sys_notice").
+		Select("id, notice_title, notice_type, notice_content, status, remark, create_by, create_time, update_by, update_time, platform_id, tenant_id, merchant_id").
+		Where("id = ?", in.Id).
+		Take(&item).Error
 
 	switch {
 	case errors.Is(err, gorm.ErrRecordNotFound):
@@ -46,6 +51,7 @@ func (l *QueryNoticeDetailLogic) QueryNoticeDetail(in *sysclient.QueryNoticeDeta
 		return nil, errorx.NewDefaultError("查询通知公告异常")
 	}
 
+	itemScope := logiccommon.DefaultScope(item.PlatformID, item.TenantID, item.MerchantID)
 	data := &sysclient.QueryNoticeDetailResp{
 		Id:            item.ID,                                 // 公告ID
 		NoticeTitle:   item.NoticeTitle,                        // 公告标题
@@ -57,7 +63,7 @@ func (l *QueryNoticeDetailLogic) QueryNoticeDetail(in *sysclient.QueryNoticeDeta
 		CreateTime:    time_util.TimeToStr(item.CreateTime),    // 创建时间
 		UpdateBy:      item.UpdateBy,                           // 更新者
 		UpdateTime:    time_util.TimeToString(item.UpdateTime), // 更新时间
-
+		Scope:         logiccommon.ProtoScope(itemScope),
 	}
 
 	return data, nil

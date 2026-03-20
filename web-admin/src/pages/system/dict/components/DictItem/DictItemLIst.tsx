@@ -1,21 +1,33 @@
-import {DeleteOutlined, EditOutlined, ExclamationCircleOutlined, PlusOutlined} from '@ant-design/icons';
-import {Button, Divider, Drawer, message, Modal, Select, Space, Switch, Tag} from 'antd';
-import React, {useEffect, useRef, useState} from 'react';
-import type {ActionType, ProColumns} from '@ant-design/pro-table';
+import {
+  DeleteOutlined,
+  EditOutlined,
+  ExclamationCircleOutlined,
+  PlusOutlined,
+} from '@ant-design/icons';
+import { Alert, Button, Divider, Drawer, message, Modal, Select, Space, Switch, Tag } from 'antd';
+import React, { useEffect, useRef, useState } from 'react';
+import type { ActionType, ProColumns } from '@ant-design/pro-table';
 import ProTable from '@ant-design/pro-table';
-import type {ProDescriptionsItemProps} from '@ant-design/pro-descriptions';
+import type { ProDescriptionsItemProps } from '@ant-design/pro-descriptions';
 import ProDescriptions from '@ant-design/pro-descriptions';
 import CreateDictForm from './AddItemModal';
 import UpdateDictForm from './UpdateItemModal';
-import type {DictItemListItem} from './data.d';
+import type { DictItemListItem } from './data.d';
 import {
   addDictItem,
   queryDictItemList,
   removeDictItem,
-  updateDictItem, updateDictItemStatus
-} from "@/pages/system/dict/components/DictItem/service";
+  updateDictItem,
+  updateDictItemStatus,
+} from '@/pages/system/dict/components/DictItem/service';
+import type { GovernanceScopeValue } from '../../../components/governance';
+import {
+  buildGovernanceScopeLabel,
+  governanceScopeColor,
+  toGovernancePayload,
+} from '../../../components/governance';
 
-const {confirm} = Modal;
+const { confirm } = Modal;
 
 /**
  * 添加节点
@@ -24,7 +36,7 @@ const {confirm} = Modal;
 const handleAdd = async (fields: DictItemListItem) => {
   const hide = message.loading('正在添加');
   try {
-    await addDictItem({...fields});
+    await addDictItem({ ...fields });
     hide();
     message.success('添加成功');
     return true;
@@ -85,7 +97,7 @@ const handleStatus = async (ids: number[], status: number) => {
     return true;
   }
   try {
-    await updateDictItemStatus({ids, status});
+    await updateDictItemStatus({ ids, status });
     hide();
     message.success('更新状态成功');
     return true;
@@ -97,7 +109,9 @@ const handleStatus = async (ids: number[], status: number) => {
 
 export interface DictListProps {
   dictType?: string;
+  dictTypeId?: number;
   dictItemModalVisible: boolean;
+  scope: GovernanceScopeValue;
 }
 
 const DictList: React.FC<DictListProps> = (props) => {
@@ -110,28 +124,29 @@ const DictList: React.FC<DictListProps> = (props) => {
   const showDeleteConfirm = (ids: number[]) => {
     confirm({
       title: '是否删除记录?',
-      icon: <ExclamationCircleOutlined/>,
+      icon: <ExclamationCircleOutlined />,
       content: '删除的记录不能恢复,请确认!',
       onOk() {
         handleRemove(ids).then(() => {
           actionRef.current?.reloadAndRest?.();
         });
       },
-      onCancel() {
-      },
+      onCancel() {},
     });
   };
 
   const showStatusConfirm = (item: DictItemListItem[], status: number) => {
     confirm({
-      title: `确定${status == 1 ? "启用" : "禁用"}字典数据吗？`,
-      icon: <ExclamationCircleOutlined/>,
+      title: `确定${status == 1 ? '启用' : '禁用'}字典数据吗？`,
+      icon: <ExclamationCircleOutlined />,
       async onOk() {
-        await handleStatus(item.map((x) => x.id), status)
+        await handleStatus(
+          item.map((x) => x.id),
+          status,
+        );
         actionRef.current?.reload?.();
       },
-      onCancel() {
-      },
+      onCancel() {},
     });
   };
 
@@ -142,53 +157,73 @@ const DictList: React.FC<DictListProps> = (props) => {
   }, [props.dictItemModalVisible]);
   //DictListItem
   const columns: ProColumns<DictItemListItem>[] = [
-      {
-        title: '字典编号',
-        dataIndex: 'id',
-        hideInSearch: true,
-      },
+    {
+      title: '字典编号',
+      dataIndex: 'id',
+      hideInSearch: true,
+    },
 
-      {
-        title: '字典标签',
-        dataIndex: 'dictLabel',
-        render: (dom, entity) => {
-          return <a onClick={() => {
-            setCurrentRow(entity);
-            setShowDetail(true);
-          }}>{dom}</a>;
-        },
+    {
+      title: '字典标签',
+      dataIndex: 'dictLabel',
+      render: (dom, entity) => {
+        return (
+          <a
+            onClick={() => {
+              setCurrentRow(entity);
+              setShowDetail(true);
+            }}
+          >
+            {dom}
+          </a>
+        );
       },
-      {
-        title: '字典键值',
-        dataIndex: 'dictValue',
-        hideInSearch: true,
-      },
+    },
+    {
+      title: '字典键值',
+      dataIndex: 'dictValue',
+      hideInSearch: true,
+    },
     {
       title: '显示排序',
       dataIndex: 'dictSort',
       hideInSearch: true,
     },
-      {
-        title: '状态',
-        dataIndex: 'status',
-        renderFormItem: (text, row, index) => {
-          return <Select
+    {
+      title: '状态',
+      dataIndex: 'status',
+      renderFormItem: (text, row, index) => {
+        return (
+          <Select
             value={row.value}
             options={[
-              {value: '1', label: '正常'},
-              {value: '0', label: '禁用'},
+              { value: '1', label: '正常' },
+              { value: '0', label: '禁用' },
             ]}
           />
-
-        },
-        render: (dom, entity) => {
-          return (
-            <Switch checked={entity.status == 1} onChange={(flag) => {
-              showStatusConfirm([entity], flag ? 1 : 0)
-            }}/>
-          );
-        },
+        );
       },
+      render: (dom, entity) => {
+        return (
+          <Switch
+            checked={entity.status == 1}
+            onChange={(flag) => {
+              showStatusConfirm([entity], flag ? 1 : 0);
+            }}
+          />
+        );
+      },
+    },
+    {
+      title: '治理范围',
+      dataIndex: 'scopeLabel',
+      hideInSearch: true,
+      render: (_, entity) => (
+        <Tag color={governanceScopeColor(entity.scopeType as any)}>
+          {entity.scopeLabel || buildGovernanceScopeLabel(entity)}
+        </Tag>
+      ),
+    },
     {
       title: '是否默认',
       dataIndex: 'isDefault',
@@ -199,78 +234,84 @@ const DictList: React.FC<DictListProps> = (props) => {
             return <Tag color={'success'}>是</Tag>;
           case 'N':
             return <Tag>否</Tag>;
+          default:
+            return <>未知{entity.isDefault}</>;
         }
-        return <>未知{entity.isDefault}</>;
       },
     },
-      {
-        title: '备注',
-        dataIndex: 'remark',
-        valueType: 'textarea',
-        hideInSearch: true,
-      },
-      {
-        title: '创建者',
-        dataIndex: 'createBy',
-        hideInSearch: true,
-        hideInTable: true
-      },
-      {
-        title: '创建时间',
-        dataIndex: 'createTime',
-        sorter: true,
-        valueType: 'dateTime',
-        hideInSearch: true,
-        hideInTable: true
-      },
-      {
-        title: '更新者',
-        dataIndex: 'updateBy',
-        hideInSearch: true,
-        hideInTable: true
-      },
-      {
-        title: '更新时间',
-        dataIndex: 'updateTime',
-        sorter: true,
-        valueType: 'dateTime',
-        hideInSearch: true,
-        hideInTable: true
-      },
-      {
-        title: '操作',
-        dataIndex: 'option',
-        valueType: 'option',
-        width: 220,
-        render: (_, record) => (
-          <>
-            <a
-              key="sort"
-              onClick={() => {
-                handleUpdateModalVisible(true);
-                setCurrentRow(record);
-              }}
-            >
-              <EditOutlined/> 编辑
-            </a>
-            <Divider type="vertical"/>
-            <a
-              key="delete"
-              style={{color: '#ff4d4f'}}
-              onClick={() => {
-                showDeleteConfirm([record.id]);
-              }}
-            >
-              <DeleteOutlined/> 删除
-            </a>
-          </>
-        ),
-      },
-    ]
-  ;
-
+    {
+      title: '备注',
+      dataIndex: 'remark',
+      valueType: 'textarea',
+      hideInSearch: true,
+    },
+    {
+      title: '创建者',
+      dataIndex: 'createBy',
+      hideInSearch: true,
+      hideInTable: true,
+    },
+    {
+      title: '创建时间',
+      dataIndex: 'createTime',
+      sorter: true,
+      valueType: 'dateTime',
+      hideInSearch: true,
+      hideInTable: true,
+    },
+    {
+      title: '更新者',
+      dataIndex: 'updateBy',
+      hideInSearch: true,
+      hideInTable: true,
+    },
+    {
+      title: '更新时间',
+      dataIndex: 'updateTime',
+      sorter: true,
+      valueType: 'dateTime',
+      hideInSearch: true,
+      hideInTable: true,
+    },
+    {
+      title: '操作',
+      dataIndex: 'option',
+      valueType: 'option',
+      width: 220,
+      render: (_, record) => (
+        <>
+          <a
+            key="sort"
+            onClick={() => {
+              handleUpdateModalVisible(true);
+              setCurrentRow(record);
+            }}
+          >
+            <EditOutlined /> 编辑
+          </a>
+          <Divider type="vertical" />
+          <a
+            key="delete"
+            style={{ color: '#ff4d4f' }}
+            onClick={() => {
+              showDeleteConfirm([record.id]);
+            }}
+          >
+            <DeleteOutlined /> 删除
+          </a>
+        </>
+      ),
+    },
+  ];
   return (
     <>
+      <Alert
+        showIcon
+        type="info"
+        style={{ marginBottom: 16 }}
+        message={`当前正在维护 ${buildGovernanceScopeLabel(props.scope)} 下的字典项`}
+        description="同一主体内的字典值会做唯一校验；若要做租户本地覆盖，请先回到上层切换主体。"
+      />
       <ProTable<DictItemListItem>
         headerTitle="字典管理"
         actionRef={actionRef}
@@ -280,42 +321,46 @@ const DictList: React.FC<DictListProps> = (props) => {
         }}
         toolBarRender={() => [
           <Button type="primary" key="primary" onClick={() => handleModalVisible(true)}>
-            <PlusOutlined/> 新建
+            <PlusOutlined /> 新建
           </Button>,
         ]}
         request={(params) => {
-          return queryDictItemList({...params, dictType: props.dictType})
+          return queryDictItemList({
+            ...params,
+            dictType: props.dictType,
+            dictTypeId: props.dictTypeId,
+            ...toGovernancePayload(props.scope),
+          });
         }}
         columns={columns}
         rowSelection={{}}
-        pagination={{pageSize: 10}}
-        tableAlertRender={({
-                             selectedRowKeys,
-                             selectedRows,
-                             onCleanSelected,
-                           }) => {
+        pagination={{ pageSize: 10 }}
+        tableAlertRender={({ selectedRowKeys, selectedRows, onCleanSelected }) => {
           const ids = selectedRows.map((row) => row.id);
           return (
             <Space size={16}>
               <span>已选 {selectedRowKeys.length} 项</span>
               <Button
-                icon={<DeleteOutlined/>}
+                icon={<DeleteOutlined />}
                 danger
-                style={{borderRadius: '5px'}}
+                style={{ borderRadius: '5px' }}
                 onClick={async () => {
                   showDeleteConfirm(ids);
                 }}
-              >批量删除</Button>
+              >
+                批量删除
+              </Button>
             </Space>
           );
         }}
       />
 
-
       <CreateDictForm
         key={'CreateDictForm'}
         onSubmit={async (value) => {
           value.dictType = props.dictType;
+          value.dictTypeId = props.dictTypeId;
+          Object.assign(value, toGovernancePayload(props.scope));
           const success = await handleAdd(value);
           if (success) {
             handleModalVisible(false);
@@ -338,6 +383,8 @@ const DictList: React.FC<DictListProps> = (props) => {
         key={'UpdateDictForm'}
         onSubmit={async (value) => {
           value.dictType = props.dictType;
+          value.dictTypeId = props.dictTypeId;
+          Object.assign(value, toGovernancePayload(props.scope));
           const success = await handleUpdate(value);
           if (success) {
             handleUpdateModalVisible(false);
@@ -362,14 +409,14 @@ const DictList: React.FC<DictListProps> = (props) => {
         visible={showDetail}
         onClose={() => {
           setCurrentRow(undefined);
-          setShowDetail(false)
+          setShowDetail(false);
         }}
         closable={false}
       >
         {currentRow?.id && (
           <ProDescriptions<DictItemListItem>
             column={2}
-            title={"字典详情"}
+            title={'字典详情'}
             request={async () => ({
               data: currentRow || {},
             })}
@@ -381,7 +428,6 @@ const DictList: React.FC<DictListProps> = (props) => {
         )}
       </Drawer>
     </>
-
   );
 };
 

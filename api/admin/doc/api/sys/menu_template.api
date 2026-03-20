@@ -1,0 +1,130 @@
+import "../base/base.api"
+
+info (
+	desc:   "菜单模板"
+	author: "liufeihua"
+	email:  "1002219331@qq.com"
+)
+
+type (
+	// 添加菜单模板请求参数
+	AddMenuTemplateReq {
+		Name       string  `json:"name"` //模板名称
+		ScopeType  string  `json:"scopeType"` //适用作用域类型（tenant:租户级 merchant:商户级）
+		PlatformId int64   `json:"platformId,optional,default=1"` //平台ID
+		Status     int32   `json:"status"` //状态(1:正常，0:禁用)
+		Remark     string  `json:"remark,optional"` //备注
+		MenuIds    []int64 `json:"menuIds"` //关联菜单ID列表
+	}
+	// 删除菜单模板请求参数
+	DeleteMenuTemplateReq {
+		Ids []int64 `form:"ids"`
+	}
+	// 更新菜单模板请求参数
+	UpdateMenuTemplateReq {
+		Id         int64   `json:"id"` //模板id
+		Name       string  `json:"name"` //模板名称
+		ScopeType  string  `json:"scopeType"` //适用作用域类型
+		PlatformId int64   `json:"platformId,optional,default=1"` //平台ID
+		Status     int32   `json:"status"` //状态(1:正常，0:禁用)
+		Remark     string  `json:"remark,optional"` //备注
+		MenuIds    []int64 `json:"menuIds"` //关联菜单ID列表
+	}
+	// 查询菜单模板详情请求参数
+	QueryMenuTemplateDetailReq {
+		Id int64 `form:"id"`
+	}
+	QueryMenuTemplateDetailData {
+		Id         int64   `json:"id"` //模板id
+		Name       string  `json:"name"` //模板名称
+		ScopeType  string  `json:"scopeType"` //适用作用域类型
+		PlatformId int64   `json:"platformId"` //平台ID
+		Status     int32   `json:"status"` //状态
+		Remark     string  `json:"remark"` //备注
+		CreateBy   string  `json:"createBy"` //创建者
+		CreateTime string  `json:"createTime"` //创建时间
+		UpdateBy   string  `json:"updateBy"` //更新者
+		UpdateTime string  `json:"updateTime"` //更新时间
+		MenuIds    []int64 `json:"menuIds"` //关联菜单ID列表
+	}
+	QueryMenuTemplateDetailResp {
+		Code    string                      `json:"code"`
+		Message string                      `json:"message"`
+		Data    QueryMenuTemplateDetailData `json:"data"`
+	}
+	// 分页查询菜单模板列表请求参数
+	QueryMenuTemplateListReq {
+		Current   int64  `form:"current,default=1"` //第几页
+		PageSize  int64  `form:"pageSize,default=20"` //每页的数量
+		Name      string `form:"name,optional"` //模板名称
+		ScopeType string `form:"scopeType,optional"` //适用作用域类型过滤
+		Status    int32  `form:"status,default=2"` //状态过滤
+	}
+	QueryMenuTemplateListData {
+		Id         int64  `json:"id"` //模板id
+		Name       string `json:"name"` //模板名称
+		ScopeType  string `json:"scopeType"` //适用作用域类型
+		PlatformId int64  `json:"platformId"` //平台ID
+		Status     int32  `json:"status"` //状态
+		Remark     string `json:"remark"` //备注
+		CreateBy   string `json:"createBy"` //创建者
+		CreateTime string `json:"createTime"` //创建时间
+		UpdateBy   string `json:"updateBy"` //更新者
+		UpdateTime string `json:"updateTime"` //更新时间
+		MenuCount  int32  `json:"menuCount"` //关联菜单数量
+	}
+	QueryMenuTemplateListResp {
+		Code     string                       `json:"code"`
+		Message  string                       `json:"message"`
+		Current  int64                        `json:"current,default=1"`
+		Data     []*QueryMenuTemplateListData `json:"data"`
+		PageSize int64                        `json:"pageSize,default=20"`
+		Success  bool                         `json:"success"`
+		Total    int64                        `json:"total"`
+	}
+	// 根据作用域查询可用菜单ID
+	QueryMenuIdsByScopeReq {
+		ScopeType  string `form:"scopeType"` //作用域类型
+		PlatformId int64  `form:"platformId,optional,default=1"` //平台ID
+	}
+	QueryMenuIdsByScopeResp {
+		Code    string  `json:"code"`
+		Message string  `json:"message"`
+		Data    []int64 `json:"data"` //该作用域下所有模板允许的菜单ID并集
+	}
+)
+
+@server (
+	jwt:        Auth
+	middleware: CheckUrl
+	group:      sys/menuTemplate
+	prefix:     /api/sys/menuTemplate
+	tags:       "菜单模板管理"
+	authType:   apiKey
+)
+service admin-api {
+	// 添加菜单模板
+	@handler AddMenuTemplate
+	post /addMenuTemplate (AddMenuTemplateReq) returns (BaseResp)
+
+	// 删除菜单模板
+	@handler DeleteMenuTemplate
+	get /deleteMenuTemplate (DeleteMenuTemplateReq) returns (BaseResp)
+
+	// 更新菜单模板
+	@handler UpdateMenuTemplate
+	post /updateMenuTemplate (UpdateMenuTemplateReq) returns (BaseResp)
+
+	// 查询菜单模板详情
+	@handler QueryMenuTemplateDetail
+	get /queryMenuTemplateDetail (QueryMenuTemplateDetailReq) returns (QueryMenuTemplateDetailResp)
+
+	// 分页查询菜单模板列表
+	@handler QueryMenuTemplateList
+	get /queryMenuTemplateList (QueryMenuTemplateListReq) returns (QueryMenuTemplateListResp)
+
+	// 根据作用域查询可用菜单ID
+	@handler QueryMenuIdsByScope
+	get /queryMenuIdsByScope (QueryMenuIdsByScopeReq) returns (QueryMenuIdsByScopeResp)
+}
+

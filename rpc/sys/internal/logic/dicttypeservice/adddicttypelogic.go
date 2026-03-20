@@ -4,13 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/feihua/zero-admin/rpc/sys/gen/model"
-	"github.com/feihua/zero-admin/rpc/sys/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/sys/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/sys/internal/svc"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
 	"github.com/zeromicro/go-zero/core/logc"
 
 	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
 )
 
 // AddDictTypeLogic 添加字典信息
@@ -37,10 +39,20 @@ func NewAddDictTypeLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AddDi
 // 2.查询字典类型是否已存在,如果字典类型已存在,则直接返回
 // 3.字典不存在时,则直接添加字典
 func (l *AddDictTypeLogic) AddDictType(in *sysclient.AddDictTypeReq) (*sysclient.AddDictTypeResp, error) {
-	q := query.SysDictType
+	currentScope, err := logiccommon.NormalizeProtoScope(in.Scope)
+	if err != nil {
+		return nil, err
+	}
+	if err = logiccommon.ValidateTenantWritable(l.ctx, l.svcCtx.DB, currentScope); err != nil {
+		return nil, err
+	}
+
+	scopeWhere, scopeArgs := logiccommon.ScopeFilterSQL("", currentScope)
+	db := l.svcCtx.DB.WithContext(l.ctx).Table("sys_dict_type")
 
 	// 1.查询字典名称是否已存在,如果字典名称已存在,则直接返回
-	count, err := q.WithContext(l.ctx).Where(q.DictName.Eq(in.DictName)).Count()
+	var count int64
+	err = db.Where(scopeWhere, scopeArgs...).Where("dict_name = ?", in.DictName).Count(&count).Error
 
 	if err != nil {
 		logc.Errorf(l.ctx, ".查询字典名称失败,参数：%+v,,异常:%s", in, err.Error())
@@ -52,7 +64,7 @@ func (l *AddDictTypeLogic) AddDictType(in *sysclient.AddDictTypeReq) (*sysclient
 	}
 
 	// 2.查询字典类型是否已存在,如果字典类型已存在,则直接返回
-	count, err = q.WithContext(l.ctx).Where(q.DictType.Eq(in.DictType)).Count()
+	err = db.Where(scopeWhere, scopeArgs...).Where("dict_type = ?", in.DictType).Count(&count).Error
 
 	if err != nil {
 		logc.Errorf(l.ctx, "查询字典类型失败,参数：%+v,异常:%s", in, err.Error())
@@ -70,7 +82,19 @@ func (l *AddDictTypeLogic) AddDictType(in *sysclient.AddDictTypeReq) (*sysclient
 		Remark:   in.Remark,   // 备注
 		CreateBy: in.CreateBy, // 创建者
 	}
-	err = q.WithContext(l.ctx).Create(dict)
+	err = l.svcCtx.DB.WithContext(l.ctx).Transaction(func(tx *gorm.DB) error {
+		if err = tx.Create(dict).Error; err != nil {
+			return err
+		}
+
+		return tx.Table("sys_dict_type").
+			Where("id = ?", dict.ID).
+			Updates(map[string]interface{}{
+				"platform_id": currentScope.PlatformID,
+				"tenant_id":   currentScope.TenantID,
+				"merchant_id": currentScope.MerchantID,
+			}).Error
+	})
 
 	if err != nil {
 		logc.Errorf(l.ctx, "添加字典信息失败,参数:%+v,异常:%s", dict, err.Error())

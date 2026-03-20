@@ -4,13 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/feihua/zero-admin/rpc/sys/gen/model"
-	"github.com/feihua/zero-admin/rpc/sys/gen/query"
+
+	logiccommon "github.com/feihua/zero-admin/rpc/sys/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/sys/internal/svc"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
 	"github.com/zeromicro/go-zero/core/logc"
 	"gorm.io/gorm"
-	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -40,10 +39,21 @@ func NewUpdatePostLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Update
 // 3.查询根据postCode是否被占用,如果被占用,则直接返回
 // 4.岗位存在时,则直接更新岗位
 func (l *UpdatePostLogic) UpdatePost(in *sysclient.UpdatePostReq) (*sysclient.UpdatePostResp, error) {
-	q := query.SysPost.WithContext(l.ctx)
+	currentScope, err := logiccommon.NormalizeProtoScope(in.Scope)
+	if err != nil {
+		return nil, err
+	}
+	if err = logiccommon.ValidateTenantWritable(l.ctx, l.svcCtx.DB, currentScope); err != nil {
+		return nil, err
+	}
 
 	// 1.判断岗位信息是否存在
-	post, err := q.Where(query.SysPost.ID.Eq(in.Id)).First()
+	var post logiccommon.ScopedPost
+	err = l.svcCtx.DB.WithContext(l.ctx).
+		Table("sys_post").
+		Select("id, post_code, post_name, sort, status, remark, create_by, create_time, update_by, update_time, platform_id, tenant_id, merchant_id").
+		Where("id = ?", in.Id).
+		Take(&post).Error
 
 	switch {
 	case errors.Is(err, gorm.ErrRecordNotFound):
@@ -53,10 +63,17 @@ func (l *UpdatePostLogic) UpdatePost(in *sysclient.UpdatePostReq) (*sysclient.Up
 		logc.Errorf(l.ctx, "查询岗位信息异常, 请求参数：%+v, 异常信息: %s", in, err.Error())
 		return nil, errors.New("查询岗位信息异常")
 	}
+	if err = logiccommon.EnsureScopeMatch(currentScope, post.PlatformID, post.TenantID, post.MerchantID, "不支持跨主体迁移岗位，请在目标主体下新建岗位"); err != nil {
+		return nil, err
+	}
+
+	scopeWhere, scopeArgs := logiccommon.ScopeFilterSQL("", currentScope)
+	db := l.svcCtx.DB.WithContext(l.ctx).Table("sys_post")
 
 	// 2.查询postName是否被占用,如果被占用,则直接返回
 	postName := in.PostName
-	count, err := q.Where(query.SysPost.PostName.Eq(postName), query.SysPost.ID.Neq(in.Id)).Count()
+	var count int64
+	err = db.Where(scopeWhere, scopeArgs...).Where("id <> ? AND post_name = ?", in.Id, postName).Count(&count).Error
 
 	if err != nil {
 		logc.Errorf(l.ctx, "根据岗位名称：%s,查询岗位信息,异常:%s", postName, err.Error())
@@ -69,7 +86,7 @@ func (l *UpdatePostLogic) UpdatePost(in *sysclient.UpdatePostReq) (*sysclient.Up
 
 	// 3.查询postCode是否被占用,如果被占用,则直接返回
 	postCode := in.PostCode
-	count, err = q.Where(query.SysPost.PostCode.Eq(postCode), query.SysPost.ID.Neq(in.Id)).Count()
+	err = db.Where(scopeWhere, scopeArgs...).Where("id <> ? AND post_code = ?", in.Id, postCode).Count(&count).Error
 
 	if err != nil {
 		logc.Errorf(l.ctx, "根据岗位编码：%s,查询岗位信息,异常:%s", postName, err.Error())
@@ -81,24 +98,23 @@ func (l *UpdatePostLogic) UpdatePost(in *sysclient.UpdatePostReq) (*sysclient.Up
 	}
 
 	// 4.岗位存在时,则直接更新岗位
-	now := time.Now()
-	var job = &model.SysPost{
-		ID:         in.Id,           // 岗位id
-		PostCode:   in.PostCode,     // 岗位编码
-		PostName:   in.PostName,     // 岗位名称
-		Sort:       in.Sort,         // 显示顺序
-		Status:     in.Status,       // 岗位状态（0：停用，1:正常）
-		Remark:     in.Remark,       // 备注信息
-		CreateBy:   post.CreateBy,   // 创建者
-		CreateTime: post.CreateTime, // 创建时间
-		UpdateBy:   in.UpdateBy,     // 更新者
-		UpdateTime: &now,            // 更新时间
-	}
-
-	err = l.svcCtx.DB.Model(&model.SysPost{}).WithContext(l.ctx).Where(query.SysPost.ID.Eq(in.Id)).Save(job).Error
+	err = l.svcCtx.DB.WithContext(l.ctx).
+		Table("sys_post").
+		Where("id = ?", in.Id).
+		Updates(map[string]interface{}{
+			"post_code":   in.PostCode,
+			"post_name":   in.PostName,
+			"sort":        in.Sort,
+			"status":      in.Status,
+			"remark":      in.Remark,
+			"update_by":   in.UpdateBy,
+			"platform_id": currentScope.PlatformID,
+			"tenant_id":   currentScope.TenantID,
+			"merchant_id": currentScope.MerchantID,
+		}).Error
 
 	if err != nil {
-		logc.Errorf(l.ctx, "更新岗位信息失败,参数:%+v,异常:%s", job, err.Error())
+		logc.Errorf(l.ctx, "更新岗位信息失败,参数:%+v,异常:%s", in, err.Error())
 		return nil, errors.New("更新岗位信息失败")
 	}
 

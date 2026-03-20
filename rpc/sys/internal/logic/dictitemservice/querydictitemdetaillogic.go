@@ -3,9 +3,10 @@ package dictitemservicelogic
 import (
 	"context"
 	"errors"
+
 	"github.com/bytedance/sonic"
 	"github.com/feihua/zero-admin/pkg/time_util"
-	"github.com/feihua/zero-admin/rpc/sys/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/sys/internal/logic/common"
 	"github.com/zeromicro/go-zero/core/logc"
 	"gorm.io/gorm"
 	"strconv"
@@ -43,10 +44,15 @@ func (l *QueryDictItemDetailLogic) QueryDictItemDetail(in *sysclient.QueryDictIt
 	cachedData, _ := l.svcCtx.Redis.HgetCtx(l.ctx, key, idStr)
 
 	var cached sysclient.QueryDictItemDetailResp
-	if sonic.Unmarshal([]byte(cachedData), &cached) == nil {
+	if sonic.Unmarshal([]byte(cachedData), &cached) == nil && cached.Scope != nil {
 		return &cached, nil
 	}
-	item, err := query.SysDictItem.WithContext(l.ctx).Where(query.SysDictItem.ID.Eq(in.Id)).First()
+	var item logiccommon.ScopedDictItem
+	err := l.svcCtx.DB.WithContext(l.ctx).
+		Table("sys_dict_item").
+		Select("id, dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, remark, create_by, create_time, update_by, update_time, dict_type_id, platform_id, tenant_id, merchant_id").
+		Where("id = ?", in.Id).
+		Take(&item).Error
 
 	// 1.判断字典数据是否存在
 	switch {
@@ -58,6 +64,7 @@ func (l *QueryDictItemDetailLogic) QueryDictItemDetail(in *sysclient.QueryDictIt
 		return nil, errors.New("查询字典数据异常")
 	}
 
+	itemScope := logiccommon.DefaultScope(item.PlatformID, item.TenantID, item.MerchantID)
 	data := &sysclient.QueryDictItemDetailResp{
 		Id:         item.ID,                                 // 字典数据id
 		DictSort:   item.DictSort,                           // 字典排序
@@ -73,6 +80,8 @@ func (l *QueryDictItemDetailLogic) QueryDictItemDetail(in *sysclient.QueryDictIt
 		CreateTime: time_util.TimeToStr(item.CreateTime),    // 创建时间
 		UpdateBy:   item.UpdateBy,                           // 更新者
 		UpdateTime: time_util.TimeToString(item.UpdateTime), // 更新时间
+		DictTypeId: item.DictTypeID,
+		Scope:      logiccommon.ProtoScope(itemScope),
 	}
 
 	value, _ := sonic.Marshal(data)

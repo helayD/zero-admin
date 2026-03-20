@@ -17,6 +17,8 @@ message AddDictItemReq {
   int32 status = 9; //状态（0：停用，1:正常）
   string remark = 10; //备注
   string create_by = 11; //创建者
+  int64 dict_type_id = 12; //字典类型ID
+  GovernanceScope scope = 13; //主体范围
 }
 
 message AddDictItemResp {
@@ -45,6 +47,8 @@ message UpdateDictItemReq {
   int32 status = 9; //状态（0：停用，1:正常）
   string remark = 10; //备注
   string update_by = 13; //更新者
+  int64 dict_type_id = 14; //字典类型ID
+  GovernanceScope scope = 15; //主体范围
 }
 
 message UpdateDictItemResp {
@@ -82,6 +86,8 @@ message QueryDictItemDetailResp {
   string create_time = 12; //创建时间
   string update_by = 13; //更新者
   string update_time = 14; //更新时间
+  int64 dict_type_id = 15; //字典类型ID
+  GovernanceScope scope = 16; //主体范围
 
 }
 
@@ -92,6 +98,8 @@ message QueryDictItemListReq {
   int32 status = 3; //状态（0：停用，1:正常）
   int64 page_num = 4; //第几页
   int64 page_size = 59; //每页的数量
+  int64 dict_type_id = 60; //字典类型ID
+  GovernanceScope scope = 61; //主体范围筛选
 }
 
 message DictItemListData {
@@ -109,6 +117,8 @@ message DictItemListData {
   string create_time = 12; //创建时间
   string update_by = 13; //更新者
   string update_time = 14; //更新时间
+  int64 dict_type_id = 15; //字典类型ID
+  GovernanceScope scope = 16; //主体范围
 
 }
 

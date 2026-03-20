@@ -3,8 +3,9 @@ package postservicelogic
 import (
 	"context"
 	"errors"
+
 	"github.com/feihua/zero-admin/pkg/time_util"
-	"github.com/feihua/zero-admin/rpc/sys/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/sys/internal/logic/common"
 	"github.com/zeromicro/go-zero/core/logc"
 	"gorm.io/gorm"
 
@@ -36,7 +37,12 @@ func NewQueryPostDetailLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Q
 // QueryPostDetail 查询岗位管理详情
 // 1.判断岗位信息是否存在
 func (l *QueryPostDetailLogic) QueryPostDetail(in *sysclient.QueryPostDetailReq) (*sysclient.QueryPostDetailResp, error) {
-	post, err := query.SysPost.WithContext(l.ctx).Where(query.SysPost.ID.Eq(in.Id)).First()
+	var post logiccommon.ScopedPost
+	err := l.svcCtx.DB.WithContext(l.ctx).
+		Table("sys_post").
+		Select("id, post_code, post_name, sort, status, remark, create_by, create_time, update_by, update_time, platform_id, tenant_id, merchant_id").
+		Where("id = ?", in.Id).
+		Take(&post).Error
 
 	// 1.判断岗位信息是否存在
 	switch {
@@ -48,6 +54,7 @@ func (l *QueryPostDetailLogic) QueryPostDetail(in *sysclient.QueryPostDetailReq)
 		return nil, errors.New("查询岗位信息异常")
 	}
 
+	postScope := logiccommon.DefaultScope(post.PlatformID, post.TenantID, post.MerchantID)
 	data := &sysclient.QueryPostDetailResp{
 		Id:         post.ID,                                 // 岗位id
 		PostCode:   post.PostCode,                           // 岗位编码
@@ -59,6 +66,7 @@ func (l *QueryPostDetailLogic) QueryPostDetail(in *sysclient.QueryPostDetailReq)
 		CreateTime: time_util.TimeToStr(post.CreateTime),    // 创建时间
 		UpdateBy:   post.UpdateBy,                           // 更新者
 		UpdateTime: time_util.TimeToString(post.UpdateTime), // 更新时间
+		Scope:      logiccommon.ProtoScope(postScope),
 	}
 
 	return data, nil

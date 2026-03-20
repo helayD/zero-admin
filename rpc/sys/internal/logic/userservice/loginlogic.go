@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/rpc/sys/gen/model"
 	"github.com/feihua/zero-admin/rpc/sys/gen/query"
 	"github.com/feihua/zero-admin/rpc/sys/internal/logic/common"
@@ -83,8 +84,13 @@ func (l *LoginLogic) Login(in *sysclient.LoginReq) (*sysclient.LoginResp, error)
 		return nil, errors.New("查询部门异常")
 	}
 
+	defaultScope, scopeErr := common.QueryUserDefaultScope(l.ctx, l.svcCtx.DB, user.ID)
+	if scopeErr != nil {
+		defaultScope = common.DefaultScope(0, 0, 0)
+	}
+
 	// 5.生成token
-	jwtToken, err := l.createToken(user.ID, user.DeptID, user.UserName, dept.DeptName)
+	jwtToken, err := l.createToken(user.ID, user.DeptID, user.UserName, dept.DeptName, defaultScope)
 
 	if err != nil {
 		l.savaLoginLog(in, 0, fmt.Sprintf("生成token失败: %+v", in))
@@ -155,18 +161,22 @@ func (l *LoginLogic) savaLoginLog(in *sysclient.LoginReq, status int32, errorMsg
 }
 
 // 生成jwt的token
-func (l *LoginLogic) createToken(userId, deptID int64, userName, deptName string) (string, error) {
+func (l *LoginLogic) createToken(userId, deptID int64, userName, deptName string, currentScope scope.GovernanceScope) (string, error) {
 	now := time.Now().Unix()                         // 当前时间
 	accessExpire := l.svcCtx.Config.JWT.AccessExpire // token过期时间
 	accessSecret := l.svcCtx.Config.JWT.AccessSecret // token密钥
 
 	claims := make(jwt.MapClaims)
-	claims["exp"] = now + accessExpire       // 过期时间
-	claims["iat"] = now                      // 签发时间
-	claims["userId"] = userId                // 用户id
-	claims["userName"] = userName            // 用户名
-	claims["deptID"] = deptID                // 部门id
-	claims["deptName"] = deptName            // 部门名称
+	claims["exp"] = now + accessExpire // 过期时间
+	claims["iat"] = now                // 签发时间
+	claims["userId"] = userId          // 用户id
+	claims["userName"] = userName      // 用户名
+	claims["deptID"] = deptID          // 部门id
+	claims["deptName"] = deptName      // 部门名称
+	claims["scopeType"] = currentScope.ScopeType
+	claims["platformId"] = currentScope.PlatformID
+	claims["tenantId"] = currentScope.TenantID
+	claims["merchantId"] = currentScope.MerchantID
 	token := jwt.New(jwt.SigningMethodHS256) // 创建token
 	token.Claims = claims                    // 设置claims
 	return token.SignedString([]byte(accessSecret))

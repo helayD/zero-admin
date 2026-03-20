@@ -1,8 +1,19 @@
 export interface PostListItem {
   id: number;
-  status: number;
-
-
+  postCode?: string;
+  postName?: string;
+  sort?: number;
+  status?: number;
+  remark?: string;
+  createBy?: string;
+  createTime?: string;
+  updateBy?: string;
+  updateTime?: string;
+  scopeType?: string;
+  scopeLabel?: string;
+  platformId?: number;
+  tenantId?: number;
+  merchantId?: number;
 }
 
 export interface PostListPagination {
@@ -19,6 +30,10 @@ export interface PostListData {
 export interface PostListParams {
 
   delFlag?: number;
+  scopeType?: string;
+  platformId?: number;
+  tenantId?: number;
+  merchantId?: number;
   pageSize?: number;
   current?: number;
   filter?: { [key: string]: any[] };

@@ -9,10 +9,14 @@ info (
 type (
 	// 添加字典类型请求参数
 	AddDictTypeReq {
-		DictName string `json:"dictName"` //字典名称
-		DictType string `json:"dictType"` //字典类型
-		Status   int32  `json:"status"` //状态（0：停用，1:正常）
-		Remark   string `json:"remark,optional"` //备注
+		DictName   string `json:"dictName"` //字典名称
+		DictType   string `json:"dictType"` //字典类型
+		Status     int32  `json:"status"` //状态（0：停用，1:正常）
+		Remark     string `json:"remark,optional"` //备注
+		ScopeType  string `json:"scopeType"` //主体范围(platform/tenant/merchant)
+		PlatformId int64  `json:"platformId,optional"` //平台ID
+		TenantId   int64  `json:"tenantId,optional"` //租户ID
+		MerchantId int64  `json:"merchantId,optional"` //商户ID
 	}
 	// 删除字典类型请求参数
 	DeleteDictTypeReq {
@@ -20,11 +24,15 @@ type (
 	}
 	// 更新字典类型请求参数
 	UpdateDictTypeReq {
-		Id       int64  `json:"id"` //字典id
-		DictName string `json:"dictName"` //字典名称
-		DictType string `json:"dictType"` //字典类型
-		Status   int32  `json:"status"` //状态（0：停用，1:正常）
-		Remark   string `json:"remark,optional"` //备注
+		Id         int64  `json:"id"` //字典id
+		DictName   string `json:"dictName"` //字典名称
+		DictType   string `json:"dictType"` //字典类型
+		Status     int32  `json:"status"` //状态（0：停用，1:正常）
+		Remark     string `json:"remark,optional"` //备注
+		ScopeType  string `json:"scopeType"` //主体范围(platform/tenant/merchant)
+		PlatformId int64  `json:"platformId,optional"` //平台ID
+		TenantId   int64  `json:"tenantId,optional"` //租户ID
+		MerchantId int64  `json:"merchantId,optional"` //商户ID
 	}
 	// 更新字典类型状态请求参数
 	UpdateDictTypeStatusReq {
@@ -45,6 +53,11 @@ type (
 		CreateTime string `json:"createTime"` //创建时间
 		UpdateBy   string `json:"updateBy"` //更新者
 		UpdateTime string `json:"updateTime"` //更新时间
+		ScopeType  string `json:"scopeType"` //主体范围
+		ScopeLabel string `json:"scopeLabel"` //主体范围标签
+		PlatformId int64  `json:"platformId"` //平台ID
+		TenantId   int64  `json:"tenantId"` //租户ID
+		MerchantId int64  `json:"merchantId"` //商户ID
 	}
 	QueryDictTypeDetailResp {
 		Code    string                  `json:"code"`
@@ -53,11 +66,15 @@ type (
 	}
 	// 分页查询字典类型列表请求参数
 	QueryDictTypeListReq {
-		Current  int64  `form:"current,default=1"` //第几页
-		PageSize int64  `form:"pageSize,default=20"` //每页的数量
-		DictName string `form:"dictName,optional"` //字典名称
-		DictType string `form:"dictType,optional"` //字典类型
-		Status   int32  `form:"status,default=2"` //状态（0：停用，1:正常）
+		Current    int64  `form:"current,default=1"` //第几页
+		PageSize   int64  `form:"pageSize,default=20"` //每页的数量
+		DictName   string `form:"dictName,optional"` //字典名称
+		DictType   string `form:"dictType,optional"` //字典类型
+		Status     int32  `form:"status,default=2"` //状态（0：停用，1:正常）
+		ScopeType  string `form:"scopeType,optional"` //主体范围(platform/tenant/merchant)
+		PlatformId int64  `form:"platformId,optional"` //平台ID
+		TenantId   int64  `form:"tenantId,optional"` //租户ID
+		MerchantId int64  `form:"merchantId,optional"` //商户ID
 	}
 	QueryDictTypeListData {
 		Id         int64  `json:"id"` //字典id
@@ -69,6 +86,11 @@ type (
 		CreateTime string `json:"createTime"` //创建时间
 		UpdateBy   string `json:"updateBy"` //更新者
 		UpdateTime string `json:"updateTime"` //更新时间
+		ScopeType  string `json:"scopeType"` //主体范围
+		ScopeLabel string `json:"scopeLabel"` //主体范围标签
+		PlatformId int64  `json:"platformId"` //平台ID
+		TenantId   int64  `json:"tenantId"` //租户ID
+		MerchantId int64  `json:"merchantId"` //商户ID
 	}
 	QueryDictTypeListResp {
 		Code     string                   `json:"code"`

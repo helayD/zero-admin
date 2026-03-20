@@ -3,7 +3,7 @@ package userservicelogic
 import (
 	"context"
 	"github.com/feihua/zero-admin/pkg/time_util"
-	"github.com/feihua/zero-admin/rpc/sys/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/sys/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/sys/internal/svc"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -32,9 +32,19 @@ func NewQueryDeptAndPostListLogic(ctx context.Context, svcCtx *svc.ServiceContex
 // 1.查询所有部门
 // 2.查询所有岗位
 func (l *QueryDeptAndPostListLogic) QueryDeptAndPostList(in *sysclient.QueryDeptAndPostListReq) (*sysclient.QueryDeptAndPostListResp, error) {
+	currentScope, err := logiccommon.NormalizeProtoScope(in.Scope)
+	if err != nil {
+		return nil, err
+	}
+	scopeWhere, scopeArgs := logiccommon.ScopeFilterSQL("", currentScope)
 
 	// 1.查询所有部门
-	deptList, _ := query.SysDept.WithContext(l.ctx).Find()
+	var deptList []logiccommon.ScopedDept
+	_ = l.svcCtx.DB.WithContext(l.ctx).
+		Table("sys_dept").
+		Select("id, parent_id, ancestors, dept_name, sort, leader, phone, email, status, del_flag, remark, create_by, create_time, update_by, update_time, platform_id, tenant_id, merchant_id").
+		Where(scopeWhere, scopeArgs...).
+		Find(&deptList).Error
 	var deptListData = make([]*sysclient.DeptData, 0, len(deptList))
 
 	for _, dept := range deptList {
@@ -54,11 +64,17 @@ func (l *QueryDeptAndPostListLogic) QueryDeptAndPostList(in *sysclient.QueryDept
 			CreateTime: time_util.TimeToStr(dept.CreateTime),    // 创建时间
 			UpdateBy:   dept.UpdateBy,                           // 更新者
 			UpdateTime: time_util.TimeToString(dept.UpdateTime), // 更新时间
+			Scope:      logiccommon.ProtoScope(logiccommon.DefaultScope(dept.PlatformID, dept.TenantID, dept.MerchantID)),
 		})
 	}
 
 	// 2.查询所有岗位
-	postList, _ := query.SysPost.WithContext(l.ctx).Find()
+	var postList []logiccommon.ScopedPost
+	_ = l.svcCtx.DB.WithContext(l.ctx).
+		Table("sys_post").
+		Select("id, post_code, post_name, sort, status, remark, create_by, create_time, update_by, update_time, platform_id, tenant_id, merchant_id").
+		Where(scopeWhere, scopeArgs...).
+		Find(&postList).Error
 	var postListData = make([]*sysclient.PostData, 0, len(postList))
 
 	for _, post := range postList {
@@ -73,6 +89,7 @@ func (l *QueryDeptAndPostListLogic) QueryDeptAndPostList(in *sysclient.QueryDept
 			CreateTime: time_util.TimeToStr(post.CreateTime),    // 创建时间
 			UpdateBy:   post.UpdateBy,                           // 更新者
 			UpdateTime: time_util.TimeToString(post.UpdateTime), // 更新时间
+			Scope:      logiccommon.ProtoScope(logiccommon.DefaultScope(post.PlatformID, post.TenantID, post.MerchantID)),
 		})
 	}
 

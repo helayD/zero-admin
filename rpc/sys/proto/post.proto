@@ -13,6 +13,7 @@ message AddPostReq {
   int32 status = 5; //岗位状态（0：停用，1:正常）
   string remark = 6; //备注
   string create_by = 7; //创建者
+  GovernanceScope scope = 8; //主体范围
 }
 
 message AddPostResp {
@@ -37,6 +38,7 @@ message UpdatePostReq {
   int32 status = 5; //岗位状态（0：停用，1:正常）
   string remark = 6; //备注
   string update_by = 9; //更新者
+  GovernanceScope scope = 10; //主体范围
 }
 
 message UpdatePostResp {
@@ -70,6 +72,7 @@ message QueryPostDetailResp {
   string create_time = 8; //创建时间
   string update_by = 9; //更新者
   string update_time = 10; //更新时间
+  GovernanceScope scope = 11; //主体范围
 
 }
 
@@ -80,6 +83,7 @@ message QueryPostListReq {
   int32 status = 3; //岗位状态（0：停用，1:正常）
   int64 page_num = 4; //第几页
   int64 page_size = 5; //每页的数量
+  GovernanceScope scope = 6; //主体范围筛选
 }
 
 message PostListData {
@@ -93,6 +97,7 @@ message PostListData {
   string create_time = 8; //创建时间
   string update_by = 9; //更新者
   string update_time = 10; //更新时间
+  GovernanceScope scope = 11; //主体范围
 
 }
 

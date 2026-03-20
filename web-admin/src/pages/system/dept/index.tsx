@@ -1,26 +1,40 @@
-import {PlusOutlined, ExclamationCircleOutlined, EditOutlined, DeleteOutlined} from '@ant-design/icons';
-import {Button, Divider, message, Drawer, Modal, Switch} from 'antd';
-import React, {useState, useRef} from 'react';
-import {PageContainer, FooterToolbar} from '@ant-design/pro-layout';
+import {
+  PlusOutlined,
+  ExclamationCircleOutlined,
+  EditOutlined,
+  DeleteOutlined,
+} from '@ant-design/icons';
+import { Alert, Button, Divider, message, Drawer, Modal, Switch, Tag } from 'antd';
+import React, { useState, useRef } from 'react';
+import { PageContainer, FooterToolbar } from '@ant-design/pro-layout';
 import ProTable from '@ant-design/pro-table';
-import type {ProColumns, ActionType} from '@ant-design/pro-table';
-import ProDescriptions, {ProDescriptionsItemProps} from '@ant-design/pro-descriptions';
+import type { ProColumns, ActionType } from '@ant-design/pro-table';
+import type { ProDescriptionsItemProps } from '@ant-design/pro-descriptions';
+import ProDescriptions from '@ant-design/pro-descriptions';
 import AddModal from './components/AddModal';
 import UpdateModal from './components/UpdateModal';
-import type {DeptListItem} from './data.d';
-import {queryDeptList, updateDept, addDept, removeDept, updateDeptStatus} from './service';
-import {tree} from '@/utils/utils';
+import type { DeptListItem } from './data.d';
+import { queryDeptList, updateDept, addDept, removeDept, updateDeptStatus } from './service';
+import { tree } from '@/utils/utils';
+import GovernanceScopeBar from '../components/GovernanceScopeBar';
+import {
+  buildGovernanceScopeLabel,
+  defaultGovernanceScope,
+  governanceScopeColor,
+  type GovernanceScopeValue,
+  toGovernancePayload,
+} from '../components/governance';
 
-const {confirm} = Modal;
+const { confirm } = Modal;
 
 /**
  * 添加节点
  * @param fields
  */
-const handleAdd = async (fields: DeptListItem) => {
+const handleAdd = async (fields: DeptListItem, scope: GovernanceScopeValue) => {
   const hide = message.loading('正在添加');
   try {
-    await addDept({...fields});
+    await addDept({ ...fields, ...toGovernancePayload(scope) });
     hide();
     message.success('添加成功');
     return true;
@@ -34,10 +48,10 @@ const handleAdd = async (fields: DeptListItem) => {
  * 更新节点
  * @param fields
  */
-const handleUpdate = async (fields: DeptListItem) => {
+const handleUpdate = async (fields: DeptListItem, scope: GovernanceScopeValue) => {
   const hide = message.loading('正在更新');
   try {
-    await updateDept(fields);
+    await updateDept({ ...fields, ...toGovernancePayload(scope) });
     hide();
 
     message.success('更新成功');
@@ -47,7 +61,6 @@ const handleUpdate = async (fields: DeptListItem) => {
     return false;
   }
 };
-
 
 /**
  *  删除节点
@@ -75,7 +88,7 @@ const handleRemove = async (selectedRows: DeptListItem[]) => {
 const handleStatus = async (id: number, status: number) => {
   const hide = message.loading('正在更新状态');
   try {
-    await updateDeptStatus({id, status});
+    await updateDeptStatus({ id, status });
     hide();
     message.success('更新状态成功');
     return true;
@@ -92,32 +105,31 @@ const DeptList: React.FC = () => {
   const actionRef = useRef<ActionType>();
   const [currentRow, setCurrentRow] = useState<DeptListItem>();
   const [selectedRowsState, setSelectedRows] = useState<DeptListItem[]>([]);
+  const [scope, setScope] = useState<GovernanceScopeValue>(defaultGovernanceScope);
 
   const showDeleteConfirm = (item: DeptListItem) => {
     confirm({
       title: '是否删除记录?',
-      icon: <ExclamationCircleOutlined/>,
+      icon: <ExclamationCircleOutlined />,
       content: '删除的记录不能恢复,请确认!',
       onOk() {
         handleRemove([item]).then(() => {
           actionRef.current?.reloadAndRest?.();
         });
       },
-      onCancel() {
-      },
+      onCancel() {},
     });
   };
 
   const showStatusConfirm = (item: DeptListItem, status: number) => {
     confirm({
-      title: `确定${status == 1 ? "启用" : "禁用"}部门吗？`,
-      icon: <ExclamationCircleOutlined/>,
+      title: `确定${status == 1 ? '启用' : '禁用'}部门吗？`,
+      icon: <ExclamationCircleOutlined />,
       async onOk() {
-        await handleStatus(item.id, status)
+        await handleStatus(item.id, status);
         actionRef.current?.reload?.();
       },
-      onCancel() {
-      },
+      onCancel() {},
     });
   };
 
@@ -131,11 +143,27 @@ const DeptList: React.FC = () => {
       title: '部门名称',
       dataIndex: 'deptName',
       render: (dom, entity) => {
-        return <a onClick={() => {
-          setCurrentRow(entity);
-          setShowDetail(true);
-        }}>{dom}</a>;
+        return (
+          <a
+            onClick={() => {
+              setCurrentRow(entity);
+              setShowDetail(true);
+            }}
+          >
+            {dom}
+          </a>
+        );
       },
+    },
+    {
+      title: '治理范围',
+      dataIndex: 'scopeLabel',
+      hideInSearch: true,
+      render: (_, entity) => (
+        <Tag color={governanceScopeColor(entity.scopeType as any)}>
+          {entity.scopeLabel || buildGovernanceScopeLabel(entity)}
+        </Tag>
+      ),
     },
     {
       title: '部门排序',
@@ -148,9 +176,12 @@ const DeptList: React.FC = () => {
       dataIndex: 'status',
       render: (dom, entity) => {
         return (
-          <Switch checked={entity.status == 1} onChange={(flag) => {
-            showStatusConfirm(entity, flag ? 1 : 0)
-          }}/>
+          <Switch
+            checked={entity.status == 1}
+            onChange={(flag) => {
+              showStatusConfirm(entity, flag ? 1 : 0);
+            }}
+          />
         );
       },
     },
@@ -158,50 +189,50 @@ const DeptList: React.FC = () => {
       title: '邮箱',
       dataIndex: 'email',
       hideInSearch: true,
-      hideInTable: true
+      hideInTable: true,
     },
     {
       title: '负责人',
       dataIndex: 'leader',
       hideInSearch: true,
-      hideInTable: true
+      hideInTable: true,
     },
     {
       title: '联系电话',
       dataIndex: 'phone',
       hideInSearch: true,
-      hideInTable: true
+      hideInTable: true,
     },
     {
       title: '备注',
       dataIndex: 'remark',
       hideInSearch: true,
-      hideInTable: true
+      hideInTable: true,
     },
     {
       title: '创建者',
       dataIndex: 'createBy',
       hideInSearch: true,
-      hideInTable: true
+      hideInTable: true,
     },
     {
       title: '创建时间',
       dataIndex: 'createTime',
       valueType: 'dateTime',
-      hideInSearch: true
+      hideInSearch: true,
     },
     {
       title: '更新者',
       dataIndex: 'updateBy',
       hideInSearch: true,
-      hideInTable: true
+      hideInTable: true,
     },
     {
       title: '更新时间',
       dataIndex: 'updateTime',
       valueType: 'dateTime',
       hideInSearch: true,
-      hideInTable: true
+      hideInTable: true,
     },
     {
       title: '操作',
@@ -217,19 +248,18 @@ const DeptList: React.FC = () => {
               setCurrentRow(record);
             }}
           >
-            <EditOutlined/> 编辑
+            <EditOutlined /> 编辑
           </a>
-          <Divider type="vertical"/>
+          <Divider type="vertical" />
           <a
             key="delete"
-            style={{color: '#ff4d4f'}}
+            style={{ color: '#ff4d4f' }}
             onClick={() => {
               showDeleteConfirm(record);
             }}
           >
-            <DeleteOutlined/> 删除
+            <DeleteOutlined /> 删除
           </a>
-
         </>
       ),
     },
@@ -237,6 +267,22 @@ const DeptList: React.FC = () => {
 
   return (
     <PageContainer>
+      <GovernanceScopeBar
+        value={scope}
+        onChange={(nextScope) => {
+          setScope(nextScope);
+          actionRef.current?.reload?.();
+        }}
+        entityLabel="组织树和部门元数据"
+        style={{ marginBottom: 16 }}
+      />
+      <Alert
+        showIcon
+        type="info"
+        style={{ marginBottom: 16 }}
+        message={`Consequence Preview · 当前维护 ${buildGovernanceScopeLabel(scope)} 的组织结构`}
+        description="部门树会被后台用户、岗位和后续数据授权直接引用。若当前主体不对，请先切换，再新增或调整上级关系。"
+      />
       <ProTable<DeptListItem>
         headerTitle="部门管理"
         actionRef={actionRef}
@@ -244,10 +290,10 @@ const DeptList: React.FC = () => {
         search={false}
         toolBarRender={() => [
           <Button type="primary" key="primary" onClick={() => handleModalVisible(true)}>
-            <PlusOutlined/> 新建
+            <PlusOutlined /> 新建
           </Button>,
         ]}
-        request={queryDeptList}
+        request={(params) => queryDeptList({ ...params, ...toGovernancePayload(scope) })}
         columns={columns}
         rowSelection={{
           onChange: (_, selectedRows) => setSelectedRows(selectedRows),
@@ -259,7 +305,7 @@ const DeptList: React.FC = () => {
         <FooterToolbar
           extra={
             <div>
-              已选择 <a style={{fontWeight: 600}}>{selectedRowsState.length}</a> 项&nbsp;&nbsp;
+              已选择 <a style={{ fontWeight: 600 }}>{selectedRowsState.length}</a> 项&nbsp;&nbsp;
             </div>
           }
         >
@@ -278,7 +324,7 @@ const DeptList: React.FC = () => {
       <AddModal
         key={'CreateDeptForm'}
         onSubmit={async (value) => {
-          const success = await handleAdd(value);
+          const success = await handleAdd(value, scope);
           if (success) {
             handleModalVisible(false);
             setCurrentRow(undefined);
@@ -300,7 +346,7 @@ const DeptList: React.FC = () => {
       <UpdateModal
         key={'UpdateDeptForm'}
         onSubmit={async (value) => {
-          const success = await handleUpdate(value);
+          const success = await handleUpdate(value, scope);
           if (success) {
             handleUpdateModalVisible(false);
             setCurrentRow(undefined);
@@ -324,14 +370,14 @@ const DeptList: React.FC = () => {
         visible={showDetail}
         onClose={() => {
           setCurrentRow(undefined);
-          setShowDetail(false)
+          setShowDetail(false);
         }}
         closable={false}
       >
         {currentRow?.id && (
           <ProDescriptions<DeptListItem>
             column={2}
-            title={"部门详情"}
+            title={'部门详情'}
             request={async () => ({
               data: currentRow || {},
             })}

@@ -40,6 +40,11 @@ func (l *UpdateNoticeLogic) UpdateNotice(req *types.UpdateNoticeReq) (resp *type
 	if err != nil {
 		return nil, err
 	}
+	scopeReq, err := common.BuildGovernanceScope(req.ScopeType, req.PlatformId, req.TenantId, req.MerchantId)
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
+
 	_, err = l.svcCtx.NoticeService.UpdateNotice(l.ctx, &sysclient.UpdateNoticeReq{
 		Id:            req.Id,            // 公告ID
 		NoticeTitle:   req.NoticeTitle,   // 公告标题
@@ -48,7 +53,7 @@ func (l *UpdateNoticeLogic) UpdateNotice(req *types.UpdateNoticeReq) (resp *type
 		Status:        req.Status,        // 公告状态（0:关闭,1:正常 ）
 		Remark:        req.Remark,        // 备注
 		UpdateBy:      userName,          // 更新者
-
+		Scope:         scopeReq,
 	})
 
 	if err != nil {

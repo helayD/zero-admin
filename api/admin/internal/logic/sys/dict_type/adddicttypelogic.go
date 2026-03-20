@@ -2,6 +2,7 @@ package dict_type
 
 import (
 	"context"
+	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/common/res"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
@@ -35,12 +36,18 @@ func NewAddDictTypeLogic(ctx context.Context, svcCtx *svc.ServiceContext) AddDic
 
 // AddDictType 添加字典类型信息
 func (l *AddDictTypeLogic) AddDictType(req *types.AddDictTypeReq) (*types.BaseResp, error) {
-	_, err := l.svcCtx.DictTypeService.AddDictType(l.ctx, &sysclient.AddDictTypeReq{
+	scopeReq, err := admincommon.BuildGovernanceScope(req.ScopeType, req.PlatformId, req.TenantId, req.MerchantId)
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
+
+	_, err = l.svcCtx.DictTypeService.AddDictType(l.ctx, &sysclient.AddDictTypeReq{
 		DictName: req.DictName, // 字典名称
 		DictType: req.DictType, // 字典类型
 		Status:   req.Status,   // 状态（0：停用，1:正常）
 		Remark:   req.Remark,   // 备注
 		CreateBy: l.ctx.Value("userName").(string),
+		Scope:    scopeReq,
 	})
 
 	if err != nil {

@@ -40,6 +40,11 @@ func (l *AddNoticeLogic) AddNotice(req *types.AddNoticeReq) (resp *types.NoticeR
 		return nil, err
 	}
 
+	scopeReq, err := common.BuildGovernanceScope(req.ScopeType, req.PlatformId, req.TenantId, req.MerchantId)
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
+
 	_, err = l.svcCtx.NoticeService.AddNotice(l.ctx, &sysclient.AddNoticeReq{
 		NoticeTitle:   req.NoticeTitle,   // 公告标题
 		NoticeType:    req.NoticeType,    // 公告类型（1:通知,2:公告）
@@ -47,7 +52,7 @@ func (l *AddNoticeLogic) AddNotice(req *types.AddNoticeReq) (resp *types.NoticeR
 		Status:        req.Status,        // 公告状态（0:关闭,1:正常 ）
 		Remark:        req.Remark,        // 备注
 		CreateBy:      userName,          // 创建者
-
+		Scope:         scopeReq,
 	})
 
 	if err != nil {

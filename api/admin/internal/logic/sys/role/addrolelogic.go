@@ -2,6 +2,7 @@ package role
 
 import (
 	"context"
+
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/common/res"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
@@ -36,12 +37,17 @@ func NewAddRoleLogic(ctx context.Context, svcCtx *svc.ServiceContext) AddRoleLog
 // AddRole 新增角色
 func (l *AddRoleLogic) AddRole(req *types.AddRoleReq) (*types.BaseResp, error) {
 	roleAddReq := sysclient.AddRoleReq{
-		RoleName:  req.RoleName,  // 名称
-		RoleKey:   req.RoleKey,   // 角色权限字符串
-		DataScope: req.DataScope, // 数据范围（1：全部数据权限 2：自定数据权限 3：本部门数据权限 4：本部门及以下数据权限）
-		Status:    req.Status,    // 状态(1:正常，0:禁用)
-		Remark:    req.Remark,    // 备注
-		CreateBy:  l.ctx.Value("userName").(string),
+		RoleName:   req.RoleName,  // 名称
+		RoleKey:    req.RoleKey,   // 角色权限字符串
+		DataScope:  req.DataScope, // 数据范围
+		Status:     req.Status,    // 状态(1:正常，0:禁用)
+		Remark:     req.Remark,    // 备注
+		CreateBy:   l.ctx.Value("userName").(string),
+		ScopeType:  req.ScopeType,  // 作用域类型
+		PlatformId: req.PlatformId, // 平台ID
+		TenantId:   req.TenantId,   // 租户ID
+		MerchantId: req.MerchantId, // 商户ID
+		IsAdmin:    req.IsAdmin,    // 是否超级管理员角色
 	}
 
 	_, err := l.svcCtx.RoleService.AddRole(l.ctx, &roleAddReq)

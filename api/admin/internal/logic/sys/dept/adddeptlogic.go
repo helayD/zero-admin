@@ -2,6 +2,7 @@ package dept
 
 import (
 	"context"
+	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/common/res"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
@@ -34,7 +35,12 @@ func NewAddDeptLogic(ctx context.Context, svcCtx *svc.ServiceContext) AddDeptLog
 
 // AddDept 添加部门信息
 func (l *AddDeptLogic) AddDept(req *types.AddDeptReq) (*types.BaseResp, error) {
-	_, err := l.svcCtx.DeptService.AddDept(l.ctx, &sysclient.AddDeptReq{
+	scopeReq, err := admincommon.BuildGovernanceScope(req.ScopeType, req.PlatformId, req.TenantId, req.MerchantId)
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
+
+	_, err = l.svcCtx.DeptService.AddDept(l.ctx, &sysclient.AddDeptReq{
 		ParentId: req.ParentId, // 上级部门id
 		DeptName: req.DeptName, // 部门名称
 		Sort:     req.Sort,     // 显示顺序
@@ -44,6 +50,7 @@ func (l *AddDeptLogic) AddDept(req *types.AddDeptReq) (*types.BaseResp, error) {
 		Status:   req.Status,   // 部门状态（0：停用，1:正常）
 		Remark:   req.Remark,   // 备注信息
 		CreateBy: l.ctx.Value("userName").(string),
+		Scope:    scopeReq,
 	})
 
 	if err != nil {

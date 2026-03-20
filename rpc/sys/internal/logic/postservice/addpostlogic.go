@@ -4,12 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/feihua/zero-admin/rpc/sys/gen/model"
-	"github.com/feihua/zero-admin/rpc/sys/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/sys/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/sys/internal/svc"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
 )
 
 // AddPostLogic 添加岗位
@@ -36,12 +38,21 @@ func NewAddPostLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AddPostLo
 // 2.根据postCode查询岗位是否已存在,如果岗位已存在,则直接返回
 // 3.岗位不存在时,则直接添加岗位
 func (l *AddPostLogic) AddPost(in *sysclient.AddPostReq) (*sysclient.AddPostResp, error) {
+	currentScope, err := logiccommon.NormalizeProtoScope(in.Scope)
+	if err != nil {
+		return nil, err
+	}
+	if err = logiccommon.ValidateTenantWritable(l.ctx, l.svcCtx.DB, currentScope); err != nil {
+		return nil, err
+	}
 
-	q := query.SysPost.WithContext(l.ctx)
+	scopeWhere, scopeArgs := logiccommon.ScopeFilterSQL("", currentScope)
+	db := l.svcCtx.DB.WithContext(l.ctx).Table("sys_post")
 
 	// 1.根据postName查询岗位是否已存在,如果岗位已存在,则直接返回
 	postName := in.PostName
-	count, err := q.Where(query.SysPost.PostName.Eq(postName)).Count()
+	var count int64
+	err = db.Where(scopeWhere, scopeArgs...).Where("post_name = ?", postName).Count(&count).Error
 
 	if err != nil {
 		logc.Errorf(l.ctx, "根据岗位名称：%s,查询岗位信息,异常:%s", postName, err.Error())
@@ -54,7 +65,7 @@ func (l *AddPostLogic) AddPost(in *sysclient.AddPostReq) (*sysclient.AddPostResp
 
 	// 2.根据postCode查询岗位是否已存在,如果岗位已存在,则直接返回
 	postCode := in.PostCode
-	count, err = q.Where(query.SysPost.PostCode.Eq(postCode)).Count()
+	err = db.Where(scopeWhere, scopeArgs...).Where("post_code = ?", postCode).Count(&count).Error
 
 	if err != nil {
 		logc.Errorf(l.ctx, "根据岗位编码：%s,查询岗位信息,异常:%s", postName, err.Error())
@@ -75,7 +86,19 @@ func (l *AddPostLogic) AddPost(in *sysclient.AddPostReq) (*sysclient.AddPostResp
 		CreateBy: in.CreateBy, // 创建者
 	}
 
-	err = q.Create(job)
+	err = l.svcCtx.DB.WithContext(l.ctx).Transaction(func(tx *gorm.DB) error {
+		if err = tx.Create(job).Error; err != nil {
+			return err
+		}
+
+		return tx.Table("sys_post").
+			Where("id = ?", job.ID).
+			Updates(map[string]interface{}{
+				"platform_id": currentScope.PlatformID,
+				"tenant_id":   currentScope.TenantID,
+				"merchant_id": currentScope.MerchantID,
+			}).Error
+	})
 
 	if err != nil {
 		logc.Errorf(l.ctx, "添加岗位管理失败,参数:%+v,异常:%s", in, err.Error())

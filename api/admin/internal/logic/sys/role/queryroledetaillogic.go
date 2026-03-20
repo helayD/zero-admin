@@ -2,6 +2,7 @@ package role
 
 import (
 	"context"
+
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -56,6 +57,11 @@ func (l *QueryRoleDetailLogic) QueryRoleDetail(req *types.QueryRoleDetailReq) (r
 		CreateTime: detail.CreateTime, // 创建时间
 		UpdateBy:   detail.UpdateBy,   // 更新者
 		UpdateTime: detail.UpdateTime, // 更新时间
+		ScopeType:  detail.ScopeType,  // 作用域类型
+		PlatformId: detail.PlatformId, // 平台ID
+		TenantId:   detail.TenantId,   // 租户ID
+		MerchantId: detail.MerchantId, // 商户ID
+		IsAdmin:    detail.IsAdmin,    // 是否超级管理员角色
 	}
 
 	return &types.QueryRoleDetailResp{

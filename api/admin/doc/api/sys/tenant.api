@@ -1,0 +1,116 @@
+import "../base/base.api"
+
+info (
+	desc:   "租户治理"
+	author: "Codex"
+	email:  "1002219331@qq.com"
+)
+
+type (
+	CreateTenantReq {
+		TenantName        string   `json:"tenantName"`
+		TenantShortName   string   `json:"tenantShortName,optional"`
+		ContactName       string   `json:"contactName"`
+		ContactMobile     string   `json:"contactMobile"`
+		ContactEmail      string   `json:"contactEmail,optional"`
+		AvailableChannels []string `json:"availableChannels"`
+		DataRetentionDays int32    `json:"dataRetentionDays"`
+		FeatureFlags      []string `json:"featureFlags"`
+		AdminUserName     string   `json:"adminUserName"`
+		AdminNickName     string   `json:"adminNickName"`
+		AdminMobile       string   `json:"adminMobile"`
+		AdminEmail        string   `json:"adminEmail,optional"`
+		AdminPassword     string   `json:"adminPassword"`
+	}
+	CreateTenantData {
+		TenantId              int64  `json:"tenantId"`
+		TenantCode            string `json:"tenantCode"`
+		AdminUserId           int64  `json:"adminUserId"`
+		AdminActivationStatus string `json:"adminActivationStatus"`
+	}
+	CreateTenantResp {
+		Code    string           `json:"code"`
+		Message string           `json:"message"`
+		Data    CreateTenantData `json:"data"`
+	}
+	QueryTenantDetailReq {
+		Id int64 `form:"id"`
+	}
+	TenantData {
+		Id                    int64    `json:"id"`
+		TenantCode            string   `json:"tenantCode"`
+		TenantName            string   `json:"tenantName"`
+		TenantShortName       string   `json:"tenantShortName"`
+		ContactName           string   `json:"contactName"`
+		ContactMobile         string   `json:"contactMobile"`
+		ContactEmail          string   `json:"contactEmail"`
+		AvailableChannels     []string `json:"availableChannels"`
+		DataRetentionDays     int32    `json:"dataRetentionDays"`
+		FeatureFlags          []string `json:"featureFlags"`
+		Status                int32    `json:"status"`
+		StatusReason          string   `json:"statusReason"`
+		PrimaryAdminUserId    int64    `json:"primaryAdminUserId"`
+		PrimaryAdminUserName  string   `json:"primaryAdminUserName"`
+		PrimaryAdminMobile    string   `json:"primaryAdminMobile"`
+		AdminActivationStatus string   `json:"adminActivationStatus"`
+		CreatedBy             string   `json:"createdBy"`
+		CreatedAt             string   `json:"createdAt"`
+		UpdatedBy             string   `json:"updatedBy"`
+		UpdatedAt             string   `json:"updatedAt"`
+	}
+	QueryTenantDetailResp {
+		Code    string     `json:"code"`
+		Message string     `json:"message"`
+		Data    TenantData `json:"data"`
+	}
+	QueryTenantListReq {
+		Current    int64  `form:"current,default=1"`
+		PageSize   int64  `form:"pageSize,default=20"`
+		TenantName string `form:"tenantName,optional"`
+		TenantCode string `form:"tenantCode,optional"`
+		Status     int32  `form:"status,default=-1"`
+		Channel    string `form:"channel,optional"`
+	}
+	QueryTenantListResp {
+		Code     string        `json:"code"`
+		Message  string        `json:"message"`
+		Current  int64         `json:"current,default=1"`
+		Data     []*TenantData `json:"data"`
+		PageSize int64         `json:"pageSize,default=20"`
+		Success  bool          `json:"success"`
+		Total    int64         `json:"total"`
+	}
+	ChangeTenantStatusReq {
+		Ids          []int64 `json:"ids"`
+		StatusReason string  `json:"statusReason,optional"`
+	}
+)
+
+@server (
+	jwt:        Auth
+	middleware: CheckUrl
+	group:      sys/tenant
+	prefix:     /api/sys/tenant
+	tags:       "租户治理"
+	authType:   apiKey
+)
+service admin-api {
+	@handler CreateTenant
+	post /createTenant (CreateTenantReq) returns (CreateTenantResp)
+
+	@handler QueryTenantDetail
+	get /queryTenantDetail (QueryTenantDetailReq) returns (QueryTenantDetailResp)
+
+	@handler QueryTenantList
+	get /queryTenantList (QueryTenantListReq) returns (QueryTenantListResp)
+
+	@handler EnableTenant
+	post /enableTenant (ChangeTenantStatusReq) returns (BaseResp)
+
+	@handler DisableTenant
+	post /disableTenant (ChangeTenantStatusReq) returns (BaseResp)
+
+	@handler ArchiveTenant
+	post /archiveTenant (ChangeTenantStatusReq) returns (BaseResp)
+}
+

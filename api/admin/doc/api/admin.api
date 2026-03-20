@@ -1,4 +1,5 @@
 import "sys/user.api"
+import "sys/tenant.api"
 import "sys/role.api"
 import "sys/menu.api"
 import "sys/dict_type.api"

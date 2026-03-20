@@ -12,6 +12,10 @@ type (
 		NoticeContent string `json:"noticeContent"` //公告内容
 		Status        int32  `json:"status,default=2"` //公告状态（0:关闭,1:正常 ）
 		Remark        string `json:"remark"` //备注
+		ScopeType     string `json:"scopeType"` //主体范围(platform/tenant/merchant)
+		PlatformId    int64  `json:"platformId,optional"` //平台ID
+		TenantId      int64  `json:"tenantId,optional"` //租户ID
+		MerchantId    int64  `json:"merchantId,optional"` //商户ID
 	}
 	NoticeResp {
 		Code    string `json:"code"`
@@ -29,6 +33,10 @@ type (
 		NoticeContent string `json:"noticeContent"` //公告内容
 		Status        int32  `json:"status,default=2"` //公告状态（0:关闭,1:正常 ）
 		Remark        string `json:"remark"` //备注
+		ScopeType     string `json:"scopeType"` //主体范围(platform/tenant/merchant)
+		PlatformId    int64  `json:"platformId,optional"` //平台ID
+		TenantId      int64  `json:"tenantId,optional"` //租户ID
+		MerchantId    int64  `json:"merchantId,optional"` //商户ID
 	}
 	// 更新通知公告表状态请求参数
 	UpdateNoticeStatusReq {
@@ -50,6 +58,11 @@ type (
 		CreateTime    string `json:"createTime"` //创建时间
 		UpdateBy      string `json:"updateBy"` //更新者
 		UpdateTime    string `json:"updateTime"` //更新时间
+		ScopeType     string `json:"scopeType"` //主体范围
+		ScopeLabel    string `json:"scopeLabel"` //主体范围标签
+		PlatformId    int64  `json:"platformId"` //平台ID
+		TenantId      int64  `json:"tenantId"` //租户ID
+		MerchantId    int64  `json:"merchantId"` //商户ID
 	}
 	QueryNoticeDetailResp {
 		Code    string                `json:"code"`
@@ -63,6 +76,10 @@ type (
 		NoticeTitle string `form:"noticeTitle,optional"` //公告标题
 		NoticeType  int32  `form:"noticeType,optional"` //公告类型（1:通知,2:公告）
 		Status      int32  `form:"status,default=2"` //公告状态（0:关闭,1:正常 ）
+		ScopeType   string `form:"scopeType,optional"` //主体范围(platform/tenant/merchant)
+		PlatformId  int64  `form:"platformId,optional"` //平台ID
+		TenantId    int64  `form:"tenantId,optional"` //租户ID
+		MerchantId  int64  `form:"merchantId,optional"` //商户ID
 	}
 	QueryNoticeListData {
 		Id            int64  `json:"id"` //公告ID
@@ -75,6 +92,11 @@ type (
 		CreateTime    string `json:"createTime"` //创建时间
 		UpdateBy      string `json:"updateBy"` //更新者
 		UpdateTime    string `json:"updateTime"` //更新时间
+		ScopeType     string `json:"scopeType"` //主体范围
+		ScopeLabel    string `json:"scopeLabel"` //主体范围标签
+		PlatformId    int64  `json:"platformId"` //平台ID
+		TenantId      int64  `json:"tenantId"` //租户ID
+		MerchantId    int64  `json:"merchantId"` //商户ID
 	}
 	QueryNoticeListResp {
 		Code     string                 `json:"code"`

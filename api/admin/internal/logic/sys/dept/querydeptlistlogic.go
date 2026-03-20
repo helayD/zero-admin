@@ -2,6 +2,7 @@ package dept
 
 import (
 	"context"
+	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
 	"github.com/feihua/zero-admin/api/admin/internal/types"
@@ -32,7 +33,12 @@ func NewQueryDeptListLogic(ctx context.Context, svcCtx *svc.ServiceContext) Quer
 
 // QueryDeptList 查询部门列表
 func (l *QueryDeptListLogic) QueryDeptList(req *types.QueryDeptListReq) (*types.QueryDeptListResp, error) {
-	resp, err := l.svcCtx.DeptService.QueryDeptList(l.ctx, &sysclient.QueryDeptListReq{})
+	scopeReq, err := admincommon.BuildGovernanceScope(req.ScopeType, req.PlatformId, req.TenantId, req.MerchantId)
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
+
+	resp, err := l.svcCtx.DeptService.QueryDeptList(l.ctx, &sysclient.QueryDeptListReq{Scope: scopeReq})
 
 	if err != nil {
 		logc.Errorf(l.ctx, "查询部门列表,参数: %+v,异常:%s", req, err.Error())
@@ -43,7 +49,7 @@ func (l *QueryDeptListLogic) QueryDeptList(req *types.QueryDeptListReq) (*types.
 	var list []*types.QueryDeptListData
 
 	for _, dept := range resp.List {
-		list = append(list, &types.QueryDeptListData{
+		item := &types.QueryDeptListData{
 			Id:         dept.Id,         // 部门id
 			ParentId:   dept.ParentId,   // 上级部门id
 			Ancestors:  dept.Ancestors,  // 祖级列表
@@ -59,7 +65,9 @@ func (l *QueryDeptListLogic) QueryDeptList(req *types.QueryDeptListReq) (*types.
 			CreateTime: dept.CreateTime, // 创建时间
 			UpdateBy:   dept.UpdateBy,   // 更新者
 			UpdateTime: dept.UpdateTime, // 更新时间
-		})
+		}
+		item.ScopeType, item.ScopeLabel, item.PlatformId, item.TenantId, item.MerchantId = admincommon.ReadGovernanceScope(dept.Scope)
+		list = append(list, item)
 	}
 
 	return &types.QueryDeptListResp{

@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+const protoHeader = "syntax = \"proto3\";\n\npackage main;\n\noption go_package = \"./proto\";\n"
+
 /*
 由于go-zero的goctl生成gprc服务只能是一个proto，服务多的时候 比较乱，所以用这个工具来合成一个
 Author: LiuFeiHua
@@ -23,9 +25,9 @@ func main() {
 	}
 
 	var fileContents []byte
-	var startContents []byte
+	var wroteHeader bool
 	for _, file := range files {
-		if file.IsDir() || file.Name() == "main.go" {
+		if file.IsDir() || file.Name() == "main.go" || filepath.Ext(file.Name()) != ".proto" {
 			continue
 		}
 
@@ -35,14 +37,33 @@ func main() {
 			fmt.Printf("Error reading file %s: %s\n", fileName, err)
 			continue
 		}
-		startContents = fileData[:69]
-		fileData = fileData[70:]
+
+		fileText := string(fileData)
+		if !strings.HasPrefix(fileText, protoHeader) {
+			fmt.Printf("Skip file %s: unexpected proto header\n", fileName)
+			continue
+		}
+
+		if !wroteHeader {
+			fileContents = append(fileContents, []byte(protoHeader)...)
+			wroteHeader = true
+		}
+
+		body := strings.TrimPrefix(fileText, protoHeader)
+		body = strings.TrimLeft(body, "\n")
+		if strings.TrimSpace(body) == "" {
+			continue
+		}
+		if !strings.HasSuffix(body, "\n") {
+			body += "\n"
+		}
+
+		fileData = []byte("\n" + body)
 
 		fileContents = append(fileContents, fileData...)
 	}
-	startContents = append(startContents, fileContents...)
 
-	start := strings.Replace(string(startContents), "package main", "package sysclient", 1)
+	start := strings.Replace(string(fileContents), "package main", "package sysclient", 1)
 	start = strings.Replace(start, "option go_package = \"./proto\"", "option go_package = \"./sysclient\"", 1)
 	err = ioutil.WriteFile(outputFilePath, []byte(start), 0644)
 	if err != nil {

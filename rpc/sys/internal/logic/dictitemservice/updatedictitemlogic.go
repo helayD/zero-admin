@@ -4,14 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/feihua/zero-admin/rpc/sys/gen/model"
-	"github.com/feihua/zero-admin/rpc/sys/gen/query"
+
+	logiccommon "github.com/feihua/zero-admin/rpc/sys/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/sys/internal/svc"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
 	"github.com/zeromicro/go-zero/core/logc"
 	"gorm.io/gorm"
 	"strconv"
-	"time"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -43,12 +42,21 @@ func NewUpdateDictItemLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Up
 // 5.如果更新字典数据是默认,则修改其他选项为非默认状态
 // 6.字典数据存在时,则直接更新字典数据
 func (l *UpdateDictItemLogic) UpdateDictItem(in *sysclient.UpdateDictItemReq) (*sysclient.UpdateDictItemResp, error) {
-	q := query.SysDictItem
-
-	dictType := in.DictType
+	currentScope, err := logiccommon.NormalizeProtoScope(in.Scope)
+	if err != nil {
+		return nil, err
+	}
+	if err = logiccommon.ValidateTenantWritable(l.ctx, l.svcCtx.DB, currentScope); err != nil {
+		return nil, err
+	}
 
 	// 1.判断字典数据是否存在
-	dictItem, err := q.WithContext(l.ctx).Where(query.SysDictItem.ID.Eq(in.Id)).First()
+	var dictItem logiccommon.ScopedDictItem
+	err = l.svcCtx.DB.WithContext(l.ctx).
+		Table("sys_dict_item").
+		Select("id, dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, remark, create_by, create_time, update_by, update_time, dict_type_id, platform_id, tenant_id, merchant_id").
+		Where("id = ?", in.Id).
+		Take(&dictItem).Error
 
 	// 1.判断字典数据是否存在
 	switch {
@@ -59,20 +67,23 @@ func (l *UpdateDictItemLogic) UpdateDictItem(in *sysclient.UpdateDictItemReq) (*
 		logc.Errorf(l.ctx, "查询字典数据异常, 请求参数：%+v, 异常信息: %s", in, err.Error())
 		return nil, errors.New("查询字典数据异常")
 	}
+	if err = logiccommon.EnsureScopeMatch(currentScope, dictItem.PlatformID, dictItem.TenantID, dictItem.MerchantID, "不支持跨主体迁移字典项，请在目标主体下新建字典项"); err != nil {
+		return nil, err
+	}
 
 	// 2.判断字典类型是否存在
-	count, err := query.SysDictType.WithContext(l.ctx).Where(query.SysDictType.DictType.Eq(dictType)).Count()
+	dictType, err := logiccommon.ResolveDictType(l.ctx, l.svcCtx.DB, currentScope, in.DictTypeId, in.DictType)
 	if err != nil {
-		logc.Errorf(l.ctx, "根据字典类型：%s,查询字典信息失败,异常:%s", dictType, err.Error())
-		return nil, errors.New(fmt.Sprintf("更新字典数据失败"))
+		return nil, err
 	}
-
-	if count == 0 {
-		return nil, errors.New(fmt.Sprintf("更新字典数据失败,字典类型：%s,不存在", dictType))
-	}
+	scopeWhere, scopeArgs := logiccommon.ScopeFilterSQL("", currentScope)
+	db := l.svcCtx.DB.WithContext(l.ctx).Table("sys_dict_item")
 
 	// 3.查询字典标签是否已存在,如果字典标签已存在,则直接返回
-	count, err = q.WithContext(l.ctx).Where(q.ID.Neq(in.Id), q.DictLabel.Eq(in.DictLabel), q.DictType.Eq(dictType)).Count()
+	var count int64
+	err = db.Where(scopeWhere, scopeArgs...).
+		Where("id <> ? AND dict_type_id = ? AND dict_label = ?", in.Id, dictType.ID, in.DictLabel).
+		Count(&count).Error
 
 	if err != nil {
 		logc.Errorf(l.ctx, "根据字典标签：%s,查询字典数据失败,异常:%s", in.DictLabel, err.Error())
@@ -85,7 +96,9 @@ func (l *UpdateDictItemLogic) UpdateDictItem(in *sysclient.UpdateDictItemReq) (*
 	}
 
 	// 4.查询字典键值是否已存在,如果字典键值已存在,则直接返回
-	count, err = q.WithContext(l.ctx).Where(q.ID.Neq(in.Id), q.DictValue.Eq(in.DictValue), q.DictType.Eq(dictType)).Count()
+	err = db.Where(scopeWhere, scopeArgs...).
+		Where("id <> ? AND dict_type_id = ? AND dict_value = ?", in.Id, dictType.ID, in.DictValue).
+		Count(&count).Error
 
 	if err != nil {
 		logc.Errorf(l.ctx, "根据字典键值：%s,查询字典数据失败,异常:%s", in.DictValue, err.Error())
@@ -99,33 +112,38 @@ func (l *UpdateDictItemLogic) UpdateDictItem(in *sysclient.UpdateDictItemReq) (*
 
 	// 5.如果更新字典数据是默认,则修改其他选项为非默认状态
 	if in.IsDefault == "Y" {
-		_, err = q.WithContext(l.ctx).Where(q.ID.Neq(in.Id)).Where(q.DictType.Eq(dictType)).Where(q.IsDefault.Eq("Y")).Update(q.IsDefault, "N")
+		err = db.Where(scopeWhere, scopeArgs...).
+			Where("id <> ? AND dict_type_id = ? AND is_default = ?", in.Id, dictType.ID, "Y").
+			Updates(map[string]interface{}{
+				"is_default": "N",
+				"update_by":  in.UpdateBy,
+			}).Error
 		if err != nil {
 			logc.Errorf(l.ctx, "修改字典数据默认状态失败,参数:%+v,异常:%s", in, err.Error())
 			return nil, errors.New("更新字典数据失败")
 		}
 	}
 
-	now := time.Now()
-	data := &model.SysDictItem{
-		ID:         in.Id,               // 字典数据id
-		DictSort:   in.DictSort,         // 字典排序
-		DictLabel:  in.DictLabel,        // 字典标签
-		DictValue:  in.DictValue,        // 字典键值
-		DictType:   in.DictType,         // 字典类型
-		CSSClass:   in.CssClass,         // 样式属性（其他样式扩展）
-		ListClass:  in.ListClass,        // 表格回显样式
-		IsDefault:  in.IsDefault,        // 是否默认（Y是 N否）
-		Status:     in.Status,           // 状态（0：停用，1:正常）
-		Remark:     in.Remark,           // 备注
-		CreateBy:   dictItem.CreateBy,   // 创建者
-		CreateTime: dictItem.CreateTime, // 创建时间
-		UpdateBy:   in.UpdateBy,         // 更新者
-		UpdateTime: &now,                // 更新时间
-	}
-
 	// 6.字典数据存在时,则直接更新字典数据
-	err = l.svcCtx.DB.Model(&model.SysDictItem{}).WithContext(l.ctx).Where(query.SysDictItem.ID.Eq(in.Id)).Save(data).Error
+	err = l.svcCtx.DB.WithContext(l.ctx).
+		Table("sys_dict_item").
+		Where("id = ?", in.Id).
+		Updates(map[string]interface{}{
+			"dict_sort":    in.DictSort,
+			"dict_label":   in.DictLabel,
+			"dict_value":   in.DictValue,
+			"dict_type":    dictType.DictType,
+			"css_class":    in.CssClass,
+			"list_class":   in.ListClass,
+			"is_default":   in.IsDefault,
+			"status":       in.Status,
+			"remark":       in.Remark,
+			"update_by":    in.UpdateBy,
+			"dict_type_id": dictType.ID,
+			"platform_id":  currentScope.PlatformID,
+			"tenant_id":    currentScope.TenantID,
+			"merchant_id":  currentScope.MerchantID,
+		}).Error
 
 	if err != nil {
 		logc.Errorf(l.ctx, "更新字典数据失败,参数:%+v,异常:%s", dictItem, err.Error())

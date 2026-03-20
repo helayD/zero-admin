@@ -3,6 +3,9 @@ create table sys_dept
 (
     id          bigint auto_increment comment '部门id'
         primary key,
+    platform_id bigint(20)   default 1                 not null comment '平台ID',
+    tenant_id   bigint(20)   default 0                 not null comment '租户ID',
+    merchant_id bigint(20)   default 0                 not null comment '商户ID',
     parent_id   bigint(20)   default 0                 not null comment '上级部门id',
     ancestors   varchar(50)  default ''                not null comment '祖级列表',
     dept_name   varchar(30)  default ''                not null comment '部门名称',
@@ -16,8 +19,13 @@ create table sys_dept
     create_by   varchar(50)  default 'admin'           not null comment '创建者',
     create_time timestamp    default CURRENT_TIMESTAMP not null comment '创建时间',
     update_by   varchar(50)  default ''                not null comment '更新者',
-    update_time datetime                               null on update CURRENT_TIMESTAMP comment '更新时间'
+    update_time datetime                               null on update CURRENT_TIMESTAMP comment '更新时间',
+    constraint uk_sys_dept_scope_name
+        unique (platform_id, tenant_id, merchant_id, parent_id, dept_name)
 ) comment = '部门表';
+
+create index idx_sys_dept_scope_parent
+    on sys_dept (platform_id, tenant_id, merchant_id, parent_id);
 
 INSERT INTO sys_dept (id, parent_id, ancestors, dept_name, sort, leader, phone, email, status, del_flag) VALUES (1, 0, '0', '测试科技', 1, 'admin', '18613030352', '1002219331@qq.com', 1, 1);
 INSERT INTO sys_dept (id, parent_id, ancestors, dept_name, sort, leader, phone, email, status, del_flag) VALUES (2, 1, '0,1', '深圳总公司', 1, '1', '1', 'xx@qq.com', 1, 1);

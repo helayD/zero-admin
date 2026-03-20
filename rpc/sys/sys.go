@@ -17,6 +17,7 @@ import (
 	operatelogServer "github.com/feihua/zero-admin/rpc/sys/internal/server/operatelogservice"
 	postserviceServer "github.com/feihua/zero-admin/rpc/sys/internal/server/postservice"
 	roleserviceServer "github.com/feihua/zero-admin/rpc/sys/internal/server/roleservice"
+	tenantserviceServer "github.com/feihua/zero-admin/rpc/sys/internal/server/tenantservice"
 	userserviceServer "github.com/feihua/zero-admin/rpc/sys/internal/server/userservice"
 	"github.com/feihua/zero-admin/rpc/sys/internal/svc"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
@@ -44,6 +45,7 @@ func main() {
 		sysclient.RegisterRoleServiceServer(grpcServer, roleserviceServer.NewRoleServiceServer(ctx))
 		sysclient.RegisterPostServiceServer(grpcServer, postserviceServer.NewPostServiceServer(ctx))
 		sysclient.RegisterNoticeServiceServer(grpcServer, noticeserviceServer.NewNoticeServiceServer(ctx))
+		sysclient.RegisterTenantServiceServer(grpcServer, tenantserviceServer.NewTenantServiceServer(ctx))
 		sysclient.RegisterMenuServiceServer(grpcServer, menuserviceServer.NewMenuServiceServer(ctx))
 		sysclient.RegisterDictTypeServiceServer(grpcServer, dicttypeserviceServer.NewDictTypeServiceServer(ctx))
 		sysclient.RegisterDictItemServiceServer(grpcServer, dictitemserviceServer.NewDictItemServiceServer(ctx))

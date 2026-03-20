@@ -2,9 +2,14 @@ export interface RoleListItem {
   id: number;
   status: number;
   roleName: string;
+  roleKey: string;
   remark: string;
   dataScope: number;
-
+  scopeType: string;
+  platformId: number;
+  tenantId: number;
+  merchantId: number;
+  isAdmin: number;
 }
 
 export interface RoleListPagination {
@@ -24,4 +29,7 @@ export interface RoleListParams {
   current?: number;
   filter?: { [key: string]: any[] };
   sorter?: { [key: string]: any };
+  scopeType?: string;
+  tenantId?: number;
+  merchantId?: number;
 }

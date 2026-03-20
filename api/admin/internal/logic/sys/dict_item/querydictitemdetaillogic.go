@@ -2,6 +2,7 @@ package dict_item
 
 import (
 	"context"
+	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -59,7 +60,9 @@ func (l *QueryDictItemDetailLogic) QueryDictItemDetail(req *types.QueryDictItemD
 		CreateTime: detail.CreateTime, // 创建时间
 		UpdateBy:   detail.UpdateBy,   // 更新者
 		UpdateTime: detail.UpdateTime, // 更新时间
+		DictTypeId: detail.DictTypeId, // 字典类型ID
 	}
+	dictItem.ScopeType, dictItem.ScopeLabel, dictItem.PlatformId, dictItem.TenantId, dictItem.MerchantId = admincommon.ReadGovernanceScope(detail.Scope)
 
 	return &types.QueryDictItemDetailResp{
 		Code:    "000000",

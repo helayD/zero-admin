@@ -2,6 +2,7 @@ package dept
 
 import (
 	"context"
+	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/common/res"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
@@ -35,8 +36,12 @@ func NewUpdateDeptLogic(ctx context.Context, svcCtx *svc.ServiceContext) UpdateD
 
 // UpdateDept 更新部门信息
 func (l *UpdateDeptLogic) UpdateDept(req *types.UpdateDeptReq) (*types.BaseResp, error) {
+	scopeReq, err := admincommon.BuildGovernanceScope(req.ScopeType, req.PlatformId, req.TenantId, req.MerchantId)
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
 
-	_, err := l.svcCtx.DeptService.UpdateDept(l.ctx, &sysclient.UpdateDeptReq{
+	_, err = l.svcCtx.DeptService.UpdateDept(l.ctx, &sysclient.UpdateDeptReq{
 		Id:       req.Id,       // 部门id
 		ParentId: req.ParentId, // 上级部门id
 		DeptName: req.DeptName, // 部门名称
@@ -47,6 +52,7 @@ func (l *UpdateDeptLogic) UpdateDept(req *types.UpdateDeptReq) (*types.BaseResp,
 		Status:   req.Status,   // 部门状态（0：停用，1:正常）
 		Remark:   req.Remark,   // 备注信息
 		UpdateBy: l.ctx.Value("userName").(string),
+		Scope:    scopeReq,
 	})
 
 	if err != nil {

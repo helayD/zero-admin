@@ -41,6 +41,7 @@ import (
 	"github.com/feihua/zero-admin/rpc/sms/client/seckillreservationservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/seckillsessionservice"
 	"github.com/feihua/zero-admin/rpc/sys/client/noticeservice"
+	"github.com/feihua/zero-admin/rpc/sys/client/tenantservice"
 
 	"github.com/feihua/zero-admin/rpc/sms/client/couponservice"
 
@@ -105,6 +106,7 @@ type ServiceContext struct {
 	DictItemService   dictitemservice.DictItemService
 	PostService       postservice.PostService
 	NoticeService     noticeservice.NoticeService
+	TenantService     tenantservice.TenantService
 	LoginLogService   loginlogservice.LoginLogService
 	Operatelogservice operatelogservice.OperateLogService
 	MenuService       menuservice.MenuService
@@ -190,6 +192,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		DictItemService:   dictitemservice.NewDictItemService(sysClient),
 		PostService:       postservice.NewPostService(sysClient),
 		NoticeService:     noticeservice.NewNoticeService(sysClient),
+		TenantService:     tenantservice.NewTenantService(sysClient),
 		LoginLogService:   loginlogservice.NewLoginLogService(sysClient),
 		Operatelogservice: operateLogService,
 		MenuService:       menuservice.NewMenuService(sysClient),

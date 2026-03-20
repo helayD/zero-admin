@@ -44,6 +44,7 @@ import (
 	syspost "github.com/feihua/zero-admin/api/admin/internal/handler/sys/post"
 	sysrole "github.com/feihua/zero-admin/api/admin/internal/handler/sys/role"
 	syssys_notice "github.com/feihua/zero-admin/api/admin/internal/handler/sys/sys_notice"
+	systenant "github.com/feihua/zero-admin/api/admin/internal/handler/sys/tenant"
 	sysupload "github.com/feihua/zero-admin/api/admin/internal/handler/sys/upload"
 	sysuser "github.com/feihua/zero-admin/api/admin/internal/handler/sys/user"
 	umsmember "github.com/feihua/zero-admin/api/admin/internal/handler/ums/member"
@@ -1541,6 +1542,46 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		),
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
 		rest.WithPrefix("/api/sys/notice"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.CheckUrl},
+			[]rest.Route{
+				{
+					Method:  http.MethodPost,
+					Path:    "/archiveTenant",
+					Handler: systenant.ArchiveTenantHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/createTenant",
+					Handler: systenant.CreateTenantHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/disableTenant",
+					Handler: systenant.DisableTenantHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/enableTenant",
+					Handler: systenant.EnableTenantHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryTenantDetail",
+					Handler: systenant.QueryTenantDetailHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryTenantList",
+					Handler: systenant.QueryTenantListHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/sys/tenant"),
 	)
 
 	server.AddRoutes(

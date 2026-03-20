@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 
+	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -69,6 +70,9 @@ func (l *QueryUserDetailLogic) QueryUserDetail(req *types.QueryUserDetailReq) (r
 		PostIds:       detail.PostIds,       // 岗位id
 		RoleIds:       detail.RoleIds,       // 角色id
 	}
+	data.ScopeType, data.ScopeLabel, data.PlatformId, data.TenantId, data.MerchantId = admincommon.ReadGovernanceScope(detail.Scope)
+	data.ActivationStatus = detail.ActivationStatus
+	data.RoleMode = detail.RoleMode
 
 	return &types.QueryUserDetailResp{
 		Code:    "000000",

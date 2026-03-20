@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
+	"github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/rpc/sys/gen/model"
 	"github.com/feihua/zero-admin/rpc/sys/gen/query"
 	"github.com/feihua/zero-admin/rpc/sys/internal/svc"
@@ -38,9 +40,27 @@ func NewAddRoleLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AddRoleLo
 func (l *AddRoleLogic) AddRole(in *sysclient.AddRoleReq) (*sysclient.AddRoleResp, error) {
 	q := query.SysRole.WithContext(l.ctx)
 
-	// 1.查询角色名称是否存在
+	// 0.验证作用域合法性
+	scopeType := in.ScopeType
+	if scopeType == "" {
+		scopeType = scope.SubjectTypePlatform
+	}
+	platformID := in.PlatformId
+	if platformID <= 0 {
+		platformID = scope.DefaultPlatformID
+	}
+	if err := scope.ValidateRoleScope(scopeType, platformID, in.TenantId, in.MerchantId); err != nil {
+		return nil, err
+	}
+
+	// 1.查询角色名称是否在同作用域内存在
 	name := in.RoleName
-	count, err := q.Where(query.SysRole.RoleName.Eq(name)).Count()
+	count, err := q.Where(
+		query.SysRole.RoleName.Eq(name),
+		query.SysRole.ScopeType.Eq(scopeType),
+		query.SysRole.TenantID.Eq(in.TenantId),
+		query.SysRole.MerchantID.Eq(in.MerchantId),
+	).Count()
 
 	if err != nil {
 		logc.Errorf(l.ctx, "根据角色名称：%s,查询角色失败,异常:%s", name, err.Error())
@@ -48,7 +68,7 @@ func (l *AddRoleLogic) AddRole(in *sysclient.AddRoleReq) (*sysclient.AddRoleResp
 	}
 
 	if count > 0 {
-		return nil, errors.New(fmt.Sprintf("角色名称：%s,已存在", name))
+		return nil, errors.New(fmt.Sprintf("角色名称：%s,在该作用域下已存在", name))
 	}
 
 	// 2.查询权限字符是否存在
@@ -66,13 +86,18 @@ func (l *AddRoleLogic) AddRole(in *sysclient.AddRoleReq) (*sysclient.AddRoleResp
 
 	// 3.角色不存在时,则直接添加角色
 	role := &model.SysRole{
-		RoleName:  in.RoleName,  // 名称
-		RoleKey:   in.RoleKey,   // 角色权限字符串
-		DataScope: in.DataScope, // 数据范围（1：全部数据权限 2：自定数据权限 3：本部门数据权限 4：本部门及以下数据权限）
-		Status:    in.Status,    // 状态(1:正常，0:禁用)
-		Remark:    in.Remark,    // 备注
-		DelFlag:   in.DelFlag,   // 删除标志（0代表删除 1代表存在）
-		CreateBy:  in.CreateBy,  // 创建者
+		RoleName:   in.RoleName,   // 名称
+		RoleKey:    in.RoleKey,    // 角色权限字符串
+		ScopeType:  scopeType,     // 作用域类型
+		PlatformID: platformID,    // 平台ID
+		TenantID:   in.TenantId,   // 租户ID
+		MerchantID: in.MerchantId, // 商户ID
+		IsAdmin:    in.IsAdmin,    // 是否超级管理员角色
+		DataScope:  in.DataScope,  // 数据范围
+		Status:     in.Status,     // 状态(1:正常，0:禁用)
+		Remark:     in.Remark,     // 备注
+		DelFlag:    in.DelFlag,    // 删除标志
+		CreateBy:   in.CreateBy,   // 创建者
 	}
 
 	err = q.Create(role)

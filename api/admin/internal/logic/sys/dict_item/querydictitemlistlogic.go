@@ -2,6 +2,7 @@ package dict_item
 
 import (
 	"context"
+	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -35,12 +36,19 @@ func NewQueryDictItemListLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 
 // QueryDictItemList 查询字典数据列表
 func (l *QueryDictItemListLogic) QueryDictItemList(req *types.QueryDictItemListReq) (resp *types.QueryDictItemListResp, err error) {
+	scopeReq, err := admincommon.BuildGovernanceScope(req.ScopeType, req.PlatformId, req.TenantId, req.MerchantId)
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
+
 	result, err := l.svcCtx.DictItemService.QueryDictItemList(l.ctx, &sysclient.QueryDictItemListReq{
-		PageNum:   req.Current,
-		PageSize:  req.PageSize,
-		DictLabel: strings.TrimSpace(req.DictLabel), // 字典标签
-		DictType:  req.DictType,                     // 字典类型
-		Status:    req.Status,                       // 状态（0：停用，1:正常）
+		PageNum:    req.Current,
+		PageSize:   req.PageSize,
+		DictLabel:  strings.TrimSpace(req.DictLabel), // 字典标签
+		DictType:   req.DictType,                     // 字典类型
+		Status:     req.Status,                       // 状态（0：停用，1:正常）
+		DictTypeId: req.DictTypeId,
+		Scope:      scopeReq,
 	})
 
 	if err != nil {
@@ -52,7 +60,7 @@ func (l *QueryDictItemListLogic) QueryDictItemList(req *types.QueryDictItemListR
 	var list []*types.QueryDictItemListData
 
 	for _, detail := range result.List {
-		list = append(list, &types.QueryDictItemListData{
+		item := &types.QueryDictItemListData{
 			Id:         detail.Id,         // 字典数据id
 			DictSort:   detail.DictSort,   // 字典排序
 			DictLabel:  detail.DictLabel,  // 字典标签
@@ -67,7 +75,10 @@ func (l *QueryDictItemListLogic) QueryDictItemList(req *types.QueryDictItemListR
 			CreateTime: detail.CreateTime, // 创建时间
 			UpdateBy:   detail.UpdateBy,   // 更新者
 			UpdateTime: detail.UpdateTime, // 更新时间
-		})
+			DictTypeId: detail.DictTypeId, // 字典类型ID
+		}
+		item.ScopeType, item.ScopeLabel, item.PlatformId, item.TenantId, item.MerchantId = admincommon.ReadGovernanceScope(detail.Scope)
+		list = append(list, item)
 	}
 
 	return &types.QueryDictItemListResp{

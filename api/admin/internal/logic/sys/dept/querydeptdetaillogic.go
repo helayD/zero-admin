@@ -2,6 +2,7 @@ package dept
 
 import (
 	"context"
+	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -61,6 +62,7 @@ func (l *QueryDeptDetailLogic) QueryDeptDetail(req *types.QueryDeptDetailReq) (r
 		UpdateBy:   detail.UpdateBy,   // 更新者
 		UpdateTime: detail.UpdateTime, // 更新时间
 	}
+	dept.ScopeType, dept.ScopeLabel, dept.PlatformId, dept.TenantId, dept.MerchantId = admincommon.ReadGovernanceScope(detail.Scope)
 
 	return &types.QueryDeptDetailResp{
 		Code:    "000000",

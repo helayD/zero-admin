@@ -88,6 +88,18 @@
         path: '/system/post/list',
         component: './system/post',
       },
+      {
+        name: '通知管理',
+        icon: 'table',
+        path: '/system/notice/list',
+        component: './system/notice',
+      },
+      {
+        name: '租户治理',
+        icon: 'table',
+        path: '/system/tenant/list',
+        component: './system/tenant',
+      },
       // {
       //   name: '参数管理',
       //   icon: 'table',

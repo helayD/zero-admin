@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"bytes"
+	"encoding/json"
 	"github.com/feihua/zero-admin/rpc/sys/client/operatelogservice"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
 	"github.com/ua-parser/uap-go/uaparser"
@@ -10,6 +11,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	"github.com/feihua/zero-admin/pkg/scope"
 )
 
 type AddLogMiddleware struct {
@@ -78,6 +81,7 @@ func (m *AddLogMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 
 		browser := ua.UserAgent.Family + " " + ua.UserAgent.Major
 		os := ua.Os.Family + " " + ua.Os.Major
+		currentScope, scopeExtra := readGovernanceScopeContext(r)
 		// 打印请求和响应耗时
 		duration := time.Since(startTime)
 		opLog := &sysclient.AddOperateLogReq{
@@ -93,14 +97,14 @@ func (m *AddLogMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 			OperateLocation: "",
 			OperateParam:    string(body),
 			JsonResult:      responseBoy,
-			Platform:        "",
+			Platform:        currentScope.Label(),
 			Browser:         browser,
 			Version:         "",
 			Os:              os,
 			Arch:            "",
 			Engine:          "",
 			EngineDetails:   "",
-			Extra:           "",
+			Extra:           scopeExtra,
 			Status:          0,
 			ErrorMsg:        "",
 			OperateTime:     "",
@@ -127,4 +131,50 @@ func (r *responseRecorder) WriteHeader(statusCode int) {
 func (r *responseRecorder) Write(body []byte) (int, error) {
 	r.body = body
 	return r.ResponseWriter.Write(body)
+}
+
+func readGovernanceScopeContext(r *http.Request) (scope.GovernanceScope, string) {
+	scopeType, _ := r.Context().Value("scopeType").(string)
+	platformID := readContextInt64(r, "platformId")
+	tenantID := readContextInt64(r, "tenantId")
+	merchantID := readContextInt64(r, "merchantId")
+
+	currentScope, err := scope.NormalizeGovernanceScope(scopeType, platformID, tenantID, merchantID)
+	if err != nil {
+		currentScope = scope.GovernanceScope{
+			ScopeType:  scope.SubjectTypePlatform,
+			PlatformID: scope.DefaultPlatformID,
+		}
+	}
+
+	extra, _ := json.Marshal(map[string]interface{}{
+		"scopeType":  currentScope.ScopeType,
+		"scopeLabel": currentScope.Label(),
+		"platformId": currentScope.PlatformID,
+		"tenantId":   currentScope.TenantID,
+		"merchantId": currentScope.MerchantID,
+	})
+
+	return currentScope, string(extra)
+}
+
+func readContextInt64(r *http.Request, key string) int64 {
+	value := r.Context().Value(key)
+	switch typed := value.(type) {
+	case json.Number:
+		number, _ := typed.Int64()
+		return number
+	case float64:
+		return int64(typed)
+	case float32:
+		return int64(typed)
+	case int64:
+		return typed
+	case int32:
+		return int64(typed)
+	case int:
+		return int64(typed)
+	default:
+		return 0
+	}
 }

@@ -3,9 +3,10 @@ package dicttypeservicelogic
 import (
 	"context"
 	"errors"
+
 	"github.com/bytedance/sonic"
 	"github.com/feihua/zero-admin/pkg/time_util"
-	"github.com/feihua/zero-admin/rpc/sys/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/sys/internal/logic/common"
 	"github.com/zeromicro/go-zero/core/logc"
 	"gorm.io/gorm"
 	"strconv"
@@ -43,10 +44,15 @@ func (l *QueryDictTypeDetailLogic) QueryDictTypeDetail(in *sysclient.QueryDictTy
 	cachedData, _ := l.svcCtx.Redis.HgetCtx(l.ctx, key, idStr)
 
 	var cached sysclient.QueryDictTypeDetailResp
-	if sonic.Unmarshal([]byte(cachedData), &cached) == nil {
+	if sonic.Unmarshal([]byte(cachedData), &cached) == nil && cached.Scope != nil {
 		return &cached, nil
 	}
-	dict, err := query.SysDictType.WithContext(l.ctx).Where(query.SysDictType.ID.Eq(in.Id)).First()
+	var dict logiccommon.ScopedDictType
+	err := l.svcCtx.DB.WithContext(l.ctx).
+		Table("sys_dict_type").
+		Select("id, dict_name, dict_type, status, remark, create_by, create_time, update_by, update_time, platform_id, tenant_id, merchant_id").
+		Where("id = ?", in.Id).
+		Take(&dict).Error
 
 	// 1.判断字典类型是否存在
 	switch {
@@ -58,6 +64,7 @@ func (l *QueryDictTypeDetailLogic) QueryDictTypeDetail(in *sysclient.QueryDictTy
 		return nil, errors.New("查询字典类型异常")
 	}
 
+	dictScope := logiccommon.DefaultScope(dict.PlatformID, dict.TenantID, dict.MerchantID)
 	data := &sysclient.QueryDictTypeDetailResp{
 		Id:         dict.ID,                                 // 字典id
 		DictName:   dict.DictName,                           // 字典名称
@@ -68,6 +75,7 @@ func (l *QueryDictTypeDetailLogic) QueryDictTypeDetail(in *sysclient.QueryDictTy
 		CreateTime: time_util.TimeToStr(dict.CreateTime),    // 创建时间
 		UpdateBy:   dict.UpdateBy,                           // 更新者
 		UpdateTime: time_util.TimeToString(dict.UpdateTime), // 更新时间
+		Scope:      logiccommon.ProtoScope(dictScope),
 	}
 
 	value, _ := sonic.Marshal(data)

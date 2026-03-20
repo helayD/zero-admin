@@ -4,11 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/feihua/zero-admin/pkg/errorx"
-	"github.com/feihua/zero-admin/rpc/sys/gen/model"
-	"github.com/feihua/zero-admin/rpc/sys/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/sys/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/sys/internal/svc"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -37,11 +35,21 @@ func NewUpdateNoticeLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Upda
 
 // UpdateNotice 更新通知公告
 func (l *UpdateNoticeLogic) UpdateNotice(in *sysclient.UpdateNoticeReq) (*sysclient.UpdateNoticeResp, error) {
-	notice := query.SysNotice
-	q := notice.WithContext(l.ctx)
+	currentScope, err := logiccommon.NormalizeProtoScope(in.Scope)
+	if err != nil {
+		return nil, err
+	}
+	if err = logiccommon.ValidateTenantWritable(l.ctx, l.svcCtx.DB, currentScope); err != nil {
+		return nil, err
+	}
 
 	// 1.根据通知公告id查询通知公告是否已存在
-	sysNotice, err := q.Where(notice.ID.Eq(in.Id)).First()
+	var sysNotice logiccommon.ScopedNotice
+	err = l.svcCtx.DB.WithContext(l.ctx).
+		Table("sys_notice").
+		Select("id, notice_title, notice_type, notice_content, status, remark, create_by, create_time, update_by, update_time, platform_id, tenant_id, merchant_id").
+		Where("id = ?", in.Id).
+		Take(&sysNotice).Error
 
 	switch {
 	case errors.Is(err, gorm.ErrRecordNotFound):
@@ -51,8 +59,17 @@ func (l *UpdateNoticeLogic) UpdateNotice(in *sysclient.UpdateNoticeReq) (*syscli
 		logc.Errorf(l.ctx, "查询通知公告异常, 请求参数：%+v, 异常信息: %s", in, err.Error())
 		return nil, errorx.NewDefaultError("查询通知公告异常")
 	}
+	if err = logiccommon.EnsureScopeMatch(currentScope, sysNotice.PlatformID, sysNotice.TenantID, sysNotice.MerchantID, "不支持跨主体迁移通知，请在目标主体下新建通知"); err != nil {
+		return nil, err
+	}
 
-	count, err := q.WithContext(l.ctx).Where(notice.NoticeTitle.Eq(in.NoticeTitle), notice.ID.Neq(in.Id)).Count()
+	scopeWhere, scopeArgs := logiccommon.ScopeFilterSQL("", currentScope)
+	var count int64
+	err = l.svcCtx.DB.WithContext(l.ctx).
+		Table("sys_notice").
+		Where(scopeWhere, scopeArgs...).
+		Where("id <> ? AND notice_title = ?", in.Id, in.NoticeTitle).
+		Count(&count).Error
 	if err != nil {
 		logc.Errorf(l.ctx, "根据公告标题：%s,查询公告信息,异常:%s", in.NoticeTitle, err.Error())
 		return nil, errors.New(fmt.Sprintf("添加通知公告失败"))
@@ -61,25 +78,24 @@ func (l *UpdateNoticeLogic) UpdateNotice(in *sysclient.UpdateNoticeReq) (*syscli
 		return nil, errors.New(fmt.Sprintf("添加通知公告失败,公告标题：%s,已存在", in.NoticeTitle))
 	}
 
-	now := time.Now()
-	item := &model.SysNotice{
-		ID:            in.Id,                // 公告ID
-		NoticeTitle:   in.NoticeTitle,       // 公告标题
-		NoticeType:    in.NoticeType,        // 公告类型（1:通知,2:公告）
-		NoticeContent: in.NoticeContent,     // 公告内容
-		Status:        in.Status,            // 公告状态（0:关闭,1:正常 ）
-		Remark:        in.Remark,            // 备注
-		CreateBy:      sysNotice.CreateBy,   // 创建者
-		CreateTime:    sysNotice.CreateTime, // 创建时间
-		UpdateBy:      in.UpdateBy,          // 更新者
-		UpdateTime:    &now,                 // 更新时间
-	}
-
 	// 2.通知公告存在时,则直接更新通知公告
-	err = l.svcCtx.DB.Model(&model.SysNotice{}).WithContext(l.ctx).Where(notice.ID.Eq(in.Id)).Save(item).Error
+	err = l.svcCtx.DB.WithContext(l.ctx).
+		Table("sys_notice").
+		Where("id = ?", in.Id).
+		Updates(map[string]interface{}{
+			"notice_title":   in.NoticeTitle,
+			"notice_type":    in.NoticeType,
+			"notice_content": in.NoticeContent,
+			"status":         in.Status,
+			"remark":         in.Remark,
+			"update_by":      in.UpdateBy,
+			"platform_id":    currentScope.PlatformID,
+			"tenant_id":      currentScope.TenantID,
+			"merchant_id":    currentScope.MerchantID,
+		}).Error
 
 	if err != nil {
-		logc.Errorf(l.ctx, "更新通知公告失败,参数:%+v,异常:%s", item, err.Error())
+		logc.Errorf(l.ctx, "更新通知公告失败,参数:%+v,异常:%s", in, err.Error())
 		return nil, errors.New("更新通知公告失败")
 	}
 

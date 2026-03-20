@@ -5,11 +5,10 @@ import (
 	"errors"
 	"github.com/bytedance/sonic"
 	"github.com/feihua/zero-admin/pkg/time_util"
-	"github.com/feihua/zero-admin/rpc/sys/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/sys/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/sys/internal/svc"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
 	"github.com/zeromicro/go-zero/core/logc"
-	"gorm.io/gorm"
 	"strconv"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -44,16 +43,17 @@ func (l *QueryDeptDetailLogic) QueryDeptDetail(in *sysclient.QueryDeptDetailReq)
 	if sonic.Unmarshal([]byte(cachedData), &cached) == nil {
 		return &cached, nil
 	}
-	dept, err := query.SysDept.WithContext(l.ctx).Where(query.SysDept.ID.Eq(in.Id)).First()
-
-	switch {
-	case errors.Is(err, gorm.ErrRecordNotFound):
-		logc.Errorf(l.ctx, "部门不存在, 请求参数：%+v, 异常信息: %s", in, err.Error())
-		return nil, errors.New("部门不存在")
-	case err != nil:
+	var dept logiccommon.ScopedDept
+	err := l.svcCtx.DB.WithContext(l.ctx).
+		Table("sys_dept").
+		Select("id, parent_id, ancestors, dept_name, sort, leader, phone, email, status, del_flag, remark, create_by, create_time, update_by, update_time, platform_id, tenant_id, merchant_id").
+		Where("id = ?", in.Id).
+		Take(&dept).Error
+	if err != nil {
 		logc.Errorf(l.ctx, "查询部门异常, 请求参数：%+v, 异常信息: %s", in, err.Error())
 		return nil, errors.New("查询部门异常")
 	}
+	deptScope := logiccommon.DefaultScope(dept.PlatformID, dept.TenantID, dept.MerchantID)
 
 	data := &sysclient.QueryDeptDetailResp{
 		Id:         dept.ID,                                 // 部门id
@@ -71,6 +71,7 @@ func (l *QueryDeptDetailLogic) QueryDeptDetail(in *sysclient.QueryDeptDetailReq)
 		CreateTime: time_util.TimeToStr(dept.CreateTime),    // 创建时间
 		UpdateBy:   dept.UpdateBy,                           // 更新者
 		UpdateTime: time_util.TimeToString(dept.UpdateTime), // 更新时间
+		Scope:      logiccommon.ProtoScope(deptScope),
 	}
 
 	value, _ := sonic.Marshal(data)

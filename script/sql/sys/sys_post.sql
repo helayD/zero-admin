@@ -3,6 +3,9 @@ create table sys_post
 (
     id          bigint auto_increment comment '岗位id'
         primary key,
+    platform_id bigint       default 1                 not null comment '平台ID',
+    tenant_id   bigint       default 0                 not null comment '租户ID',
+    merchant_id bigint       default 0                 not null comment '商户ID',
     post_code   varchar(64)                            not null comment '岗位编码',
     post_name   varchar(50)                            not null comment '岗位名称',
     sort        int          default 0                 not null comment '显示顺序',
@@ -11,8 +14,13 @@ create table sys_post
     create_by   varchar(50)  default 'admin'           not null comment '创建者',
     create_time timestamp    default CURRENT_TIMESTAMP not null comment '创建时间',
     update_by   varchar(50)  default ''                not null comment '更新者',
-    update_time datetime                               null on update CURRENT_TIMESTAMP comment '更新时间'
+    update_time datetime                               null on update CURRENT_TIMESTAMP comment '更新时间',
+    constraint uk_sys_post_scope_code
+        unique (platform_id, tenant_id, merchant_id, post_code)
 ) comment = '岗位信息表';
+
+create index idx_sys_post_scope_status
+    on sys_post (platform_id, tenant_id, merchant_id, status);
 
 INSERT INTO sys_post (post_code, post_name, sort, status, remark) VALUES ('ceo', '董事长', 1, 1, '');
 INSERT INTO sys_post (post_code, post_name, sort, status, remark) VALUES ('pd', '项目经理', 2, 1, '');

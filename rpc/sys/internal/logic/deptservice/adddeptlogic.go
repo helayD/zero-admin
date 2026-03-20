@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/feihua/zero-admin/rpc/sys/gen/model"
-	"github.com/feihua/zero-admin/rpc/sys/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/sys/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/sys/internal/svc"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -38,11 +39,22 @@ func NewAddDeptLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AddDeptLo
 // 3.如果父节点不为正常状态,则不允许新增子节点
 // 4.部门不存在时,则直接添加部门
 func (l *AddDeptLogic) AddDept(in *sysclient.AddDeptReq) (*sysclient.AddDeptResp, error) {
-	q := query.SysDept.WithContext(l.ctx)
+	currentScope, err := logiccommon.NormalizeProtoScope(in.Scope)
+	if err != nil {
+		return nil, err
+	}
+	if err = logiccommon.ValidateTenantWritable(l.ctx, l.svcCtx.DB, currentScope); err != nil {
+		return nil, err
+	}
 
-	// 1.根据部门名称查询部门是否已存在
+	var count int64
+	scopeWhere, scopeArgs := logiccommon.ScopeFilterSQL("", currentScope)
 	name := in.DeptName
-	count, err := q.Where(query.SysDept.DeptName.Eq(name), query.SysDept.ParentID.Eq(in.ParentId)).Count()
+	err = l.svcCtx.DB.WithContext(l.ctx).
+		Table("sys_dept").
+		Where(scopeWhere, scopeArgs...).
+		Where("dept_name = ? AND parent_id = ?", name, in.ParentId).
+		Count(&count).Error
 
 	if err != nil {
 		logc.Errorf(l.ctx, "根据部门名称：%s,查询部门失败,异常:%s", name, err.Error())
@@ -56,22 +68,14 @@ func (l *AddDeptLogic) AddDept(in *sysclient.AddDeptReq) (*sysclient.AddDeptResp
 	}
 
 	// 3.如果父节点不为正常状态,则不允许新增子节点
-	parentDept, err := q.Where(query.SysDept.ID.Eq(in.ParentId)).First()
-
-	switch {
-	case errors.Is(err, gorm.ErrRecordNotFound):
-		logc.Errorf(l.ctx, "上级部门不存在, 请求参数：%+v, 异常信息: %s", in, err.Error())
-		return nil, errors.New("添加部门失败,上级部门不存在")
-	case err != nil:
-		logc.Errorf(l.ctx, "查询上级部门异常, 请求参数：%+v, 异常信息: %s", in, err.Error())
-		return nil, errors.New("添加部门失败,查询上级部门异常")
+	ancestors := "0"
+	if in.ParentId != 0 {
+		parentDept, parentErr := logiccommon.ValidateDeptInScope(l.ctx, l.svcCtx.DB, currentScope, in.ParentId)
+		if parentErr != nil {
+			return nil, parentErr
+		}
+		ancestors = fmt.Sprintf("%s,%d", parentDept.Ancestors, parentDept.ID)
 	}
-
-	if parentDept.Status != 1 {
-		return nil, errors.New(fmt.Sprintf("添加部门失败,：%s,停用，不允许新增", parentDept.DeptName))
-	}
-
-	ancestors := fmt.Sprintf("%s,%d", parentDept.Ancestors, parentDept.ID)
 	// 4.部门不存在时,则直接添加部门
 	dept := &model.SysDept{
 		ParentID:  in.ParentId, // 上级部门id
@@ -87,7 +91,18 @@ func (l *AddDeptLogic) AddDept(in *sysclient.AddDeptReq) (*sysclient.AddDeptResp
 		CreateBy:  in.CreateBy, // 创建者
 	}
 
-	err = q.Create(dept)
+	err = l.svcCtx.DB.WithContext(l.ctx).Transaction(func(tx *gorm.DB) error {
+		if err = tx.Create(dept).Error; err != nil {
+			return err
+		}
+		return tx.Table("sys_dept").
+			Where("id = ?", dept.ID).
+			Updates(map[string]interface{}{
+				"platform_id": currentScope.PlatformID,
+				"tenant_id":   currentScope.TenantID,
+				"merchant_id": currentScope.MerchantID,
+			}).Error
+	})
 
 	if err != nil {
 		logc.Errorf(l.ctx, "添加部门失败,参数:%+v,异常:%s", dept, err.Error())

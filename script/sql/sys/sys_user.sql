@@ -3,6 +3,9 @@ create table sys_user
 (
     id              bigint auto_increment comment '用户id'
         primary key,
+    platform_id     bigint       default 1                 not null comment '默认平台ID',
+    tenant_id       bigint       default 0                 not null comment '默认租户ID',
+    merchant_id     bigint       default 0                 not null comment '默认商户ID',
     mobile          char(11)     default ''                not null comment '手机号码',
     user_name       varchar(50)                            not null comment '用户账号',
     nick_name       varchar(30)                            not null comment '用户昵称',
@@ -23,6 +26,7 @@ create table sys_user
     create_time     timestamp    default CURRENT_TIMESTAMP not null comment '创建时间',
     update_by       varchar(50)  default ''                not null comment '更新者',
     update_time     datetime                               null comment '更新时间',
+    index idx_sys_user_scope (platform_id, tenant_id, merchant_id, dept_id),
     constraint AK_phone
         unique (mobile)
 ) comment '用户信息';

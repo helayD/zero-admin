@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/feihua/zero-admin/rpc/sys/gen/model"
 	"github.com/feihua/zero-admin/rpc/sys/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/sys/internal/logic/common"
 	"github.com/zeromicro/go-zero/core/logc"
 
 	"github.com/feihua/zero-admin/rpc/sys/internal/svc"
@@ -51,6 +52,14 @@ func (l *UpdateUserRoleListLogic) UpdateUserRoleList(in *sysclient.UpdateUserRol
 		return nil, errors.New("用户不存在")
 	}
 
+	currentScope, err := logiccommon.QueryUserDefaultScope(l.ctx, l.svcCtx.DB, in.UserId)
+	if err != nil {
+		return nil, errors.New("查询用户主体范围失败")
+	}
+	if err = logiccommon.ValidateRoleIDsInScope(l.ctx, l.svcCtx.DB, currentScope, in.RoleIds); err != nil {
+		return nil, err
+	}
+
 	err = query.Q.Transaction(func(tx *query.Query) error {
 
 		q := tx.SysUserRole
@@ -68,6 +77,9 @@ func (l *UpdateUserRoleListLogic) UpdateUserRoleList(in *sysclient.UpdateUserRol
 				RoleID: roleId,
 				UserID: userId,
 			})
+		}
+		if len(userRoles) == 0 {
+			return nil
 		}
 
 		// 3.添加用户与角色的关联

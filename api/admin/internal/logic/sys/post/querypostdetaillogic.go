@@ -2,6 +2,7 @@ package post
 
 import (
 	"context"
+	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -56,6 +57,7 @@ func (l *QueryPostDetailLogic) QueryPostDetail(req *types.QueryPostDetailReq) (r
 		UpdateBy:   detail.UpdateBy,   // 更新者
 		UpdateTime: detail.UpdateTime, // 更新时间
 	}
+	post.ScopeType, post.ScopeLabel, post.PlatformId, post.TenantId, post.MerchantId = admincommon.ReadGovernanceScope(detail.Scope)
 
 	return &types.QueryPostDetailResp{
 		Code:    "000000",
