@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_mall/config/service_url.dart';
 import 'package:flutter_mall/provider/cart_model.dart';
@@ -81,7 +82,7 @@ class _CartState extends State<Cart> {
                           ClipRRect(
                             borderRadius: const BorderRadius.all(Radius.circular(20)),
                             child: Image.network(
-                              cartListData[index].productPic,
+                              kIsWeb ? proxyImageUrl(cartListData[index].productPic) : cartListData[index].productPic,
                               width: 115,
                               height: 115,
                             ),

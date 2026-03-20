@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_mall/config/service_url.dart';
 import 'package:flutter_mall/utils/http_util.dart';
@@ -103,7 +104,7 @@ class _BrandDetailState extends State<BrandDetail> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               Image.network(
-                brandDetailData!.logo,
+                kIsWeb ? proxyImageUrl(brandDetailData!.logo) : brandDetailData!.logo,
                 width: 103,
                 height: 35,
               ),

@@ -30,9 +30,9 @@ func main() {
 	var server *rest.Server
 	if c.Swagger.IsTest {
 		fs := rest.WithFileServer("/swagger", http.Dir(c.Swagger.Path))
-		server = rest.MustNewServer(c.RestConf, fs)
+		server = rest.MustNewServer(c.RestConf, rest.WithCors(), fs)
 	} else {
-		server = rest.MustNewServer(c.RestConf)
+		server = rest.MustNewServer(c.RestConf, rest.WithCors())
 	}
 	defer server.Stop()
 
