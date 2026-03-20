@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter_mall/config/service_url.dart';
 
 ///
 /// 消息页面
@@ -48,7 +50,7 @@ class _MessageState extends State<Message> {
                             style: TextStyle(fontSize: 16, color: Color(int.parse('303133', radix: 16)).withAlpha(255)),
                           ),
                           Image.network(
-                            "http://macro-oss.oss-cn-shenzhen.aliyuncs.com/mall/images/20221104/xiaomi_12_pro_01.jpg",
+                            kIsWeb ? proxyImageUrl("http://macro-oss.oss-cn-shenzhen.aliyuncs.com/mall/images/20221104/xiaomi_12_pro_01.jpg") : "http://macro-oss.oss-cn-shenzhen.aliyuncs.com/mall/images/20221104/xiaomi_12_pro_01.jpg",
                             width: 115,
                             height: 130,
                           ),

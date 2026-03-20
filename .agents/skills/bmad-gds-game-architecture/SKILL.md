@@ -1,0 +1,17 @@
+---
+name: bmad-gds-game-architecture
+description: Technical game systems architecture design. Use when the user says "lets create a game architecture" or "I want to design technical game systems"
+---
+
+# bmad-gds-game-architecture
+
+Run the BMAD command defined in `.claude/commands/bmad-gds-game-architecture.md`, but do not stop at the command shim.
+
+1. Load `.claude/commands/bmad-gds-game-architecture.md`.
+2. Read it completely, including YAML frontmatter and body.
+3. Resolve `{project-root}` to the current repository root before using referenced paths.
+4. Continue following every referenced BMAD file transitively until the concrete `_bmad` agent, workflow, or task is fully loaded.
+5. Execute that concrete BMAD resource exactly as written.
+6. When the BMAD instructions reference module config files such as `_bmad/core/config.yaml` or `_bmad/*/config.yaml`, load them completely before producing output.
+7. When the BMAD instructions reference `_bmad/_memory/...` files, load them completely and treat them as mandatory BMAD memory rules, not optional background context.
+8. Do not stop after reading the command shim if it points to deeper BMAD instructions.

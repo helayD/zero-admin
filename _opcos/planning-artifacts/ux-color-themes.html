@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zero-Admin UX Color Themes</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --panel-strong: #0f172a;
+      --text: #13233c;
+      --muted: #64748b;
+      --line: #d9e2ef;
+      --primary: #1f5eff;
+      --accent: #ff6b4a;
+      --success: #18a957;
+      --warning: #f4a321;
+      --danger: #d64545;
+      --scope: #5b4bdb;
+      --shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+      --radius: 24px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Manrope", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(31, 94, 255, 0.12), transparent 28%),
+        radial-gradient(circle at top right, rgba(255, 107, 74, 0.1), transparent 26%),
+        linear-gradient(180deg, #f9fbff 0%, #f2f6fb 100%);
+    }
+
+    .shell {
+      width: min(1320px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 40px 0 64px;
+    }
+
+    .hero {
+      display: grid;
+      gap: 24px;
+      grid-template-columns: 1.1fr 0.9fr;
+      align-items: start;
+      margin-bottom: 28px;
+    }
+
+    .hero-card,
+    .panel,
+    .theme-card {
+      background: rgba(255, 255, 255, 0.82);
+      border: 1px solid rgba(217, 226, 239, 0.9);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+    }
+
+    .hero-card {
+      padding: 28px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(91, 75, 219, 0.1);
+      color: var(--scope);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+    }
+
+    h1 {
+      margin: 18px 0 12px;
+      font-size: clamp(34px, 5vw, 56px);
+      line-height: 1.02;
+      letter-spacing: -0.03em;
+    }
+
+    p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .hero-grid {
+      display: grid;
+      gap: 16px;
+      margin-top: 20px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .stat {
+      padding: 18px;
+      border-radius: 20px;
+      background: #f7faff;
+      border: 1px solid rgba(217, 226, 239, 0.9);
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 26px;
+      margin-bottom: 8px;
+      color: var(--panel-strong);
+    }
+
+    .control-panel {
+      padding: 24px;
+    }
+
+    .section-title {
+      margin: 0 0 14px;
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--panel-strong);
+    }
+
+    .theme-buttons {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin-bottom: 18px;
+    }
+
+    .theme-button {
+      border: 1px solid rgba(217, 226, 239, 0.9);
+      background: #fff;
+      border-radius: 18px;
+      padding: 14px 16px;
+      cursor: pointer;
+      text-align: left;
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .theme-button:hover,
+    .theme-button.active {
+      transform: translateY(-2px);
+      border-color: rgba(31, 94, 255, 0.35);
+      box-shadow: 0 16px 32px rgba(31, 94, 255, 0.12);
+    }
+
+    .theme-button strong {
+      display: block;
+      font-size: 15px;
+      color: var(--panel-strong);
+      margin-bottom: 6px;
+    }
+
+    .theme-button span {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .swatches {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .swatch {
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      border: 2px solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14);
+    }
+
+    .preview-grid {
+      display: grid;
+      gap: 24px;
+      grid-template-columns: 1.15fr 0.85fr;
+      margin-bottom: 28px;
+    }
+
+    .panel {
+      padding: 24px;
+    }
+
+    .admin-shell {
+      overflow: hidden;
+      border-radius: 24px;
+      border: 1px solid rgba(217, 226, 239, 0.9);
+      background: #fbfdff;
+    }
+
+    .admin-top {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      min-height: 460px;
+    }
+
+    .sidebar {
+      background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 14%, white), #f9fbff);
+      padding: 22px 18px;
+      border-right: 1px solid rgba(217, 226, 239, 0.9);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      font-weight: 800;
+      color: var(--panel-strong);
+    }
+
+    .brand-badge {
+      width: 38px;
+      height: 38px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--primary), var(--scope));
+    }
+
+    .nav-item {
+      padding: 12px 14px;
+      border-radius: 16px;
+      color: var(--muted);
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .nav-item.active {
+      background: rgba(255, 255, 255, 0.9);
+      color: var(--primary);
+      box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+    }
+
+    .workspace {
+      padding: 22px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 251, 255, 0.96)),
+        radial-gradient(circle at top right, color-mix(in srgb, var(--accent) 12%, white), transparent 28%);
+    }
+
+    .scope-banner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 18px;
+      border-radius: 18px;
+      background: linear-gradient(90deg, color-mix(in srgb, var(--scope) 16%, white), #ffffff);
+      border: 1px solid color-mix(in srgb, var(--scope) 20%, white);
+      margin-bottom: 18px;
+    }
+
+    .scope-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.88);
+      color: var(--scope);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .dashboard {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: 1.1fr 0.9fr;
+    }
+
+    .stack {
+      display: grid;
+      gap: 16px;
+    }
+
+    .card {
+      padding: 18px;
+      border-radius: 18px;
+      border: 1px solid rgba(217, 226, 239, 0.9);
+      background: #ffffff;
+    }
+
+    .card strong {
+      display: block;
+      color: var(--panel-strong);
+      margin-bottom: 8px;
+      font-size: 15px;
+    }
+
+    .metrics {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 14px;
+    }
+
+    .metric {
+      padding: 14px;
+      border-radius: 16px;
+      background: #f8fbff;
+      border: 1px solid rgba(217, 226, 239, 0.9);
+    }
+
+    .metric b {
+      display: block;
+      font-size: 20px;
+      margin-bottom: 6px;
+      color: var(--panel-strong);
+    }
+
+    .line {
+      height: 11px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--primary), color-mix(in srgb, var(--primary) 18%, white));
+      margin: 8px 0;
+      opacity: 0.85;
+    }
+
+    .line.secondary {
+      background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 24%, white));
+      width: 72%;
+    }
+
+    .line.warning {
+      background: linear-gradient(90deg, var(--warning), color-mix(in srgb, var(--warning) 32%, white));
+      width: 54%;
+    }
+
+    .mobile-shell {
+      width: min(360px, 100%);
+      margin: 0 auto;
+      border-radius: 32px;
+      padding: 14px;
+      background: linear-gradient(180deg, #0f172a, #23324a);
+      box-shadow: 0 24px 48px rgba(15, 23, 42, 0.3);
+    }
+
+    .mobile-screen {
+      border-radius: 24px;
+      overflow: hidden;
+      background: #ffffff;
+      min-height: 580px;
+    }
+
+    .mobile-hero {
+      padding: 22px;
+      background:
+        radial-gradient(circle at top right, color-mix(in srgb, var(--accent) 24%, white), transparent 30%),
+        linear-gradient(180deg, color-mix(in srgb, var(--primary) 12%, white), #ffffff);
+    }
+
+    .mobile-chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .chip {
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--primary) 10%, white);
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .product-card {
+      margin: 16px;
+      padding: 16px;
+      border-radius: 20px;
+      border: 1px solid rgba(217, 226, 239, 0.9);
+      background: #fff;
+      box-shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
+    }
+
+    .product-art {
+      height: 180px;
+      border-radius: 16px;
+      background:
+        radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.88), transparent 20%),
+        linear-gradient(135deg, color-mix(in srgb, var(--accent) 35%, white), color-mix(in srgb, var(--primary) 20%, white));
+      margin-bottom: 14px;
+    }
+
+    .cta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 14px;
+    }
+
+    .price {
+      font-size: 28px;
+      font-weight: 900;
+      color: var(--accent);
+      letter-spacing: -0.03em;
+    }
+
+    .buy {
+      border: 0;
+      border-radius: 999px;
+      padding: 14px 20px;
+      color: #fff;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 65%, var(--primary)));
+      box-shadow: 0 18px 34px color-mix(in srgb, var(--accent) 26%, transparent);
+    }
+
+    .themes-grid {
+      display: grid;
+      gap: 18px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .theme-card {
+      padding: 20px;
+      transition: transform 0.24s ease, box-shadow 0.24s ease;
+    }
+
+    .theme-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 26px 54px rgba(15, 23, 42, 0.14);
+    }
+
+    .theme-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: start;
+      margin-bottom: 14px;
+    }
+
+    .theme-tag {
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--scope);
+      background: rgba(91, 75, 219, 0.12);
+    }
+
+    .theme-palette {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      margin: 16px 0 14px;
+    }
+
+    .theme-swatch {
+      height: 54px;
+      border-radius: 16px;
+    }
+
+    .footer-note {
+      margin-top: 28px;
+      padding: 20px 24px;
+      border-radius: 24px;
+      background: rgba(15, 23, 42, 0.96);
+      color: rgba(255, 255, 255, 0.76);
+    }
+
+    .footer-note strong {
+      color: #fff;
+    }
+
+    @media (max-width: 1100px) {
+      .hero,
+      .preview-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .themes-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 780px) {
+      .theme-buttons,
+      .hero-grid,
+      .dashboard,
+      .metrics,
+      .themes-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .admin-top {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        border-right: 0;
+        border-bottom: 1px solid rgba(217, 226, 239, 0.9);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="hero">
+      <div class="hero-card">
+        <div class="eyebrow">Zero-Admin UX / Color Themes</div>
+        <h1>统一平台治理与交易转化的配色语言</h1>
+        <p>这个可视化页面用于比较 Zero-Admin 在后台治理、商城转化、异常提示和跨端状态表达上的配色方案。当前默认选中的主题是规范中推荐的「Scope Blue + Commerce Coral」。</p>
+        <div class="hero-grid">
+          <div class="stat">
+            <strong>6 套</strong>
+            <p>可比较的主题方向，兼顾平台感与商城转化感。</p>
+          </div>
+          <div class="stat">
+            <strong>AA</strong>
+            <p>按 WCAG AA 目标校验文本与按钮的主要对比度。</p>
+          </div>
+          <div class="stat">
+            <strong>2 端</strong>
+            <p>同一套语义 token 同时映射到 Web 后台与 Flutter 商城。</p>
+          </div>
+        </div>
+      </div>
+
+      <aside class="hero-card control-panel">
+        <h2 class="section-title">切换主题</h2>
+        <div class="theme-buttons" id="themeButtons"></div>
+        <p>推荐将后台主控制色和商城主转化色分开表达：前者承担稳定与治理，后者承担购买与行动。</p>
+      </aside>
+    </section>
+
+    <section class="preview-grid">
+      <div class="panel">
+        <h2 class="section-title">Web 后台实时预览</h2>
+        <div class="admin-shell">
+          <div class="admin-top">
+            <div class="sidebar">
+              <div class="brand">
+                <div class="brand-badge"></div>
+                Zero-Admin
+              </div>
+              <div class="nav-item active">订单工作台</div>
+              <div class="nav-item">商户治理</div>
+              <div class="nav-item">商品中心</div>
+              <div class="nav-item">营销编排</div>
+              <div class="nav-item">搜索同步</div>
+            </div>
+
+            <div class="workspace">
+              <div class="scope-banner">
+                <div>
+                  <div class="scope-pill">租户 / 商户作用域已锁定</div>
+                  <div style="margin-top: 10px; font-weight: 800; color: var(--panel-strong);">当前上下文：华东运营租户 / 星海家居旗舰店</div>
+                  <div style="margin-top: 6px; color: var(--muted); font-size: 14px;">本页所有启停、审核、商品发布与订单处理动作仅影响当前商户。</div>
+                </div>
+                <div style="display: grid; gap: 10px; min-width: 160px;">
+                  <div style="padding: 10px 12px; border-radius: 16px; background: #fff; font-weight: 800; color: var(--primary);">支付成功率 96.8%</div>
+                  <div style="padding: 10px 12px; border-radius: 16px; background: #fff; font-weight: 800; color: var(--warning);">2 条补偿待确认</div>
+                </div>
+              </div>
+
+              <div class="dashboard">
+                <div class="stack">
+                  <div class="card">
+                    <strong>关键订单摘要</strong>
+                    <p>待支付、待发货、退款中和异常订单聚合在同一列表工作流中，支持直接进入处理抽屉。</p>
+                    <div class="metrics">
+                      <div class="metric"><b>82</b><span>待发货</span></div>
+                      <div class="metric"><b>13</b><span>退款处理中</span></div>
+                      <div class="metric"><b>4</b><span>同步异常</span></div>
+                    </div>
+                  </div>
+                  <div class="card">
+                    <strong>列表到详情的连续节奏</strong>
+                    <div class="line"></div>
+                    <div class="line secondary"></div>
+                    <div class="line warning"></div>
+                  </div>
+                </div>
+                <div class="stack">
+                  <div class="card">
+                    <strong>订单详情 / 时间线</strong>
+                    <p>从创建、支付、发货、售后到补偿，每个状态都可解释、可追踪、可恢复。</p>
+                  </div>
+                  <div class="card">
+                    <strong>主操作语义</strong>
+                    <p>平台治理主按钮使用控制蓝，交易和转化动作使用交易强调色，危险动作始终独立。</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2 class="section-title">Flutter 商城实时预览</h2>
+        <div class="mobile-shell">
+          <div class="mobile-screen">
+            <div class="mobile-hero">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-weight: 800; color: var(--panel-strong);">今日值得买</div>
+                <div class="scope-pill">新人券已解锁</div>
+              </div>
+              <h3 style="margin: 14px 0 0; font-size: 30px; line-height: 1.06; color: var(--panel-strong);">让商品、优惠和支付状态始终可信</h3>
+              <div class="mobile-chip-row">
+                <div class="chip">次日达</div>
+                <div class="chip">满减可叠加</div>
+                <div class="chip">售后有保障</div>
+              </div>
+            </div>
+
+            <div class="product-card">
+              <div class="product-art"></div>
+              <div style="font-size: 18px; font-weight: 800; color: var(--panel-strong);">云岚人体工学椅 Pro</div>
+              <p style="margin-top: 8px;">规格、库存、活动、配送和售后承诺在同一视图里连续呈现。</p>
+              <div class="cta">
+                <div class="price">¥899</div>
+                <button class="buy">立即购买</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="themes-grid" id="themeGallery"></section>
+
+    <div class="footer-note">
+      <strong>推荐结论：</strong>优先使用「Scope Blue + Commerce Coral」作为主方案。它最适合 Zero-Admin 当前的双重目标：
+      一方面支撑平台治理、权限、订单状态和异常处理的可信表达；另一方面又能在商城端保留足够明确的购买推动力。
+    </div>
+  </div>
+
+  <script>
+    const themes = [
+      {
+        id: "scope-blue",
+        name: "Scope Blue + Commerce Coral",
+        tag: "Recommended",
+        description: "平台治理稳定、商城转化明确，适合作为当前默认主方案。",
+        note: "最平衡的后台控制感与商城购买感。",
+        colors: {
+          primary: "#1F5EFF",
+          accent: "#FF6B4A",
+          success: "#18A957",
+          warning: "#F4A321",
+          danger: "#D64545",
+          scope: "#5B4BDB"
+        }
+      },
+      {
+        id: "slate-mint",
+        name: "Slate Mint Ledger",
+        tag: "Governance",
+        description: "偏企业级、冷静、财务感更强，适合突出稳定与治理。",
+        note: "适合平台控制台，但商城购买冲动稍弱。",
+        colors: {
+          primary: "#1E3A5F",
+          accent: "#00A38C",
+          success: "#1D9B5E",
+          warning: "#DB9B1F",
+          danger: "#C13F4B",
+          scope: "#3F5BD8"
+        }
+      },
+      {
+        id: "jade-amber",
+        name: "Jade Trust + Amber Action",
+        tag: "Service",
+        description: "更亲和，适合强调服务感、售后感和长期复购。",
+        note: "售后与会员运营氛围优秀。",
+        colors: {
+          primary: "#157A6E",
+          accent: "#F28C28",
+          success: "#1C9A5F",
+          warning: "#D99A1A",
+          danger: "#C94848",
+          scope: "#4C62D8"
+        }
+      },
+      {
+        id: "graphite-rose",
+        name: "Graphite + Signal Rose",
+        tag: "Premium",
+        description: "更强调质感与品牌风格，适合重内容、重品牌调性商城。",
+        note: "高级感较强，但后台辨识度需更严格控制。",
+        colors: {
+          primary: "#2C3748",
+          accent: "#FF5E7A",
+          success: "#1B9C75",
+          warning: "#F3A931",
+          danger: "#D53F4A",
+          scope: "#6754D7"
+        }
+      },
+      {
+        id: "midnight-cyan",
+        name: "Midnight Ops + Cyan Signal",
+        tag: "Monitoring",
+        description: "更适合强调监控、告警、同步和系统信号感。",
+        note: "适合异常治理页和技术运营页。",
+        colors: {
+          primary: "#0E3A66",
+          accent: "#17B5E0",
+          success: "#14A567",
+          warning: "#EEA122",
+          danger: "#D94B4B",
+          scope: "#6048E8"
+        }
+      },
+      {
+        id: "indigo-gold",
+        name: "Indigo Commerce + Gold Priority",
+        tag: "Campaign",
+        description: "更强调活动、营销和高优先级任务的视觉抓手。",
+        note: "适合大促氛围，但需要克制使用避免噪音。",
+        colors: {
+          primary: "#3547D6",
+          accent: "#FF8A00",
+          success: "#1BA75E",
+          warning: "#E2A213",
+          danger: "#CE4A4A",
+          scope: "#6948D8"
+        }
+      }
+    ];
+
+    const root = document.documentElement;
+    const buttons = document.getElementById("themeButtons");
+    const gallery = document.getElementById("themeGallery");
+
+    function renderButtons() {
+      buttons.innerHTML = themes.map((theme, index) => `
+        <button class="theme-button ${index === 0 ? "active" : ""}" data-id="${theme.id}">
+          <strong>${theme.name}</strong>
+          <span>${theme.description}</span>
+          <div class="swatches">
+            <span class="swatch" style="background:${theme.colors.primary}"></span>
+            <span class="swatch" style="background:${theme.colors.accent}"></span>
+            <span class="swatch" style="background:${theme.colors.success}"></span>
+            <span class="swatch" style="background:${theme.colors.warning}"></span>
+            <span class="swatch" style="background:${theme.colors.scope}"></span>
+          </div>
+        </button>
+      `).join("");
+    }
+
+    function renderGallery() {
+      gallery.innerHTML = themes.map(theme => `
+        <article class="theme-card">
+          <div class="theme-head">
+            <div>
+              <strong style="display:block; font-size:18px; color:#0f172a; margin-bottom:6px;">${theme.name}</strong>
+              <p>${theme.description}</p>
+            </div>
+            <span class="theme-tag">${theme.tag}</span>
+          </div>
+          <div class="theme-palette">
+            <div class="theme-swatch" style="background:${theme.colors.primary}"></div>
+            <div class="theme-swatch" style="background:${theme.colors.accent}"></div>
+            <div class="theme-swatch" style="background:${theme.colors.success}"></div>
+            <div class="theme-swatch" style="background:${theme.colors.warning}"></div>
+            <div class="theme-swatch" style="background:${theme.colors.scope}"></div>
+          </div>
+          <p>${theme.note}</p>
+        </article>
+      `).join("");
+    }
+
+    function applyTheme(themeId) {
+      const theme = themes.find(item => item.id === themeId) || themes[0];
+      Object.entries(theme.colors).forEach(([key, value]) => {
+        root.style.setProperty(`--${key}`, value);
+      });
+
+      document.querySelectorAll(".theme-button").forEach(button => {
+        button.classList.toggle("active", button.dataset.id === theme.id);
+      });
+    }
+
+    renderButtons();
+    renderGallery();
+    applyTheme(themes[0].id);
+
+    buttons.addEventListener("click", (event) => {
+      const button = event.target.closest(".theme-button");
+      if (!button) return;
+      applyTheme(button.dataset.id);
+    });
+  </script>
+</body>
+</html>

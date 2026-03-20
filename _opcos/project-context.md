@@ -1,7 +1,7 @@
 ---
-project_name: 九克城
-user_name: David
-date: 2026-03-14
+project_name: 'ai_flutter_client'
+user_name: 'David'
+date: '2026-03-19T21:20:20+0800'
 sections_completed:
   - technology_stack
   - language_rules
@@ -10,228 +10,94 @@ sections_completed:
   - quality_rules
   - workflow_rules
   - anti_patterns
-status: complete
-rule_count: 55
+status: 'complete'
+rule_count: 33
 optimized_for_llm: true
 ---
 
 # Project Context for AI Agents
 
-_This file contains critical rules and patterns that AI agents must follow when implementing code in this project. Focus on unobvious details that agents might otherwise miss._
+_面向 zero-admin / 九克城仓库的 AI 代理规则。只记录容易被忽略、但会影响实现正确性的约束，不记录主机密码或冗长部署清单。_
 
 ---
 
 ## Technology Stack & Versions
 
-### Backend (Go)
-- **Go**: 1.25
-- **go-zero**: 1.9.3
-- **GORM**: 1.31.1 + GORM Gen 0.3.27
-- **MongoDB Driver**: v1.17.6
-- **Redis**: v9.16.0
-- **gRPC**: v1.77.0
-- **JWT**: golang-jwt/jwt v4.5.2
-- **Elasticsearch**: v9.2.0
-- **RabbitMQ**: v1.10.0
-- **Prometheus**: v1.21.1
-
-### Frontend (React)
-- **React**: 17.0.0
-- **Ant Design Pro**: 5.2.0
-- **Umi**: 3.5.0
-- **TypeScript**: 4.5.0
-
-### Mobile (Flutter)
-- **Flutter SDK**: ^3.10.7
-- **Provider**: ^6.1.5+1 (状态管理)
-- **Dio**: ^5.9.0 (HTTP 客户端)
-- **cached_network_image**: ^3.4.1 (图片缓存)
-- **shared_preferences**: ^2.5.4 (本地存储)
-- **card_swiper**: ^3.0.1 (卡片轮播)
-- **easy_refresh**: ^3.4.0 (下拉刷新)
-- **flutter_spinkit**: ^5.2.2 (加载动画)
-- **bottom_sheet**: ^4.0.4 (底部弹窗)
-
----
-
-## 基础环境要求
-
-### 服务器信息
-
-| 属性 | 值 |
-|------|------|
-| **服务器地址** | 47.107.224.56 |
-| **SSH 端口** | 22 |
-| **用户名** | root |
-| **密码** | Qianmai1# |
-| **SSH 命令** | `ssh root@47.107.224.56` |
-
-### 必须的基础设施服务
-
-| 服务 | 版本 | 端口 | 用途 |
-|------|------|------|------|
-| **MySQL** | 8.0+ | 3306 | 主数据库 (gozero) |
-| **Redis** | 6.0+ | 16379 | 缓存 (密码: 123456) |
-| **MongoDB** | 7.0+ | 27017 | 会员数据存储 |
-| **Elasticsearch** | 8.x | 9200 | 搜索服务 (cluster: opencoze) |
-| **RabbitMQ** | 3.9+ | 5672 | 消息队列 (用户: test/test) |
-| **Etcd** | 3.5+ | Docker 2379 | 服务注册与发现 (Milvus) |
-
-### API 网关服务
-
-| 服务 | 端口 | 说明 |
-|------|------|------|
-| **admin-api** | 8888 | 管理端 API 网关 |
-| **front-api** | 9999 | 用户端 API 网关 (Flutter 移动端对接) |
-
-### RPC 微服务
-
-| 服务 | 端口 | 说明 |
-|------|------|------|
-| **sys-rpc** | 8070 | 系统管理 |
-| **ums-rpc** | 8081 | 会员管理 |
-| **pms-rpc** | 8082 | 商品管理 |
-| **oms-rpc** | 8083 | 订单管理 |
-| **sms-rpc** | 8084 | 营销管理 |
-| **cms-rpc** | 8085 | 内容管理 |
-| **search-rpc** | 8088 | 搜索服务 |
-
-### 监控服务
-
-| 服务 | 端口 | 说明 |
-|------|------|------|
-| **Prometheus** | 各服务独立 | 指标收集 |
-
-### Flutter 移动端配置
-
-- **API 地址**: `http://47.107.224.56:9999` (生产环境)
-- **静态资源**: 阿里云 OSS (macro-oss.oss-cn-shenzhen.aliyuncs.com)
-
-### 部署的访问地址
-
-| 服务 | 地址 | 说明 |
-|------|------|------|
-| **管理后台** | http://47.107.224.56:8000 | 管理端前端 (Ant Design Pro) |
-| **API 文档** | http://47.107.224.56:8888/swagger | Swagger API 文档 |
-| **用户端 API** | http://47.107.224.56:9999 | 移动端 API |
-
-### 账号信息
-
-| 系统 | 账号 | 密码 |
-|------|------|------|
-| **管理后台** | admin | 123456 |
-| **MySQL** | root | 12341qweqfsd2356 |
-| **Redis** | - | 123456 |
-| **MongoDB** | admin | admin123 |
-| **RabbitMQ** | test | test |
-
----
+- Backend: Go `1.25`, go-zero `1.9.3`, gRPC `1.77.0`, GORM `1.31.1`, gorm/gen `0.3.27`, go-redis `v9.16.0`, mongo-driver `v1.17.6` + `v2.4.0`, RabbitMQ `amqp091-go v1.10.0`, Elasticsearch client `v9.2.0`.
+- Web Admin: Ant Design Pro `5.2.0`, React `17.0.0`, Umi `3.5.0`, TypeScript `4.5.0`, Ant Design `4.17.0`, Playwright `1.17.0`, ESLint `7.32.0`, `@umijs/fabric` `2.8.0`.
+- Mobile: Flutter stable app, Dart SDK `^3.7.0`, Provider `6.1.5+1`, Dio `5.9.2`, cached_network_image `3.4.1`, easy_refresh `3.4.0`, card_swiper `3.0.1`, bottom_sheet `4.0.4`, flutter_spinkit `5.2.2`, shared_preferences `2.5.3`, flutter_lints `5.0.0`.
 
 ## Critical Implementation Rules
 
-### Language-Specific Rules (Go)
+### Language-Specific Rules
 
-1. **Import 顺序**: 标准库 → 外部包 → 内部包
-2. **错误处理**: 使用 `errorx.NewDefaultError()` + `logc.Errorf()`
-3. **字符串处理**: 使用 `strings.TrimSpace()` 处理输入
-4. **结构体注释**: 包含 Author 和 Date
-5. **上下文传递**: Logic 层接收 `context.Context`
+- Go API/RPC/application handoff follows `handler -> logic -> svc`; keep handlers focused on parse, dispatch, and response only.
+- Route business errors through `pkg/errorx` or admin-side `api/admin/internal/common/errorx`, and log failures with context via `logc.Errorf` or `logx`.
+- When adding request fields, define defaults in `.api` tags such as `default=1` and `default=20`, then regenerate; do not hand-edit generated `types.go` defaults.
+- Keep RPC-to-API mapping explicit inside logic files; do not return RPC structs directly from gateway handlers.
+- `web-admin` TypeScript is effectively strict (`strict`, `noImplicitReturns`, `noUnusedLocals`); prefer typed `request<T>()` calls and remove unused locals/imports instead of suppressing them.
+- Flutter startup assumes `SharedPreferencesUtil.init()` completes before UI or network-dependent code runs; preserve that order in `main()`.
 
-### Framework-Specific Rules (go-zero)
+### Framework-Specific Rules
 
-1. **三层架构**: Handler → Logic → Service
-2. **Handler 模式**:
-   ```go
-   func XxxHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
-       return func(w http.ResponseWriter, r *http.Request) {
-           var req types.XxxReq
-           if err := httpx.Parse(r, &req); err != nil { ... }
-           l := xxx.NewXxxLogic(r.Context(), svcCtx)
-           resp, err := l.Xxx(&req)
-           // 统一返回
-       }
-   }
-   ```
-3. **Logic 结构体**:
-   ```go
-   type XxxLogic struct { logx.Logger; ctx context.Context; svcCtx *svc.ServiceContext }
-   ```
-4. **类型定义**: `form:"field,default=1"` / `json:"field,optional"`
-5. **服务访问**: 通过 `svcCtx.XxxService` 调用 RPC
+- Files marked `Code generated by goctl`, `gorm.io/gen`, `protoc`, or similar are generation artifacts; change the `.api`, `.proto`, or generator source and regenerate instead of editing generated clients/models/pb files directly.
+- Add new shared dependencies and service clients in `internal/svc/service_context.go` and pass them through `svcCtx`; do not instantiate duplicate clients ad hoc across logic files.
+- Admin gateway and front gateway are not symmetric: `admin-api` installs custom `httpx.SetErrorHandler` and `ctx.AddLog`, while `front-api` largely returns through default `httpx.ErrorCtx`; match the gateway you are changing.
+- `web-admin` networking goes through Umi `request`; keep service calls in `src/pages/**/service.ts` or `src/services/**`, and rely on the existing interceptors for `Authorization`.
+- In `web-admin`, local development expects relative `/api/` paths so `config/proxy.ts` can forward to `http://127.0.0.1:8888/`; do not hardcode backend hosts in page components or service modules.
+- Management pages generally follow `index.tsx` + `service.ts` + `data.d.ts` + `components/*` with `PageContainer` and `ProTable`; extend that module pattern instead of inventing a new one.
+- `flutter-mall` keeps full endpoint constants in `lib/config/service_url.dart`, uses an empty Dio `baseUrl`, and handles `401` centrally in `HttpUtil`; new API calls should go through those shared layers, not raw `Dio` inside widgets.
 
 ### Testing Rules
 
-- 使用 Playwright 进行 E2E 测试 (web-admin)
-- Go 层暂无单元测试，建议为 Logic 层添加
-- API 测试使用 httptest
-- Flutter: 使用 flutter_test 进行单元测试
-
-### Framework-Specific Rules (Flutter)
-
-1. **状态管理**: 使用 Provider ^6.1.5+1
-2. **API 调用**: 使用 Dio ^5.9.0，配置拦截器处理认证和错误
-3. **目录结构**:
-   ```
-   lib/
-   ├── models/          # 数据模型
-   ├── services/        # API 服务层
-   ├── providers/       # Provider 状态管理
-   ├── screens/         # 页面
-   ├── widgets/         # 通用组件
-   └── utils/           # 工具类
-   ```
-4. **Widget 构建**: 使用 const 构造函数优化性能
-5. **图片加载**: 使用 cached_network_image 进行缓存
-6. **列表刷新**: 使用 easy_refresh 实现下拉刷新
-7. **状态更新**: 使用 ChangeNotifier + Consumer 或 context.watch
+- Run the smallest relevant check for each surface: Go changes need at least build or targeted validation, `web-admin` uses `npm run lint`, `npm run tsc`, `npm run test`, or `npm run test:e2e`, and Flutter uses `flutter analyze` plus `flutter test`.
+- `web-admin` already has Jest setup (`tests/setupTests.js`) and Playwright config; reuse those harnesses instead of adding a parallel runner.
+- For menu, category, and other tree/list pages, verify both service output and the transformed UI because pages often reshape flat data with `tree(data, 0, 'parentId')`.
+- Backend logic frequently maps and filters RPC responses before returning them; when changing those flows, validate both happy-path data and empty/error fallback behavior.
 
 ### Code Quality & Style Rules
 
-- **Go**: gofmt/goimports 格式化
-- **React**: ESLint (@umijs/fabric) + Prettier
-- **命名**: snake_case (文件) / PascalCase (结构体)
-- **目录结构**: 必须遵循 api/admin/internal/* 模式
+- Preserve local file conventions rather than reformatting whole modules: Go files are package-oriented and snake_case, React pages often use `index.tsx`, and Flutter files are snake_case with colocated models/widgets/providers.
+- Keep Chinese product copy and existing author/date comment blocks in files that already use them; do not do repo-wide "English cleanup".
+- Avoid touching build artifacts and generated folders such as `web-admin/src/.umi`, `web-admin/dist`, `flutter-mall/build`, `rpc/**/client`, `rpc/**/gen`, `*_pb.go`, and generated swagger/static outputs unless you are explicitly regenerating them.
+- In `web-admin`, shared hierarchical transforms use `tree(data, 0, 'parentId')`; reuse that helper rather than rewriting tree-building logic inline.
+- In Flutter, prefer `CachedImageWidget` for remote images so native and web behavior stay aligned with the current caching and proxy strategy.
 
 ### Development Workflow Rules
 
-1. **代码生成**: `generate-code` + `goctl`
-2. **构建**: `make build` / `make deps`
-3. **服务模块**: admin-api, front-api, sys/ums/oms/pms/cms rpc
+- Repo-level backend build/start flows are standardized around `make build`, `make start`, and `make stop`; service-specific restarts are handled by `service_manager.sh`.
+- Code generation is part of normal development here: use `make gen` after changing `.api` or `.proto`, and `make model` after changing GORM generation sources.
+- Local `web-admin` development uses `npm run start:dev`; keep API assumptions compatible with the proxy and current login/token flow.
+- Runtime config is copied into `target/<service>/<service>.yaml`; when you add or rename a service, update copy/build scripts consistently.
+- If you are operating in a Windsurf session that honors `.windsurfrules`, finish work through the Ask Continue checkpoint before closing the task; treat it as an IDE workflow rule, not application runtime logic.
 
 ### Critical Don't-Miss Rules
 
-**禁止事项:**
-- ❌ 手动修改生成代码 (rpc/*/gen/, types/types.go)
-- ❌ 在 API 层写业务逻辑
-- ❌ 绕过 go-zero 框架约定
-- ❌ 直接操作数据库 (必须用 GORM)
-
-**边界情况:**
-- ✅ 空值检查: `strings.TrimSpace()`
-- ✅ 分页默认值: `default=1`, `default=20`
-- ✅ 错误日志: 包含请求参数
-
-**安全规则:**
-- 密码加密: 使用项目约定方式
-- JWT: 使用 golang-jwt 库
-- SQL注入: GORM 参数化查询
+- Do not place business logic in API handlers; keep it in `logic` and downstream service layers.
+- Do not commit server passwords, SSH credentials, or other secrets into `project-context.md` or other agent-facing guidance.
+- Do not bypass `web-admin` request interceptors by manually duplicating token flow in every page; centralize around `app.tsx` and shared helpers.
+- Do not bypass `proxyImageUrl()` on Flutter Web for external or OSS images; direct `Image.network` can fail under CanvasKit/CORS.
+- Do not assume admin, front, job, and consumer services share the same error wrapper or middleware chain.
+- Do not hand-edit files that already say `DO NOT EDIT`; regenerate from the source definition instead.
 
 ---
 
 ## Usage Guidelines
 
 **For AI Agents:**
-- Read this file before implementing any code
-- Follow ALL rules exactly as documented
-- When in doubt, prefer the more restrictive option
-- Update this file if new patterns emerge
+
+- Read this file before changing backend, web-admin, or Flutter code.
+- Prefer the existing generated-code and shared-helper flows over ad hoc shortcuts.
+- When two subsystems differ, follow the local convention of the subsystem you are editing.
+- Update this file when the repo adopts a new generator, framework, or non-obvious workflow rule.
 
 **For Humans:**
-- Keep this file lean and focused on agent needs
-- Update when technology stack changes
-- Review quarterly for outdated rules
-- Remove rules that become obvious over time
+
+- Keep this file lean and focused on agent mistakes that are expensive or easy to repeat.
+- Remove secrets, server inventories, and one-off environment notes from this document.
+- Refresh versions when `go.mod`, `web-admin/package.json`, or `flutter-mall/pubspec.lock` changes materially.
+- Review this file periodically so it stays short enough for agents to read before implementation.
 
 ---
 
-_Last Updated: 2026-03-14_
+_Last Updated: 2026-03-19T21:20:20+0800_

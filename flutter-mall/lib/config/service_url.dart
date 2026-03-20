@@ -9,6 +9,17 @@
 // const baseUrl = "http://10.168.96.23:9999";
 // const baseUrl = "http://127.0.0.1:9999";
 const baseUrl = "http://47.107.224.56:9999";
+// 图片代理地址（解决 Web 端 CanvasKit 图片跨域问题）
+const imageProxyBase = "http://47.107.224.56:8001/image-proxy";
+
+/// 将外部图片 URL 转为通过代理加载
+/// 例: http://129.204.203.29/hua_s.jpg -> http://47.107.224.56:8001/image-proxy/http/129.204.203.29/hua_s.jpg
+String proxyImageUrl(String url) {
+  if (url.isEmpty) return url;
+  final uri = Uri.tryParse(url);
+  if (uri == null || !uri.hasScheme || !uri.hasAuthority) return url;
+  return "$imageProxyBase/${uri.scheme}/${uri.host}${uri.path}${uri.hasQuery ? '?${uri.query}' : ''}";
+}
 // 首页
 const homeDataUrl = "$baseUrl/api/home/index";
 // 品牌列表

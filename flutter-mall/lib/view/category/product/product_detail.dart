@@ -1,6 +1,7 @@
 import 'package:bottom_sheet/bottom_sheet.dart';
 import 'package:card_swiper/card_swiper.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_mall/config/service_url.dart';
 import 'package:flutter_mall/utils/http_util.dart';
@@ -474,7 +475,7 @@ class _ProductDetailState extends State<ProductDetail> {
         ),
         Column(
           children: imageUrls.map((url) {
-            return Image.network(url);
+            return Image.network(kIsWeb ? proxyImageUrl(url) : url);
           }).toList(),
         ),
       ],

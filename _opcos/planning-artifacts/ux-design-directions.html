@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Zero-Admin UX Design Directions</title>
+  <style>
+    :root {
+      --bg: #f3f6fb;
+      --panel: rgba(255, 255, 255, 0.88);
+      --line: rgba(215, 225, 238, 0.95);
+      --text: #10203a;
+      --muted: #61748e;
+      --primary: #1f5eff;
+      --accent: #ff6b4a;
+      --success: #18a957;
+      --warning: #f4a321;
+      --scope: #5b4bdb;
+      --danger: #d64545;
+      --shadow: 0 26px 64px rgba(15, 23, 42, 0.12);
+      --radius: 28px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Manrope", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(31, 94, 255, 0.11), transparent 24%),
+        radial-gradient(circle at top right, rgba(255, 107, 74, 0.1), transparent 22%),
+        linear-gradient(180deg, #f9fbff 0%, #f1f5fb 100%);
+    }
+
+    .shell {
+      width: min(1360px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 34px 0 72px;
+    }
+
+    .hero {
+      padding: 28px;
+      border-radius: 32px;
+      background: rgba(255, 255, 255, 0.84);
+      border: 1px solid rgba(215, 225, 238, 0.95);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+      margin-bottom: 24px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(91, 75, 219, 0.12);
+      color: var(--scope);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+    }
+
+    h1 {
+      margin: 18px 0 10px;
+      font-size: clamp(34px, 5vw, 58px);
+      line-height: 0.98;
+      letter-spacing: -0.035em;
+    }
+
+    p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .hero-meta {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin-top: 24px;
+    }
+
+    .meta-card,
+    .direction-card,
+    .matrix,
+    .chosen {
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid rgba(215, 225, 238, 0.95);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+    }
+
+    .meta-card {
+      padding: 18px;
+    }
+
+    .meta-card strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 24px;
+      color: #0f172a;
+    }
+
+    .nav {
+      position: sticky;
+      top: 14px;
+      z-index: 10;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 14px;
+      margin: 0 0 22px;
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.78);
+      border: 1px solid rgba(215, 225, 238, 0.9);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.1);
+    }
+
+    .nav a {
+      text-decoration: none;
+      color: var(--primary);
+      font-size: 13px;
+      font-weight: 800;
+      padding: 9px 14px;
+      border-radius: 999px;
+      background: rgba(31, 94, 255, 0.08);
+    }
+
+    .grid {
+      display: grid;
+      gap: 18px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .direction-card {
+      padding: 20px;
+      transition: transform 0.24s ease, box-shadow 0.24s ease;
+    }
+
+    .direction-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 30px 68px rgba(15, 23, 42, 0.16);
+    }
+
+    .direction-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: start;
+      margin-bottom: 16px;
+    }
+
+    .label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(91, 75, 219, 0.1);
+      color: var(--scope);
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .verdict {
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 800;
+      background: rgba(24, 169, 87, 0.12);
+      color: var(--success);
+    }
+
+    .direction-card h2 {
+      margin: 0 0 10px;
+      font-size: 26px;
+      line-height: 1.04;
+      letter-spacing: -0.03em;
+    }
+
+    .artboard {
+      margin: 18px 0;
+      border-radius: 24px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, #fdfefe, #f5f8fd);
+    }
+
+    .desktop {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      min-height: 310px;
+    }
+
+    .sider {
+      padding: 18px 16px;
+      border-right: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(31, 94, 255, 0.12), rgba(255, 255, 255, 0.92));
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, var(--primary), var(--scope));
+    }
+
+    .sider .item {
+      padding: 11px 12px;
+      border-radius: 16px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .sider .item.active {
+      color: var(--primary);
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
+    }
+
+    .main {
+      padding: 18px;
+      background:
+        radial-gradient(circle at top right, rgba(255, 107, 74, 0.12), transparent 28%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 251, 255, 0.98));
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 16px;
+      margin-bottom: 14px;
+    }
+
+    .pill-row,
+    .metric-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .pill {
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(91, 75, 219, 0.1);
+      color: var(--scope);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .layout-2col,
+    .layout-guided,
+    .layout-monitor,
+    .layout-card {
+      display: grid;
+      gap: 12px;
+    }
+
+    .layout-2col {
+      grid-template-columns: 1.1fr 0.9fr;
+    }
+
+    .layout-guided {
+      grid-template-columns: 0.8fr 1.2fr;
+    }
+
+    .layout-monitor {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .layout-card {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .panel {
+      min-height: 94px;
+      padding: 14px;
+      border-radius: 18px;
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+
+    .panel strong {
+      display: block;
+      color: #0f172a;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    .bar {
+      height: 10px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--primary), rgba(31, 94, 255, 0.25));
+      margin-bottom: 8px;
+    }
+
+    .bar.alt {
+      width: 76%;
+      background: linear-gradient(90deg, var(--accent), rgba(255, 107, 74, 0.25));
+    }
+
+    .bar.warn {
+      width: 56%;
+      background: linear-gradient(90deg, var(--warning), rgba(244, 163, 33, 0.24));
+    }
+
+    .mobile {
+      display: flex;
+      justify-content: end;
+      padding: 0 18px 18px;
+    }
+
+    .phone {
+      width: 200px;
+      padding: 10px;
+      border-radius: 26px;
+      background: linear-gradient(180deg, #0f172a, #22324a);
+      box-shadow: 0 24px 50px rgba(15, 23, 42, 0.32);
+    }
+
+    .phone-screen {
+      min-height: 260px;
+      border-radius: 18px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .phone-top {
+      padding: 16px;
+      background:
+        radial-gradient(circle at top right, rgba(255, 107, 74, 0.22), transparent 30%),
+        linear-gradient(180deg, rgba(31, 94, 255, 0.12), #ffffff);
+    }
+
+    .phone-card {
+      margin: 12px;
+      padding: 12px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .phone-art {
+      height: 92px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(255, 107, 74, 0.24), rgba(31, 94, 255, 0.18));
+      margin-bottom: 10px;
+    }
+
+    .traits {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .trait {
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: #f8fbff;
+      border: 1px solid var(--line);
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .trait b {
+      color: #0f172a;
+    }
+
+    .matrix,
+    .chosen {
+      padding: 24px;
+      margin-top: 22px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 14px;
+      overflow: hidden;
+      border-radius: 18px;
+    }
+
+    th,
+    td {
+      padding: 14px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+      font-size: 14px;
+      vertical-align: top;
+    }
+
+    th {
+      color: #0f172a;
+      background: #f8fbff;
+      font-weight: 900;
+    }
+
+    .chosen-grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin-top: 16px;
+    }
+
+    .focus {
+      padding: 16px 18px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, rgba(31, 94, 255, 0.08), rgba(255, 107, 74, 0.06));
+      border: 1px solid var(--line);
+    }
+
+    @media (max-width: 1120px) {
+      .hero-meta,
+      .grid,
+      .chosen-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .desktop,
+      .layout-2col,
+      .layout-guided,
+      .layout-monitor,
+      .layout-card {
+        grid-template-columns: 1fr;
+      }
+
+      .sider {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .mobile {
+        justify-content: center;
+      }
+
+      table,
+      tbody,
+      tr,
+      td,
+      th {
+        display: block;
+      }
+
+      th {
+        border-top: 1px solid var(--line);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="hero">
+      <div class="eyebrow">Zero-Admin UX / Design Directions</div>
+      <h1>6 个方向，1 个主骨架，服务同一套可信确认流</h1>
+      <p>本页把 Zero-Admin 的后台治理体验与商城交易体验拆成 6 套可比较的视觉方向。每个方向都保留相同的业务约束，但在布局密度、任务引导、状态表达和品牌氛围上采取不同策略。推荐结论是以 Direction 3 为主骨架，吸收 Direction 4 的流程引导能力。</p>
+      <div class="hero-meta">
+        <div class="meta-card">
+          <strong>6</strong>
+          <p>设计方向覆盖后台效率、商城转化、系统监控与移动交易氛围。</p>
+        </div>
+        <div class="meta-card">
+          <strong>3</strong>
+          <p>关键评价维度：作用域清晰度、关键链路确定性、长时运营效率。</p>
+        </div>
+        <div class="meta-card">
+          <strong>D3</strong>
+          <p>推荐主方向：Scope-first Split Pane。</p>
+        </div>
+        <div class="meta-card">
+          <strong>D4</strong>
+          <p>推荐增强方向：Guided Task Workspace。</p>
+        </div>
+      </div>
+    </section>
+
+    <nav class="nav">
+      <a href="#d1">D1 Dense Grid</a>
+      <a href="#d2">D2 Card-led</a>
+      <a href="#d3">D3 Scope-first</a>
+      <a href="#d4">D4 Guided Task</a>
+      <a href="#d5">D5 Monitoring</a>
+      <a href="#d6">D6 Mobile Studio</a>
+      <a href="#matrix">Comparison</a>
+      <a href="#chosen">Recommended</a>
+    </nav>
+
+    <section class="grid">
+      <article class="direction-card" id="d1">
+        <div class="direction-head">
+          <div>
+            <div class="label">Direction 1</div>
+            <h2>Command Center Dense Grid</h2>
+          </div>
+          <div class="verdict">High Efficiency</div>
+        </div>
+        <p>适合订单、商品、商户、优惠等高密度运营任务。信息密度最高，强调表格、状态标签与批量动作。</p>
+        <div class="artboard">
+          <div class="desktop">
+            <div class="sider">
+              <div class="brand"><div class="brand-mark"></div>Zero-Admin</div>
+              <div class="item active">订单中心</div>
+              <div class="item">商品中心</div>
+              <div class="item">售后工单</div>
+              <div class="item">搜索同步</div>
+            </div>
+            <div class="main">
+              <div class="topbar">
+                <div>
+                  <strong style="font-size:18px; color:#0f172a;">订单工作台</strong>
+                  <div class="pill-row">
+                    <span class="pill">平台作用域已锁定</span>
+                    <span class="pill">异常 4 条</span>
+                  </div>
+                </div>
+                <div class="pill">批量处理模式</div>
+              </div>
+              <div class="layout-monitor">
+                <div class="panel"><strong>待发货</strong><div class="bar"></div><div class="bar alt"></div></div>
+                <div class="panel"><strong>退款中</strong><div class="bar"></div><div class="bar warn"></div></div>
+                <div class="panel"><strong>同步异常</strong><div class="bar"></div><div class="bar warn"></div></div>
+              </div>
+              <div class="layout-card" style="margin-top:12px;">
+                <div class="panel"><strong>筛选区</strong><div class="bar"></div><div class="bar alt"></div><div class="bar warn"></div></div>
+                <div class="panel"><strong>详情抽屉</strong><div class="bar"></div><div class="bar alt"></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="mobile">
+            <div class="phone">
+              <div class="phone-screen">
+                <div class="phone-top">
+                  <strong style="font-size:18px; color:#0f172a;">订单摘要</strong>
+                </div>
+                <div class="phone-card">
+                  <div class="phone-art"></div>
+                  <div class="bar"></div>
+                  <div class="bar alt"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="traits">
+          <div class="trait"><b>适合：</b>客服、商户运营、平台后台高频列表任务。</div>
+          <div class="trait"><b>优点：</b>效率高，切换快，批量动作自然。</div>
+          <div class="trait"><b>风险：</b>首次用户压迫感较强。</div>
+        </div>
+      </article>
+
+      <article class="direction-card" id="d2">
+        <div class="direction-head">
+          <div>
+            <div class="label">Direction 2</div>
+            <h2>Card-led Commerce Dashboard</h2>
+          </div>
+          <div class="verdict">Brand Warmth</div>
+        </div>
+        <p>更强调商城和运营活动的内容氛围，适合首页、专题、营销和推荐位运营，但后台治理感偏弱。</p>
+        <div class="artboard">
+          <div class="desktop">
+            <div class="sider">
+              <div class="brand"><div class="brand-mark"></div>Market Studio</div>
+              <div class="item active">首页推荐</div>
+              <div class="item">活动排期</div>
+              <div class="item">内容编排</div>
+              <div class="item">会员运营</div>
+            </div>
+            <div class="main">
+              <div class="topbar">
+                <div>
+                  <strong style="font-size:18px; color:#0f172a;">活动工作台</strong>
+                  <div class="pill-row">
+                    <span class="pill">转化率优先</span>
+                    <span class="pill">节日主题</span>
+                  </div>
+                </div>
+                <div class="pill" style="background:rgba(255,107,74,0.12); color:var(--accent);">推荐位已排期</div>
+              </div>
+              <div class="layout-card">
+                <div class="panel"><strong>头图卡片</strong><div class="bar alt"></div><div class="bar"></div></div>
+                <div class="panel"><strong>商品推荐</strong><div class="bar alt"></div><div class="bar warn"></div></div>
+                <div class="panel"><strong>优惠券组件</strong><div class="bar alt"></div><div class="bar"></div></div>
+                <div class="panel"><strong>会员召回</strong><div class="bar"></div><div class="bar alt"></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="mobile">
+            <div class="phone">
+              <div class="phone-screen">
+                <div class="phone-top">
+                  <strong style="font-size:18px; color:#0f172a;">今日主题馆</strong>
+                </div>
+                <div class="phone-card">
+                  <div class="phone-art"></div>
+                  <div class="bar alt"></div>
+                  <div class="bar"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="traits">
+          <div class="trait"><b>适合：</b>商城首页、活动专题、内容运营。</div>
+          <div class="trait"><b>优点：</b>品牌感、购买氛围和内容呈现更好。</div>
+          <div class="trait"><b>风险：</b>不适合承载复杂治理任务。</div>
+        </div>
+      </article>
+
+      <article class="direction-card" id="d3">
+        <div class="direction-head">
+          <div>
+            <div class="label">Direction 3</div>
+            <h2>Scope-first Split Pane</h2>
+          </div>
+          <div class="verdict">Recommended</div>
+        </div>
+        <p>把“当前主体是谁、正在看什么、操作会影响谁”做成界面第一层结构。最适合 Zero-Admin 的平台/租户/商户三级治理现实。</p>
+        <div class="artboard">
+          <div class="desktop">
+            <div class="sider">
+              <div class="brand"><div class="brand-mark"></div>Zero-Admin</div>
+              <div class="item active">商户治理</div>
+              <div class="item">订单异常</div>
+              <div class="item">售后处理</div>
+              <div class="item">能力包</div>
+            </div>
+            <div class="main">
+              <div class="topbar">
+                <div>
+                  <strong style="font-size:18px; color:#0f172a;">作用域优先工作台</strong>
+                  <div class="pill-row">
+                    <span class="pill">租户 / 华东运营</span>
+                    <span class="pill">商户 / 星海家居</span>
+                    <span class="pill">仅影响当前主体</span>
+                  </div>
+                </div>
+                <div class="pill" style="background:rgba(24,169,87,0.12); color:var(--success);">状态可信</div>
+              </div>
+              <div class="layout-2col">
+                <div class="panel"><strong>左侧：筛选 + 列表</strong><div class="bar"></div><div class="bar alt"></div><div class="bar warn"></div></div>
+                <div class="panel"><strong>右侧：详情 + 时间线 + 处理动作</strong><div class="bar"></div><div class="bar alt"></div><div class="bar warn"></div></div>
+              </div>
+              <div class="panel" style="margin-top:12px;"><strong>结果预览</strong><div class="bar"></div><div class="bar alt"></div></div>
+            </div>
+          </div>
+          <div class="mobile">
+            <div class="phone">
+              <div class="phone-screen">
+                <div class="phone-top">
+                  <strong style="font-size:18px; color:#0f172a;">订单详情</strong>
+                  <div class="pill-row">
+                    <span class="pill">待支付</span>
+                    <span class="pill">可恢复</span>
+                  </div>
+                </div>
+                <div class="phone-card">
+                  <div class="phone-art"></div>
+                  <div class="bar"></div>
+                  <div class="bar alt"></div>
+                  <div class="bar warn"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="traits">
+          <div class="trait"><b>适合：</b>平台治理、订单详情、售后、搜索同步和商户后台核心页面。</div>
+          <div class="trait"><b>优点：</b>作用域最清晰，状态最可信，最便于连接详情与动作。</div>
+          <div class="trait"><b>风险：</b>需要严格设计双栏在窄屏下的折叠策略。</div>
+        </div>
+      </article>
+
+      <article class="direction-card" id="d4">
+        <div class="direction-head">
+          <div>
+            <div class="label">Direction 4</div>
+            <h2>Guided Task Workspace</h2>
+          </div>
+          <div class="verdict">Strong for Flows</div>
+        </div>
+        <p>以步骤、检查点和完成反馈强化复杂流程，尤其适合租户开通、订单恢复、售后审核和商户首发商品。</p>
+        <div class="artboard">
+          <div class="desktop">
+            <div class="sider">
+              <div class="brand"><div class="brand-mark"></div>Workflow</div>
+              <div class="item active">租户开通</div>
+              <div class="item">商户审核</div>
+              <div class="item">售后审核</div>
+              <div class="item">能力启停</div>
+            </div>
+            <div class="main">
+              <div class="topbar">
+                <div>
+                  <strong style="font-size:18px; color:#0f172a;">任务引导工作区</strong>
+                  <div class="pill-row">
+                    <span class="pill">Step 2 / 5</span>
+                    <span class="pill">已保存草稿</span>
+                  </div>
+                </div>
+                <div class="pill" style="background:rgba(244,163,33,0.12); color:var(--warning);">需要双重确认</div>
+              </div>
+              <div class="layout-guided">
+                <div class="panel"><strong>左侧：步骤目录</strong><div class="bar"></div><div class="bar alt"></div><div class="bar warn"></div></div>
+                <div class="panel"><strong>右侧：主表单 + 结果预览</strong><div class="bar"></div><div class="bar alt"></div><div class="bar"></div></div>
+              </div>
+              <div class="panel" style="margin-top:12px;"><strong>完成页</strong><div class="bar alt"></div><div class="bar"></div></div>
+            </div>
+          </div>
+          <div class="mobile">
+            <div class="phone">
+              <div class="phone-screen">
+                <div class="phone-top">
+                  <strong style="font-size:18px; color:#0f172a;">恢复订单</strong>
+                </div>
+                <div class="phone-card">
+                  <div class="phone-art"></div>
+                  <div class="bar warn"></div>
+                  <div class="bar"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="traits">
+          <div class="trait"><b>适合：</b>多步骤审批、配置、恢复和开通流程。</div>
+          <div class="trait"><b>优点：</b>降低复杂流程的认知负担，提升首次成功率。</div>
+          <div class="trait"><b>风险：</b>如果泛化到所有页面，会牺牲高频效率。</div>
+        </div>
+      </article>
+
+      <article class="direction-card" id="d5">
+        <div class="direction-head">
+          <div>
+            <div class="label">Direction 5</div>
+            <h2>Signal-driven Monitoring View</h2>
+          </div>
+          <div class="verdict">Ops Strong</div>
+        </div>
+        <p>更强调搜索同步、补偿任务、支付回调和可观测性信号，适合作为异常治理与技术运营的专题视图。</p>
+        <div class="artboard">
+          <div class="desktop">
+            <div class="sider">
+              <div class="brand"><div class="brand-mark"></div>Ops Radar</div>
+              <div class="item active">告警面板</div>
+              <div class="item">同步任务</div>
+              <div class="item">支付回调</div>
+              <div class="item">补偿队列</div>
+            </div>
+            <div class="main">
+              <div class="topbar">
+                <div>
+                  <strong style="font-size:18px; color:#0f172a;">系统信号视图</strong>
+                  <div class="pill-row">
+                    <span class="pill">需人工介入 2 条</span>
+                    <span class="pill">自动恢复中 3 条</span>
+                  </div>
+                </div>
+                <div class="pill" style="background:rgba(214,69,69,0.12); color:var(--danger);">高优先级</div>
+              </div>
+              <div class="layout-monitor">
+                <div class="panel"><strong>同步状态</strong><div class="bar"></div><div class="bar warn"></div></div>
+                <div class="panel"><strong>支付回调</strong><div class="bar"></div><div class="bar alt"></div></div>
+                <div class="panel"><strong>补偿任务</strong><div class="bar"></div><div class="bar warn"></div></div>
+              </div>
+              <div class="panel" style="margin-top:12px;"><strong>人工处理建议</strong><div class="bar"></div><div class="bar alt"></div><div class="bar warn"></div></div>
+            </div>
+          </div>
+          <div class="mobile">
+            <div class="phone">
+              <div class="phone-screen">
+                <div class="phone-top">
+                  <strong style="font-size:18px; color:#0f172a;">异常提醒</strong>
+                </div>
+                <div class="phone-card">
+                  <div class="phone-art"></div>
+                  <div class="bar warn"></div>
+                  <div class="bar"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="traits">
+          <div class="trait"><b>适合：</b>技术运营、搜索/支付/补偿监控页。</div>
+          <div class="trait"><b>优点：</b>让系统状态更可见、问题更可追踪。</div>
+          <div class="trait"><b>风险：</b>不适合作为整个产品的统一视觉主语言。</div>
+        </div>
+      </article>
+
+      <article class="direction-card" id="d6">
+        <div class="direction-head">
+          <div>
+            <div class="label">Direction 6</div>
+            <h2>Mobile Commerce Studio</h2>
+          </div>
+          <div class="verdict">Mobile-first</div>
+        </div>
+        <p>把移动商城端的首页、详情、购物车和订单作为第一视觉重点，更强调整体卡片节奏、底部动作和情绪化购买氛围。</p>
+        <div class="artboard">
+          <div class="desktop">
+            <div class="sider">
+              <div class="brand"><div class="brand-mark"></div>Mobile Lab</div>
+              <div class="item active">首页</div>
+              <div class="item">详情</div>
+              <div class="item">购物车</div>
+              <div class="item">我的订单</div>
+            </div>
+            <div class="main">
+              <div class="topbar">
+                <div>
+                  <strong style="font-size:18px; color:#0f172a;">商城主界面</strong>
+                  <div class="pill-row">
+                    <span class="pill">购买动线优先</span>
+                    <span class="pill">底部 CTA 强化</span>
+                  </div>
+                </div>
+                <div class="pill" style="background:rgba(255,107,74,0.12); color:var(--accent);">转化导向</div>
+              </div>
+              <div class="layout-card">
+                <div class="panel"><strong>首页内容栈</strong><div class="bar alt"></div><div class="bar"></div></div>
+                <div class="panel"><strong>详情页信息层</strong><div class="bar"></div><div class="bar alt"></div></div>
+                <div class="panel"><strong>购物车摘要</strong><div class="bar alt"></div><div class="bar warn"></div></div>
+                <div class="panel"><strong>订单状态页</strong><div class="bar"></div><div class="bar alt"></div></div>
+              </div>
+            </div>
+          </div>
+          <div class="mobile">
+            <div class="phone">
+              <div class="phone-screen">
+                <div class="phone-top">
+                  <strong style="font-size:18px; color:#0f172a;">商品详情</strong>
+                  <div class="pill-row">
+                    <span class="pill">新人券</span>
+                    <span class="pill">次日达</span>
+                  </div>
+                </div>
+                <div class="phone-card">
+                  <div class="phone-art"></div>
+                  <div class="bar alt"></div>
+                  <div class="bar"></div>
+                  <div class="bar warn"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="traits">
+          <div class="trait"><b>适合：</b>Flutter 商城端和营销前台专题。</div>
+          <div class="trait"><b>优点：</b>购买氛围最强，移动节奏最好。</div>
+          <div class="trait"><b>风险：</b>不能单独承担后台治理体验。</div>
+        </div>
+      </article>
+    </section>
+
+    <section class="matrix" id="matrix">
+      <div class="label">Comparison Matrix</div>
+      <h2 style="margin:12px 0 0; font-size:34px; line-height:1.02; letter-spacing:-0.03em;">方向比较矩阵</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>方向</th>
+            <th>最强项</th>
+            <th>最弱项</th>
+            <th>推荐用途</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>D1 Dense Grid</td>
+            <td>高频运营效率、批量处理、列表密度</td>
+            <td>首次理解压力大</td>
+            <td>订单、商品、商户后台主列表</td>
+          </tr>
+          <tr>
+            <td>D2 Card-led</td>
+            <td>品牌感、内容展示、营销氛围</td>
+            <td>治理与多主体边界表达偏弱</td>
+            <td>商城首页、活动运营、专题推荐</td>
+          </tr>
+          <tr>
+            <td>D3 Scope-first</td>
+            <td>作用域清晰、状态可信、详情与动作一体</td>
+            <td>需要精心处理窄屏折叠</td>
+            <td>平台治理、订单详情、售后、商户后台</td>
+          </tr>
+          <tr>
+            <td>D4 Guided Task</td>
+            <td>复杂流程成功率、步骤解释力</td>
+            <td>不适合所有高频页面</td>
+            <td>租户开通、审核、恢复流程</td>
+          </tr>
+          <tr>
+            <td>D5 Monitoring</td>
+            <td>系统信号和异常治理表达最强</td>
+            <td>商业情绪与购买氛围不足</td>
+            <td>技术运营、告警、补偿专题页</td>
+          </tr>
+          <tr>
+            <td>D6 Mobile Studio</td>
+            <td>移动转化节奏、底部动作、情绪购买</td>
+            <td>无法承载后台主干体验</td>
+            <td>Flutter 商城端主界面</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="chosen" id="chosen">
+      <div class="label">Recommended Combination</div>
+      <h2 style="margin:12px 0 0; font-size:34px; line-height:1.02; letter-spacing:-0.03em;">建议采纳：D3 主骨架 + D4 流程增强 + D6 移动交易节奏</h2>
+      <p style="margin-top:14px;">这组组合最符合 Zero-Admin 当前的产品现实：它既没有放弃平台治理和后台效率，也没有牺牲商城端的购买推动力，还能在复杂任务中提供足够强的引导。</p>
+      <div class="chosen-grid">
+        <div class="focus">
+          <strong style="display:block; margin-bottom:8px; color:#0f172a;">为什么是 D3</strong>
+          <p>因为 Zero-Admin 的核心难点不是“页面不够好看”，而是“主体边界复杂、状态要可信、详情与动作要连在一起”。D3 正好把这三件事都放到第一层。</p>
+        </div>
+        <div class="focus">
+          <strong style="display:block; margin-bottom:8px; color:#0f172a;">为什么要加 D4</strong>
+          <p>租户开通、售后审核、订单恢复等多步骤流程不能只靠密集表格完成，D4 可以降低首次成功门槛。</p>
+        </div>
+        <div class="focus">
+          <strong style="display:block; margin-bottom:8px; color:#0f172a;">为什么要借 D6</strong>
+          <p>移动商城端的情绪和节奏与后台天然不同，D6 保证 Flutter 端仍然有明确的购买氛围和底部 CTA 力度。</p>
+        </div>
+        <div class="focus">
+          <strong style="display:block; margin-bottom:8px; color:#0f172a;">落地建议</strong>
+          <p>后台先沉淀双栏工作台模板、作用域条和详情时间线；商城先沉淀详情页、确认订单页和订单详情页三套核心模板。</p>
+        </div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>
