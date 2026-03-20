@@ -14,6 +14,11 @@ message AddRoleReq {
   string remark = 6; //备注
   int32 del_flag = 7; //删除标志（0代表删除 1代表存在）
   string create_by = 8; //创建者
+  string scope_type = 20; //作用域类型（platform:平台级 tenant:租户级 merchant:商户级）
+  int64 platform_id = 21; //平台ID
+  int64 tenant_id = 22; //租户ID
+  int64 merchant_id = 23; //商户ID
+  int32 is_admin = 24; //是否超级管理员角色（1:是 0:否）
 }
 
 message AddRoleResp {
@@ -39,6 +44,11 @@ message UpdateRoleReq {
   string remark = 6; //备注
   int32 del_flag = 7; //删除标志（0代表删除 1代表存在）
   string update_by = 10; //更新者
+  string scope_type = 20; //作用域类型（platform:平台级 tenant:租户级 merchant:商户级）
+  int64 platform_id = 21; //平台ID
+  int64 tenant_id = 22; //租户ID
+  int64 merchant_id = 23; //商户ID
+  int32 is_admin = 24; //是否超级管理员角色（1:是 0:否）
 }
 
 message UpdateRoleResp {
@@ -73,7 +83,11 @@ message QueryRoleDetailResp {
   string create_time = 9; //创建时间
   string update_by = 10; //更新者
   string update_time = 11; //更新时间
-
+  string scope_type = 20; //作用域类型
+  int64 platform_id = 21; //平台ID
+  int64 tenant_id = 22; //租户ID
+  int64 merchant_id = 23; //商户ID
+  int32 is_admin = 24; //是否超级管理员角色
 }
 
 // 分页查询角色信息列表
@@ -85,6 +99,9 @@ message QueryRoleListReq {
   int32 del_flag = 5; //删除标志（0代表删除 1代表存在）
   int64 page_num = 6; //第几页
   int64 page_size = 7; //每页的数量
+  string scope_type = 20; //作用域类型过滤
+  int64 tenant_id = 21; //租户ID过滤
+  int64 merchant_id = 22; //商户ID过滤
 }
 
 message RoleListData {
@@ -99,7 +116,11 @@ message RoleListData {
   string create_time = 9; //创建时间
   string update_by = 10; //更新者
   string update_time = 11; //更新时间
-
+  string scope_type = 20; //作用域类型
+  int64 platform_id = 21; //平台ID
+  int64 tenant_id = 22; //租户ID
+  int64 merchant_id = 23; //商户ID
+  int32 is_admin = 24; //是否超级管理员角色
 }
 
 message QueryRoleListResp {

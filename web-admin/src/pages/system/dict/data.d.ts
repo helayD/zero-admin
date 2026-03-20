@@ -1,8 +1,18 @@
 export interface DictTypeListItem {
   id: number;
-  status: number;
-  dictType: string;
-  dictName: string;
+  status?: number;
+  dictType?: string;
+  dictName?: string;
+  remark?: string;
+  createBy?: string;
+  createTime?: string;
+  updateBy?: string;
+  updateTime?: string;
+  scopeType?: string;
+  scopeLabel?: string;
+  platformId?: number;
+  tenantId?: number;
+  merchantId?: number;
 }
 
 export interface DictTypeListPagination {
@@ -17,7 +27,13 @@ export interface DictTypeListData {
 }
 
 export interface DictTypeListParams {
-
+  dictName?: string;
+  dictType?: string;
+  status?: number;
+  scopeType?: string;
+  platformId?: number;
+  tenantId?: number;
+  merchantId?: number;
   pageSize?: number;
   current?: number;
   filter?: { [key: string]: any[] };

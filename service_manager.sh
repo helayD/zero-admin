@@ -49,7 +49,6 @@ start(){
   	nohup ./target/search-rpc/search-rpc -f ./target/search-rpc/search-rpc.yaml  > /dev/null 2>&1 &
   	nohup ./target/admin-api/admin-api -f ./target/admin-api/admin-api.yaml > /dev/null 2>&1 &
   	nohup ./target/front-api/front-api -f ./target/front-api/front-api.yaml  > /dev/null 2>&1 &
-  	nohup ./target/web-api/web-api -f ./target/web-api/web-api.yaml  > /dev/null 2>&1 &
   	nohup ./target/job/job -f ./target/job/job-api.yaml  > /dev/null 2>&1 &
   	nohup ./target/consumer/consumer -f ./target/consumer/consumer-api.yaml  > /dev/null 2>&1 &
 
@@ -208,7 +207,7 @@ case "$1" in
         oms_service
         ;;
     "pms")
-        oms_service
+        pms_service
         ;;
     "cms")
         cms_service

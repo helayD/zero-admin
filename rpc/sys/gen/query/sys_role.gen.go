@@ -31,6 +31,11 @@ func newSysRole(db *gorm.DB, opts ...gen.DOOption) sysRole {
 	_sysRole.ID = field.NewInt64(tableName, "id")
 	_sysRole.RoleName = field.NewString(tableName, "role_name")
 	_sysRole.RoleKey = field.NewString(tableName, "role_key")
+	_sysRole.ScopeType = field.NewString(tableName, "scope_type")
+	_sysRole.PlatformID = field.NewInt64(tableName, "platform_id")
+	_sysRole.TenantID = field.NewInt64(tableName, "tenant_id")
+	_sysRole.MerchantID = field.NewInt64(tableName, "merchant_id")
+	_sysRole.IsAdmin = field.NewInt32(tableName, "is_admin")
 	_sysRole.DataScope = field.NewInt32(tableName, "data_scope")
 	_sysRole.Status = field.NewInt32(tableName, "status")
 	_sysRole.Remark = field.NewString(tableName, "remark")
@@ -53,6 +58,11 @@ type sysRole struct {
 	ID         field.Int64  // 角色id
 	RoleName   field.String // 名称
 	RoleKey    field.String // 角色权限字符串
+	ScopeType  field.String // 作用域类型
+	PlatformID field.Int64  // 平台ID
+	TenantID   field.Int64  // 租户ID
+	MerchantID field.Int64  // 商户ID
+	IsAdmin    field.Int32  // 是否超级管理员角色
 	DataScope  field.Int32  // 数据范围（1：全部数据权限 2：自定数据权限 3：本部门数据权限 4：本部门及以下数据权限）
 	Status     field.Int32  // 状态(1:正常，0:禁用)
 	Remark     field.String // 备注
@@ -80,6 +90,11 @@ func (s *sysRole) updateTableName(table string) *sysRole {
 	s.ID = field.NewInt64(table, "id")
 	s.RoleName = field.NewString(table, "role_name")
 	s.RoleKey = field.NewString(table, "role_key")
+	s.ScopeType = field.NewString(table, "scope_type")
+	s.PlatformID = field.NewInt64(table, "platform_id")
+	s.TenantID = field.NewInt64(table, "tenant_id")
+	s.MerchantID = field.NewInt64(table, "merchant_id")
+	s.IsAdmin = field.NewInt32(table, "is_admin")
 	s.DataScope = field.NewInt32(table, "data_scope")
 	s.Status = field.NewInt32(table, "status")
 	s.Remark = field.NewString(table, "remark")
@@ -112,10 +127,15 @@ func (s *sysRole) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (s *sysRole) fillFieldMap() {
-	s.fieldMap = make(map[string]field.Expr, 11)
+	s.fieldMap = make(map[string]field.Expr, 16)
 	s.fieldMap["id"] = s.ID
 	s.fieldMap["role_name"] = s.RoleName
 	s.fieldMap["role_key"] = s.RoleKey
+	s.fieldMap["scope_type"] = s.ScopeType
+	s.fieldMap["platform_id"] = s.PlatformID
+	s.fieldMap["tenant_id"] = s.TenantID
+	s.fieldMap["merchant_id"] = s.MerchantID
+	s.fieldMap["is_admin"] = s.IsAdmin
 	s.fieldMap["data_scope"] = s.DataScope
 	s.fieldMap["status"] = s.Status
 	s.fieldMap["remark"] = s.Remark

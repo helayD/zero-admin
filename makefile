@@ -10,10 +10,11 @@ GOCLEAN=$(GOCMD) clean
 GOGET=$(GOCMD) mod tidy
 
 GOCTL=$(GOBIN)/goctl ## goctl
+GOCTL_VERSION=v1.9.2
 
 # 安装goctl代码生成工具
-$(shell if [ ! -d $(GOCTL) ]; then \
-	$(GOCMD) install github.com/zeromicro/go-zero/tools/goctl@latest; \
+$(shell if [ ! -x "$(GOCTL)" ] || ! "$(GOCTL)" --version 2>/dev/null | grep -q "goctl version 1.9.2"; then \
+	$(GOCMD) install github.com/zeromicro/go-zero/tools/goctl@$(GOCTL_VERSION); \
 fi; \
 )
 
@@ -66,7 +67,6 @@ start: ## 运行目标
 	nohup ./target/search-rpc/search-rpc -f ./target/search-rpc/search-rpc.yaml  > /dev/null 2>&1 &
 	nohup ./target/admin-api/admin-api -f ./target/admin-api/admin-api.yaml > /dev/null 2>&1 &
 	nohup ./target/front-api/front-api -f ./target/front-api/front-api.yaml  > /dev/null 2>&1 &
-	nohup ./target/web-api/web-api -f ./target/web-api/web-api.yaml  > /dev/null 2>&1 &
 	nohup ./target/job/job -f ./target/job/job-api.yaml  > /dev/null 2>&1 &
 	nohup ./target/consumer/consumer -f ./target/consumer/consumer-api.yaml  > /dev/null 2>&1 &
 

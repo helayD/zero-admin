@@ -2,6 +2,7 @@ package dict_type
 
 import (
 	"context"
+	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
 	"github.com/feihua/zero-admin/api/admin/internal/types"
@@ -34,12 +35,18 @@ func NewQueryDictTypeListLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 
 // QueryDictTypeList 查询字典类型列表
 func (l *QueryDictTypeListLogic) QueryDictTypeList(req *types.QueryDictTypeListReq) (*types.QueryDictTypeListResp, error) {
-	var resp, err = l.svcCtx.DictTypeService.QueryDictTypeList(l.ctx, &sysclient.QueryDictTypeListReq{
+	scopeReq, err := admincommon.BuildGovernanceScope(req.ScopeType, req.PlatformId, req.TenantId, req.MerchantId)
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
+
+	resp, err := l.svcCtx.DictTypeService.QueryDictTypeList(l.ctx, &sysclient.QueryDictTypeListReq{
 		PageNum:  req.Current,
 		PageSize: req.PageSize,
 		DictName: strings.TrimSpace(req.DictName), // 字典名称
 		DictType: req.DictType,                    // 字典类型
 		Status:   req.Status,                      // 状态（0：停用，1:正常）
+		Scope:    scopeReq,
 	})
 
 	if err != nil {
@@ -51,7 +58,7 @@ func (l *QueryDictTypeListLogic) QueryDictTypeList(req *types.QueryDictTypeListR
 	var list []*types.QueryDictTypeListData
 
 	for _, detail := range resp.List {
-		list = append(list, &types.QueryDictTypeListData{
+		item := &types.QueryDictTypeListData{
 			Id:         detail.Id,         // 字典id
 			DictName:   detail.DictName,   // 字典名称
 			DictType:   detail.DictType,   // 字典类型
@@ -61,7 +68,9 @@ func (l *QueryDictTypeListLogic) QueryDictTypeList(req *types.QueryDictTypeListR
 			CreateTime: detail.CreateTime, // 创建时间
 			UpdateBy:   detail.UpdateBy,   // 更新者
 			UpdateTime: detail.UpdateTime, // 更新时间
-		})
+		}
+		item.ScopeType, item.ScopeLabel, item.PlatformId, item.TenantId, item.MerchantId = admincommon.ReadGovernanceScope(detail.Scope)
+		list = append(list, item)
 	}
 
 	return &types.QueryDictTypeListResp{

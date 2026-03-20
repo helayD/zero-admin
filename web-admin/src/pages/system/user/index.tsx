@@ -4,32 +4,34 @@ import {
   EditOutlined,
   ExclamationCircleOutlined,
   PlusOutlined,
-  RedoOutlined
+  RedoOutlined,
 } from '@ant-design/icons';
 import {
+  Alert,
   Button,
   Col,
   Divider,
   Drawer,
   Dropdown,
-  MenuProps,
   message,
   Modal,
   Row,
   Select,
   Space,
   Switch,
-  Tree
+  Tag,
+  Tree,
 } from 'antd';
-import React, {useEffect, useRef, useState} from 'react';
-import {PageContainer} from '@ant-design/pro-layout';
-import type {ActionType, ProColumns} from '@ant-design/pro-table';
+import React, { useEffect, useRef, useState } from 'react';
+import { PageContainer } from '@ant-design/pro-layout';
+import type { ActionType, ProColumns } from '@ant-design/pro-table';
 import ProTable from '@ant-design/pro-table';
-import type {ProDescriptionsItemProps} from '@ant-design/pro-descriptions';
+import type { ProDescriptionsItemProps } from '@ant-design/pro-descriptions';
 import ProDescriptions from '@ant-design/pro-descriptions';
+import type { MenuProps } from 'antd';
 import CreateModal from './components/CreateModal';
 import UpdateModal from './components/UpdateModal';
-import type {UserListItem} from './data.d';
+import type { UserListItem } from './data.d';
 import {
   addUser,
   queryDeptAndPostList,
@@ -39,21 +41,29 @@ import {
   updateUserRoleList,
   updateUserStatus,
 } from './service';
-import UserRoleModal from "@/pages/system/user/components/UserRoleModal";
-import {DataNode, TreeProps} from 'antd/es/tree';
-import {tree} from "@/utils/utils";
+import UserRoleModal from '@/pages/system/user/components/UserRoleModal';
+import type { DataNode, TreeProps } from 'antd/es/tree';
+import { tree } from '@/utils/utils';
+import GovernanceScopeBar from '../components/GovernanceScopeBar';
+import {
+  buildGovernanceScopeLabel,
+  defaultGovernanceScope,
+  governanceScopeColor,
+  type GovernanceScopeValue,
+  toGovernancePayload,
+} from '../components/governance';
 
-const {confirm} = Modal;
+const { confirm } = Modal;
 
 /**
  * 添加节点
  * @param user
  */
-const handleAdd = async (user: UserListItem) => {
+const handleAdd = async (user: UserListItem, scope: GovernanceScopeValue) => {
   const hide = message.loading('正在添加');
   try {
-    user.deptId = Number(user.deptId)
-    await addUser({...user});
+    user.deptId = Number(user.deptId);
+    await addUser({ ...user, ...toGovernancePayload(scope) });
     hide();
     message.success('添加成功');
     return true;
@@ -67,11 +77,11 @@ const handleAdd = async (user: UserListItem) => {
  * 更新节点
  * @param user
  */
-const handleUpdate = async (user: UserListItem) => {
+const handleUpdate = async (user: UserListItem, scope: GovernanceScopeValue) => {
   const hide = message.loading('正在更新');
   try {
-    user.deptId = Number(user.deptId)
-    await updateUser(user);
+    user.deptId = Number(user.deptId);
+    await updateUser({ ...user, ...toGovernancePayload(scope) });
     hide();
     message.success('更新成功');
     return true;
@@ -111,7 +121,7 @@ const handleStatus = async (ids: number[], status: number) => {
     return true;
   }
   try {
-    await updateUserStatus({ids: ids, status: status});
+    await updateUserStatus({ ids: ids, status: status });
     hide();
     message.success('更新状态成功');
     return true;
@@ -133,47 +143,48 @@ const UserList: React.FC = () => {
   const [deptListData, setDeptListData] = useState<DataNode[]>([]);
   const [defaultExpandedKeys, setDefaultExpandedKeys] = useState<string[]>([]);
   const [deptId, setDeptId] = useState<number>(0);
+  const [scope, setScope] = useState<GovernanceScopeValue>(defaultGovernanceScope);
 
   const showDeleteConfirm = (ids: number[]) => {
     confirm({
       title: '是否删除记录?',
-      icon: <ExclamationCircleOutlined/>,
+      icon: <ExclamationCircleOutlined />,
       content: '删除的记录不能恢复,请确认!',
       onOk() {
         handleRemove(ids).then(() => {
           actionRef.current?.reloadAndRest?.();
         });
       },
-      onCancel() {
-      },
+      onCancel() {},
     });
   };
 
   const showReSetPasswordConfirm = () => {
     confirm({
       title: '重置密码?',
-      icon: <ExclamationCircleOutlined/>,
+      icon: <ExclamationCircleOutlined />,
       // content: '删除的记录不能恢复,请确认!',
       onOk() {
         // handleRemove([item]).then(() => {
         //   actionRef.current?.reloadAndRest?.();
         // });
       },
-      onCancel() {
-      },
+      onCancel() {},
     });
   };
 
   const showStatusConfirm = (item: UserListItem[], status: number) => {
     confirm({
-      title: `确定${status == 1 ? "启用" : "禁用"}用户吗？`,
-      icon: <ExclamationCircleOutlined/>,
+      title: `确定${status == 1 ? '启用' : '禁用'}用户吗？`,
+      icon: <ExclamationCircleOutlined />,
       async onOk() {
-        await handleStatus(item.map((x) => x.id), status)
+        await handleStatus(
+          item.map((x) => x.id),
+          status,
+        );
         actionRef.current?.reload?.();
       },
-      onCancel() {
-      },
+      onCancel() {},
     });
   };
 
@@ -181,13 +192,16 @@ const UserList: React.FC = () => {
     {
       key: '1',
       label: (
-        <a key={'resetPassword'} onClick={() => {
-          showReSetPasswordConfirm()
-        }}>
+        <a
+          key={'resetPassword'}
+          onClick={() => {
+            showReSetPasswordConfirm();
+          }}
+        >
           重置密码
         </a>
       ),
-      icon: <RedoOutlined/>
+      icon: <RedoOutlined />,
     },
     {
       key: '2',
@@ -202,9 +216,9 @@ const UserList: React.FC = () => {
           分配角色
         </a>
       ),
-      icon: <PlusOutlined/>,
+      icon: <PlusOutlined />,
     },
-  ]
+  ];
 
   const columns: ProColumns<UserListItem>[] = [
     {
@@ -216,10 +230,16 @@ const UserList: React.FC = () => {
       title: '用户名',
       dataIndex: 'userName',
       render: (dom, entity) => {
-        return <a onClick={() => {
-          setCurrentRow(entity);
-          setShowDetail(true);
-        }}>{dom}</a>;
+        return (
+          <a
+            onClick={() => {
+              setCurrentRow(entity);
+              setShowDetail(true);
+            }}
+          >
+            {dom}
+          </a>
+        );
       },
     },
     {
@@ -232,6 +252,21 @@ const UserList: React.FC = () => {
       dataIndex: 'mobile',
     },
     {
+      title: '治理范围',
+      dataIndex: 'scopeLabel',
+      hideInSearch: true,
+      render: (_, entity) => (
+        <Tag color={governanceScopeColor(entity.scopeType as any)}>
+          {entity.scopeLabel || buildGovernanceScopeLabel(entity)}
+        </Tag>
+      ),
+    },
+    {
+      title: '激活状态',
+      dataIndex: 'activationStatus',
+      hideInSearch: true,
+    },
+    {
       title: '邮箱',
       dataIndex: 'email',
       hideInSearch: true,
@@ -239,21 +274,25 @@ const UserList: React.FC = () => {
     {
       title: '状态',
       dataIndex: 'status',
-      renderFormItem: (text, row, index) => {
-        return <Select
-          value={row.value}
-          options={[
-            {value: 1, label: '正常'},
-            {value: 0, label: '禁用'},
-          ]}
-        />
-
+      renderFormItem: (_, row) => {
+        return (
+          <Select
+            value={row.value}
+            options={[
+              { value: 1, label: '正常' },
+              { value: 0, label: '禁用' },
+            ]}
+          />
+        );
       },
       render: (dom, entity) => {
         return (
-          <Switch checked={entity.status == 1} onChange={(flag) => {
-            showStatusConfirm([entity], flag ? 1 : 0)
-          }}/>
+          <Switch
+            checked={entity.status == 1}
+            onChange={(flag) => {
+              showStatusConfirm([entity], flag ? 1 : 0);
+            }}
+          />
         );
       },
     },
@@ -334,27 +373,29 @@ const UserList: React.FC = () => {
               setCurrentRow(record);
             }}
           >
-            <EditOutlined/> 编辑
+            <EditOutlined /> 编辑
           </a>
-          <Divider type="vertical"/>
+          <Divider type="vertical" />
           <a
             key="delete"
-            style={{color: '#ff4d4f'}}
+            style={{ color: '#ff4d4f' }}
             onClick={() => {
               showDeleteConfirm([record.id]);
             }}
           >
-            <DeleteOutlined/> 删除
+            <DeleteOutlined /> 删除
           </a>
-          <Divider type="vertical"/>
-          <Dropdown menu={{items}}>
-            <a onClick={(e) => {
-              setCurrentRow(record);
-              return e.preventDefault()
-            }}>
+          <Divider type="vertical" />
+          <Dropdown menu={{ items }}>
+            <a
+              onClick={(e) => {
+                setCurrentRow(record);
+                return e.preventDefault();
+              }}
+            >
               <Space>
                 更多
-                <DownOutlined/>
+                <DownOutlined />
               </Space>
             </a>
           </Dropdown>
@@ -364,15 +405,15 @@ const UserList: React.FC = () => {
   ];
 
   useEffect(() => {
-    queryDeptAndPostList().then((res) => {
-      let deptList = res.data.deptList;
-      setDeptListData(tree(deptList, 0, 'parentId'))
+    queryDeptAndPostList(toGovernancePayload(scope)).then((res) => {
+      const deptList = res.data.deptList;
+      setDeptListData(tree(deptList, 0, 'parentId'));
       setDefaultExpandedKeys(deptList.map((x: any) => String(x.id)));
     });
-  }, []);
+  }, [scope]);
 
-  const onSelectDept: TreeProps['onSelect'] = (selectedKeys, info) => {
-    setDeptId(Number(selectedKeys[0]))
+  const onSelectDept: TreeProps['onSelect'] = (selectedKeys) => {
+    setDeptId(Number(selectedKeys[0]));
     if (actionRef.current) {
       actionRef.current.reload();
     }
@@ -380,8 +421,27 @@ const UserList: React.FC = () => {
 
   return (
     <PageContainer>
+      <GovernanceScopeBar
+        value={scope}
+        onChange={(nextScope) => {
+          setScope(nextScope);
+          setDeptId(0);
+          actionRef.current?.reload?.();
+        }}
+        entityLabel="后台用户、部门和岗位"
+        style={{ marginBottom: 16 }}
+      />
+      <Alert
+        showIcon
+        type="warning"
+        style={{ marginBottom: 16 }}
+        message={`Consequence Preview · 当前正在维护 ${buildGovernanceScopeLabel(
+          scope,
+        )} 的后台账号`}
+        description="切换主体后，左侧部门树、岗位选项和列表结果都会跟随刷新。若保存失败，请优先检查部门/岗位是否属于当前主体。"
+      />
       <Row gutter={24}>
-        <Col span={4} style={{background: 'white', paddingTop: 24, paddingLeft: 24}}>
+        <Col span={4} style={{ background: 'white', paddingTop: 24, paddingLeft: 24 }}>
           <Tree
             showLine
             onSelect={onSelectDept}
@@ -400,32 +460,30 @@ const UserList: React.FC = () => {
             }}
             toolBarRender={() => [
               <Button type="primary" key="primary" onClick={() => handleModalVisible(true)}>
-                <PlusOutlined/> 新建
+                <PlusOutlined /> 新建
               </Button>,
             ]}
-            request={(params => {
-              return queryUserList({...params, deptId: deptId})
-            })}
+            request={(params) => {
+              return queryUserList({ ...params, deptId: deptId, ...toGovernancePayload(scope) });
+            }}
             columns={columns}
             rowSelection={{}}
-            pagination={{pageSize: 10}}
-            tableAlertRender={({
-                                 selectedRowKeys,
-                                 selectedRows,
-                                 onCleanSelected,
-                               }) => {
+            pagination={{ pageSize: 10 }}
+            tableAlertRender={({ selectedRowKeys, selectedRows }) => {
               const ids = selectedRows.map((row) => row.id);
               return (
                 <Space size={16}>
                   <span>已选 {selectedRowKeys.length} 项</span>
                   <Button
-                    icon={<DeleteOutlined/>}
+                    icon={<DeleteOutlined />}
                     danger
-                    style={{borderRadius: '5px'}}
+                    style={{ borderRadius: '5px' }}
                     onClick={async () => {
                       showDeleteConfirm(ids);
                     }}
-                  >批量删除</Button>
+                  >
+                    批量删除
+                  </Button>
                 </Space>
               );
             }}
@@ -434,7 +492,10 @@ const UserList: React.FC = () => {
           <CreateModal
             key={'CreateUserForm'}
             onSubmit={async (value) => {
-              const success = await handleAdd(value);
+              const success = await handleAdd(
+                { ...value, userType: value.userType || '00' },
+                scope,
+              );
               if (success) {
                 handleModalVisible(false);
                 setCurrentRow(undefined);
@@ -450,12 +511,13 @@ const UserList: React.FC = () => {
               }
             }}
             createModalVisible={createModalVisible}
+            scope={scope}
           />
 
           <UpdateModal
             key={'UpdateUserForm'}
             onSubmit={async (value) => {
-              const success = await handleUpdate(value);
+              const success = await handleUpdate(value, scope);
               if (success) {
                 handleUpdateModalVisible(false);
                 setCurrentRow(undefined);
@@ -472,6 +534,7 @@ const UserList: React.FC = () => {
             }}
             updateModalVisible={updateModalVisible}
             values={currentRow || {}}
+            scope={scope}
           />
 
           <UserRoleModal
@@ -498,20 +561,19 @@ const UserList: React.FC = () => {
         </Col>
       </Row>
 
-
       <Drawer
         width={600}
         open={showDetail}
         onClose={() => {
           setCurrentRow(undefined);
-          setShowDetail(false)
+          setShowDetail(false);
         }}
         closable={false}
       >
         {currentRow?.id && (
           <ProDescriptions<UserListItem>
             column={2}
-            title={currentRow?.name}
+            title={currentRow?.userName || currentRow?.name}
             request={async () => ({
               data: currentRow || {},
             })}

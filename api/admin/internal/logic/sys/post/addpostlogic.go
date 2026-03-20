@@ -2,6 +2,7 @@ package post
 
 import (
 	"context"
+	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/common/res"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
@@ -34,13 +35,19 @@ func NewAddPostLogic(ctx context.Context, svcCtx *svc.ServiceContext) AddPostLog
 
 // AddPost 添加岗位信息
 func (l *AddPostLogic) AddPost(req *types.AddPostReq) (*types.BaseResp, error) {
-	_, err := l.svcCtx.PostService.AddPost(l.ctx, &sysclient.AddPostReq{
+	scopeReq, err := admincommon.BuildGovernanceScope(req.ScopeType, req.PlatformId, req.TenantId, req.MerchantId)
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
+
+	_, err = l.svcCtx.PostService.AddPost(l.ctx, &sysclient.AddPostReq{
 		PostCode: req.PostCode, // 岗位编码
 		PostName: req.PostName, // 岗位名称
 		Sort:     req.Sort,     // 显示顺序
 		Status:   req.Status,   // 岗位状态（0：停用，1:正常）
 		Remark:   req.Remark,   // 备注
 		CreateBy: l.ctx.Value("userName").(string),
+		Scope:    scopeReq,
 	})
 
 	if err != nil {

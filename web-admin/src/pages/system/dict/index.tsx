@@ -1,33 +1,46 @@
-import {DeleteOutlined, EditOutlined, ExclamationCircleOutlined, PlusOutlined} from '@ant-design/icons';
-import {Button, Divider, Drawer, message, Modal, Select, Space, Switch,} from 'antd';
-import React, {useRef, useState} from 'react';
-import {PageContainer} from '@ant-design/pro-layout';
-import type {ActionType, ProColumns} from '@ant-design/pro-table';
+import {
+  DeleteOutlined,
+  EditOutlined,
+  ExclamationCircleOutlined,
+  PlusOutlined,
+} from '@ant-design/icons';
+import { Alert, Button, Divider, Drawer, message, Modal, Select, Space, Switch, Tag } from 'antd';
+import React, { useRef, useState } from 'react';
+import { PageContainer } from '@ant-design/pro-layout';
+import type { ActionType, ProColumns } from '@ant-design/pro-table';
 import ProTable from '@ant-design/pro-table';
-import type {ProDescriptionsItemProps} from '@ant-design/pro-descriptions';
+import type { ProDescriptionsItemProps } from '@ant-design/pro-descriptions';
 import ProDescriptions from '@ant-design/pro-descriptions';
 import AddModal from './components/AddModal';
 import UpdateModal from './components/UpdateModal';
-import type {DictTypeListItem} from './data.d';
+import type { DictTypeListItem } from './data.d';
 import {
   addDictType,
   queryDictTypeList,
   removeDictType,
   updateDictType,
-  updateDictTypeStatus
-} from "@/pages/system/dict/service";
-import DictItemModal from "@/pages/system/dict/components/DictItem/DictItemModal";
+  updateDictTypeStatus,
+} from '@/pages/system/dict/service';
+import DictItemModal from '@/pages/system/dict/components/DictItem/DictItemModal';
+import GovernanceScopeBar from '../components/GovernanceScopeBar';
+import {
+  buildGovernanceScopeLabel,
+  defaultGovernanceScope,
+  governanceScopeColor,
+  type GovernanceScopeValue,
+  toGovernancePayload,
+} from '../components/governance';
 
-const {confirm} = Modal;
+const { confirm } = Modal;
 
 /**
  * 添加节点
  * @param fields
  */
-const handleAdd = async (fields: DictTypeListItem) => {
+const handleAdd = async (fields: DictTypeListItem, scope: GovernanceScopeValue) => {
   const hide = message.loading('正在添加');
   try {
-    await addDictType({...fields});
+    await addDictType({ ...fields, ...toGovernancePayload(scope) });
     hide();
     message.success('添加成功');
     return true;
@@ -41,10 +54,10 @@ const handleAdd = async (fields: DictTypeListItem) => {
  * 更新节点
  * @param fields
  */
-const handleUpdate = async (fields: DictTypeListItem) => {
+const handleUpdate = async (fields: DictTypeListItem, scope: GovernanceScopeValue) => {
   const hide = message.loading('正在更新');
   try {
-    await updateDictType(fields);
+    await updateDictType({ ...fields, ...toGovernancePayload(scope) });
     hide();
 
     message.success('更新成功');
@@ -85,7 +98,7 @@ const handleStatus = async (ids: number[], status: number) => {
     return true;
   }
   try {
-    await updateDictTypeStatus({ids, status});
+    await updateDictTypeStatus({ ids, status });
     hide();
     message.success('更新状态成功');
     return true;
@@ -102,32 +115,34 @@ const DictList: React.FC = () => {
   const [showDetail, setShowDetail] = useState<boolean>(false);
   const actionRef = useRef<ActionType>();
   const [currentRow, setCurrentRow] = useState<DictTypeListItem>();
+  const [scope, setScope] = useState<GovernanceScopeValue>(defaultGovernanceScope);
 
   const showDeleteConfirm = (ids: number[]) => {
     confirm({
       title: '是否删除记录?',
-      icon: <ExclamationCircleOutlined/>,
+      icon: <ExclamationCircleOutlined />,
       content: '删除的记录不能恢复,请确认!',
       onOk() {
         handleRemove(ids).then(() => {
           actionRef.current?.reloadAndRest?.();
         });
       },
-      onCancel() {
-      },
+      onCancel() {},
     });
   };
 
   const showStatusConfirm = (item: DictTypeListItem[], status: number) => {
     confirm({
-      title: `确定${status == 1 ? "启用" : "禁用"}字典吗？`,
-      icon: <ExclamationCircleOutlined/>,
+      title: `确定${status == 1 ? '启用' : '禁用'}字典吗？`,
+      icon: <ExclamationCircleOutlined />,
       async onOk() {
-        await handleStatus(item.map((x) => x.id), status)
+        await handleStatus(
+          item.map((x) => x.id),
+          status,
+        );
         actionRef.current?.reload?.();
       },
-      onCancel() {
-      },
+      onCancel() {},
     });
   };
 
@@ -142,10 +157,16 @@ const DictList: React.FC = () => {
       title: '字典名称',
       dataIndex: 'dictName',
       render: (dom, entity) => {
-        return <a onClick={() => {
-          setCurrentRow(entity);
-          setShowDetail(true);
-        }}>{dom}</a>;
+        return (
+          <a
+            onClick={() => {
+              setCurrentRow(entity);
+              setShowDetail(true);
+            }}
+          >
+            {dom}
+          </a>
+        );
       },
     },
     {
@@ -153,23 +174,37 @@ const DictList: React.FC = () => {
       dataIndex: 'dictType',
     },
     {
+      title: '治理范围',
+      dataIndex: 'scopeLabel',
+      hideInSearch: true,
+      render: (_, entity) => (
+        <Tag color={governanceScopeColor(entity.scopeType as any)}>
+          {entity.scopeLabel || buildGovernanceScopeLabel(entity)}
+        </Tag>
+      ),
+    },
+    {
       title: '状态',
       dataIndex: 'status',
-      renderFormItem: (text, row, index) => {
-        return <Select
-          value={row.value}
-          options={[
-            {value: '1', label: '正常'},
-            {value: '0', label: '禁用'},
-          ]}
-        />
-
+      renderFormItem: (_, row) => {
+        return (
+          <Select
+            value={row.value}
+            options={[
+              { value: '1', label: '正常' },
+              { value: '0', label: '禁用' },
+            ]}
+          />
+        );
       },
       render: (dom, entity) => {
         return (
-          <Switch checked={entity.status == 1} onChange={(flag) => {
-            showStatusConfirm([entity], flag ? 1 : 0)
-          }}/>
+          <Switch
+            checked={entity.status == 1}
+            onChange={(flag) => {
+              showStatusConfirm([entity], flag ? 1 : 0);
+            }}
+          />
         );
       },
     },
@@ -219,9 +254,9 @@ const DictList: React.FC = () => {
               setCurrentRow(record);
             }}
           >
-            <EditOutlined/> 编辑
+            <EditOutlined /> 编辑
           </a>
-          <Divider type="vertical"/>
+          <Divider type="vertical" />
           <a
             key="sort"
             onClick={() => {
@@ -229,19 +264,18 @@ const DictList: React.FC = () => {
               setCurrentRow(record);
             }}
           >
-            <EditOutlined/> 配置字典数据
+            <EditOutlined /> 配置字典数据
           </a>
-          <Divider type="vertical"/>
+          <Divider type="vertical" />
           <a
             key="delete"
-            style={{color: '#ff4d4f'}}
+            style={{ color: '#ff4d4f' }}
             onClick={() => {
               showDeleteConfirm([record.id]);
             }}
           >
-            <DeleteOutlined/> 删除
+            <DeleteOutlined /> 删除
           </a>
-
         </>
       ),
     },
@@ -249,6 +283,22 @@ const DictList: React.FC = () => {
 
   return (
     <PageContainer>
+      <GovernanceScopeBar
+        value={scope}
+        onChange={(nextScope) => {
+          setScope(nextScope);
+          actionRef.current?.reload?.();
+        }}
+        entityLabel="字典类型和字典项"
+        style={{ marginBottom: 16 }}
+      />
+      <Alert
+        showIcon
+        type="info"
+        style={{ marginBottom: 16 }}
+        message={`Consequence Preview · 当前维护 ${buildGovernanceScopeLabel(scope)} 的字典体系`}
+        description="这里的字典会被后续表单、通知和后台配置直接复用。平台级适合作为默认值，租户级适合作为本地主体自定义。"
+      />
       <ProTable<DictTypeListItem>
         headerTitle="字典管理"
         actionRef={actionRef}
@@ -264,11 +314,11 @@ const DictList: React.FC = () => {
             <PlusOutlined /> 刷新缓存
           </Button>,
         ]}
-        request={queryDictTypeList}
+        request={(params) => queryDictTypeList({ ...params, ...toGovernancePayload(scope) })}
         columns={columns}
         rowSelection={{}}
         pagination={{ pageSize: 10 }}
-        tableAlertRender={({ selectedRowKeys, selectedRows, onCleanSelected }) => {
+        tableAlertRender={({ selectedRowKeys, selectedRows }) => {
           const ids = selectedRows.map((row) => row.id);
           return (
             <Space size={16}>
@@ -291,7 +341,7 @@ const DictList: React.FC = () => {
       <AddModal
         key={'CreateDictForm'}
         onSubmit={async (value: DictTypeListItem) => {
-          const success = await handleAdd(value);
+          const success = await handleAdd(value, scope);
           if (success) {
             handleModalVisible(false);
             setCurrentRow(undefined);
@@ -312,7 +362,7 @@ const DictList: React.FC = () => {
       <UpdateModal
         key={'UpdateDictForm'}
         onSubmit={async (value: DictTypeListItem) => {
-          const success = await handleUpdate(value);
+          const success = await handleUpdate(value, scope);
           if (success) {
             handleUpdateModalVisible(false);
             setCurrentRow(undefined);
@@ -351,6 +401,7 @@ const DictList: React.FC = () => {
         }}
         dictItemModalVisible={dictItemModalVisible}
         currentData={currentRow || {}}
+        scope={scope}
       />
       <Drawer
         width={600}

@@ -2,6 +2,7 @@ package post
 
 import (
 	"context"
+	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/common/res"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
@@ -35,7 +36,12 @@ func NewUpdatePostLogic(ctx context.Context, svcCtx *svc.ServiceContext) UpdateP
 
 // UpdatePost 更新岗位信息
 func (l *UpdatePostLogic) UpdatePost(req *types.UpdatePostReq) (*types.BaseResp, error) {
-	_, err := l.svcCtx.PostService.UpdatePost(l.ctx, &sysclient.UpdatePostReq{
+	scopeReq, err := admincommon.BuildGovernanceScope(req.ScopeType, req.PlatformId, req.TenantId, req.MerchantId)
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
+
+	_, err = l.svcCtx.PostService.UpdatePost(l.ctx, &sysclient.UpdatePostReq{
 		Id:       req.Id,       // 岗位id
 		PostCode: req.PostCode, // 岗位编码
 		PostName: req.PostName, // 岗位名称
@@ -43,6 +49,7 @@ func (l *UpdatePostLogic) UpdatePost(req *types.UpdatePostReq) (*types.BaseResp,
 		Status:   req.Status,   // 岗位状态（0：停用，1:正常）
 		Remark:   req.Remark,   // 备注
 		UpdateBy: l.ctx.Value("userName").(string),
+		Scope:    scopeReq,
 	})
 
 	if err != nil {

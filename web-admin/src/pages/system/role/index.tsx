@@ -199,6 +199,34 @@ const RoleList: React.FC = () => {
       hideInSearch: true,
     },
     {
+      title: '作用域',
+      dataIndex: 'scopeType',
+      renderFormItem: (text, row, index) => {
+        return <Select
+          value={row.value}
+          allowClear
+          placeholder={'请选择'}
+          options={[
+            {value: 'platform', label: '平台级'},
+            {value: 'tenant', label: '租户级'},
+            {value: 'merchant', label: '商户级'},
+          ]}
+        />
+      },
+      render: (dom, entity) => {
+        const map: Record<string, string> = {platform: '平台级', tenant: '租户级', merchant: '商户级'};
+        return map[entity.scopeType] || entity.scopeType || '-';
+      },
+    },
+    {
+      title: '超管角色',
+      dataIndex: 'isAdmin',
+      hideInSearch: true,
+      render: (dom, entity) => {
+        return entity.isAdmin === 1 ? '是' : '否';
+      },
+    },
+    {
       title: '数据范围',
       dataIndex: 'dataScope',
       renderFormItem: (text, row, index) => {

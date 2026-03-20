@@ -3,8 +3,9 @@ package postservicelogic
 import (
 	"context"
 	"errors"
+
 	"github.com/feihua/zero-admin/pkg/time_util"
-	"github.com/feihua/zero-admin/rpc/sys/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/sys/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
 	"github.com/zeromicro/go-zero/core/logc"
 
@@ -34,19 +35,35 @@ func NewQueryPostListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Que
 
 // QueryPostList 查询岗位列表
 func (l *QueryPostListLogic) QueryPostList(in *sysclient.QueryPostListReq) (*sysclient.QueryPostListResp, error) {
-	q := query.SysPost.WithContext(l.ctx)
+	currentScope, err := logiccommon.NormalizeProtoScope(in.Scope)
+	if err != nil {
+		return nil, err
+	}
+	scopeWhere, scopeArgs := logiccommon.ScopeFilterSQL("", currentScope)
+	q := l.svcCtx.DB.WithContext(l.ctx).Table("sys_post").Where(scopeWhere, scopeArgs...)
 	if len(in.PostCode) > 0 {
-		q = q.Where(query.SysPost.PostCode.Like("%" + in.PostCode + "%"))
+		q = q.Where("post_code like ?", "%"+in.PostCode+"%")
 	}
 	if len(in.PostName) > 0 {
-		q = q.Where(query.SysPost.PostName.Like("%" + in.PostName + "%"))
+		q = q.Where("post_name like ?", "%"+in.PostName+"%")
 	}
 
 	if in.Status != 2 {
-		q = q.Where(query.SysPost.Status.Eq(in.Status))
+		q = q.Where("status = ?", in.Status)
 	}
 
-	result, count, err := q.FindByPage(int((in.PageNum-1)*in.PageSize), int(in.PageSize))
+	var count int64
+	if err = q.Count(&count).Error; err != nil {
+		logc.Errorf(l.ctx, "查询岗位列表总数失败,参数：%+v,异常:%s", in, err.Error())
+		return nil, errors.New("查询岗位列表信息失败")
+	}
+
+	var result []logiccommon.ScopedPost
+	err = q.Select("id, post_code, post_name, sort, status, remark, create_by, create_time, update_by, update_time, platform_id, tenant_id, merchant_id").
+		Order("sort asc, id asc").
+		Offset(int((in.PageNum - 1) * in.PageSize)).
+		Limit(int(in.PageSize)).
+		Find(&result).Error
 
 	if err != nil {
 		logc.Errorf(l.ctx, "查询岗位列表信息失败,参数：%+v,异常:%s", in, err.Error())
@@ -55,6 +72,7 @@ func (l *QueryPostListLogic) QueryPostList(in *sysclient.QueryPostListReq) (*sys
 
 	var list = make([]*sysclient.PostListData, 0, len(result))
 	for _, post := range result {
+		itemScope := logiccommon.DefaultScope(post.PlatformID, post.TenantID, post.MerchantID)
 		list = append(list, &sysclient.PostListData{
 			Id:         post.ID,                                 // 岗位id
 			PostCode:   post.PostCode,                           // 岗位编码
@@ -66,6 +84,7 @@ func (l *QueryPostListLogic) QueryPostList(in *sysclient.QueryPostListReq) (*sys
 			CreateTime: time_util.TimeToStr(post.CreateTime),    // 创建时间
 			UpdateBy:   post.UpdateBy,                           // 更新者
 			UpdateTime: time_util.TimeToString(post.UpdateTime), // 更新时间
+			Scope:      logiccommon.ProtoScope(itemScope),
 		})
 	}
 

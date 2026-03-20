@@ -12,6 +12,7 @@ message AddDictTypeReq {
   int32 status = 4; //状态（0：停用，1:正常）
   string remark = 5; //备注
   string create_by = 6; //创建者
+  GovernanceScope scope = 7; //主体范围
 }
 
 message AddDictTypeResp {
@@ -35,6 +36,7 @@ message UpdateDictTypeReq {
   int32 status = 4; //状态（0：停用，1:正常）
   string remark = 5; //备注
   string update_by = 8; //更新者
+  GovernanceScope scope = 9; //主体范围
 }
 
 message UpdateDictTypeResp {
@@ -67,6 +69,7 @@ message QueryDictTypeDetailResp {
   string create_time = 7; //创建时间
   string update_by = 8; //更新者
   string update_time = 9; //更新时间
+  GovernanceScope scope = 10; //主体范围
 
 }
 
@@ -77,6 +80,7 @@ message QueryDictTypeListReq {
   int32 status = 3; //状态（0：停用，1:正常）
   int64 page_num = 4; //第几页
   int64 page_size = 5; //每页的数量
+  GovernanceScope scope = 6; //主体范围筛选
 }
 
 message DictTypeListData {
@@ -89,6 +93,7 @@ message DictTypeListData {
   string create_time = 7; //创建时间
   string update_by = 8; //更新者
   string update_time = 9; //更新时间
+  GovernanceScope scope = 10; //主体范围
 
 }
 

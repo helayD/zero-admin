@@ -9,6 +9,7 @@ import (
 
 	"github.com/feihua/zero-admin/rpc/sys/gen/model"
 	"github.com/feihua/zero-admin/rpc/sys/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/sys/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/sys/internal/svc"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -46,6 +47,23 @@ func NewUpdateUserLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Update
 func (l *UpdateUserLogic) UpdateUser(in *sysclient.UpdateUserReq) (*sysclient.UpdateUserResp, error) {
 	if in.Id == 1 {
 		return nil, errors.New("不允许操作超级管理员用户")
+	}
+
+	currentScope, err := logiccommon.NormalizeProtoScope(in.Scope)
+	if err != nil {
+		return nil, err
+	}
+	if err = logiccommon.ValidateTenantWritable(l.ctx, l.svcCtx.DB, currentScope); err != nil {
+		return nil, err
+	}
+	if _, err = logiccommon.ValidateDeptInScope(l.ctx, l.svcCtx.DB, currentScope, in.DeptId); err != nil {
+		return nil, err
+	}
+	if err = logiccommon.ValidatePostIDsInScope(l.ctx, l.svcCtx.DB, currentScope, in.PostIds); err != nil {
+		return nil, err
+	}
+	if err = logiccommon.ValidateRoleIDsInScope(l.ctx, l.svcCtx.DB, currentScope, in.RoleIds); err != nil {
+		return nil, err
 	}
 
 	name := in.UserName // 用户名
@@ -128,44 +146,45 @@ func (l *UpdateUserLogic) UpdateUser(in *sysclient.UpdateUserReq) (*sysclient.Up
 		UpdateTime:    &now,               // 更新时间
 	}
 
-	err = query.Q.Transaction(func(tx *query.Query) error {
-		err = l.svcCtx.DB.Model(&model.SysUser{}).WithContext(l.ctx).Where(tx.SysUser.ID.Eq(sysUser.ID)).Save(sysUser).Error
-		if err != nil {
+	err = l.svcCtx.DB.WithContext(l.ctx).Transaction(func(tx *gorm.DB) error {
+		if err = tx.Model(&model.SysUser{}).Where("id = ?", sysUser.ID).Save(sysUser).Error; err != nil {
 			logc.Errorf(l.ctx, "更新用户异常,参数:%+v,异常:%s", user, err.Error())
 			return err
 		}
 
-		var userPosts []*model.SysUserPost
-		for _, postId := range in.PostIds {
-			userPosts = append(userPosts, &model.SysUserPost{
-				UserID: sysUser.ID,
-				PostID: postId,
-			})
-		}
-
-		postDo := tx.SysUserPost.WithContext(l.ctx)
-		// 6.清空用户与岗位关联
-		_, err = postDo.Where(tx.SysUserPost.UserID.Eq(sysUser.ID)).Delete()
-		if err != nil {
-			logc.Errorf(l.ctx, "删除用户与岗位关联异常,参数:%+v,异常:%s", user, err.Error())
+		if err = tx.Table("sys_user").
+			Where("id = ?", sysUser.ID).
+			Updates(map[string]interface{}{
+				"platform_id": currentScope.PlatformID,
+				"tenant_id":   currentScope.TenantID,
+				"merchant_id": currentScope.MerchantID,
+			}).Error; err != nil {
 			return err
 		}
 
-		// 7.添加用户与岗位关联
-		err = postDo.CreateInBatches(userPosts, len(userPosts))
-		if err != nil {
-			logc.Errorf(l.ctx, "更新用户与岗位关联异常,参数:%+v,异常:%s", user, err.Error())
+		if err = logiccommon.UpsertUserScopeBinding(l.ctx, tx, sysUser.ID, in.DeptId, currentScope, in.ActivationStatus, in.RoleMode, in.UpdateBy); err != nil {
 			return err
 		}
 
-		roleDo := tx.SysUserRole.WithContext(l.ctx)
-		// 8.清空用户与角色关联(防止脏数据)
-		_, err = roleDo.Where(tx.SysUserRole.UserID.Eq(sysUser.ID)).Delete()
-		if err != nil {
-			logc.Errorf(l.ctx, "删除用户与角色关联异常,参数:%+v,异常:%s", user, err.Error())
+		if err = tx.Where("user_id = ?", sysUser.ID).Delete(&model.SysUserPost{}).Error; err != nil {
 			return err
 		}
+		if len(in.PostIds) > 0 {
+			var userPosts []*model.SysUserPost
+			for _, postId := range in.PostIds {
+				userPosts = append(userPosts, &model.SysUserPost{
+					UserID: sysUser.ID,
+					PostID: postId,
+				})
+			}
+			if err = tx.Create(&userPosts).Error; err != nil {
+				return err
+			}
+		}
 
+		if err = tx.Where("user_id = ?", sysUser.ID).Delete(&model.SysUserRole{}).Error; err != nil {
+			return err
+		}
 		if len(in.RoleIds) > 0 {
 			var userRoles []*model.SysUserRole
 			for _, roleId := range in.RoleIds {
@@ -174,10 +193,7 @@ func (l *UpdateUserLogic) UpdateUser(in *sysclient.UpdateUserReq) (*sysclient.Up
 					RoleID: roleId,
 				})
 			}
-			// 9.添加用户与角色关联
-			err = roleDo.CreateInBatches(userRoles, len(userRoles))
-			if err != nil {
-				logc.Errorf(l.ctx, "清空用户与角色关联异常,参数:%+v,异常:%s", user, err.Error())
+			if err = tx.Create(&userRoles).Error; err != nil {
 				return err
 			}
 		}

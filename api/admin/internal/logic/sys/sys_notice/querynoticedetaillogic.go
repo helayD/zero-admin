@@ -3,6 +3,7 @@ package sys_notice
 import (
 	"context"
 
+	"github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
 	"github.com/feihua/zero-admin/api/admin/internal/types"
@@ -57,6 +58,7 @@ func (l *QueryNoticeDetailLogic) QueryNoticeDetail(req *types.QueryNoticeDetailR
 		UpdateBy:      detail.UpdateBy,      // 更新者
 		UpdateTime:    detail.UpdateTime,    // 更新时间
 	}
+	data.ScopeType, data.ScopeLabel, data.PlatformId, data.TenantId, data.MerchantId = common.ReadGovernanceScope(detail.Scope)
 	return &types.QueryNoticeDetailResp{
 		Code:    "000000",
 		Message: "查询通知公告表成功",

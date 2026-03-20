@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -38,8 +39,13 @@ func NewQueryDeptAndPostListLogic(ctx context.Context, svcCtx *svc.ServiceContex
 // 2.岗位信息
 // 2.部门信息
 func (l *QueryDeptAndPostListLogic) QueryDeptAndPostList(req *types.QueryDeptAndPostListReq) (resp *types.QueryDeptAndPostListResp, err error) {
+	scopeReq, err := admincommon.BuildGovernanceScope(req.ScopeType, req.PlatformId, req.TenantId, req.MerchantId)
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
+
 	// 1.查询岗位列表信息
-	result, err := l.svcCtx.UserService.QueryDeptAndPostList(l.ctx, &sysclient.QueryDeptAndPostListReq{})
+	result, err := l.svcCtx.UserService.QueryDeptAndPostList(l.ctx, &sysclient.QueryDeptAndPostListReq{Scope: scopeReq})
 
 	if err != nil {
 		logc.Errorf(l.ctx, "查询所有部门和岗位失败,参数:%+v,异常:%s", req, err.Error())

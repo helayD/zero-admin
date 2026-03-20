@@ -53,33 +53,46 @@ type AddCouponTypeReq struct {
 }
 
 type AddDeptReq struct {
-	ParentId int64  `json:"parentId"`        //上级部门id
-	DeptName string `json:"deptName"`        //部门名称
-	Sort     int32  `json:"sort"`            //显示顺序
-	Leader   string `json:"leader"`          //负责人
-	Phone    string `json:"phone"`           //联系电话
-	Email    string `json:"email"`           //邮箱
-	Status   int32  `json:"status"`          //部门状态（0：停用，1:正常）
-	Remark   string `json:"remark,optional"` //备注信息
+	ParentId   int64  `json:"parentId"`            //上级部门id
+	DeptName   string `json:"deptName"`            //部门名称
+	Sort       int32  `json:"sort"`                //显示顺序
+	Leader     string `json:"leader"`              //负责人
+	Phone      string `json:"phone"`               //联系电话
+	Email      string `json:"email"`               //邮箱
+	Status     int32  `json:"status"`              //部门状态（0：停用，1:正常）
+	Remark     string `json:"remark,optional"`     //备注信息
+	ScopeType  string `json:"scopeType"`           //主体范围(platform/tenant/merchant)
+	PlatformId int64  `json:"platformId,optional"` //平台ID
+	TenantId   int64  `json:"tenantId,optional"`   //租户ID
+	MerchantId int64  `json:"merchantId,optional"` //商户ID
 }
 
 type AddDictItemReq struct {
-	DictSort  int32  `json:"dictSort"`           //字典排序
-	DictLabel string `json:"dictLabel"`          //字典标签
-	DictValue string `json:"dictValue"`          //字典键值
-	DictType  string `json:"dictType"`           //字典类型
-	CssClass  string `json:"cssClass,optional"`  //样式属性（其他样式扩展）
-	ListClass string `json:"listClass,optional"` //表格回显样式
-	IsDefault string `json:"isDefault"`          //是否默认（Y是 N否）
-	Status    int32  `json:"status"`             //状态（0：停用，1:正常）
-	Remark    string `json:"remark,optional"`    //备注
+	DictSort   int32  `json:"dictSort"`            //字典排序
+	DictLabel  string `json:"dictLabel"`           //字典标签
+	DictValue  string `json:"dictValue"`           //字典键值
+	DictType   string `json:"dictType"`            //字典类型
+	CssClass   string `json:"cssClass,optional"`   //样式属性（其他样式扩展）
+	ListClass  string `json:"listClass,optional"`  //表格回显样式
+	IsDefault  string `json:"isDefault"`           //是否默认（Y是 N否）
+	Status     int32  `json:"status"`              //状态（0：停用，1:正常）
+	Remark     string `json:"remark,optional"`     //备注
+	DictTypeId int64  `json:"dictTypeId,optional"` //字典类型ID
+	ScopeType  string `json:"scopeType"`           //主体范围(platform/tenant/merchant)
+	PlatformId int64  `json:"platformId,optional"` //平台ID
+	TenantId   int64  `json:"tenantId,optional"`   //租户ID
+	MerchantId int64  `json:"merchantId,optional"` //商户ID
 }
 
 type AddDictTypeReq struct {
-	DictName string `json:"dictName"`        //字典名称
-	DictType string `json:"dictType"`        //字典类型
-	Status   int32  `json:"status"`          //状态（0：停用，1:正常）
-	Remark   string `json:"remark,optional"` //备注
+	DictName   string `json:"dictName"`            //字典名称
+	DictType   string `json:"dictType"`            //字典类型
+	Status     int32  `json:"status"`              //状态（0：停用，1:正常）
+	Remark     string `json:"remark,optional"`     //备注
+	ScopeType  string `json:"scopeType"`           //主体范围(platform/tenant/merchant)
+	PlatformId int64  `json:"platformId,optional"` //平台ID
+	TenantId   int64  `json:"tenantId,optional"`   //租户ID
+	MerchantId int64  `json:"merchantId,optional"` //商户ID
 }
 
 type AddHomeAdvertiseReq struct {
@@ -180,11 +193,15 @@ type AddMenuReq struct {
 }
 
 type AddNoticeReq struct {
-	NoticeTitle   string `json:"noticeTitle"`      //公告标题
-	NoticeType    int32  `json:"noticeType"`       //公告类型（1:通知,2:公告）
-	NoticeContent string `json:"noticeContent"`    //公告内容
-	Status        int32  `json:"status,default=2"` //公告状态（0:关闭,1:正常 ）
-	Remark        string `json:"remark"`           //备注
+	NoticeTitle   string `json:"noticeTitle"`         //公告标题
+	NoticeType    int32  `json:"noticeType"`          //公告类型（1:通知,2:公告）
+	NoticeContent string `json:"noticeContent"`       //公告内容
+	Status        int32  `json:"status,default=2"`    //公告状态（0:关闭,1:正常 ）
+	Remark        string `json:"remark"`              //备注
+	ScopeType     string `json:"scopeType"`           //主体范围(platform/tenant/merchant)
+	PlatformId    int64  `json:"platformId,optional"` //平台ID
+	TenantId      int64  `json:"tenantId,optional"`   //租户ID
+	MerchantId    int64  `json:"merchantId,optional"` //商户ID
 }
 
 type AddOrderReturnReasonReq struct {
@@ -204,11 +221,15 @@ type AddOrderSettingReq struct {
 }
 
 type AddPostReq struct {
-	PostCode string `json:"postCode"`        //岗位编码
-	PostName string `json:"postName"`        //岗位名称
-	Sort     int32  `json:"sort"`            //显示顺序
-	Status   int32  `json:"status"`          //岗位状态（0：停用，1:正常）
-	Remark   string `json:"remark,optional"` //备注
+	PostCode   string `json:"postCode"`            //岗位编码
+	PostName   string `json:"postName"`            //岗位名称
+	Sort       int32  `json:"sort"`                //显示顺序
+	Status     int32  `json:"status"`              //岗位状态（0：停用，1:正常）
+	Remark     string `json:"remark,optional"`     //备注
+	ScopeType  string `json:"scopeType"`           //主体范围(platform/tenant/merchant)
+	PlatformId int64  `json:"platformId,optional"` //平台ID
+	TenantId   int64  `json:"tenantId,optional"`   //租户ID
+	MerchantId int64  `json:"merchantId,optional"` //商户ID
 }
 
 type AddPreferredAreaReq struct {
@@ -314,11 +335,16 @@ type AddProductSpuReq struct {
 }
 
 type AddRoleReq struct {
-	RoleName  string `json:"roleName"`        //名称
-	RoleKey   string `json:"roleKey"`         //角色权限字符串
-	DataScope int32  `json:"dataScope"`       //数据范围（1：全部数据权限 2：自定数据权限 3：本部门数据权限 4：本部门及以下数据权限）
-	Status    int32  `json:"status"`          //状态(1:正常，0:禁用)
-	Remark    string `json:"remark,optional"` //备注
+	RoleName   string `json:"roleName"`                      //名称
+	RoleKey    string `json:"roleKey"`                       //角色权限字符串
+	DataScope  int32  `json:"dataScope"`                     //数据范围（1：全部数据权限 2：自定数据权限 3：本部门数据权限 4：本部门及以下数据权限）
+	Status     int32  `json:"status"`                        //状态(1:正常，0:禁用)
+	Remark     string `json:"remark,optional"`               //备注
+	ScopeType  string `json:"scopeType"`                     //作用域类型（platform:平台级 tenant:租户级 merchant:商户级）
+	PlatformId int64  `json:"platformId,optional,default=1"` //平台ID
+	TenantId   int64  `json:"tenantId,optional,default=0"`   //租户ID
+	MerchantId int64  `json:"merchantId,optional,default=0"` //商户ID
+	IsAdmin    int32  `json:"isAdmin,optional,default=0"`    //是否超级管理员角色
 }
 
 type AddSeckillActivityReq struct {
@@ -380,18 +406,24 @@ type AddSubjectReq struct {
 }
 
 type AddUserReq struct {
-	Mobile   string  `json:"mobile"`            //手机号码
-	UserName string  `json:"userName"`          //用户账号
-	NickName string  `json:"nickName"`          //用户昵称
-	UserType string  `json:"userType,optional"` //用户类型（00系统用户）
-	Avatar   string  `json:"avatar,optional"`   //头像路径
-	Email    string  `json:"email"`             //用户邮箱
-	Password string  `json:"password"`          //密码
-	Status   int32   `json:"status"`            //状态(1:正常，0:禁用)
-	DeptId   int64   `json:"deptId"`            //部门ID
-	Remark   string  `json:"remark,optional"`   //备注
-	PostIds  []int64 `json:"postIds"`           //岗位id
-	RoleIds  []int64 `json:"roleIds"`           //角色id
+	Mobile           string  `json:"mobile"`                    //手机号码
+	UserName         string  `json:"userName"`                  //用户账号
+	NickName         string  `json:"nickName"`                  //用户昵称
+	UserType         string  `json:"userType,optional"`         //用户类型（00系统用户）
+	Avatar           string  `json:"avatar,optional"`           //头像路径
+	Email            string  `json:"email"`                     //用户邮箱
+	Password         string  `json:"password"`                  //密码
+	Status           int32   `json:"status"`                    //状态(1:正常，0:禁用)
+	DeptId           int64   `json:"deptId"`                    //部门ID
+	Remark           string  `json:"remark,optional"`           //备注
+	PostIds          []int64 `json:"postIds"`                   //岗位id
+	RoleIds          []int64 `json:"roleIds"`                   //角色id
+	ScopeType        string  `json:"scopeType"`                 //主体范围(platform/tenant/merchant)
+	PlatformId       int64   `json:"platformId,optional"`       //平台ID
+	TenantId         int64   `json:"tenantId,optional"`         //租户ID
+	MerchantId       int64   `json:"merchantId,optional"`       //商户ID
+	ActivationStatus string  `json:"activationStatus,optional"` //激活状态
+	RoleMode         string  `json:"roleMode,optional"`         //角色模式
 }
 
 type BaseResp struct {
@@ -405,6 +437,11 @@ type CancelAuthorizationReq struct {
 	IsExist int64   `json:"isExist"` //0：取消授权，1：确认授权
 }
 
+type ChangeTenantStatusReq struct {
+	Ids          []int64 `json:"ids"`
+	StatusReason string  `json:"statusReason,optional"`
+}
+
 type CloseOrderReq struct {
 	Ids  []int64 `json:"ids"` //订单id
 	Note string  `json:"note"`
@@ -414,6 +451,35 @@ type CouponScopeData struct {
 	Id        int64  `json:"id"`        //商品id/分类id
 	Name      string `json:"name"`      //商品名称/分类名称
 	ProductSn string `json:"productSn"` //商品货号
+}
+
+type CreateTenantData struct {
+	TenantId              int64  `json:"tenantId"`
+	TenantCode            string `json:"tenantCode"`
+	AdminUserId           int64  `json:"adminUserId"`
+	AdminActivationStatus string `json:"adminActivationStatus"`
+}
+
+type CreateTenantReq struct {
+	TenantName        string   `json:"tenantName"`
+	TenantShortName   string   `json:"tenantShortName,optional"`
+	ContactName       string   `json:"contactName"`
+	ContactMobile     string   `json:"contactMobile"`
+	ContactEmail      string   `json:"contactEmail,optional"`
+	AvailableChannels []string `json:"availableChannels"`
+	DataRetentionDays int32    `json:"dataRetentionDays"`
+	FeatureFlags      []string `json:"featureFlags"`
+	AdminUserName     string   `json:"adminUserName"`
+	AdminNickName     string   `json:"adminNickName"`
+	AdminMobile       string   `json:"adminMobile"`
+	AdminEmail        string   `json:"adminEmail,optional"`
+	AdminPassword     string   `json:"adminPassword"`
+}
+
+type CreateTenantResp struct {
+	Code    string           `json:"code"`
+	Message string           `json:"message"`
+	Data    CreateTenantData `json:"data"`
 }
 
 type DeleteCompanyAddressReq struct {
@@ -1241,8 +1307,12 @@ type QueryDeptAndPostListData struct {
 }
 
 type QueryDeptAndPostListReq struct {
-	Current  int64 `form:"current,default=1"`
-	PageSize int64 `form:"pageSize,default=20"`
+	Current    int64  `form:"current,default=1"`
+	PageSize   int64  `form:"pageSize,default=20"`
+	ScopeType  string `form:"scopeType,optional"`  //主体范围(platform/tenant/merchant)
+	PlatformId int64  `form:"platformId,optional"` //平台ID
+	TenantId   int64  `form:"tenantId,optional"`   //租户ID
+	MerchantId int64  `form:"merchantId,optional"` //商户ID
 }
 
 type QueryDeptAndPostListResp struct {
@@ -1267,6 +1337,11 @@ type QueryDeptDetailData struct {
 	CreateTime string `json:"createTime"` //创建时间
 	UpdateBy   string `json:"updateBy"`   //更新者
 	UpdateTime string `json:"updateTime"` //更新时间
+	ScopeType  string `json:"scopeType"`  //主体范围
+	ScopeLabel string `json:"scopeLabel"` //主体范围标签
+	PlatformId int64  `json:"platformId"` //平台ID
+	TenantId   int64  `json:"tenantId"`   //租户ID
+	MerchantId int64  `json:"merchantId"` //商户ID
 }
 
 type QueryDeptDetailReq struct {
@@ -1295,9 +1370,18 @@ type QueryDeptListData struct {
 	CreateTime string `json:"createTime"` //创建时间
 	UpdateBy   string `json:"updateBy"`   //更新者
 	UpdateTime string `json:"updateTime"` //更新时间
+	ScopeType  string `json:"scopeType"`  //主体范围
+	ScopeLabel string `json:"scopeLabel"` //主体范围标签
+	PlatformId int64  `json:"platformId"` //平台ID
+	TenantId   int64  `json:"tenantId"`   //租户ID
+	MerchantId int64  `json:"merchantId"` //商户ID
 }
 
 type QueryDeptListReq struct {
+	ScopeType  string `form:"scopeType,optional"`  //主体范围(platform/tenant/merchant)
+	PlatformId int64  `form:"platformId,optional"` //平台ID
+	TenantId   int64  `form:"tenantId,optional"`   //租户ID
+	MerchantId int64  `form:"merchantId,optional"` //商户ID
 }
 
 type QueryDeptListResp struct {
@@ -1322,6 +1406,12 @@ type QueryDictItemDetailData struct {
 	CreateTime string `json:"createTime"` //创建时间
 	UpdateBy   string `json:"updateBy"`   //更新者
 	UpdateTime string `json:"updateTime"` //更新时间
+	DictTypeId int64  `json:"dictTypeId"` //字典类型ID
+	ScopeType  string `json:"scopeType"`  //主体范围
+	ScopeLabel string `json:"scopeLabel"` //主体范围标签
+	PlatformId int64  `json:"platformId"` //平台ID
+	TenantId   int64  `json:"tenantId"`   //租户ID
+	MerchantId int64  `json:"merchantId"` //商户ID
 }
 
 type QueryDictItemDetailReq struct {
@@ -1349,14 +1439,25 @@ type QueryDictItemListData struct {
 	CreateTime string `json:"createTime"` //创建时间
 	UpdateBy   string `json:"updateBy"`   //更新者
 	UpdateTime string `json:"updateTime"` //更新时间
+	DictTypeId int64  `json:"dictTypeId"` //字典类型ID
+	ScopeType  string `json:"scopeType"`  //主体范围
+	ScopeLabel string `json:"scopeLabel"` //主体范围标签
+	PlatformId int64  `json:"platformId"` //平台ID
+	TenantId   int64  `json:"tenantId"`   //租户ID
+	MerchantId int64  `json:"merchantId"` //商户ID
 }
 
 type QueryDictItemListReq struct {
-	Current   int64  `form:"current,default=1"`   //第几页
-	PageSize  int64  `form:"pageSize,default=20"` //每页的数量
-	DictLabel string `form:"dictLabel,optional"`  //字典标签
-	DictType  string `form:"dictType,optional"`   //字典类型
-	Status    int32  `form:"status,default=2"`    //状态（0：停用，1:正常）
+	Current    int64  `form:"current,default=1"`   //第几页
+	PageSize   int64  `form:"pageSize,default=20"` //每页的数量
+	DictLabel  string `form:"dictLabel,optional"`  //字典标签
+	DictType   string `form:"dictType,optional"`   //字典类型
+	Status     int32  `form:"status,default=2"`    //状态（0：停用，1:正常）
+	DictTypeId int64  `form:"dictTypeId,optional"` //字典类型ID
+	ScopeType  string `form:"scopeType,optional"`  //主体范围(platform/tenant/merchant)
+	PlatformId int64  `form:"platformId,optional"` //平台ID
+	TenantId   int64  `form:"tenantId,optional"`   //租户ID
+	MerchantId int64  `form:"merchantId,optional"` //商户ID
 }
 
 type QueryDictItemListResp struct {
@@ -1379,6 +1480,11 @@ type QueryDictTypeDetailData struct {
 	CreateTime string `json:"createTime"` //创建时间
 	UpdateBy   string `json:"updateBy"`   //更新者
 	UpdateTime string `json:"updateTime"` //更新时间
+	ScopeType  string `json:"scopeType"`  //主体范围
+	ScopeLabel string `json:"scopeLabel"` //主体范围标签
+	PlatformId int64  `json:"platformId"` //平台ID
+	TenantId   int64  `json:"tenantId"`   //租户ID
+	MerchantId int64  `json:"merchantId"` //商户ID
 }
 
 type QueryDictTypeDetailReq struct {
@@ -1401,14 +1507,23 @@ type QueryDictTypeListData struct {
 	CreateTime string `json:"createTime"` //创建时间
 	UpdateBy   string `json:"updateBy"`   //更新者
 	UpdateTime string `json:"updateTime"` //更新时间
+	ScopeType  string `json:"scopeType"`  //主体范围
+	ScopeLabel string `json:"scopeLabel"` //主体范围标签
+	PlatformId int64  `json:"platformId"` //平台ID
+	TenantId   int64  `json:"tenantId"`   //租户ID
+	MerchantId int64  `json:"merchantId"` //商户ID
 }
 
 type QueryDictTypeListReq struct {
-	Current  int64  `form:"current,default=1"`   //第几页
-	PageSize int64  `form:"pageSize,default=20"` //每页的数量
-	DictName string `form:"dictName,optional"`   //字典名称
-	DictType string `form:"dictType,optional"`   //字典类型
-	Status   int32  `form:"status,default=2"`    //状态（0：停用，1:正常）
+	Current    int64  `form:"current,default=1"`   //第几页
+	PageSize   int64  `form:"pageSize,default=20"` //每页的数量
+	DictName   string `form:"dictName,optional"`   //字典名称
+	DictType   string `form:"dictType,optional"`   //字典类型
+	Status     int32  `form:"status,default=2"`    //状态（0：停用，1:正常）
+	ScopeType  string `form:"scopeType,optional"`  //主体范围(platform/tenant/merchant)
+	PlatformId int64  `form:"platformId,optional"` //平台ID
+	TenantId   int64  `form:"tenantId,optional"`   //租户ID
+	MerchantId int64  `form:"merchantId,optional"` //商户ID
 }
 
 type QueryDictTypeListResp struct {
@@ -2291,6 +2406,11 @@ type QueryNoticeDetailData struct {
 	CreateTime    string `json:"createTime"`    //创建时间
 	UpdateBy      string `json:"updateBy"`      //更新者
 	UpdateTime    string `json:"updateTime"`    //更新时间
+	ScopeType     string `json:"scopeType"`     //主体范围
+	ScopeLabel    string `json:"scopeLabel"`    //主体范围标签
+	PlatformId    int64  `json:"platformId"`    //平台ID
+	TenantId      int64  `json:"tenantId"`      //租户ID
+	MerchantId    int64  `json:"merchantId"`    //商户ID
 }
 
 type QueryNoticeDetailReq struct {
@@ -2314,6 +2434,11 @@ type QueryNoticeListData struct {
 	CreateTime    string `json:"createTime"`    //创建时间
 	UpdateBy      string `json:"updateBy"`      //更新者
 	UpdateTime    string `json:"updateTime"`    //更新时间
+	ScopeType     string `json:"scopeType"`     //主体范围
+	ScopeLabel    string `json:"scopeLabel"`    //主体范围标签
+	PlatformId    int64  `json:"platformId"`    //平台ID
+	TenantId      int64  `json:"tenantId"`      //租户ID
+	MerchantId    int64  `json:"merchantId"`    //商户ID
 }
 
 type QueryNoticeListReq struct {
@@ -2322,6 +2447,10 @@ type QueryNoticeListReq struct {
 	NoticeTitle string `form:"noticeTitle,optional"` //公告标题
 	NoticeType  int32  `form:"noticeType,optional"`  //公告类型（1:通知,2:公告）
 	Status      int32  `form:"status,default=2"`     //公告状态（0:关闭,1:正常 ）
+	ScopeType   string `form:"scopeType,optional"`   //主体范围(platform/tenant/merchant)
+	PlatformId  int64  `form:"platformId,optional"`  //平台ID
+	TenantId    int64  `form:"tenantId,optional"`    //租户ID
+	MerchantId  int64  `form:"merchantId,optional"`  //商户ID
 }
 
 type QueryNoticeListResp struct {
@@ -2722,6 +2851,11 @@ type QueryPostDetailData struct {
 	CreateTime string `json:"createTime"` //创建时间
 	UpdateBy   string `json:"updateBy"`   //更新者
 	UpdateTime string `json:"updateTime"` //更新时间
+	ScopeType  string `json:"scopeType"`  //主体范围
+	ScopeLabel string `json:"scopeLabel"` //主体范围标签
+	PlatformId int64  `json:"platformId"` //平台ID
+	TenantId   int64  `json:"tenantId"`   //租户ID
+	MerchantId int64  `json:"merchantId"` //商户ID
 }
 
 type QueryPostDetailReq struct {
@@ -2745,14 +2879,23 @@ type QueryPostListData struct {
 	CreateTime string `json:"createTime"` //创建时间
 	UpdateBy   string `json:"updateBy"`   //更新者
 	UpdateTime string `json:"updateTime"` //更新时间
+	ScopeType  string `json:"scopeType"`  //主体范围
+	ScopeLabel string `json:"scopeLabel"` //主体范围标签
+	PlatformId int64  `json:"platformId"` //平台ID
+	TenantId   int64  `json:"tenantId"`   //租户ID
+	MerchantId int64  `json:"merchantId"` //商户ID
 }
 
 type QueryPostListReq struct {
-	Current  int64  `form:"current,default=1"`   //第几页
-	PageSize int64  `form:"pageSize,default=20"` //每页的数量
-	PostCode string `form:"postCode,optional"`   //岗位编码
-	PostName string `form:"postName,optional"`   //岗位名称
-	Status   int32  `form:"status,default=2"`    //岗位状态（0：停用，1:正常）
+	Current    int64  `form:"current,default=1"`   //第几页
+	PageSize   int64  `form:"pageSize,default=20"` //每页的数量
+	PostCode   string `form:"postCode,optional"`   //岗位编码
+	PostName   string `form:"postName,optional"`   //岗位名称
+	Status     int32  `form:"status,default=2"`    //岗位状态（0：停用，1:正常）
+	ScopeType  string `form:"scopeType,optional"`  //主体范围(platform/tenant/merchant)
+	PlatformId int64  `form:"platformId,optional"` //平台ID
+	TenantId   int64  `form:"tenantId,optional"`   //租户ID
+	MerchantId int64  `form:"merchantId,optional"` //商户ID
 }
 
 type QueryPostListResp struct {
@@ -3396,6 +3539,11 @@ type QueryRoleDetailData struct {
 	CreateTime string `json:"createTime"` //创建时间
 	UpdateBy   string `json:"updateBy"`   //更新者
 	UpdateTime string `json:"updateTime"` //更新时间
+	ScopeType  string `json:"scopeType"`  //作用域类型
+	PlatformId int64  `json:"platformId"` //平台ID
+	TenantId   int64  `json:"tenantId"`   //租户ID
+	MerchantId int64  `json:"merchantId"` //商户ID
+	IsAdmin    int32  `json:"isAdmin"`    //是否超级管理员角色
 }
 
 type QueryRoleDetailReq struct {
@@ -3420,15 +3568,23 @@ type QueryRoleListData struct {
 	CreateTime string `json:"createTime"` //创建时间
 	UpdateBy   string `json:"updateBy"`   //更新者
 	UpdateTime string `json:"updateTime"` //更新时间
+	ScopeType  string `json:"scopeType"`  //作用域类型
+	PlatformId int64  `json:"platformId"` //平台ID
+	TenantId   int64  `json:"tenantId"`   //租户ID
+	MerchantId int64  `json:"merchantId"` //商户ID
+	IsAdmin    int32  `json:"isAdmin"`    //是否超级管理员角色
 }
 
 type QueryRoleListReq struct {
-	Current   int64  `form:"current,default=1"`   //第几页
-	PageSize  int64  `form:"pageSize,default=20"` //每页的数量
-	RoleName  string `form:"roleName,optional"`   //名称
-	RoleKey   string `form:"roleKey,optional"`    //角色权限字符串
-	DataScope int32  `form:"dataScope,optional"`  //数据范围（1：全部数据权限 2：自定数据权限 3：本部门数据权限 4：本部门及以下数据权限）
-	Status    int32  `form:"status,default=2"`    //状态(1:正常，0:禁用)
+	Current    int64  `form:"current,default=1"`             //第几页
+	PageSize   int64  `form:"pageSize,default=20"`           //每页的数量
+	RoleName   string `form:"roleName,optional"`             //名称
+	RoleKey    string `form:"roleKey,optional"`              //角色权限字符串
+	DataScope  int32  `form:"dataScope,optional"`            //数据范围（1：全部数据权限 2：自定数据权限 3：本部门数据权限 4：本部门及以下数据权限）
+	Status     int32  `form:"status,default=2"`              //状态(1:正常，0:禁用)
+	ScopeType  string `form:"scopeType,optional"`            //作用域类型过滤
+	TenantId   int64  `form:"tenantId,optional,default=0"`   //租户ID过滤
+	MerchantId int64  `form:"merchantId,optional,default=0"` //商户ID过滤
 }
 
 type QueryRoleListResp struct {
@@ -3849,29 +4005,65 @@ type QuerySubjectListResp struct {
 	Total    int64                   `json:"total"`
 }
 
+type QueryTenantDetailReq struct {
+	Id int64 `form:"id"`
+}
+
+type QueryTenantDetailResp struct {
+	Code    string     `json:"code"`
+	Message string     `json:"message"`
+	Data    TenantData `json:"data"`
+}
+
+type QueryTenantListReq struct {
+	Current    int64  `form:"current,default=1"`
+	PageSize   int64  `form:"pageSize,default=20"`
+	TenantName string `form:"tenantName,optional"`
+	TenantCode string `form:"tenantCode,optional"`
+	Status     int32  `form:"status,default=-1"`
+	Channel    string `form:"channel,optional"`
+}
+
+type QueryTenantListResp struct {
+	Code     string        `json:"code"`
+	Message  string        `json:"message"`
+	Current  int64         `json:"current,default=1"`
+	Data     []*TenantData `json:"data"`
+	PageSize int64         `json:"pageSize,default=20"`
+	Success  bool          `json:"success"`
+	Total    int64         `json:"total"`
+}
+
 type QueryUserDetailData struct {
-	Id            int64   `json:"id"`            //用户id
-	Mobile        string  `json:"mobile"`        //手机号码
-	UserName      string  `json:"userName"`      //用户账号
-	NickName      string  `json:"nickName"`      //用户昵称
-	UserType      string  `json:"userType"`      //用户类型（00系统用户）
-	Avatar        string  `json:"avatar"`        //头像路径
-	Email         string  `json:"email"`         //用户邮箱
-	Status        int32   `json:"status"`        //状态(1:正常，0:禁用)
-	DeptId        int64   `json:"deptId"`        //部门ID
-	LoginIp       string  `json:"loginIp"`       //最后登录IP
-	LoginDate     string  `json:"loginDate"`     //最后登录时间
-	LoginBrowser  string  `json:"loginBrowser"`  //浏览器类型
-	LoginOs       string  `json:"loginOs"`       //操作系统
-	PwdUpdateDate string  `json:"pwdUpdateDate"` //密码最后更新时间
-	Remark        string  `json:"remark"`        //备注
-	DelFlag       int32   `json:"delFlag"`       //删除标志（0代表删除 1代表存在）
-	CreateBy      string  `json:"createBy"`      //创建者
-	CreateTime    string  `json:"createTime"`    //创建时间
-	UpdateBy      string  `json:"updateBy"`      //更新者
-	UpdateTime    string  `json:"updateTime"`    //更新时间
-	PostIds       []int64 `json:"postIds"`       //岗位id
-	RoleIds       []int64 `json:"roleIds"`       //角色id
+	Id               int64   `json:"id"`               //用户id
+	Mobile           string  `json:"mobile"`           //手机号码
+	UserName         string  `json:"userName"`         //用户账号
+	NickName         string  `json:"nickName"`         //用户昵称
+	UserType         string  `json:"userType"`         //用户类型（00系统用户）
+	Avatar           string  `json:"avatar"`           //头像路径
+	Email            string  `json:"email"`            //用户邮箱
+	Status           int32   `json:"status"`           //状态(1:正常，0:禁用)
+	DeptId           int64   `json:"deptId"`           //部门ID
+	LoginIp          string  `json:"loginIp"`          //最后登录IP
+	LoginDate        string  `json:"loginDate"`        //最后登录时间
+	LoginBrowser     string  `json:"loginBrowser"`     //浏览器类型
+	LoginOs          string  `json:"loginOs"`          //操作系统
+	PwdUpdateDate    string  `json:"pwdUpdateDate"`    //密码最后更新时间
+	Remark           string  `json:"remark"`           //备注
+	DelFlag          int32   `json:"delFlag"`          //删除标志（0代表删除 1代表存在）
+	CreateBy         string  `json:"createBy"`         //创建者
+	CreateTime       string  `json:"createTime"`       //创建时间
+	UpdateBy         string  `json:"updateBy"`         //更新者
+	UpdateTime       string  `json:"updateTime"`       //更新时间
+	PostIds          []int64 `json:"postIds"`          //岗位id
+	RoleIds          []int64 `json:"roleIds"`          //角色id
+	ScopeType        string  `json:"scopeType"`        //主体范围
+	ScopeLabel       string  `json:"scopeLabel"`       //主体范围标签
+	PlatformId       int64   `json:"platformId"`       //平台ID
+	TenantId         int64   `json:"tenantId"`         //租户ID
+	MerchantId       int64   `json:"merchantId"`       //商户ID
+	ActivationStatus string  `json:"activationStatus"` //激活状态
+	RoleMode         string  `json:"roleMode"`         //角色模式
 }
 
 type QueryUserDetailReq struct {
@@ -3885,37 +4077,47 @@ type QueryUserDetailResp struct {
 }
 
 type QueryUserListData struct {
-	Id            int64  `json:"id"`            //用户id
-	Mobile        string `json:"mobile"`        //手机号码
-	UserName      string `json:"userName"`      //用户账号
-	NickName      string `json:"nickName"`      //用户昵称
-	UserType      string `json:"userType"`      //用户类型（00系统用户）
-	Avatar        string `json:"avatar"`        //头像路径
-	Email         string `json:"email"`         //用户邮箱
-	Status        int32  `json:"status"`        //状态(1:正常，0:禁用)
-	DeptId        int64  `json:"deptId"`        //部门ID
-	LoginIp       string `json:"loginIp"`       //最后登录IP
-	LoginDate     string `json:"loginDate"`     //最后登录时间
-	LoginBrowser  string `json:"loginBrowser"`  //浏览器类型
-	LoginOs       string `json:"loginOs"`       //操作系统
-	PwdUpdateDate string `json:"pwdUpdateDate"` //密码最后更新时间
-	Remark        string `json:"remark"`        //备注
-	DelFlag       int32  `json:"delFlag"`       //删除标志（0代表删除 1代表存在）
-	CreateBy      string `json:"createBy"`      //创建者
-	CreateTime    string `json:"createTime"`    //创建时间
-	UpdateBy      string `json:"updateBy"`      //更新者
-	UpdateTime    string `json:"updateTime"`    //更新时间
+	Id               int64  `json:"id"`               //用户id
+	Mobile           string `json:"mobile"`           //手机号码
+	UserName         string `json:"userName"`         //用户账号
+	NickName         string `json:"nickName"`         //用户昵称
+	UserType         string `json:"userType"`         //用户类型（00系统用户）
+	Avatar           string `json:"avatar"`           //头像路径
+	Email            string `json:"email"`            //用户邮箱
+	Status           int32  `json:"status"`           //状态(1:正常，0:禁用)
+	DeptId           int64  `json:"deptId"`           //部门ID
+	LoginIp          string `json:"loginIp"`          //最后登录IP
+	LoginDate        string `json:"loginDate"`        //最后登录时间
+	LoginBrowser     string `json:"loginBrowser"`     //浏览器类型
+	LoginOs          string `json:"loginOs"`          //操作系统
+	PwdUpdateDate    string `json:"pwdUpdateDate"`    //密码最后更新时间
+	Remark           string `json:"remark"`           //备注
+	DelFlag          int32  `json:"delFlag"`          //删除标志（0代表删除 1代表存在）
+	CreateBy         string `json:"createBy"`         //创建者
+	CreateTime       string `json:"createTime"`       //创建时间
+	UpdateBy         string `json:"updateBy"`         //更新者
+	UpdateTime       string `json:"updateTime"`       //更新时间
+	ScopeType        string `json:"scopeType"`        //主体范围
+	ScopeLabel       string `json:"scopeLabel"`       //主体范围标签
+	PlatformId       int64  `json:"platformId"`       //平台ID
+	TenantId         int64  `json:"tenantId"`         //租户ID
+	MerchantId       int64  `json:"merchantId"`       //商户ID
+	ActivationStatus string `json:"activationStatus"` //激活状态
 }
 
 type QueryUserListReq struct {
-	Current  int64  `form:"current,default=1"`   //第几页
-	PageSize int64  `form:"pageSize,default=20"` //每页的数量
-	Mobile   string `form:"mobile,optional"`     //手机号码
-	UserName string `form:"userName,optional"`   //用户账号
-	NickName string `form:"nickName,optional"`   //用户昵称
-	Email    string `form:"email,optional"`      //用户邮箱
-	Status   int32  `form:"status,default=2"`    //状态(1:正常，0:禁用)
-	DeptId   int64  `form:"deptId,optional"`     //部门ID
+	Current    int64  `form:"current,default=1"`   //第几页
+	PageSize   int64  `form:"pageSize,default=20"` //每页的数量
+	Mobile     string `form:"mobile,optional"`     //手机号码
+	UserName   string `form:"userName,optional"`   //用户账号
+	NickName   string `form:"nickName,optional"`   //用户昵称
+	Email      string `form:"email,optional"`      //用户邮箱
+	Status     int32  `form:"status,default=2"`    //状态(1:正常，0:禁用)
+	DeptId     int64  `form:"deptId,optional"`     //部门ID
+	ScopeType  string `form:"scopeType,optional"`  //主体范围(platform/tenant/merchant)
+	PlatformId int64  `form:"platformId,optional"` //平台ID
+	TenantId   int64  `form:"tenantId,optional"`   //租户ID
+	MerchantId int64  `form:"merchantId,optional"` //商户ID
 }
 
 type QueryUserListResp struct {
@@ -3986,6 +4188,29 @@ type ScopeData struct {
 	ScopeId   int64 `json:"scopeId,optional"` //范围ID（分类ID或商品ID）
 }
 
+type TenantData struct {
+	Id                    int64    `json:"id"`
+	TenantCode            string   `json:"tenantCode"`
+	TenantName            string   `json:"tenantName"`
+	TenantShortName       string   `json:"tenantShortName"`
+	ContactName           string   `json:"contactName"`
+	ContactMobile         string   `json:"contactMobile"`
+	ContactEmail          string   `json:"contactEmail"`
+	AvailableChannels     []string `json:"availableChannels"`
+	DataRetentionDays     int32    `json:"dataRetentionDays"`
+	FeatureFlags          []string `json:"featureFlags"`
+	Status                int32    `json:"status"`
+	StatusReason          string   `json:"statusReason"`
+	PrimaryAdminUserId    int64    `json:"primaryAdminUserId"`
+	PrimaryAdminUserName  string   `json:"primaryAdminUserName"`
+	PrimaryAdminMobile    string   `json:"primaryAdminMobile"`
+	AdminActivationStatus string   `json:"adminActivationStatus"`
+	CreatedBy             string   `json:"createdBy"`
+	CreatedAt             string   `json:"createdAt"`
+	UpdatedBy             string   `json:"updatedBy"`
+	UpdatedAt             string   `json:"updatedAt"`
+}
+
 type UpdateCompanyAddressReq struct {
 	Id            int64  `json:"id"`            //主键ID
 	AddressName   string `json:"addressName"`   //地址名称
@@ -4051,15 +4276,19 @@ type UpdateCouponTypeStatusReq struct {
 }
 
 type UpdateDeptReq struct {
-	Id       int64  `json:"id"`              //部门id
-	ParentId int64  `json:"parentId"`        //上级部门id
-	DeptName string `json:"deptName"`        //部门名称
-	Sort     int32  `json:"sort"`            //显示顺序
-	Leader   string `json:"leader"`          //负责人
-	Phone    string `json:"phone"`           //联系电话
-	Email    string `json:"email"`           //邮箱
-	Status   int32  `json:"status"`          //部门状态（0：停用，1:正常）
-	Remark   string `json:"remark,optional"` //备注信息
+	Id         int64  `json:"id"`                  //部门id
+	ParentId   int64  `json:"parentId"`            //上级部门id
+	DeptName   string `json:"deptName"`            //部门名称
+	Sort       int32  `json:"sort"`                //显示顺序
+	Leader     string `json:"leader"`              //负责人
+	Phone      string `json:"phone"`               //联系电话
+	Email      string `json:"email"`               //邮箱
+	Status     int32  `json:"status"`              //部门状态（0：停用，1:正常）
+	Remark     string `json:"remark,optional"`     //备注信息
+	ScopeType  string `json:"scopeType"`           //主体范围(platform/tenant/merchant)
+	PlatformId int64  `json:"platformId,optional"` //平台ID
+	TenantId   int64  `json:"tenantId,optional"`   //租户ID
+	MerchantId int64  `json:"merchantId,optional"` //商户ID
 }
 
 type UpdateDeptStatusReq struct {
@@ -4068,16 +4297,21 @@ type UpdateDeptStatusReq struct {
 }
 
 type UpdateDictItemReq struct {
-	Id        int64  `json:"id"`                 //字典数据id
-	DictSort  int32  `json:"dictSort"`           //字典排序
-	DictLabel string `json:"dictLabel"`          //字典标签
-	DictValue string `json:"dictValue"`          //字典键值
-	DictType  string `json:"dictType"`           //字典类型
-	CssClass  string `json:"cssClass,optional"`  //样式属性（其他样式扩展）
-	ListClass string `json:"listClass,optional"` //表格回显样式
-	IsDefault string `json:"isDefault"`          //是否默认（Y是 N否）
-	Status    int32  `json:"status"`             //状态（0：停用，1:正常）
-	Remark    string `json:"remark,optional"`    //备注
+	Id         int64  `json:"id"`                  //字典数据id
+	DictSort   int32  `json:"dictSort"`            //字典排序
+	DictLabel  string `json:"dictLabel"`           //字典标签
+	DictValue  string `json:"dictValue"`           //字典键值
+	DictType   string `json:"dictType"`            //字典类型
+	CssClass   string `json:"cssClass,optional"`   //样式属性（其他样式扩展）
+	ListClass  string `json:"listClass,optional"`  //表格回显样式
+	IsDefault  string `json:"isDefault"`           //是否默认（Y是 N否）
+	Status     int32  `json:"status"`              //状态（0：停用，1:正常）
+	Remark     string `json:"remark,optional"`     //备注
+	DictTypeId int64  `json:"dictTypeId,optional"` //字典类型ID
+	ScopeType  string `json:"scopeType"`           //主体范围(platform/tenant/merchant)
+	PlatformId int64  `json:"platformId,optional"` //平台ID
+	TenantId   int64  `json:"tenantId,optional"`   //租户ID
+	MerchantId int64  `json:"merchantId,optional"` //商户ID
 }
 
 type UpdateDictItemStatusReq struct {
@@ -4086,11 +4320,15 @@ type UpdateDictItemStatusReq struct {
 }
 
 type UpdateDictTypeReq struct {
-	Id       int64  `json:"id"`              //字典id
-	DictName string `json:"dictName"`        //字典名称
-	DictType string `json:"dictType"`        //字典类型
-	Status   int32  `json:"status"`          //状态（0：停用，1:正常）
-	Remark   string `json:"remark,optional"` //备注
+	Id         int64  `json:"id"`                  //字典id
+	DictName   string `json:"dictName"`            //字典名称
+	DictType   string `json:"dictType"`            //字典类型
+	Status     int32  `json:"status"`              //状态（0：停用，1:正常）
+	Remark     string `json:"remark,optional"`     //备注
+	ScopeType  string `json:"scopeType"`           //主体范围(platform/tenant/merchant)
+	PlatformId int64  `json:"platformId,optional"` //平台ID
+	TenantId   int64  `json:"tenantId,optional"`   //租户ID
+	MerchantId int64  `json:"merchantId,optional"` //商户ID
 }
 
 type UpdateDictTypeStatusReq struct {
@@ -4255,12 +4493,16 @@ type UpdateNoteReq struct {
 }
 
 type UpdateNoticeReq struct {
-	Id            int64  `json:"id"`               //公告ID
-	NoticeTitle   string `json:"noticeTitle"`      //公告标题
-	NoticeType    int32  `json:"noticeType"`       //公告类型（1:通知,2:公告）
-	NoticeContent string `json:"noticeContent"`    //公告内容
-	Status        int32  `json:"status,default=2"` //公告状态（0:关闭,1:正常 ）
-	Remark        string `json:"remark"`           //备注
+	Id            int64  `json:"id"`                  //公告ID
+	NoticeTitle   string `json:"noticeTitle"`         //公告标题
+	NoticeType    int32  `json:"noticeType"`          //公告类型（1:通知,2:公告）
+	NoticeContent string `json:"noticeContent"`       //公告内容
+	Status        int32  `json:"status,default=2"`    //公告状态（0:关闭,1:正常 ）
+	Remark        string `json:"remark"`              //备注
+	ScopeType     string `json:"scopeType"`           //主体范围(platform/tenant/merchant)
+	PlatformId    int64  `json:"platformId,optional"` //平台ID
+	TenantId      int64  `json:"tenantId,optional"`   //租户ID
+	MerchantId    int64  `json:"merchantId,optional"` //商户ID
 }
 
 type UpdateNoticeStatusReq struct {
@@ -4352,12 +4594,16 @@ type UpdateOrderSettingStatusReq struct {
 }
 
 type UpdatePostReq struct {
-	Id       int64  `json:"id"`              //岗位id
-	PostCode string `json:"postCode"`        //岗位编码
-	PostName string `json:"postName"`        //岗位名称
-	Sort     int32  `json:"sort"`            //显示顺序
-	Status   int32  `json:"status"`          //岗位状态（0：停用，1:正常）
-	Remark   string `json:"remark,optional"` //备注
+	Id         int64  `json:"id"`                  //岗位id
+	PostCode   string `json:"postCode"`            //岗位编码
+	PostName   string `json:"postName"`            //岗位名称
+	Sort       int32  `json:"sort"`                //显示顺序
+	Status     int32  `json:"status"`              //岗位状态（0：停用，1:正常）
+	Remark     string `json:"remark,optional"`     //备注
+	ScopeType  string `json:"scopeType"`           //主体范围(platform/tenant/merchant)
+	PlatformId int64  `json:"platformId,optional"` //平台ID
+	TenantId   int64  `json:"tenantId,optional"`   //租户ID
+	MerchantId int64  `json:"merchantId,optional"` //商户ID
 }
 
 type UpdatePostStatusReq struct {
@@ -4550,12 +4796,17 @@ type UpdateRoleMenuListReq struct {
 }
 
 type UpdateRoleReq struct {
-	Id        int64  `json:"id"`              //角色id
-	RoleName  string `json:"roleName"`        //名称
-	RoleKey   string `json:"roleKey"`         //角色权限字符串
-	DataScope int32  `json:"dataScope"`       //数据范围（1：全部数据权限 2：自定数据权限 3：本部门数据权限 4：本部门及以下数据权限）
-	Status    int32  `json:"status"`          //状态(1:正常，0:禁用)
-	Remark    string `json:"remark,optional"` //备注
+	Id         int64  `json:"id"`                            //角色id
+	RoleName   string `json:"roleName"`                      //名称
+	RoleKey    string `json:"roleKey"`                       //角色权限字符串
+	DataScope  int32  `json:"dataScope"`                     //数据范围（1：全部数据权限 2：自定数据权限 3：本部门数据权限 4：本部门及以下数据权限）
+	Status     int32  `json:"status"`                        //状态(1:正常，0:禁用)
+	Remark     string `json:"remark,optional"`               //备注
+	ScopeType  string `json:"scopeType"`                     //作用域类型
+	PlatformId int64  `json:"platformId,optional,default=1"` //平台ID
+	TenantId   int64  `json:"tenantId,optional,default=0"`   //租户ID
+	MerchantId int64  `json:"merchantId,optional,default=0"` //商户ID
+	IsAdmin    int32  `json:"isAdmin,optional,default=0"`    //是否超级管理员角色
 }
 
 type UpdateRoleStatusReq struct {
@@ -4659,18 +4910,24 @@ type UpdateSubjectStatusReq struct {
 }
 
 type UpdateUserReq struct {
-	Id       int64   `json:"id"`              //用户id
-	Mobile   string  `json:"mobile"`          //手机号码
-	UserName string  `json:"userName"`        //用户账号
-	NickName string  `json:"nickName"`        //用户昵称
-	UserType string  `json:"userType"`        //用户类型（00系统用户）
-	Avatar   string  `json:"avatar,optional"` //头像路径
-	Email    string  `json:"email"`           //用户邮箱
-	Status   int32   `json:"status"`          //状态(1:正常，0:禁用)
-	DeptId   int64   `json:"deptId"`          //部门ID
-	Remark   string  `json:"remark,optional"` //备注
-	PostIds  []int64 `json:"postIds"`         //岗位id
-	RoleIds  []int64 `json:"roleIds"`         //角色id
+	Id               int64   `json:"id"`                        //用户id
+	Mobile           string  `json:"mobile"`                    //手机号码
+	UserName         string  `json:"userName"`                  //用户账号
+	NickName         string  `json:"nickName"`                  //用户昵称
+	UserType         string  `json:"userType"`                  //用户类型（00系统用户）
+	Avatar           string  `json:"avatar,optional"`           //头像路径
+	Email            string  `json:"email"`                     //用户邮箱
+	Status           int32   `json:"status"`                    //状态(1:正常，0:禁用)
+	DeptId           int64   `json:"deptId"`                    //部门ID
+	Remark           string  `json:"remark,optional"`           //备注
+	PostIds          []int64 `json:"postIds"`                   //岗位id
+	RoleIds          []int64 `json:"roleIds"`                   //角色id
+	ScopeType        string  `json:"scopeType"`                 //主体范围(platform/tenant/merchant)
+	PlatformId       int64   `json:"platformId,optional"`       //平台ID
+	TenantId         int64   `json:"tenantId,optional"`         //租户ID
+	MerchantId       int64   `json:"merchantId,optional"`       //商户ID
+	ActivationStatus string  `json:"activationStatus,optional"` //激活状态
+	RoleMode         string  `json:"roleMode,optional"`         //角色模式
 }
 
 type UpdateUserRoleReq struct {

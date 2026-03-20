@@ -3,6 +3,7 @@ package roleservicelogic
 import (
 	"context"
 	"errors"
+
 	"github.com/feihua/zero-admin/pkg/time_util"
 	"github.com/feihua/zero-admin/rpc/sys/gen/query"
 	"github.com/feihua/zero-admin/rpc/sys/internal/svc"
@@ -47,6 +48,16 @@ func (l *QueryRoleListLogic) QueryRoleList(in *sysclient.QueryRoleListReq) (*sys
 		q = q.Where(query.SysRole.DataScope.Eq(in.DataScope))
 	}
 
+	if len(in.ScopeType) > 0 {
+		q = q.Where(query.SysRole.ScopeType.Eq(in.ScopeType))
+	}
+	if in.TenantId > 0 {
+		q = q.Where(query.SysRole.TenantID.Eq(in.TenantId))
+	}
+	if in.MerchantId > 0 {
+		q = q.Where(query.SysRole.MerchantID.Eq(in.MerchantId))
+	}
+
 	offset := (in.PageNum - 1) * in.PageSize
 	result, count, err := q.FindByPage(int(offset), int(in.PageSize))
 
@@ -69,6 +80,11 @@ func (l *QueryRoleListLogic) QueryRoleList(in *sysclient.QueryRoleListReq) (*sys
 			CreateTime: time_util.TimeToStr(item.CreateTime),    // 创建时间
 			UpdateBy:   item.UpdateBy,                           // 更新者
 			UpdateTime: time_util.TimeToString(item.UpdateTime), // 更新时间
+			ScopeType:  item.ScopeType,                          // 作用域类型
+			PlatformId: item.PlatformID,                         // 平台ID
+			TenantId:   item.TenantID,                           // 租户ID
+			MerchantId: item.MerchantID,                         // 商户ID
+			IsAdmin:    item.IsAdmin,                            // 是否超级管理员角色
 		})
 	}
 

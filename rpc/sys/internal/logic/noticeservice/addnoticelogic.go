@@ -6,11 +6,12 @@ import (
 	"fmt"
 
 	"github.com/feihua/zero-admin/rpc/sys/gen/model"
-	"github.com/feihua/zero-admin/rpc/sys/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/sys/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/sys/internal/svc"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
 )
 
 // AddNoticeLogic 添加通知公告
@@ -34,9 +35,21 @@ func NewAddNoticeLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AddNoti
 
 // AddNotice 添加通知公告
 func (l *AddNoticeLogic) AddNotice(in *sysclient.AddNoticeReq) (*sysclient.AddNoticeResp, error) {
-	q := query.SysNotice
+	currentScope, err := logiccommon.NormalizeProtoScope(in.Scope)
+	if err != nil {
+		return nil, err
+	}
+	if err = logiccommon.ValidateTenantWritable(l.ctx, l.svcCtx.DB, currentScope); err != nil {
+		return nil, err
+	}
+	scopeWhere, scopeArgs := logiccommon.ScopeFilterSQL("", currentScope)
 
-	count, err := q.WithContext(l.ctx).Where(query.SysNotice.NoticeTitle.Eq(in.NoticeTitle)).Count()
+	var count int64
+	err = l.svcCtx.DB.WithContext(l.ctx).
+		Table("sys_notice").
+		Where(scopeWhere, scopeArgs...).
+		Where("notice_title = ?", in.NoticeTitle).
+		Count(&count).Error
 	if err != nil {
 		logc.Errorf(l.ctx, "根据公告标题：%s,查询公告信息,异常:%s", in.NoticeTitle, err.Error())
 		return nil, errors.New(fmt.Sprintf("添加通知公告失败"))
@@ -55,7 +68,19 @@ func (l *AddNoticeLogic) AddNotice(in *sysclient.AddNoticeReq) (*sysclient.AddNo
 
 	}
 
-	err = q.WithContext(l.ctx).Create(item)
+	err = l.svcCtx.DB.WithContext(l.ctx).Transaction(func(tx *gorm.DB) error {
+		if err = tx.Create(item).Error; err != nil {
+			return err
+		}
+
+		return tx.Table("sys_notice").
+			Where("id = ?", item.ID).
+			Updates(map[string]interface{}{
+				"platform_id": currentScope.PlatformID,
+				"tenant_id":   currentScope.TenantID,
+				"merchant_id": currentScope.MerchantID,
+			}).Error
+	})
 	if err != nil {
 		logc.Errorf(l.ctx, "添加通知公告失败,参数:%+v,异常:%s", item, err.Error())
 		return nil, errors.New("添加通知公告失败")

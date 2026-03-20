@@ -1,5 +1,6 @@
-import {request} from 'umi';
-import type {UserListParams, UserListItem} from './data.d';
+import { request } from 'umi';
+import type { UserListParams, UserListItem } from './data.d';
+import type { GovernanceScopeValue } from '../components/governance';
 
 // 添加用户信息
 export async function addUser(params: UserListItem) {
@@ -20,7 +21,6 @@ export async function removeUser(ids: number[]) {
   });
 }
 
-
 // 更新用户信息
 export async function updateUser(params: UserListItem) {
   return request('/api/sys/user/updateUser', {
@@ -32,28 +32,24 @@ export async function updateUser(params: UserListItem) {
 }
 
 // 批量更新用户信息状态
-export async function updateUserStatus(params: { ids: number[], status: number }) {
+export async function updateUserStatus(params: { ids: number[]; status: number }) {
   return request('/api/sys/user/updateUserStatus', {
     method: 'POST',
     data: {
       ...params,
     },
-
   });
 }
 
-
 // 查询用户信息详情
 export async function queryUserDetail(userId: number) {
-  return request('/api/sys/user/queryUserDetail?id='+userId, {
+  return request('/api/sys/user/queryUserDetail?id=' + userId, {
     method: 'GET',
-
   });
 }
 
 // 分页查询用户信息列表
 export async function queryUserList(params: UserListParams) {
-
   return request('/api/sys/user/queryUserList', {
     method: 'GET',
     params: {
@@ -63,20 +59,21 @@ export async function queryUserList(params: UserListParams) {
 }
 
 // 查询所有部门和岗位
-export async function queryDeptAndPostList() {
-
+export async function queryDeptAndPostList(params?: Partial<GovernanceScopeValue>) {
   return request('/api/sys/user/queryDeptAndPostList', {
     method: 'GET',
+    params: {
+      ...params,
+    },
   });
 }
 
 // 更新用户与角色的关联
-export async function updateUserRoleList(params: { userId: number, roleIds: number[] }) {
+export async function updateUserRoleList(params: { userId: number; roleIds: number[] }) {
   return request('/api/sys/user/updateUserRoleList', {
     method: 'POST',
     data: {
       ...params,
     },
-
   });
 }

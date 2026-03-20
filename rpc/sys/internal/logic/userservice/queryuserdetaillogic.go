@@ -8,6 +8,7 @@ import (
 	"github.com/bytedance/sonic"
 	"github.com/feihua/zero-admin/pkg/time_util"
 	"github.com/feihua/zero-admin/rpc/sys/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/sys/internal/logic/common"
 	"github.com/zeromicro/go-zero/core/logc"
 	"gorm.io/gorm"
 
@@ -74,29 +75,41 @@ func (l *QueryUserDetailLogic) QueryUserDetail(in *sysclient.QueryUserDetailReq)
 		return nil, errors.New("查询用户详情失败")
 	}
 
+	defaultScope, err := logiccommon.QueryUserDefaultScope(l.ctx, l.svcCtx.DB, in.Id)
+	if err != nil {
+		return nil, errors.New("查询用户主体范围失败")
+	}
+	binding, err := logiccommon.QueryPrimaryUserScope(l.ctx, l.svcCtx.DB, in.Id, defaultScope)
+	if err != nil {
+		return nil, errors.New("查询用户主体范围失败")
+	}
+
 	data := &sysclient.QueryUserDetailResp{
-		Id:            item.ID,                                    // 用户id
-		Mobile:        item.Mobile,                                // 手机号码
-		UserName:      item.UserName,                              // 用户账号
-		NickName:      item.NickName,                              // 用户昵称
-		UserType:      item.UserType,                              // 用户类型（00系统用户）
-		Avatar:        item.Avatar,                                // 头像路径
-		Email:         item.Email,                                 // 用户邮箱
-		Status:        item.Status,                                // 状态(1:正常，0:禁用)
-		DeptId:        item.DeptID,                                // 部门ID
-		LoginIp:       item.LoginIP,                               // 最后登录IP
-		LoginDate:     time_util.TimeToString(item.LoginDate),     // 最后登录时间
-		LoginBrowser:  item.LoginBrowser,                          // 浏览器类型
-		LoginOs:       item.LoginOs,                               // 操作系统
-		PwdUpdateDate: time_util.TimeToString(item.PwdUpdateDate), // 密码最后更新时间
-		Remark:        item.Remark,                                // 备注
-		DelFlag:       item.DelFlag,                               // 删除标志（0代表删除 1代表存在）
-		CreateBy:      item.CreateBy,                              // 创建者
-		CreateTime:    time_util.TimeToStr(item.CreateTime),       // 创建时间
-		UpdateBy:      item.UpdateBy,                              // 更新者
-		UpdateTime:    time_util.TimeToString(item.UpdateTime),    // 更新时间
-		PostIds:       postIds,                                    // 岗位id
-		RoleIds:       roleIds,                                    // 角色id
+		Id:               item.ID,                                    // 用户id
+		Mobile:           item.Mobile,                                // 手机号码
+		UserName:         item.UserName,                              // 用户账号
+		NickName:         item.NickName,                              // 用户昵称
+		UserType:         item.UserType,                              // 用户类型（00系统用户）
+		Avatar:           item.Avatar,                                // 头像路径
+		Email:            item.Email,                                 // 用户邮箱
+		Status:           item.Status,                                // 状态(1:正常，0:禁用)
+		DeptId:           item.DeptID,                                // 部门ID
+		LoginIp:          item.LoginIP,                               // 最后登录IP
+		LoginDate:        time_util.TimeToString(item.LoginDate),     // 最后登录时间
+		LoginBrowser:     item.LoginBrowser,                          // 浏览器类型
+		LoginOs:          item.LoginOs,                               // 操作系统
+		PwdUpdateDate:    time_util.TimeToString(item.PwdUpdateDate), // 密码最后更新时间
+		Remark:           item.Remark,                                // 备注
+		DelFlag:          item.DelFlag,                               // 删除标志（0代表删除 1代表存在）
+		CreateBy:         item.CreateBy,                              // 创建者
+		CreateTime:       time_util.TimeToStr(item.CreateTime),       // 创建时间
+		UpdateBy:         item.UpdateBy,                              // 更新者
+		UpdateTime:       time_util.TimeToString(item.UpdateTime),    // 更新时间
+		PostIds:          postIds,                                    // 岗位id
+		RoleIds:          roleIds,                                    // 角色id
+		Scope:            logiccommon.ProtoScope(defaultScope),
+		ActivationStatus: logiccommon.ActivationStatusName(binding.ActivationStatus),
+		RoleMode:         binding.RoleMode,
 	}
 
 	value, _ := sonic.Marshal(data)

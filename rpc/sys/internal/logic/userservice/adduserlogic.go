@@ -7,10 +7,12 @@ import (
 
 	"github.com/feihua/zero-admin/rpc/sys/gen/model"
 	"github.com/feihua/zero-admin/rpc/sys/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/sys/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/sys/internal/svc"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
 )
 
 // AddUserLogic 新增用户
@@ -41,6 +43,23 @@ func NewAddUserLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AddUserLo
 // 6.添加用户与岗位关联
 // 7.清空用户与角色关联(防止脏数据)
 func (l *AddUserLogic) AddUser(in *sysclient.AddUserReq) (*sysclient.AddUserResp, error) {
+	currentScope, err := logiccommon.NormalizeProtoScope(in.Scope)
+	if err != nil {
+		return nil, err
+	}
+	if err = logiccommon.ValidateTenantWritable(l.ctx, l.svcCtx.DB, currentScope); err != nil {
+		return nil, err
+	}
+	if _, err = logiccommon.ValidateDeptInScope(l.ctx, l.svcCtx.DB, currentScope, in.DeptId); err != nil {
+		return nil, err
+	}
+	if err = logiccommon.ValidatePostIDsInScope(l.ctx, l.svcCtx.DB, currentScope, in.PostIds); err != nil {
+		return nil, err
+	}
+	if err = logiccommon.ValidateRoleIDsInScope(l.ctx, l.svcCtx.DB, currentScope, in.RoleIds); err != nil {
+		return nil, err
+	}
+
 	q := query.SysUser
 
 	// 1.查询用户名称是否存在
@@ -92,7 +111,7 @@ func (l *AddUserLogic) AddUser(in *sysclient.AddUserReq) (*sysclient.AddUserResp
 		UserName: in.UserName, // 用户账号
 		NickName: in.NickName, // 用户昵称
 		UserType: in.UserType, // 用户类型（00系统用户）
-		Avatar:   in.Avatar,   // 头像路径
+		Avatar:   avatar,      // 头像路径
 		Email:    in.Email,    // 用户邮箱
 		Password: in.Password, // 密码
 		Status:   in.Status,   // 状态(1:正常，0:禁用)
@@ -101,58 +120,48 @@ func (l *AddUserLogic) AddUser(in *sysclient.AddUserReq) (*sysclient.AddUserResp
 		CreateBy: in.CreateBy, // 创建者
 	}
 
-	err = query.Q.Transaction(func(tx *query.Query) error {
-		// 4.用户不存在时,则直接添加用户
-		err = tx.SysUser.WithContext(l.ctx).Create(user)
-
-		if err != nil {
+	err = l.svcCtx.DB.WithContext(l.ctx).Transaction(func(tx *gorm.DB) error {
+		if err = tx.Create(user).Error; err != nil {
 			logc.Errorf(l.ctx, "新增用户异常,参数:%+v,异常:%s", user, err.Error())
 			return err
 		}
 
-		var userPosts []*model.SysUserPost
-		for _, postId := range in.PostIds {
-			userPosts = append(userPosts, &model.SysUserPost{
-				UserID: user.ID,
-				PostID: postId,
-			})
-		}
-
-		postDo := tx.SysUserPost.WithContext(l.ctx)
-		// 5.清空用户与岗位关联
-		_, err = postDo.Where(tx.SysUserPost.UserID.Eq(user.ID)).Delete()
-		if err != nil {
-			logc.Errorf(l.ctx, "删除用户与岗位关联异常,参数:%+v,异常:%s", user, err.Error())
+		if err = tx.Table("sys_user").
+			Where("id = ?", user.ID).
+			Updates(map[string]interface{}{
+				"platform_id": currentScope.PlatformID,
+				"tenant_id":   currentScope.TenantID,
+				"merchant_id": currentScope.MerchantID,
+			}).Error; err != nil {
 			return err
 		}
 
-		// 6.添加用户与岗位关联
-		err = postDo.CreateInBatches(userPosts, len(userPosts))
-		if err != nil {
-			logc.Errorf(l.ctx, "新增用户与岗位关联异常,参数:%+v,异常:%s", user, err.Error())
+		if err = logiccommon.UpsertUserScopeBinding(l.ctx, tx, user.ID, in.DeptId, currentScope, in.ActivationStatus, in.RoleMode, in.CreateBy); err != nil {
 			return err
 		}
 
-		roleDo := tx.SysUserRole.WithContext(l.ctx)
-		// 7.清空用户与角色关联(防止脏数据)
-		_, err = roleDo.Where(tx.SysUserRole.UserID.Eq(user.ID)).Delete()
-		if err != nil {
-			logc.Errorf(l.ctx, "删除用户与角色关联异常,参数:%+v,异常:%s", user, err.Error())
+		if err = tx.Where("user_id = ?", user.ID).Delete(&model.SysUserPost{}).Error; err != nil {
 			return err
 		}
+		if len(in.PostIds) > 0 {
+			var userPosts []*model.SysUserPost
+			for _, postId := range in.PostIds {
+				userPosts = append(userPosts, &model.SysUserPost{UserID: user.ID, PostID: postId})
+			}
+			if err = tx.Create(&userPosts).Error; err != nil {
+				return err
+			}
+		}
 
+		if err = tx.Where("user_id = ?", user.ID).Delete(&model.SysUserRole{}).Error; err != nil {
+			return err
+		}
 		if len(in.RoleIds) > 0 {
 			var userRoles []*model.SysUserRole
 			for _, roleId := range in.RoleIds {
-				userRoles = append(userRoles, &model.SysUserRole{
-					UserID: user.ID,
-					RoleID: roleId,
-				})
+				userRoles = append(userRoles, &model.SysUserRole{UserID: user.ID, RoleID: roleId})
 			}
-			// 8.添加用户与角色关联
-			err = roleDo.CreateInBatches(userRoles, len(userRoles))
-			if err != nil {
-				logc.Errorf(l.ctx, "清空用户与角色关联异常,参数:%+v,异常:%s", user, err.Error())
+			if err = tx.Create(&userRoles).Error; err != nil {
 				return err
 			}
 		}

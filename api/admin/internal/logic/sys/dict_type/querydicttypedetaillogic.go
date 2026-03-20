@@ -2,6 +2,7 @@ package dict_type
 
 import (
 	"context"
+	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -56,6 +57,7 @@ func (l *QueryDictTypeDetailLogic) QueryDictTypeDetail(req *types.QueryDictTypeD
 		UpdateTime: detail.UpdateTime, // 更新时间
 
 	}
+	data.ScopeType, data.ScopeLabel, data.PlatformId, data.TenantId, data.MerchantId = admincommon.ReadGovernanceScope(detail.Scope)
 
 	return &types.QueryDictTypeDetailResp{
 		Code:    "000000",

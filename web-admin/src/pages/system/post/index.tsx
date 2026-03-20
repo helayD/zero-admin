@@ -1,26 +1,39 @@
-import {DeleteOutlined, EditOutlined, ExclamationCircleOutlined, PlusOutlined} from '@ant-design/icons';
-import {Button, Divider, Drawer, message, Modal, Select, Space, Switch} from 'antd';
-import React, {useRef, useState} from 'react';
-import {PageContainer} from '@ant-design/pro-layout';
-import type {ActionType, ProColumns} from '@ant-design/pro-table';
+import {
+  DeleteOutlined,
+  EditOutlined,
+  ExclamationCircleOutlined,
+  PlusOutlined,
+} from '@ant-design/icons';
+import { Alert, Button, Divider, Drawer, message, Modal, Select, Space, Switch, Tag } from 'antd';
+import React, { useRef, useState } from 'react';
+import { PageContainer } from '@ant-design/pro-layout';
+import type { ActionType, ProColumns } from '@ant-design/pro-table';
 import ProTable from '@ant-design/pro-table';
-import type {ProDescriptionsItemProps} from '@ant-design/pro-descriptions';
+import type { ProDescriptionsItemProps } from '@ant-design/pro-descriptions';
 import ProDescriptions from '@ant-design/pro-descriptions';
 import AddModal from './components/AddModal';
 import UpdateModal from './components/UpdateModal';
-import type {PostListItem} from './data.d';
-import {addPost, queryPostList, removePost, updatePost, updatePostStatus} from './service';
+import type { PostListItem } from './data.d';
+import { addPost, queryPostList, removePost, updatePost, updatePostStatus } from './service';
+import GovernanceScopeBar from '../components/GovernanceScopeBar';
+import {
+  buildGovernanceScopeLabel,
+  defaultGovernanceScope,
+  governanceScopeColor,
+  type GovernanceScopeValue,
+  toGovernancePayload,
+} from '../components/governance';
 
-const {confirm} = Modal;
+const { confirm } = Modal;
 
 /**
  * 添加节点
  * @param fields
  */
-const handleAdd = async (fields: PostListItem) => {
+const handleAdd = async (fields: PostListItem, scope: GovernanceScopeValue) => {
   const hide = message.loading('正在添加');
   try {
-    await addPost({...fields});
+    await addPost({ ...fields, ...toGovernancePayload(scope) });
     hide();
     message.success('添加成功');
     return true;
@@ -34,10 +47,10 @@ const handleAdd = async (fields: PostListItem) => {
  * 更新节点
  * @param fields
  */
-const handleUpdate = async (fields: PostListItem) => {
+const handleUpdate = async (fields: PostListItem, scope: GovernanceScopeValue) => {
   const hide = message.loading('正在更新');
   try {
-    await updatePost(fields);
+    await updatePost({ ...fields, ...toGovernancePayload(scope) });
     hide();
 
     message.success('更新成功');
@@ -78,7 +91,7 @@ const handleStatus = async (ids: number[], status: number) => {
     return true;
   }
   try {
-    await updatePostStatus({ids, status});
+    await updatePostStatus({ ids, status });
     hide();
     message.success('更新状态成功');
     return true;
@@ -94,32 +107,34 @@ const PostList: React.FC = () => {
   const [showDetail, setShowDetail] = useState<boolean>(false);
   const actionRef = useRef<ActionType>();
   const [currentRow, setCurrentRow] = useState<PostListItem>();
+  const [scope, setScope] = useState<GovernanceScopeValue>(defaultGovernanceScope);
 
   const showDeleteConfirm = (ids: number[]) => {
     confirm({
       title: '是否删除记录?',
-      icon: <ExclamationCircleOutlined/>,
+      icon: <ExclamationCircleOutlined />,
       content: '删除的记录不能恢复,请确认!',
       onOk() {
         handleRemove(ids).then(() => {
           actionRef.current?.reloadAndRest?.();
         });
       },
-      onCancel() {
-      },
+      onCancel() {},
     });
   };
 
   const showStatusConfirm = (item: PostListItem[], status: number) => {
     confirm({
-      title: `确定${status == 1 ? "启用" : "禁用"}岗位吗？`,
-      icon: <ExclamationCircleOutlined/>,
+      title: `确定${status == 1 ? '启用' : '禁用'}岗位吗？`,
+      icon: <ExclamationCircleOutlined />,
       async onOk() {
-        await handleStatus(item.map((x) => x.id), status)
+        await handleStatus(
+          item.map((x) => x.id),
+          status,
+        );
         actionRef.current?.reload?.();
       },
-      onCancel() {
-      },
+      onCancel() {},
     });
   };
 
@@ -137,11 +152,27 @@ const PostList: React.FC = () => {
       title: '岗位名称',
       dataIndex: 'postName',
       render: (dom, entity) => {
-        return <a onClick={() => {
-          setCurrentRow(entity);
-          setShowDetail(true);
-        }}>{dom}</a>;
+        return (
+          <a
+            onClick={() => {
+              setCurrentRow(entity);
+              setShowDetail(true);
+            }}
+          >
+            {dom}
+          </a>
+        );
       },
+    },
+    {
+      title: '治理范围',
+      dataIndex: 'scopeLabel',
+      hideInSearch: true,
+      render: (_, entity) => (
+        <Tag color={governanceScopeColor(entity.scopeType as any)}>
+          {entity.scopeLabel || buildGovernanceScopeLabel(entity)}
+        </Tag>
+      ),
     },
     {
       title: '岗位排序',
@@ -151,21 +182,25 @@ const PostList: React.FC = () => {
     {
       title: '状态',
       dataIndex: 'status',
-      renderFormItem: (text, row, index) => {
-        return <Select
-          value={row.value}
-          options={[
-            {value: '1', label: '正常'},
-            {value: '0', label: '禁用'},
-          ]}
-        />
-
+      renderFormItem: (_, row) => {
+        return (
+          <Select
+            value={row.value}
+            options={[
+              { value: '1', label: '正常' },
+              { value: '0', label: '禁用' },
+            ]}
+          />
+        );
       },
       render: (dom, entity) => {
         return (
-          <Switch checked={entity.status == 1} onChange={(flag) => {
-            showStatusConfirm([entity], flag ? 1 : 0)
-          }}/>
+          <Switch
+            checked={entity.status == 1}
+            onChange={(flag) => {
+              showStatusConfirm([entity], flag ? 1 : 0);
+            }}
+          />
         );
       },
     },
@@ -211,17 +246,17 @@ const PostList: React.FC = () => {
               setCurrentRow(record);
             }}
           >
-            <EditOutlined/> 编辑
+            <EditOutlined /> 编辑
           </a>
-          <Divider type="vertical"/>
+          <Divider type="vertical" />
           <a
             key="delete"
-            style={{color: '#ff4d4f'}}
+            style={{ color: '#ff4d4f' }}
             onClick={() => {
               showDeleteConfirm([record.id]);
             }}
           >
-            <DeleteOutlined/> 删除
+            <DeleteOutlined /> 删除
           </a>
         </>
       ),
@@ -230,6 +265,22 @@ const PostList: React.FC = () => {
 
   return (
     <PageContainer>
+      <GovernanceScopeBar
+        value={scope}
+        onChange={(nextScope) => {
+          setScope(nextScope);
+          actionRef.current?.reload?.();
+        }}
+        entityLabel="岗位元数据"
+        style={{ marginBottom: 16 }}
+      />
+      <Alert
+        showIcon
+        type="info"
+        style={{ marginBottom: 16 }}
+        message={`Consequence Preview · 当前维护 ${buildGovernanceScopeLabel(scope)} 的岗位定义`}
+        description="岗位会被后续后台用户绑定和复用。若你希望做平台默认岗位，请保持平台级；若只服务单一租户，请切到租户级后再保存。"
+      />
       <ProTable<PostListItem>
         headerTitle="岗位管理"
         actionRef={actionRef}
@@ -239,58 +290,59 @@ const PostList: React.FC = () => {
         }}
         toolBarRender={() => [
           <Button type="primary" key="primary" onClick={() => handleModalVisible(true)}>
-            <PlusOutlined/> 新增
+            <PlusOutlined /> 新增
           </Button>,
         ]}
-        request={queryPostList}
+        request={(params) => queryPostList({ ...params, ...toGovernancePayload(scope) })}
         columns={columns}
         rowSelection={{}}
-        pagination={{pageSize: 10}}
-        tableAlertRender={({
-                             selectedRowKeys,
-                             selectedRows,
-                             onCleanSelected,
-                           }) => {
+        pagination={{ pageSize: 10 }}
+        tableAlertRender={({ selectedRowKeys, selectedRows, onCleanSelected }) => {
           const ids = selectedRows.map((row) => row.id);
           return (
             <Space size={16}>
               <span>已选 {selectedRowKeys.length} 项</span>
               <Button
-                icon={<EditOutlined/>}
-                style={{borderRadius: '5px'}}
+                icon={<EditOutlined />}
+                style={{ borderRadius: '5px' }}
                 onClick={async () => {
                   await handleStatus(ids, 1);
-                  onCleanSelected()
+                  onCleanSelected();
                   actionRef.current?.reload?.();
                 }}
-              >批量启用</Button>
+              >
+                批量启用
+              </Button>
               <Button
-                icon={<EditOutlined/>}
-                style={{borderRadius: '5px'}}
+                icon={<EditOutlined />}
+                style={{ borderRadius: '5px' }}
                 onClick={async () => {
                   await handleStatus(ids, 0);
-                  onCleanSelected()
+                  onCleanSelected();
                   actionRef.current?.reload?.();
                 }}
-              >批量禁用</Button>
+              >
+                批量禁用
+              </Button>
               <Button
-                icon={<DeleteOutlined/>}
+                icon={<DeleteOutlined />}
                 danger
-                style={{borderRadius: '5px'}}
+                style={{ borderRadius: '5px' }}
                 onClick={async () => {
                   showDeleteConfirm(ids);
                 }}
-              >批量删除</Button>
+              >
+                批量删除
+              </Button>
             </Space>
           );
         }}
       />
 
-
       <AddModal
         key={'CreatePostForm'}
         onSubmit={async (value) => {
-          const success = await handleAdd(value);
+          const success = await handleAdd(value, scope);
           if (success) {
             handleModalVisible(false);
             setCurrentRow(undefined);
@@ -311,7 +363,7 @@ const PostList: React.FC = () => {
       <UpdateModal
         key={'UpdatePostForm'}
         onSubmit={async (value) => {
-          const success = await handleUpdate(value);
+          const success = await handleUpdate(value, scope);
           if (success) {
             handleUpdateModalVisible(false);
             setCurrentRow(undefined);
@@ -335,14 +387,14 @@ const PostList: React.FC = () => {
         open={showDetail}
         onClose={() => {
           setCurrentRow(undefined);
-          setShowDetail(false)
+          setShowDetail(false);
         }}
         closable={false}
       >
         {currentRow?.id && (
           <ProDescriptions<PostListItem>
             column={2}
-            title={"岗位详情"}
+            title={'岗位详情'}
             request={async () => ({
               data: currentRow || {},
             })}

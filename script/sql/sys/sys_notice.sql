@@ -2,6 +2,9 @@ create table sys_notice
 (
     id             bigint auto_increment comment '公告ID'
         primary key,
+    platform_id    bigint                                default 1                 not null comment '平台ID',
+    tenant_id      bigint                                default 0                 not null comment '租户ID',
+    merchant_id    bigint                                default 0                 not null comment '商户ID',
     notice_title   varchar(50)                            not null comment '公告标题',
     notice_type    tinyint      default 1                 not null comment '公告类型（1:通知,2:公告）',
     notice_content varchar(255) default ''                not null comment '公告内容',
@@ -10,11 +13,15 @@ create table sys_notice
     create_by      varchar(50)  default ''                not null comment '创建者',
     create_time    timestamp    default CURRENT_TIMESTAMP not null comment '创建时间',
     update_by      varchar(50)  default ''                not null comment '更新者',
-    update_time    datetime                               null on update CURRENT_TIMESTAMP comment '更新时间'
+    update_time    datetime                               null on update CURRENT_TIMESTAMP comment '更新时间',
+    constraint uk_sys_notice_scope_title
+        unique (platform_id, tenant_id, merchant_id, notice_title)
 ) comment '通知公告表';
+
+create index idx_sys_notice_scope_status
+    on sys_notice (platform_id, tenant_id, merchant_id, status);
 
 
 INSERT INTO sys_notice (notice_title, notice_type, notice_content, status) VALUES ('测试通知1', 1, '这是一条测试通知内容', 1);
 INSERT INTO sys_notice (notice_title, notice_type, notice_content, status) VALUES ('测试公告2', 2, '这是一条测试公告内容', 1);
-
 

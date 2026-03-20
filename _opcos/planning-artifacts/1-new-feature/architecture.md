@@ -12,6 +12,7 @@ inputDocuments:
   - _opcos/planning-artifacts/1-new-feature/prd.md
   - _opcos/planning-artifacts/1-new-feature/ux-design.md
   - _opcos/planning-artifacts/1-new-feature/epic.md
+  - _opcos/planning-artifacts/implementation-readiness-report-2026-03-20.md
   - _opcos/project-context.md
   - docs/index.md
   - docs/project-overview.md
@@ -22,11 +23,11 @@ inputDocuments:
 workflowType: 'architecture'
 project_name: 'ai_flutter_client'
 user_name: 'David'
-date: '2026-03-19T22:53:17+0800'
+date: '2026-03-20T17:38:06+0800'
 prd_dir: '1-new-feature'
 lastStep: 8
 status: 'complete'
-completedAt: '2026-03-19T22:53:17+0800'
+completedAt: '2026-03-20T17:38:06+0800'
 ---
 
 # Architecture Decision Document
@@ -39,7 +40,7 @@ _本架构文档基于 PRD、UX 设计、项目上下文与现有代码结构整
 
 **Functional Requirements:**
 
-当前 PRD 共定义 59 条功能需求，可归纳为 8 个架构能力簇：
+当前 PRD 共定义 64 条功能需求，可归纳为 9 个架构能力簇：
 
 - **商品发现与内容导购**：首页、分类、品牌、推荐、专题、搜索入口需要共同消费商品、内容、营销与搜索读模型，不能继续依赖前台静态占位或后台孤立配置。
 - **会员账户与用户资产**：会员资料、地址、积分、优惠券、收藏与关注既是用户中心能力，也是订单、营销与留存能力的输入，因此必须由统一会员域提供可复用接口与作用域校验。
@@ -48,7 +49,8 @@ _本架构文档基于 PRD、UX 设计、项目上下文与现有代码结构整
 - **营销活动与内容运营**：优惠券、秒杀、广告、推荐位、专题与优选专区既服务前台转化，也服务商户和平台运营，因此 SMS/CMS 需要通过清晰的发布与生效边界接入前台。
 - **搜索、同步与平台协同**：商品 ES 同步、推荐内容生效、跨端状态一致与消息/补偿链路需要异步事件与可观测性，不应由人工刷库或隐式脚本兜底。
 - **后台管理与权限治理**：平台后台、租户后台、商户后台都依赖统一 RBAC 与数据范围控制，且必须支持审计留痕、批量操作与高密度工作流。
-- **平台租户与多商户治理 / 增长扩展**：平台-租户-商户三级作用域、商户治理、复购运营、消息召回、评价沉淀与留存分析要求系统从“单商家商城项目”升级为“平台化经营底座”。
+- **平台租户与多商户治理 / 增长扩展**：平台-租户-商户三级作用域、商户治理、复购运营、评价沉淀与留存分析要求系统从“单商家商城项目”升级为“平台化经营底座”。
+- **移动端召回、上下文恢复与渠道合规**：冷启动、热启动、登录态恢复、消息/活动唤回、弱网重试、场景化权限请求与升级闸门已经进入正式 FR 范围，不能再视为 Flutter 端体验优化项。
 
 **Non-Functional Requirements:**
 
@@ -56,6 +58,8 @@ _本架构文档基于 PRD、UX 设计、项目上下文与现有代码结构整
 - 商品变更同步到 Elasticsearch 的延迟应控制在 `5 分钟` 以内，且需要可监控、可重试、可人工介入。
 - 多租户、多商户隔离必须成为一等约束，平台级、租户级、商户级菜单与数据查询不得串读或误写。
 - 支付、库存、优惠券、积分、订单状态流转必须具备幂等与补偿机制，异常恢复不是实现细节，而是产品要求。
+- 移动端 App 需要满足冷启动进入首页或最近有效上下文 `P90 <= 3s`、上下文恢复成功率 `>= 99%`、消息/活动唤回成功链路 `>= 95%` 的正式约束。
+- 设备权限请求、弱网反馈与版本升级提示必须服从“不中断当前任务、完成后返回原目标”的体验契约，不能由页面各自实现。
 - UX 明确要求统一状态语义、统一作用域表达、统一异常恢复模式，因此架构必须支持“可信确认流”和“作用域优先”体验。
 
 **Scale & Complexity:**
@@ -72,12 +76,14 @@ _本架构文档基于 PRD、UX 设计、项目上下文与现有代码结构整
 - 管理端与前台网关的错误包装与中间件链不同，不能假定二者对称。
 - 当前项目已有 Dockerfile、`make build/start/stop`、K8s manifest 和 `service_manager.sh`，说明部署结构已具备多服务独立交付能力，但 CI/CD 还未在仓库中标准化。
 - 多租户、多商户模型已在 PRD 中被正式确立，但代码层仍缺少统一的作用域上下文包、作用域中间件和跨域查询/写入的一致约束，这是 MVP 实现阶段的第一优先缺口。
+- 最新 readiness 评估已明确指出，现有 `architecture.md` 与 `epic.md` 的旧版本曾停留在 `59 FR` 基线，因此本次刷新必须把 `FR60-FR64` 作为正式架构输入而不是附录说明。
 
 ### Cross-Cutting Concerns Identified
 
 - 认证、RBAC、数据范围与平台/租户/商户三级作用域
 - 交易一致性、库存锁定、支付回调、优惠券回退、积分补偿
 - 商品与营销内容的异步发布、生效与搜索同步
+- 移动端 App 生命周期、目标意图恢复、弱网重试、场景化权限与升级闸门
 - 多端状态语义一致性（前台订单状态、后台工单状态、补偿状态、审核状态）
 - 可观测性、审计日志、异常定位与人工干预入口
 - 生成代码约束、共享基础设施复用与 AI 代理实现一致性
@@ -168,12 +174,13 @@ cd flutter-mall && flutter pub get
 - Web 端已具备 proxy + `request` 中心化调用模式
 - Flutter 已有统一 `service_url.dart` 与 `HttpUtil`
 
-**Version Verification Note (2026-03-19):**
+**Version Verification Note (2026-03-20):**
 
 - Go 官方稳定版：`1.26.1`
-- React 官方文档最新版本：`19.2`
+- React 官方博客当前最新主版本文章：`19.2`（并已发布 `19.2.1` 修复）
 - Ant Design 官方文档当前版本：`6.3.3`
 - Flutter 官方文档当前反映稳定通道版本：`3.41.2`
+- go-zero 官方当前最新 release：`v1.10.0`
 
 结论：**本轮架构实施不做全栈大版本升级，升级工作单列为后续 Epic。**
 
@@ -308,6 +315,25 @@ cd flutter-mall && flutter pub get
   - `version`
   - `data`
 
+**Client Context & Recovery Contract**
+
+- `front-api` 需要识别并透传最小客户端上下文字段，用于支持 `FR60-FR64`：
+  - `appVersion`
+  - `platform`
+  - `deviceId`
+  - `intentSource`
+  - `intentId`
+  - `networkState`
+- 消息、活动、优惠券、待支付订单等唤回入口统一使用意图契约，不允许每个页面私定义跳转参数。推荐最小字段：
+  - `intentType`
+  - `targetType`
+  - `targetId`
+  - `fallbackType`
+  - `requiresAuth`
+  - `minAppVersion`
+  - `issuedAt`
+- 当前端目标已失效、版本不兼容或权限未完成时，`front-api` 需要返回结构化恢复提示，而不是让 App 自行猜测降级路径。
+
 **Error Handling Standards**
 
 - Admin API 保持现有自定义错误包装与上下文日志策略。
@@ -328,6 +354,9 @@ cd flutter-mall && flutter pub get
 - 保持 Provider + Dio + `HttpUtil` + `service_url.dart` 的集中式网络模式。
 - Widgets 不直接创建裸 `Dio` 或私有 token 流；网络与鉴权继续集中在共享层处理。
 - 高风险交易节点采用“状态确认优先”的交互：确认订单、支付发起、订单恢复、售后申请必须以服务端状态为准。
+- 新增统一 **App Lifecycle Shell**，负责冷启动、热启动、登录态恢复、前后台切换与目标意图恢复，避免在 `home/cart/mine/order` 页面各自维护会话恢复逻辑。
+- 新增统一 **Commerce State Shell**，覆盖首页、分类、搜索、商品详情、购物车、确认订单、订单列表/详情和售后页面的加载态、空态、错误态与弱网态。
+- 新增统一 **Permission Broker** 与 **Upgrade Gate**，只在真实业务触发时请求通知 / 相册 / 相机权限，并在强制或限时升级后恢复原始目标上下文。
 
 **Cross-End UX Architecture**
 
@@ -337,6 +366,10 @@ cd flutter-mall && flutter pub get
   - `Price Breakdown Card`
   - `Promotion Stack / Coupon Sheet`
   - `Sync Status Badge`
+  - `Commerce State Shell`
+  - `Intent Recovery Loop`
+  - `Permission Request Sheet`
+  - `Upgrade Gate Dialog`
 - 同一业务对象在前后台必须使用统一状态命名、金额口径与时间语义。
 
 ### Infrastructure & Deployment
@@ -372,6 +405,11 @@ cd flutter-mall && flutter pub get
   - 支付回调失败 / 重试
   - 优惠券回滚失败
   - 租户 / 商户审核与启停审计事件
+  - App 冷启动 / 会话恢复成功率
+  - 消息 / 活动 / 优惠券唤回到达率
+  - 弱网重试成功率与失败摘要
+  - 强制升级拦截次数与版本分布
+  - 权限拒绝后的替代路径使用率
 
 **Scaling Strategy**
 
@@ -387,9 +425,10 @@ cd flutter-mall && flutter pub get
 2. 扩展 JWT claim、网关中间件与审计上下文
 3. 为 `oms/pms/sms/cms/ums` 补充作用域过滤与资源校验
 4. 统一事件命名、payload 结构与消费幂等
-5. 完成商品同步、订单补偿、支付回调、优惠回滚等主链路改造
-6. 在 web-admin / flutter-mall 中落地统一状态与作用域组件
-7. 建立 CI / 监控 / 验证基线
+5. 为 Flutter Mall 建立意图恢复壳层、状态壳层、权限闸门与升级闸门
+6. 完成商品同步、订单补偿、支付回调、优惠回滚等主链路改造
+7. 在 web-admin / flutter-mall 中落地统一状态与作用域组件
+8. 建立 CI / 监控 / 验证基线
 
 **Cross-Component Dependencies:**
 
@@ -504,12 +543,14 @@ cd flutter-mall && flutter pub get
   - 重试可控
   - 死信可追踪
   - 日志可关联 `traceId`
+- 推送 / 站内消息 / 活动唤回使用统一意图对象，不使用“裸 URL + 页面局部 query”传递业务语义。
 
 **State Management Patterns:**
 
 - Web Admin 以页面局部状态和服务端状态为主，不引入新的全局 Redux 状态树
 - Flutter 继续使用 Provider，状态由业务 Provider 和共享工具层维护
 - 对交易类动作默认 **后端确认优先**，只在低风险场景允许乐观更新（如简单开关 / 排序）
+- App 生命周期状态与页面业务状态分离：`intent / lifecycle / network / upgrade` 不与商品、购物车、订单 Provider 混写。
 
 ### Process Patterns
 
@@ -533,7 +574,19 @@ cd flutter-mall && flutter pub get
 - Flutter：
   - 交易关键流使用页面级 loading + 结果态
   - 不能用短暂 toast 替代关键状态更新
+  - 首页、分类、搜索、商品详情、购物车、确认订单、订单列表/详情、售后页面统一走 `Commerce State Shell`
 - 异步生效类操作必须展示同步状态，而不是“保存成功”后无后续反馈
+
+**Recovery / Permission / Upgrade Patterns:**
+
+- 登录恢复、消息唤回、版本升级、权限授权与弱网重试必须串成一条 `Intent Recovery Loop`，完成系统门槛后优先回到原目标页。
+- 权限请求只允许发生在真实触发点，例如消息订阅、评价上传、售后凭证上传；拒绝后必须给替代路径，不阻断当前主任务。
+- 升级提示必须明确：
+  - 受影响功能
+  - 最迟生效时间
+  - 是否阻断使用
+  - 升级入口
+- 目标资源失效时必须提供替代落点或明确失败反馈，不允许静默回首页。
 
 ### Enforcement Guidelines
 
@@ -559,6 +612,7 @@ cd flutter-mall && flutter pub get
 - `oms.order.closed.v1` 事件携带 `tenantId`, `merchantId`, `orderId`, `traceId`
 - Web 新页面采用 `index.tsx + service.ts + data.d.ts`
 - 新增 Go 依赖统一放进 `internal/svc/service_context.go`
+- 消息唤回对象统一携带 `intentType`, `targetType`, `targetId`, `requiresAuth`, `minAppVersion`
 
 **Anti-Patterns:**
 
@@ -567,6 +621,7 @@ cd flutter-mall && flutter pub get
 - 在网关 handler 内直接写跨服务业务判断
 - 为图省事直接手改 `.pb.go` 或 `.gen.go`
 - 用页面按钮名命名 MQ 事件，如 `clickSaveCoupon`
+- 消息唤回后丢失目标意图，直接把用户打回首页
 
 ## Project Structure & Boundaries
 
@@ -630,6 +685,7 @@ zero-admin/
 │       │   ├── middleware/
 │       │   │   ├── auth.go                # 规划新增：会员 / 商户上下文校验
 │       │   │   ├── scope.go               # 规划新增：租户/商户入口透传
+│       │   │   ├── client_meta.go         # 规划新增：App 版本/渠道/意图头解析
 │       │   │   └── idempotency.go         # 规划新增：下单/支付防重
 │       │   ├── svc/
 │       │   └── types/
@@ -708,8 +764,13 @@ zero-admin/
 │   ├── lib/
 │   │   ├── config/
 │   │   ├── layout/
+│   │   │   ├── app_bootstrap.dart         # 规划新增：启动、登录恢复、升级闸门
+│   │   │   └── intent_recovery_shell.dart # 规划新增：唤回与上下文恢复壳层
 │   │   ├── model/
 │   │   ├── provider/
+│   │   │   ├── app_lifecycle_provider.dart
+│   │   │   ├── intent_recovery_provider.dart
+│   │   │   └── network_state_provider.dart
 │   │   ├── utils/
 │   │   │   ├── http_util.dart
 │   │   │   └── shared_preferences_util.dart
@@ -720,6 +781,9 @@ zero-admin/
 │   │   │   └── mine/
 │   │   ├── widgets/
 │   │   │   ├── cached_image_widget.dart
+│   │   │   ├── commerce_state_shell.dart  # 规划新增：加载/空态/错误/弱网统一壳层
+│   │   │   ├── permission_prompt_sheet.dart
+│   │   │   ├── upgrade_gate_dialog.dart
 │   │   │   ├── scope_context_bar.dart   # 规划新增
 │   │   │   ├── order_timeline_panel.dart# 规划新增
 │   │   │   └── price_breakdown_card.dart# 规划新增
@@ -818,6 +882,12 @@ zero-admin/
   - Admin Governance UI: 以 `system` 域和后续平台治理页面承载
   - Domain Services: `sys/pms/oms/sms/cms/ums` 全部接入作用域过滤与写入校验
 
+- **移动端召回、上下文恢复与渠道合规**
+  - Front: `api/front/internal/middleware/client_meta.go`, `api/front/internal/logic/common`
+  - Mobile Shell: `flutter-mall/lib/layout`, `flutter-mall/lib/provider`, `flutter-mall/lib/widgets`
+  - Mobile Pages: `flutter-mall/lib/view/home`, `flutter-mall/lib/view/cart`, `flutter-mall/lib/view/mine/message`, `flutter-mall/lib/view/mine/order`
+  - Shared Observability: `pkg/observability`
+
 ### Integration Points
 
 **Internal Communication:**
@@ -826,6 +896,7 @@ zero-admin/
 - `flutter-mall -> front-api -> RPC services`
 - `RPC services -> RabbitMQ -> consumer/search/job`
 - `job -> RPC services` 做补偿与定时治理
+- `message/push/activity entry -> Flutter intent recovery shell -> login/upgrade gate -> target page -> front-api revalidation`
 
 **External Integrations:**
 
@@ -834,6 +905,8 @@ zero-admin/
 - Elasticsearch
 - RabbitMQ
 - MongoDB
+- 推送 / 站内消息分发渠道
+- App 版本分发与升级元数据
 - OSS / 图片资源服务（如项目后续启用）
 
 **Data Flow:**
@@ -841,6 +914,7 @@ zero-admin/
 - 商品发布流：PMS/CMS/SMS 写库 -> 事件 -> Search 更新索引 -> Front/Home/Search 消费
 - 订单流：Front 下单 -> OMS 写库 -> 支付发起 -> 回调更新 -> Job/Consumer 补偿库存/优惠券/积分
 - 平台治理流：Admin 审核租户/商户 -> Sys / 业务域更新作用域元数据 -> Front/Admin 查询即时生效
+- 召回恢复流：消息/活动入口 -> App 恢复目标意图 -> 登录 / 升级 / 权限闸门 -> 目标页重新拉取服务端状态 -> 失败时给替代落点
 
 ### File Organization Patterns
 
@@ -906,20 +980,21 @@ zero-admin/
 **Structure Alignment:**
 
 - 项目结构章节既尊重现有仓库，也明确标出了 `pkg/scope`、`pkg/audit`、作用域中间件、共享 UI 组件这些首批应新增的位置。
-- 结构边界与 PRD 的 8 大能力簇能一一对应，不存在“需求无法落到目录”的情况。
+- 结构边界与 PRD 的 9 大能力簇能一一对应，不存在“需求无法落到目录”的情况。
 
 ### Requirements Coverage Validation
 
 **Epic / Feature Coverage:**
 
-- 当前 `epic.md` 已完成 Epic/Story 拆解，能够把 PRD 的 FR 分类、UX 旅程流和实施故事清单串成同一条追踪链。
-- 因此本次覆盖性验证可以同时基于 PRD 的 FR 分类、UX 的旅程流和已存在的 Story 列表进行交叉检查。
-- 在现有前提下，全部 8 个功能能力簇都已有明确的服务归属、网关边界和 UI 承载位置。
+- 当前 `epic.md` 已完成首轮 Epic/Story 拆解，但它仍停留在 `FR1-FR59` 的旧基线。
+- 因此本次覆盖性验证以最新 PRD、UX 和 readiness 评估为主，并明确把 `FR60-FR64` 的新增架构要求先纳入本文件，再要求下游 Epic/Story 链补齐。
+- 在现有前提下，全部 9 个功能能力簇都已有明确的服务归属、网关边界和 UI 承载位置。
 
 **Functional Requirements Coverage:**
 
-- 59 条 FR 已通过“发现导购、会员资产、购物车结算、订单售后、营销内容、搜索同步、后台治理、平台化经营”八类能力进行架构归位。
-- 交易闭环、后台闭环、租户 / 商户治理、复购闭环和搜索同步闭环均被映射到了现有服务与新增共享基础设施上。
+- 64 条 FR 已通过“发现导购、会员资产、购物车结算、订单售后、营销内容、搜索同步、后台治理、平台化经营、移动端召回与恢复”九类能力进行架构归位。
+- 新增 `FR60-FR64` 已映射到前台网关客户端上下文契约、Flutter 生命周期壳层、统一状态壳层、权限闸门和升级闸门。
+- 交易闭环、后台闭环、租户 / 商户治理、复购闭环、搜索同步闭环与移动端恢复闭环均被映射到了现有服务与新增共享基础设施上。
 
 **Non-Functional Requirements Coverage:**
 
@@ -927,8 +1002,9 @@ zero-admin/
 - Security：通过 JWT claim 扩展、RBAC、数据范围、日志脱敏、最小权限承接
 - Reliability：通过幂等、Job 补偿、MQ 重试、审计与告警承接
 - Scalability：通过独立服务扩展、MQ 解耦、ES 读模型承接
-- Accessibility / UX：通过统一状态语义、作用域条、错误恢复与一致的共享组件承接
+- Accessibility / UX：通过统一状态语义、作用域条、错误恢复、`Commerce State Shell` 与一致的共享组件承接
 - Tenant Isolation：通过统一作用域模型、服务端资源校验、缓存 key 与事件 payload 作用域字段承接
+- Mobile Lifecycle & Compliance：通过 `Intent Recovery Loop`、场景化权限闸门、升级闸门与恢复指标承接
 
 ### Implementation Readiness Validation
 
@@ -936,27 +1012,31 @@ zero-admin/
 
 - 已明确记录当前基线版本、上游参考版本、是否升级、为何不升级。
 - 已明确关键决策优先级、数据与通信拓扑、鉴权模式、部署与观测方向。
+- 已把 `FR60-FR64` 对应的生命周期、意图恢复、权限与升级策略提升为正式架构决策，而不是实现备注。
 
 **Structure Completeness:**
 
 - 已给出完整根目录树与关键新增目录建议。
 - 已把主要 FR 类别映射到实际目录和服务。
+- 已为移动端恢复壳层、状态壳层、权限闸门和升级闸门给出落位目录。
 
 **Pattern Completeness:**
 
 - 已对命名、结构、格式、通信、流程五类冲突点给出可执行规则。
 - 已明确 AI 代理在生成代码、作用域、请求层和共享依赖方面的硬约束。
+- 已补齐多代理最容易分叉的移动端恢复、消息唤回、权限请求和升级中断模式。
 
 ### Gap Analysis Results
 
 **Critical Gaps:**
 
-- 无阻塞性架构空白；进入实现前不需要重做架构。
+- 架构文档本身已无阻塞性空白，但下游 `epic.md` / story 链仍未吸收 `FR60-FR64`，进入实现前必须先刷新 Epic/Story 拆解。
 
 **Important Gaps:**
 
 - 仓库中尚未形成标准 CI 工作流文件，需在实现阶段补齐。
 - 平台 / 租户 / 商户统一作用域包、网关作用域中间件与审计上下文尚未在代码中落地。
+- App 版本闸门、消息唤回意图对象和统一状态壳层还未在代码中形成共享实现。
 
 **Nice-to-Have Gaps:**
 
@@ -967,6 +1047,7 @@ zero-admin/
 ### Validation Issues Addressed
 
 - 已明确拒绝“为追新而全量升级技术栈”的高风险路线，改为“业务闭环优先、升级后置”的低风险路线。
+- 已将 `FR60-FR64`、`Commerce State Shell`、`Intent Recovery Loop`、`Permission Request Sheet` 和 `Upgrade Gate Dialog` 正式纳入架构主文档。
 - 已将 Epic/Story 规划纳入整体实施验证链路，因此后续 readiness 校验可以直接对照 Story 清单检查跨文档一致性。
 
 ### Architecture Completeness Checklist
@@ -1001,7 +1082,7 @@ zero-admin/
 
 ### Architecture Readiness Assessment
 
-**Overall Status:** READY FOR IMPLEMENTATION
+**Overall Status:** ARCHITECTURE READY / DOWNSTREAM EPICS REQUIRE REFRESH
 
 **Confidence Level:** 高
 
@@ -1010,6 +1091,7 @@ zero-admin/
 - 明确保留了既有仓库的现实边界，避免脱离代码库的理想化设计
 - 把交易一致性、搜索同步、平台化作用域与多端状态一致性提升为一等架构约束
 - 为多 AI 代理协作补齐了命名、结构、格式、通信与流程五类一致性规则
+- 已把移动端恢复、消息唤回、弱网、权限与升级治理从 UX 约束上升为可落地的架构边界
 
 **Areas for Future Enhancement:**
 
@@ -1030,27 +1112,29 @@ zero-admin/
 
 第一批实现故事应围绕以下内容展开：
 
-1. 建立 `pkg/scope`、网关 `scope` / `audit` / `idempotency` 中间件
-2. 把 `oms/pms/sms/cms/ums` 的关键查询与写操作接入平台 / 租户 / 商户作用域校验
-3. 建立订单补偿、搜索同步与关键审计日志的统一事件与观测基线
+1. 先刷新 `epic.md` / stories，把 `FR60-FR64` 与新增移动端组件纳入正式 Story 链
+2. 建立 `pkg/scope`、网关 `scope` / `audit` / `idempotency` 中间件
+3. 把 `oms/pms/sms/cms/ums` 的关键查询与写操作接入平台 / 租户 / 商户作用域校验
+4. 建立移动端 `Intent Recovery Loop`、`Commerce State Shell`、权限闸门与升级闸门
+5. 建立订单补偿、搜索同步与关键审计日志的统一事件与观测基线
 
 ## Completion Summary & Next Workflow Recommendations
 
-架构工作流已经完成，当前文档可以作为实现阶段的技术单一事实源使用。按照 BMAD 流程，建议的后续步骤是：
+架构工作流已经完成，当前文档已经吸收最新 PRD / UX / readiness 对 `FR60-FR64` 的修订，可以继续作为实现阶段的技术单一事实源使用。按照 BMAD 流程，建议的后续步骤是：
 
 1. **Create Epics and Stories**
    - Command: `/bmad-bmm-create-epics-and-stories`
    - Agent: 📋 Product Manager
-   - 目的：把本 PRD + UX + Architecture 拆成可执行的 Epic 与 Story 清单
+   - 目的：基于最新 Architecture 重新拆解 Epic / Story，尤其补齐 `FR60-FR64` 与移动端恢复 / 权限 / 升级相关故事
 
 2. **Check Implementation Readiness**
    - Command: `/bmad-bmm-check-implementation-readiness`
    - Agent: 🏗️ Architect
-   - 目的：校验 PRD、UX、Architecture 与 Epics/Stories 是否已经对齐并可进入实现
+   - 目的：在 Epic / Story 刷新后重新校验 PRD、UX、Architecture 与 Epics/Stories 是否已经完全对齐
 
 3. **Sprint Planning**
    - Command: `/bmad-bmm-sprint-planning`
    - Agent: 🏃 Scrum Master
    - 目的：在 readiness 通过后生成实现阶段的 sprint plan
 
-如需继续，我建议下一步直接进入 **Create Epics and Stories**。
+如需继续，我建议下一步直接进入 **Create Epics and Stories**，先把 `FR60-FR64` 的 Story 链补齐。

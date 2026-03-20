@@ -2,6 +2,7 @@ package dict_item
 
 import (
 	"context"
+	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/common/res"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
@@ -35,18 +36,25 @@ func NewUpdateDictItemLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Up
 
 // UpdateDictItem 更新字典数据
 func (l *UpdateDictItemLogic) UpdateDictItem(req *types.UpdateDictItemReq) (resp *types.BaseResp, err error) {
+	scopeReq, err := admincommon.BuildGovernanceScope(req.ScopeType, req.PlatformId, req.TenantId, req.MerchantId)
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
+
 	_, err = l.svcCtx.DictItemService.UpdateDictItem(l.ctx, &sysclient.UpdateDictItemReq{
-		Id:        req.Id,        // 字典数据id
-		DictSort:  req.DictSort,  // 字典排序
-		DictLabel: req.DictLabel, // 字典标签
-		DictValue: req.DictValue, // 字典键值
-		DictType:  req.DictType,  // 字典类型
-		CssClass:  req.CssClass,  // 样式属性（其他样式扩展）
-		ListClass: req.ListClass, // 表格回显样式
-		IsDefault: req.IsDefault, // 是否默认（Y是 N否）
-		Status:    req.Status,    // 状态（0：停用，1:正常）
-		Remark:    req.Remark,    // 备注
-		UpdateBy:  l.ctx.Value("userName").(string),
+		Id:         req.Id,        // 字典数据id
+		DictSort:   req.DictSort,  // 字典排序
+		DictLabel:  req.DictLabel, // 字典标签
+		DictValue:  req.DictValue, // 字典键值
+		DictType:   req.DictType,  // 字典类型
+		CssClass:   req.CssClass,  // 样式属性（其他样式扩展）
+		ListClass:  req.ListClass, // 表格回显样式
+		IsDefault:  req.IsDefault, // 是否默认（Y是 N否）
+		Status:     req.Status,    // 状态（0：停用，1:正常）
+		Remark:     req.Remark,    // 备注
+		UpdateBy:   l.ctx.Value("userName").(string),
+		DictTypeId: req.DictTypeId,
+		Scope:      scopeReq,
 	})
 
 	if err != nil {

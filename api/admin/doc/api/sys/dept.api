@@ -9,14 +9,18 @@ info (
 type (
 	// 添加部门请求参数
 	AddDeptReq {
-		ParentId int64  `json:"parentId"` //上级部门id
-		DeptName string `json:"deptName"` //部门名称
-		Sort     int32  `json:"sort"` //显示顺序
-		Leader   string `json:"leader"` //负责人
-		Phone    string `json:"phone"` //联系电话
-		Email    string `json:"email"` //邮箱
-		Status   int32  `json:"status"` //部门状态（0：停用，1:正常）
-		Remark   string `json:"remark,optional"` //备注信息
+		ParentId   int64  `json:"parentId"` //上级部门id
+		DeptName   string `json:"deptName"` //部门名称
+		Sort       int32  `json:"sort"` //显示顺序
+		Leader     string `json:"leader"` //负责人
+		Phone      string `json:"phone"` //联系电话
+		Email      string `json:"email"` //邮箱
+		Status     int32  `json:"status"` //部门状态（0：停用，1:正常）
+		Remark     string `json:"remark,optional"` //备注信息
+		ScopeType  string `json:"scopeType"` //主体范围(platform/tenant/merchant)
+		PlatformId int64  `json:"platformId,optional"` //平台ID
+		TenantId   int64  `json:"tenantId,optional"` //租户ID
+		MerchantId int64  `json:"merchantId,optional"` //商户ID
 	}
 	// 删除部门请求参数
 	DeleteDeptReq {
@@ -24,15 +28,19 @@ type (
 	}
 	// 更新部门请求参数
 	UpdateDeptReq {
-		Id       int64  `json:"id"` //部门id
-		ParentId int64  `json:"parentId"` //上级部门id
-		DeptName string `json:"deptName"` //部门名称
-		Sort     int32  `json:"sort"` //显示顺序
-		Leader   string `json:"leader"` //负责人
-		Phone    string `json:"phone"` //联系电话
-		Email    string `json:"email"` //邮箱
-		Status   int32  `json:"status"` //部门状态（0：停用，1:正常）
-		Remark   string `json:"remark,optional"` //备注信息
+		Id         int64  `json:"id"` //部门id
+		ParentId   int64  `json:"parentId"` //上级部门id
+		DeptName   string `json:"deptName"` //部门名称
+		Sort       int32  `json:"sort"` //显示顺序
+		Leader     string `json:"leader"` //负责人
+		Phone      string `json:"phone"` //联系电话
+		Email      string `json:"email"` //邮箱
+		Status     int32  `json:"status"` //部门状态（0：停用，1:正常）
+		Remark     string `json:"remark,optional"` //备注信息
+		ScopeType  string `json:"scopeType"` //主体范围(platform/tenant/merchant)
+		PlatformId int64  `json:"platformId,optional"` //平台ID
+		TenantId   int64  `json:"tenantId,optional"` //租户ID
+		MerchantId int64  `json:"merchantId,optional"` //商户ID
 	}
 	// 更新部门状态请求参数
 	UpdateDeptStatusReq {
@@ -59,6 +67,11 @@ type (
 		CreateTime string `json:"createTime"` //创建时间
 		UpdateBy   string `json:"updateBy"` //更新者
 		UpdateTime string `json:"updateTime"` //更新时间
+		ScopeType  string `json:"scopeType"` //主体范围
+		ScopeLabel string `json:"scopeLabel"` //主体范围标签
+		PlatformId int64  `json:"platformId"` //平台ID
+		TenantId   int64  `json:"tenantId"` //租户ID
+		MerchantId int64  `json:"merchantId"` //商户ID
 	}
 	QueryDeptDetailResp {
 		Code    string              `json:"code"`
@@ -66,7 +79,12 @@ type (
 		Data    QueryDeptDetailData `json:"data"`
 	}
 	// 分页查询部门列表请求参数
-	QueryDeptListReq  {}
+	QueryDeptListReq {
+		ScopeType  string `form:"scopeType,optional"` //主体范围(platform/tenant/merchant)
+		PlatformId int64  `form:"platformId,optional"` //平台ID
+		TenantId   int64  `form:"tenantId,optional"` //租户ID
+		MerchantId int64  `form:"merchantId,optional"` //商户ID
+	}
 	QueryDeptListData {
 		Id         int64  `json:"id"` //部门id
 		ParentId   int64  `json:"parentId"` //上级部门id
@@ -83,6 +101,11 @@ type (
 		CreateTime string `json:"createTime"` //创建时间
 		UpdateBy   string `json:"updateBy"` //更新者
 		UpdateTime string `json:"updateTime"` //更新时间
+		ScopeType  string `json:"scopeType"` //主体范围
+		ScopeLabel string `json:"scopeLabel"` //主体范围标签
+		PlatformId int64  `json:"platformId"` //平台ID
+		TenantId   int64  `json:"tenantId"` //租户ID
+		MerchantId int64  `json:"merchantId"` //商户ID
 	}
 	QueryDeptListResp {
 		Code    string               `json:"code"`

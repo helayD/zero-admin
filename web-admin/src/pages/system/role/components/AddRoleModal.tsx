@@ -62,6 +62,30 @@ const AddRoleModal: React.FC<CreateFormProps> = (props) => {
           <Input id="create-name" placeholder={'请输入权限字符'}/>
         </FormItem>
         <FormItem
+          name="scopeType"
+          label="作用域类型"
+          initialValue="platform"
+          rules={[{required: true, message: '请选择作用域类型'}]}
+        >
+          <Select id={"scopeType"} placeholder={'请选择作用域类型'}
+            options={[
+              {value: 'platform', label: '平台级'},
+              {value: 'tenant', label: '租户级'},
+              {value: 'merchant', label: '商户级'},
+            ]}
+          />
+        </FormItem>
+        <FormItem
+          name="isAdmin"
+          label="超管角色"
+          initialValue={0}
+        >
+          <Radio.Group id="isAdmin">
+            <Radio value={1}>是</Radio>
+            <Radio value={0}>否</Radio>
+          </Radio.Group>
+        </FormItem>
+        <FormItem
           name="dataScope"
           label="数据范围"
           rules={[{required: true, message: '请选择数据范围'}]}

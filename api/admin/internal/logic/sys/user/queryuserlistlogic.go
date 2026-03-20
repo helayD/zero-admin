@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
 	"github.com/feihua/zero-admin/api/admin/internal/types"
@@ -32,6 +33,11 @@ func NewQueryUserListLogic(ctx context.Context, svcCtx *svc.ServiceContext) Quer
 
 // QueryUserList 查询用户列表信息
 func (l *QueryUserListLogic) QueryUserList(req *types.QueryUserListReq) (*types.QueryUserListResp, error) {
+	scopeReq, err := admincommon.BuildGovernanceScope(req.ScopeType, req.PlatformId, req.TenantId, req.MerchantId)
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
+
 	result, err := l.svcCtx.UserService.QueryUserList(l.ctx, &sysclient.QueryUserListReq{
 		PageNum:  req.Current,
 		PageSize: req.PageSize,
@@ -41,6 +47,7 @@ func (l *QueryUserListLogic) QueryUserList(req *types.QueryUserListReq) (*types.
 		Email:    req.Email,    // 用户邮箱
 		Status:   req.Status,   // 状态(1:正常，0:禁用)
 		DeptId:   req.DeptId,   // 部门ID
+		Scope:    scopeReq,     // 主体范围
 	})
 
 	if err != nil {
@@ -52,28 +59,31 @@ func (l *QueryUserListLogic) QueryUserList(req *types.QueryUserListReq) (*types.
 	var list []*types.QueryUserListData
 
 	for _, detail := range result.List {
-		list = append(list, &types.QueryUserListData{
-			Id:            detail.Id,            // 用户id
-			Mobile:        detail.Mobile,        // 手机号码
-			UserName:      detail.UserName,      // 用户账号
-			NickName:      detail.NickName,      // 用户昵称
-			UserType:      detail.UserType,      // 用户类型（00系统用户）
-			Avatar:        detail.Avatar,        // 头像路径
-			Email:         detail.Email,         // 用户邮箱
-			Status:        detail.Status,        // 状态(1:正常，0:禁用)
-			DeptId:        detail.DeptId,        // 部门ID
-			LoginIp:       detail.LoginIp,       // 最后登录IP
-			LoginDate:     detail.LoginDate,     // 最后登录时间
-			LoginBrowser:  detail.LoginBrowser,  // 浏览器类型
-			LoginOs:       detail.LoginOs,       // 操作系统
-			PwdUpdateDate: detail.PwdUpdateDate, // 密码最后更新时间
-			Remark:        detail.Remark,        // 备注
-			DelFlag:       detail.DelFlag,       // 删除标志（0代表删除 1代表存在）
-			CreateBy:      detail.CreateBy,      // 创建者
-			CreateTime:    detail.CreateTime,    // 创建时间
-			UpdateBy:      detail.UpdateBy,      // 更新者
-			UpdateTime:    detail.UpdateTime,    // 更新时间
-		})
+		item := &types.QueryUserListData{
+			Id:               detail.Id,            // 用户id
+			Mobile:           detail.Mobile,        // 手机号码
+			UserName:         detail.UserName,      // 用户账号
+			NickName:         detail.NickName,      // 用户昵称
+			UserType:         detail.UserType,      // 用户类型（00系统用户）
+			Avatar:           detail.Avatar,        // 头像路径
+			Email:            detail.Email,         // 用户邮箱
+			Status:           detail.Status,        // 状态(1:正常，0:禁用)
+			DeptId:           detail.DeptId,        // 部门ID
+			LoginIp:          detail.LoginIp,       // 最后登录IP
+			LoginDate:        detail.LoginDate,     // 最后登录时间
+			LoginBrowser:     detail.LoginBrowser,  // 浏览器类型
+			LoginOs:          detail.LoginOs,       // 操作系统
+			PwdUpdateDate:    detail.PwdUpdateDate, // 密码最后更新时间
+			Remark:           detail.Remark,        // 备注
+			DelFlag:          detail.DelFlag,       // 删除标志（0代表删除 1代表存在）
+			CreateBy:         detail.CreateBy,      // 创建者
+			CreateTime:       detail.CreateTime,    // 创建时间
+			UpdateBy:         detail.UpdateBy,      // 更新者
+			UpdateTime:       detail.UpdateTime,    // 更新时间
+			ActivationStatus: detail.ActivationStatus,
+		}
+		item.ScopeType, item.ScopeLabel, item.PlatformId, item.TenantId, item.MerchantId = admincommon.ReadGovernanceScope(detail.Scope)
+		list = append(list, item)
 	}
 
 	return &types.QueryUserListResp{

@@ -4,15 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/feihua/zero-admin/rpc/sys/gen/model"
-	"github.com/feihua/zero-admin/rpc/sys/gen/query"
+
+	logiccommon "github.com/feihua/zero-admin/rpc/sys/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/sys/internal/svc"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 	"strconv"
-	"time"
 )
 
 // UpdateDictTypeLogic 更新字典信息
@@ -40,11 +39,21 @@ func NewUpdateDictTypeLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Up
 // 3.查询字典类型是否已存在,如果字典类型已存在,则直接返回
 // 4.字典存在时,则直接更新字典
 func (l *UpdateDictTypeLogic) UpdateDictType(in *sysclient.UpdateDictTypeReq) (*sysclient.UpdateDictTypeResp, error) {
-	dictType := query.SysDictType
-	q := dictType.WithContext(l.ctx)
+	currentScope, err := logiccommon.NormalizeProtoScope(in.Scope)
+	if err != nil {
+		return nil, err
+	}
+	if err = logiccommon.ValidateTenantWritable(l.ctx, l.svcCtx.DB, currentScope); err != nil {
+		return nil, err
+	}
 
 	// 1.根据字典id查询字典是否已存在
-	res, err := query.SysDictType.WithContext(l.ctx).Where(query.SysDictType.ID.Eq(in.Id)).First()
+	var res logiccommon.ScopedDictType
+	err = l.svcCtx.DB.WithContext(l.ctx).
+		Table("sys_dict_type").
+		Select("id, dict_name, dict_type, status, remark, create_by, create_time, update_by, update_time, platform_id, tenant_id, merchant_id").
+		Where("id = ?", in.Id).
+		Take(&res).Error
 
 	// 1.判断字典类型是否存在
 	switch {
@@ -55,9 +64,16 @@ func (l *UpdateDictTypeLogic) UpdateDictType(in *sysclient.UpdateDictTypeReq) (*
 		logc.Errorf(l.ctx, "查询字典类型异常, 请求参数：%+v, 异常信息: %s", in, err.Error())
 		return nil, errors.New("查询字典类型异常")
 	}
+	if err = logiccommon.EnsureScopeMatch(currentScope, res.PlatformID, res.TenantID, res.MerchantID, "不支持跨主体迁移字典类型，请在目标主体下新建字典类型"); err != nil {
+		return nil, err
+	}
+
+	scopeWhere, scopeArgs := logiccommon.ScopeFilterSQL("", currentScope)
+	db := l.svcCtx.DB.WithContext(l.ctx).Table("sys_dict_type")
 
 	// 2.查询字典名称是否已存在,如果字典名称已存在,则直接返回
-	count, err := q.WithContext(l.ctx).Where(dictType.ID.Neq(in.Id), dictType.DictName.Eq(in.DictName)).Count()
+	var count int64
+	err = db.Where(scopeWhere, scopeArgs...).Where("id <> ? AND dict_name = ?", in.Id, in.DictName).Count(&count).Error
 
 	if err != nil {
 		logc.Errorf(l.ctx, ".查询字典名称失败,参数：%+v,,异常:%s", in, err.Error())
@@ -69,7 +85,7 @@ func (l *UpdateDictTypeLogic) UpdateDictType(in *sysclient.UpdateDictTypeReq) (*
 	}
 
 	// 3.查询字典类型是否已存在,如果字典类型已存在,则直接返回
-	count, err = q.WithContext(l.ctx).Where(dictType.ID.Neq(in.Id), dictType.DictType.Eq(in.DictType)).Count()
+	err = db.Where(scopeWhere, scopeArgs...).Where("id <> ? AND dict_type = ?", in.Id, in.DictType).Count(&count).Error
 
 	if err != nil {
 		logc.Errorf(l.ctx, "查询字典类型失败,参数：%+v,异常:%s", in, err.Error())
@@ -81,22 +97,22 @@ func (l *UpdateDictTypeLogic) UpdateDictType(in *sysclient.UpdateDictTypeReq) (*
 	}
 
 	// 4.字典存在时,则直接更新字典
-	now := time.Now()
-	dict := &model.SysDictType{
-		ID:         in.Id,          // 字典id
-		DictName:   in.DictName,    // 字典名称
-		DictType:   in.DictType,    // 字典类型
-		Status:     in.Status,      // 状态（0：停用，1:正常）
-		Remark:     in.Remark,      // 备注信息
-		CreateBy:   res.CreateBy,   // 创建者
-		CreateTime: res.CreateTime, // 创建时间
-		UpdateBy:   in.UpdateBy,    // 更新者
-		UpdateTime: &now,           // 更新时间
-	}
-	err = l.svcCtx.DB.Model(&model.SysDictType{}).WithContext(l.ctx).Where(dictType.ID.Eq(in.Id)).Save(dict).Error
+	err = l.svcCtx.DB.WithContext(l.ctx).
+		Table("sys_dict_type").
+		Where("id = ?", in.Id).
+		Updates(map[string]interface{}{
+			"dict_name":   in.DictName,
+			"dict_type":   in.DictType,
+			"status":      in.Status,
+			"remark":      in.Remark,
+			"update_by":   in.UpdateBy,
+			"platform_id": currentScope.PlatformID,
+			"tenant_id":   currentScope.TenantID,
+			"merchant_id": currentScope.MerchantID,
+		}).Error
 
 	if err != nil {
-		logc.Errorf(l.ctx, "更新字典信息失败,参数:%+v,异常:%s", dict, err.Error())
+		logc.Errorf(l.ctx, "更新字典信息失败,参数:%+v,异常:%s", in, err.Error())
 		return nil, errors.New("更新字典信息失败")
 	}
 

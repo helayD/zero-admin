@@ -3,12 +3,13 @@ package roleservicelogic
 import (
 	"context"
 	"errors"
+	"strconv"
+
 	"github.com/bytedance/sonic"
 	"github.com/feihua/zero-admin/pkg/time_util"
 	"github.com/feihua/zero-admin/rpc/sys/gen/query"
 	"github.com/zeromicro/go-zero/core/logc"
 	"gorm.io/gorm"
-	"strconv"
 
 	"github.com/feihua/zero-admin/rpc/sys/internal/svc"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
@@ -69,6 +70,11 @@ func (l *QueryRoleDetailLogic) QueryRoleDetail(in *sysclient.QueryRoleDetailReq)
 		CreateTime: time_util.TimeToStr(item.CreateTime),    // 创建时间
 		UpdateBy:   item.UpdateBy,                           // 更新者
 		UpdateTime: time_util.TimeToString(item.UpdateTime), // 更新时间
+		ScopeType:  item.ScopeType,                          // 作用域类型
+		PlatformId: item.PlatformID,                         // 平台ID
+		TenantId:   item.TenantID,                           // 租户ID
+		MerchantId: item.MerchantID,                         // 商户ID
+		IsAdmin:    item.IsAdmin,                            // 是否超级管理员角色
 	}
 
 	value, _ := sonic.Marshal(data)

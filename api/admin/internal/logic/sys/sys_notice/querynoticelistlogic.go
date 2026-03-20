@@ -3,6 +3,7 @@ package sys_notice
 import (
 	"context"
 
+	"github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
 	"github.com/feihua/zero-admin/api/admin/internal/types"
@@ -34,13 +35,18 @@ func NewQueryNoticeListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Q
 
 // QueryNoticeList 查询通知公告表列表
 func (l *QueryNoticeListLogic) QueryNoticeList(req *types.QueryNoticeListReq) (resp *types.QueryNoticeListResp, err error) {
+	scopeReq, err := common.BuildGovernanceScope(req.ScopeType, req.PlatformId, req.TenantId, req.MerchantId)
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
+
 	result, err := l.svcCtx.NoticeService.QueryNoticeList(l.ctx, &sysclient.QueryNoticeListReq{
 		PageNum:     req.Current,
 		PageSize:    req.PageSize,
 		NoticeTitle: req.NoticeTitle, // 公告标题
 		NoticeType:  req.NoticeType,  // 公告类型（1:通知,2:公告）
 		Status:      req.Status,      // 公告状态（0:关闭,1:正常 ）
-
+		Scope:       scopeReq,
 	})
 
 	if err != nil {
@@ -52,7 +58,7 @@ func (l *QueryNoticeListLogic) QueryNoticeList(req *types.QueryNoticeListReq) (r
 	var list []*types.QueryNoticeListData
 
 	for _, item := range result.List {
-		list = append(list, &types.QueryNoticeListData{
+		record := &types.QueryNoticeListData{
 			Id:            item.Id,            // 公告ID
 			NoticeTitle:   item.NoticeTitle,   // 公告标题
 			NoticeType:    item.NoticeType,    // 公告类型（1:通知,2:公告）
@@ -63,7 +69,9 @@ func (l *QueryNoticeListLogic) QueryNoticeList(req *types.QueryNoticeListReq) (r
 			CreateTime:    item.CreateTime,    // 创建时间
 			UpdateBy:      item.UpdateBy,      // 更新者
 			UpdateTime:    item.UpdateTime,    // 更新时间
-		})
+		}
+		record.ScopeType, record.ScopeLabel, record.PlatformId, record.TenantId, record.MerchantId = common.ReadGovernanceScope(item.Scope)
+		list = append(list, record)
 	}
 
 	return &types.QueryNoticeListResp{

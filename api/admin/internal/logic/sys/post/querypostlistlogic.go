@@ -2,6 +2,7 @@ package post
 
 import (
 	"context"
+	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -35,12 +36,18 @@ func NewQueryPostListLogic(ctx context.Context, svcCtx *svc.ServiceContext) Quer
 
 // QueryPostList 岗位信息列表
 func (l *QueryPostListLogic) QueryPostList(req *types.QueryPostListReq) (*types.QueryPostListResp, error) {
+	scopeReq, err := admincommon.BuildGovernanceScope(req.ScopeType, req.PlatformId, req.TenantId, req.MerchantId)
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
+
 	result, err := l.svcCtx.PostService.QueryPostList(l.ctx, &sysclient.QueryPostListReq{
 		PostCode: strings.TrimSpace(req.PostCode),
 		PostName: strings.TrimSpace(req.PostName),
 		Status:   req.Status,
 		PageNum:  req.Current,
 		PageSize: req.PageSize,
+		Scope:    scopeReq,
 	})
 
 	if err != nil {
@@ -52,7 +59,7 @@ func (l *QueryPostListLogic) QueryPostList(req *types.QueryPostListReq) (*types.
 	var list []*types.QueryPostListData
 
 	for _, post := range result.List {
-		list = append(list, &types.QueryPostListData{
+		item := &types.QueryPostListData{
 			Id:         post.Id,         // 岗位id
 			PostCode:   post.PostCode,   // 岗位编码
 			PostName:   post.PostName,   // 岗位名称
@@ -63,7 +70,9 @@ func (l *QueryPostListLogic) QueryPostList(req *types.QueryPostListReq) (*types.
 			CreateTime: post.CreateTime, // 创建时间
 			UpdateBy:   post.UpdateBy,   // 更新者
 			UpdateTime: post.UpdateTime, // 更新时间
-		})
+		}
+		item.ScopeType, item.ScopeLabel, item.PlatformId, item.TenantId, item.MerchantId = admincommon.ReadGovernanceScope(post.Scope)
+		list = append(list, item)
 	}
 
 	return &types.QueryPostListResp{

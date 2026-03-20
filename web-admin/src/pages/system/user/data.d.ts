@@ -1,8 +1,34 @@
 export interface UserListItem {
   id: number;
-  name: string;
-  deptId: number;
-  status: number;
+  name?: string;
+  userName?: string;
+  nickName?: string;
+  deptId?: number | string;
+  deptName?: string;
+  postIds?: number[];
+  roleIds?: number[];
+  status?: number;
+  mobile?: string;
+  email?: string;
+  password?: string;
+  userType?: string;
+  remark?: string;
+  createBy?: string;
+  createTime?: string;
+  updateBy?: string;
+  updateTime?: string;
+  loginIp?: string;
+  loginDate?: string;
+  loginBrowser?: string;
+  loginOs?: string;
+  pwdUpdateDate?: string;
+  scopeType?: string;
+  scopeLabel?: string;
+  platformId?: number;
+  tenantId?: number;
+  merchantId?: number;
+  activationStatus?: string;
+  roleMode?: string;
 }
 
 export interface UserListPagination {
@@ -20,6 +46,10 @@ export interface UserListParams {
   id?: number;
   deptId?: number;
   status?: number;
+  scopeType?: string;
+  platformId?: number;
+  tenantId?: number;
+  merchantId?: number;
   pageSize?: number;
   current?: number;
   currentPage?: number;

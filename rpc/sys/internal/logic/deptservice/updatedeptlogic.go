@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/feihua/zero-admin/rpc/sys/gen/model"
 	"github.com/feihua/zero-admin/rpc/sys/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/sys/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/sys/internal/svc"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -46,6 +47,13 @@ func NewUpdateDeptLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Update
 // 7.如果该部门是启用状态，则启用该部门的所有上级部门
 // 8.如果该部门是禁用状态，则禁用该部门的所有下级部门
 func (l *UpdateDeptLogic) UpdateDept(in *sysclient.UpdateDeptReq) (*sysclient.UpdateDeptResp, error) {
+	currentScope, err := logiccommon.NormalizeProtoScope(in.Scope)
+	if err != nil {
+		return nil, err
+	}
+	if err = logiccommon.ValidateTenantWritable(l.ctx, l.svcCtx.DB, currentScope); err != nil {
+		return nil, err
+	}
 
 	dept := query.SysDept
 	q := dept.WithContext(l.ctx)
@@ -66,23 +74,41 @@ func (l *UpdateDeptLogic) UpdateDept(in *sysclient.UpdateDeptReq) (*sysclient.Up
 		return nil, errors.New("查询部门异常")
 	}
 
-	// 2.根据部门parentId查询部门是否已存在
-	parentDept, err := q.Where(dept.ID.Eq(in.ParentId)).First()
-
-	// 1.判断上级部门是否存在
-	switch {
-	case errors.Is(err, gorm.ErrRecordNotFound):
-		logc.Errorf(l.ctx, "上级部门不存在, 请求参数：%+v, 异常信息: %s", in, err.Error())
-		return nil, errors.New("上级部门不存在")
-	case err != nil:
-		logc.Errorf(l.ctx, "查询上级部门异常, 请求参数：%+v, 异常信息: %s", in, err.Error())
-		return nil, errors.New("查询上级部门异常")
+	var scopedOld logiccommon.ScopedDept
+	if err = l.svcCtx.DB.WithContext(l.ctx).
+		Table("sys_dept").
+		Select("id, platform_id, tenant_id, merchant_id").
+		Where("id = ?", in.Id).
+		Take(&scopedOld).Error; err != nil {
+		return nil, errors.New("查询部门主体范围失败")
+	}
+	if !logiccommon.DefaultScope(scopedOld.PlatformID, scopedOld.TenantID, scopedOld.MerchantID).SameScope(currentScope) {
+		return nil, errors.New("不支持跨主体迁移部门，请在目标主体下新建部门")
 	}
 
-	ancestors := fmt.Sprintf("%s,%d", parentDept.Ancestors, parentDept.ID)
+	// 2.根据部门parentId查询部门是否已存在
+	ancestors := "0"
+	parentID := int64(0)
+	if in.ParentId != 0 {
+		parentDept, parentErr := logiccommon.ValidateDeptInScope(l.ctx, l.svcCtx.DB, currentScope, in.ParentId)
+		if parentErr != nil {
+			return nil, parentErr
+		}
+		if strings.Contains(","+parentDept.Ancestors+",", fmt.Sprintf(",%d,", in.Id)) {
+			return nil, errors.New("上级部门不能是当前部门的子部门")
+		}
+		parentID = parentDept.ID
+		ancestors = fmt.Sprintf("%s,%d", parentDept.Ancestors, parentDept.ID)
+	}
 	// 3.根据部门名称查询部门是否已存在
 	deptName := in.DeptName
-	count, err := q.Where(dept.ID.Neq(in.Id), dept.DeptName.Eq(deptName), dept.ParentID.Eq(parentDept.ID)).Count()
+	var count int64
+	scopeWhere, scopeArgs := logiccommon.ScopeFilterSQL("", currentScope)
+	err = l.svcCtx.DB.WithContext(l.ctx).
+		Table("sys_dept").
+		Where(scopeWhere, scopeArgs...).
+		Where("id <> ? AND dept_name = ? AND parent_id = ?", in.Id, deptName, parentID).
+		Count(&count).Error
 
 	if err != nil {
 		logc.Errorf(l.ctx, "根据部门名称：%s,查询部门信息失败,异常:%s", deptName, err.Error())
@@ -95,7 +121,7 @@ func (l *UpdateDeptLogic) UpdateDept(in *sysclient.UpdateDeptReq) (*sysclient.Up
 	}
 
 	// 4.查询是否有下级部门
-	sql := "select count(*) from sys_dept where status = 1 and del_flag = 1 and find_in_set(?, 'ancestors')"
+	sql := "select count(*) from sys_dept where status = 1 and del_flag = 1 and find_in_set(?, ancestors)"
 	err = l.svcCtx.DB.Raw(sql, in.Id).Count(&count).Error
 	if err != nil {
 		logc.Errorf(l.ctx, "根据部门id查询是否有下级部门失败,异常:%s", err.Error())
@@ -106,9 +132,9 @@ func (l *UpdateDeptLogic) UpdateDept(in *sysclient.UpdateDeptReq) (*sysclient.Up
 		return nil, errors.New(fmt.Sprintf("该部门包含未停用的子部门"))
 	}
 
-	sql = "select * from sys_dept where find_in_set(?, 'ancestors')"
+	sql = "select * from sys_dept where find_in_set(?, ancestors)"
 	list := make([]model.SysDept, 10)
-	err = l.svcCtx.DB.Model(&model.SysDept{}).Raw(sql, in.Id).Scan(list).Error
+	err = l.svcCtx.DB.Model(&model.SysDept{}).Raw(sql, in.Id).Scan(&list).Error
 	if err != nil {
 		logc.Errorf(l.ctx, "根据部门id查询是否有下级部门失败,异常:%s", err.Error())
 		return nil, errors.New(fmt.Sprintf("更新部门失败"))
