@@ -2,6 +2,7 @@ package coupon
 
 import (
 	"context"
+	"github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
 	"github.com/feihua/zero-admin/api/admin/internal/types"
@@ -33,8 +34,18 @@ func NewDeleteCouponLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Dele
 
 // DeleteCoupon 删除优惠券
 func (l *DeleteCouponLogic) DeleteCoupon(req *types.DeleteCouponReq) (resp *types.BaseResp, err error) {
+	writeScope, err := common.ResolveWriteGovernanceScope(l.ctx, common.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, err
+	}
 	_, err = l.svcCtx.CouponService.DeleteCoupon(l.ctx, &smsclient.DeleteCouponReq{
-		Ids: req.Ids,
+		Ids:   req.Ids,
+		Scope: common.SMSGovernanceScope(writeScope),
 	})
 
 	if err != nil {

@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/bytedance/sonic"
-	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/rpc/pms/gen/model"
 	"github.com/feihua/zero-admin/rpc/pms/gen/query"
 	logiccommon "github.com/feihua/zero-admin/rpc/pms/internal/logic/common"
@@ -49,6 +47,13 @@ func NewUpdateProductSpuLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 func (l *UpdateProductSpuLogic) UpdateProductSpu(in *pmsclient.ProductSpuReq) (*pmsclient.ProductSpuResp, error) {
 	spu := query.PmsProductSpu
 	q := spu.WithContext(l.ctx)
+	currentScope, err := logiccommon.ResolveWriteScope(l.ctx, l.svcCtx.DB, in.Scope, in.CreateBy)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := logiccommon.EnsureProductScope(l.ctx, l.svcCtx.DB, currentScope, []int64{in.Id}, "pms.product_spu.update", in.CreateBy, "", "spuId="+strconv.FormatInt(in.Id, 10)); err != nil {
+		return nil, err
+	}
 
 	// 1.根据商品SPUid查询商品SPU是否已存在
 	detail, err := q.Where(spu.ID.Eq(in.Id)).First()
@@ -100,7 +105,6 @@ func (l *UpdateProductSpuLogic) UpdateProductSpu(in *pmsclient.ProductSpuReq) (*
 	}
 
 	spuId := in.Id
-	var currentScope pkgscope.GovernanceScope
 
 	err = l.svcCtx.DB.WithContext(l.ctx).Transaction(func(tx *gorm.DB) error {
 		qtx := query.Use(tx)
@@ -194,12 +198,6 @@ func (l *UpdateProductSpuLogic) UpdateProductSpu(in *pmsclient.ProductSpuReq) (*
 			}
 		}
 
-		var err error
-		currentScope, err = logiccommon.ResolveActorScope(l.ctx, tx, in.CreateBy)
-		if err != nil {
-			return err
-		}
-
 		return logiccommon.ApplyProductScope(l.ctx, tx, spuId, currentScope)
 	})
 	if err != nil {
@@ -207,10 +205,7 @@ func (l *UpdateProductSpuLogic) UpdateProductSpu(in *pmsclient.ProductSpuReq) (*
 		return nil, errors.New("更新商品SPU失败")
 	}
 
-	body, _ := sonic.Marshal(pkgscope.NewProductESSyncPayload(spuId, currentScope))
-	if err = l.svcCtx.RabbitMQ.SendMessage("product.event.exchange", "syn.product.to.es.queue", "syn.product.key", body); err != nil {
-		logc.Errorf(l.ctx, "发送商品ES同步消息失败,spuId:%d,scope:%+v,异常:%s", spuId, currentScope, err.Error())
-	}
+	sendProductESSync(l.ctx, l.svcCtx, spuId, currentScope)
 
 	return &pmsclient.ProductSpuResp{}, nil
 }

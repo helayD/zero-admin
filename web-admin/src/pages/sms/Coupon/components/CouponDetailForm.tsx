@@ -5,13 +5,14 @@ import {queryCouponDetail, queryCouponHistoryList} from "@/pages/sms/Coupon/serv
 
 import ProTable, {type ActionType, type ProColumns} from "@ant-design/pro-table";
 import moment from "moment/moment";
+import type { GovernanceScopeValue } from '@/pages/system/components/governance';
 
 export interface CreateFormProps {
   onCancel: () => void;
   onSubmit: (values: CouponListItem) => void;
   detailModalVisible: boolean;
   id: number;
-
+  scope: GovernanceScopeValue;
 }
 
 const CouponDetailForm: React.FC<CreateFormProps> = (props) => {
@@ -44,13 +45,14 @@ const CouponDetailForm: React.FC<CreateFormProps> = (props) => {
   const {
     detailModalVisible,
     id,
-    onCancel
+    onCancel,
+    scope,
   } = props;
 
   useEffect(() => {
 
     if (detailModalVisible) {
-      queryCouponDetail(id).then((res) => {
+      queryCouponDetail(id, scope).then((res) => {
         setCouponDetail(res.data)
         let now = moment().format('YYYY-MM-DD HH+mm:ss')
         let date = moment(res.data.endTime).format('YYYY-MM-DD HH+mm:ss')
@@ -182,7 +184,7 @@ const CouponDetailForm: React.FC<CreateFormProps> = (props) => {
           </Descriptions.Item>
           <Descriptions.Item label="有效期">
             {moment(couponDetail.startTime).format('YYYY-MM-DD')}
-            至{moment(couponDetail.enableTime).format('YYYY-MM-DD')}
+            至{moment(couponDetail.endTime).format('YYYY-MM-DD')}
           </Descriptions.Item>
         </Descriptions>
       </Card>

@@ -9,11 +9,11 @@ import (
 // OrderClose 关闭订单通知
 func OrderClose(ctx context.Context, body []byte) {
 	logc.Infof(ctx, "关闭订单通知mq消息: %s", body)
-	var orderInfo map[string]int64
+	var orderInfo eventPayload
 	err := sonic.Unmarshal(body, &orderInfo)
 	if err != nil {
 		logc.Errorf(ctx, "序列化 JSON 失败: %v", err)
 		return
 	}
-
+	logc.Infof(ctx, "订单关闭事件,orderId:%d,traceId:%s,scope:%s/%d/%d/%d", orderInfo.ID, orderInfo.TraceID, orderInfo.ScopeType, orderInfo.PlatformID, orderInfo.TenantID, orderInfo.MerchantID)
 }

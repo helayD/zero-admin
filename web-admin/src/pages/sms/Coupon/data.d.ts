@@ -1,15 +1,26 @@
-import CouponDetailForm from "@/pages/sms/Coupon/components/CouponDetailForm";
-
 export interface CouponListItem {
-  id: number;
-  name: string;
-  enableTime: string;
-  startTime: string;
-  endTime: string;
-  amount: number;
-  minPoint: number;
-  productCategoryRelationList: any[]
-  productRelationList: any[]
+  id?: number;
+  name?: string;
+  type?: number;
+  typeId?: number;
+  platform?: number;
+  useType?: number;
+  status?: number;
+  isEnabled?: number;
+  enableTime?: any;
+  startTime?: any;
+  endTime?: string;
+  amount?: number;
+  minPoint?: number;
+  perLimit?: number;
+  note?: string;
+  publishCount?: number;
+  receiveCount?: number;
+  useCount?: number;
+  memberLevel?: number;
+  code?: string;
+  productCategoryRelationList?: any[];
+  productRelationList?: any[];
 }
 
 export interface CouponListPagination {
@@ -39,12 +50,19 @@ export interface CouponListParams {
 
 export interface ProductListItem {
   id: number;
-
+  name?: string;
+  productSn?: string;
+  promotionPrice?: number | string;
+  originalPrice?: number | string;
+  stock?: number;
 }
 
 export interface CategoryListItem {
   id: number;
-
+  name?: string;
+  icon?: string;
+  description?: string;
+  parentId?: number;
 }
 
 export interface CategoryListParams {
@@ -61,7 +79,10 @@ export interface CouponHistoryListItem {
   id: number;
   useStatus: number;
   getType: number;
-
+  couponCode?: string;
+  memberNickName?: string;
+  useTime?: string;
+  orderId?: number;
 }
 
 export interface CouponHistoryListParams {
@@ -74,22 +95,22 @@ export interface CouponHistoryListParams {
 }
 
 export interface CouponDetailData {
-  id:                          number;
-  type:                        number;
-  name:                        string;
-  platform:                    number;
-  count:                       number;
-  amount:                      number;
-  perLimit:                    number;
-  minPoint:                    number;
-  startTime:                   string;
-  endTime:                     string;
-  useType:                     number;
-  note:                        string;
-  publishCount:                number;
-  useCount:                    number;
-  receiveCount:                number;
-  enableTime:                  string;
-  code:                        string;
-  memberLevel:                 number;
+  id: number;
+  type: number;
+  name: string;
+  platform: number;
+  count: number;
+  amount: number;
+  perLimit: number;
+  minPoint: number;
+  startTime: string;
+  endTime: string;
+  useType: number;
+  note: string;
+  publishCount: number;
+  useCount: number;
+  receiveCount: number;
+  enableTime: string;
+  code: string;
+  memberLevel: number;
 }

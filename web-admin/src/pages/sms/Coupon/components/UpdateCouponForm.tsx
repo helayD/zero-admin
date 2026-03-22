@@ -5,13 +5,14 @@ import CategoryForm from "@/pages/sms/Coupon/components/CategoryForm";
 import ProductForm from "@/pages/sms/Coupon/components/ProductForm";
 import {queryCouponDetail} from "@/pages/sms/Coupon/service";
 import moment from "moment/moment";
+import type { GovernanceScopeValue } from '@/pages/system/components/governance';
 
 export interface CreateFormProps {
   onCancel: () => void;
   onSubmit: (values: CouponListItem) => void;
   updateModalVisible: boolean;
   id: number;
-
+  scope: GovernanceScopeValue;
 }
 
 const FormItem = Form.Item;
@@ -34,7 +35,8 @@ const UpdateCouponForm: React.FC<CreateFormProps> = (props) => {
     onSubmit,
     onCancel,
     updateModalVisible,
-    id
+    id,
+    scope,
   } = props;
 
   useEffect(() => {
@@ -43,14 +45,13 @@ const UpdateCouponForm: React.FC<CreateFormProps> = (props) => {
 
     }
     if (updateModalVisible) {
-      queryCouponDetail(id).then((res) => {
+      queryCouponDetail(id, scope).then((res) => {
         setCategoryList(res.data.productCategoryRelationList)
         setProductList(res.data.productRelationList)
         setValue(Number(res.data.useType))
 
         form.setFieldsValue({
           ...res.data,
-          enableTime: moment(res.data.enableTime, 'YYYY-MM-DD HH:mm:ss'),
           startTime: [moment(res.data.startTime, 'YYYY-MM-DD HH:mm:ss'), moment(res.data.endTime, 'YYYY-MM-DD HH:mm:ss')],
 
         });
@@ -175,13 +176,6 @@ const UpdateCouponForm: React.FC<CreateFormProps> = (props) => {
           </Col>
         </Row>
         <FormItem
-          name="enableTime"
-          label="领取的日期"
-          rules={[{required: true, message: '请输入可以领取的日期!'}]}
-        >
-          <DatePicker showTime placeholder={'请输入可以领取的日期'}/>
-        </FormItem>
-        <FormItem
           name="startTime"
           label="有效期"
           rules={[{required: true, message: '请输入开始时间!'}]}
@@ -201,10 +195,10 @@ const UpdateCouponForm: React.FC<CreateFormProps> = (props) => {
           </Radio.Group>
         </FormItem>
         {value === 1 &&
-          <CategoryForm selectIds={categoryList.map((x) => x.id)} onSubmit={(list: any[]) => {
+          <CategoryForm scope={scope} selectIds={categoryList.map((x) => x.id)} onSubmit={(list: any[]) => {
             setCategoryList(list)
           }}/>}
-        {value === 2 && <ProductForm selectIds={productList.map((x) => x.id)} onSubmit={(list: any[]) => {
+        {value === 2 && <ProductForm scope={scope} selectIds={productList.map((x) => x.id)} onSubmit={(list: any[]) => {
           setProductList(list)
         }}/>}
 

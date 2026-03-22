@@ -2,13 +2,15 @@ package productskuservicelogic
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"github.com/feihua/zero-admin/rpc/pms/gen/model"
 	"github.com/feihua/zero-admin/rpc/pms/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/pms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/pms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
 	"time"
 )
 
@@ -33,7 +35,10 @@ func NewAddProductSkuLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Add
 
 // AddProductSku 添加商品SKU
 func (l *AddProductSkuLogic) AddProductSku(in *pmsclient.AddProductSkuReq) (*pmsclient.AddProductSkuResp, error) {
-	q := query.PmsProductSku
+	currentScope, err := logiccommon.ResolveWriteScope(l.ctx, l.svcCtx.DB, in.Scope, in.CreateBy)
+	if err != nil {
+		return nil, err
+	}
 
 	item := &model.PmsProductSku{
 		SpuID:          in.SpuId,                   // 商品SpuId
@@ -59,10 +64,19 @@ func (l *AddProductSkuLogic) AddProductSku(in *pmsclient.AddProductSkuReq) (*pms
 		item.PromotionStartTime = &startTime // 促销开始时间
 		item.PromotionEndTime = &endTime     // 促销结束时间
 	}
-	err := q.WithContext(l.ctx).Create(item)
+	err = l.svcCtx.DB.WithContext(l.ctx).Transaction(func(tx *gorm.DB) error {
+		qtx := query.Use(tx)
+		if err := logiccommon.EnsureSpuScopeForSku(l.ctx, tx, currentScope, in.SpuId, "pms.product_sku.add", in.CreateBy, "", fmt.Sprintf("spuId=%d", in.SpuId)); err != nil {
+			return err
+		}
+		if err := qtx.PmsProductSku.WithContext(l.ctx).Create(item); err != nil {
+			return err
+		}
+		return logiccommon.ApplySkuScope(l.ctx, tx, item.ID, currentScope)
+	})
 	if err != nil {
 		logc.Errorf(l.ctx, "添加商品SKU失败,参数:%+v,异常:%s", item, err.Error())
-		return nil, errors.New("添加商品SKU失败")
+		return nil, err
 	}
 
 	return &pmsclient.AddProductSkuResp{}, nil

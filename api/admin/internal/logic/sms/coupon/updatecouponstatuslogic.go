@@ -38,11 +38,20 @@ func (l *UpdateCouponStatusLogic) UpdateCouponStatus(req *types.UpdateSmsCouponS
 	if err != nil {
 		return nil, err
 	}
+	writeScope, err := common.ResolveWriteGovernanceScope(l.ctx, common.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, err
+	}
 	_, err = l.svcCtx.CouponService.UpdateCouponStatus(l.ctx, &smsclient.UpdateCouponStatusReq{
 		Ids:      req.Ids,    // 优惠券ID
 		Status:   req.Status, // 状态：0-未开始，1-进行中，2-已结束，3-已取消
 		UpdateBy: userId,     // 更新人ID
-
+		Scope:    common.SMSGovernanceScope(writeScope),
 	})
 
 	if err != nil {

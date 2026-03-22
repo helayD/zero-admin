@@ -2,6 +2,7 @@ package subject
 
 import (
 	"context"
+	"github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/common/res"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
@@ -34,8 +35,18 @@ func NewDeleteSubjectLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Del
 
 // DeleteSubject 删除专题表
 func (l *DeleteSubjectLogic) DeleteSubject(req *types.DeleteSubjectReq) (resp *types.BaseResp, err error) {
+	writeScope, err := common.ResolveWriteGovernanceScope(l.ctx, common.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, err
+	}
 	_, err = l.svcCtx.SubjectService.DeleteSubject(l.ctx, &cmsclient.DeleteSubjectReq{
-		Ids: req.Ids,
+		Ids:   req.Ids,
+		Scope: common.CMSGovernanceScope(writeScope),
 	})
 
 	if err != nil {

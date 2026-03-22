@@ -24,6 +24,10 @@ type (
 		AttributeValueList []AddProductAttributeValueReq `json:"attributeValueList"` //商品属性值
 		SubjectIds         []int64                       `json:"subjectIds,optional"` //专题
 		prefrenceAreaIds   []int64                       `json:"prefrenceAreaIds,optional"` //优先专区
+		ScopeType          string                        `json:"scopeType,optional"` //治理范围(platform/tenant/merchant)
+		PlatformId         int64                         `json:"platformId,optional"` //平台ID
+		TenantId           int64                         `json:"tenantId,optional"` //租户ID
+		MerchantId         int64                         `json:"merchantId,optional"` //商户ID
 	}
 	ProductSpuData {
 		Id                  int64   `json:"id,optional"` //商品SpuId
@@ -56,7 +60,11 @@ type (
 	}
 	// 删除商品SPU请求参数
 	DeleteProductSpuReq {
-		Ids []int64 `form:"ids"`
+		Ids        []int64 `form:"ids"`
+		ScopeType  string  `form:"scopeType,optional"` //治理范围(platform/tenant/merchant)
+		PlatformId int64   `form:"platformId,optional"` //平台ID
+		TenantId   int64   `form:"tenantId,optional"` //租户ID
+		MerchantId int64   `form:"merchantId,optional"` //商户ID
 	}
 	// 更新商品SPU请求参数
 	UpdateProductSpuReq {
@@ -68,12 +76,20 @@ type (
 		AttributeValueList []AddProductAttributeValueReq `json:"attributeValueList"` //商品属性值
 		SubjectIds         []int64                       `json:"subjectIds,optional"` //专题
 		prefrenceAreaIds   []int64                       `json:"prefrenceAreaIds,optional"` //优先专区
+		ScopeType          string                        `json:"scopeType,optional"` //治理范围(platform/tenant/merchant)
+		PlatformId         int64                         `json:"platformId,optional"` //平台ID
+		TenantId           int64                         `json:"tenantId,optional"` //租户ID
+		MerchantId         int64                         `json:"merchantId,optional"` //商户ID
 	}
 	// 更新商品SPU状态请求参数
 	UpdateProductSpuStatusReq {
-		Ids    []int64 `json:"ids"` //商品SpuId
-		status int32   `json:"status"` //状态
-		Detail string  `form:"detail,optional"`
+		Ids        []int64 `json:"ids"` //商品SpuId
+		status     int32   `json:"status"` //状态
+		Detail     string  `form:"detail,optional"`
+		ScopeType  string  `json:"scopeType,optional"` //治理范围(platform/tenant/merchant)
+		PlatformId int64   `json:"platformId,optional"` //平台ID
+		TenantId   int64   `json:"tenantId,optional"` //租户ID
+		MerchantId int64   `json:"merchantId,optional"` //商户ID
 	}
 	// 查询商品SPU详情请求参数
 	QueryProductSpuDetailReq {
@@ -215,4 +231,3 @@ service admin-api {
 	@handler QueryProductSpuList
 	get /queryProductSpuList (QueryProductSpuListReq) returns (QueryProductSpuListResp)
 }
-

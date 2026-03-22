@@ -37,6 +37,13 @@ func NewUpdateSubjectLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Upd
 // UpdateSubject 更新专题
 func (l *UpdateSubjectLogic) UpdateSubject(in *cmsclient.UpdateSubjectReq) (*cmsclient.UpdateSubjectResp, error) {
 	q := query.CmsSubject.WithContext(l.ctx)
+	currentScope, err := logiccommon.ResolveWriteScope(l.ctx, l.svcCtx.DB, in.Scope, in.UpdateBy)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := logiccommon.EnsureSubjectScope(l.ctx, l.svcCtx.DB, currentScope, []int64{in.Id}, "cms.subject.update", in.UpdateBy, "update subject"); err != nil {
+		return nil, err
+	}
 
 	// 1.根据专题id查询专题是否已存在
 	s, err := q.Where(query.CmsSubject.ID.Eq(in.Id)).First()
@@ -78,12 +85,7 @@ func (l *UpdateSubjectLogic) UpdateSubject(in *cmsclient.UpdateSubjectReq) (*cms
 			return err
 		}
 
-		current, err := logiccommon.ResolveActorScopeByUserName(l.ctx, tx, in.UpdateBy)
-		if err != nil {
-			return err
-		}
-
-		return logiccommon.ApplySubjectScope(l.ctx, tx, item.ID, current)
+		return logiccommon.ApplySubjectScope(l.ctx, tx, item.ID, currentScope)
 	})
 	if err != nil {
 		logc.Errorf(l.ctx, "更新专题失败,参数:%+v,异常:%s", item, err.Error())

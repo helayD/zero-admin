@@ -57,16 +57,33 @@ func (l *UpdateProductSpuLogic) UpdateProductSpu(req *types.UpdateProductSpuReq)
 	}
 
 	// 7.关联专题
-	updateSubjectProductRelation(req, l, productId)
+	if err := updateSubjectProductRelation(req, l, productId); err != nil {
+		logc.Errorf(l.ctx, "更新商品专题关联失败,spuId:%d,参数：%+v,响应：%s", productId, req, err.Error())
+		s, _ := status.FromError(err)
+		return nil, errorx.NewDefaultError(s.Message())
+	}
 
 	// 8.关联优选
-	updatePreferredAreaProductRelation(req, l, productId)
+	if err := updatePreferredAreaProductRelation(req, l, productId); err != nil {
+		logc.Errorf(l.ctx, "更新商品优选专区关联失败,spuId:%d,参数：%+v,响应：%s", productId, req, err.Error())
+		s, _ := status.FromError(err)
+		return nil, errorx.NewDefaultError(s.Message())
+	}
 
 	return res.Success()
 }
 
 func (l *UpdateProductSpuLogic) updateProductSpuInfo(req *types.UpdateProductSpuReq) error {
 	userId, err := common.GetUserId(l.ctx)
+	if err != nil {
+		return err
+	}
+	writeScope, err := common.ResolveWriteGovernanceScope(l.ctx, common.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
 	if err != nil {
 		return err
 	}
@@ -105,6 +122,7 @@ func (l *UpdateProductSpuLogic) updateProductSpuInfo(req *types.UpdateProductSpu
 		ProductFullReductionList:  buildUpdateProductFullReductionList(req),  // 满减价格
 		ProductLadderList:         buildUpdateProductLadderList(req),         // 阶梯价格
 		SkuStockList:              buildUpdateSkuStockList(req),              // sku库存信息
+		Scope:                     common.PMSGovernanceScope(writeScope),
 	})
 	return err
 }
@@ -184,26 +202,35 @@ func buildUpdateSkuStockList(req *types.UpdateProductSpuReq) []*pmsclient.SkuSto
 }
 
 // 更新专题关联
-func updateSubjectProductRelation(req *types.UpdateProductSpuReq, l *UpdateProductSpuLogic, productId int64) {
+func updateSubjectProductRelation(req *types.UpdateProductSpuReq, l *UpdateProductSpuLogic, productId int64) error {
+	if req.SubjectIds == nil {
+		return nil
+	}
+
 	// 1.先删除专题的关联
 	// _, _ = l.svcCtx.SubjectProductRelationService.SubjectProductRelationDelete(l.ctx, &cmsclient.SubjectProductRelationDeleteReq{Id: productId})
 
 	// 2.重新添加专题的关联
-	_, _ = l.svcCtx.SubjectProductRelationService.AddSubjectProductRelation(l.ctx, &cmsclient.AddSubjectProductRelationReq{
+	_, err := l.svcCtx.SubjectProductRelationService.AddSubjectProductRelation(l.ctx, &cmsclient.AddSubjectProductRelationReq{
 		SubjectId: req.SubjectIds, // 专题ID
 		ProductId: productId,      // 商品ID
 	})
+	return err
 }
 
 // 更新优选商品关联
-func updatePreferredAreaProductRelation(req *types.UpdateProductSpuReq, l *UpdateProductSpuLogic, productId int64) {
+func updatePreferredAreaProductRelation(req *types.UpdateProductSpuReq, l *UpdateProductSpuLogic, productId int64) error {
+	if req.PrefrenceAreaIds == nil {
+		return nil
+	}
+
 	// 1.先删除优选商品的关联(由rpc实现)
 	// _, _ = l.svcCtx.PrefrenceAreaProductRelationService.PrefrenceAreaProductRelationDelete(l.ctx, &cmsclient.PrefrenceAreaProductRelationDeleteReq{Id: productId})
 
 	// 2.重新添加优选商品的关联
-	_, _ = l.svcCtx.PreferredAreaProductRelationService.AddPreferredAreaProductRelation(l.ctx, &cmsclient.AddPreferredAreaProductRelationReq{
+	_, err := l.svcCtx.PreferredAreaProductRelationService.AddPreferredAreaProductRelation(l.ctx, &cmsclient.AddPreferredAreaProductRelationReq{
 		PreferredAreaId: req.PrefrenceAreaIds, // 优选专区ID
 		ProductId:       productId,            // 商品ID
 	})
-
+	return err
 }

@@ -3,6 +3,7 @@ package subject
 import (
 	"context"
 
+	"github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/common/res"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
@@ -37,6 +38,15 @@ func NewUpdateSubjectLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Upd
 func (l *UpdateSubjectLogic) UpdateSubject(req *types.UpdateSubjectReq) (resp *types.BaseResp, err error) {
 
 	updateBy := l.ctx.Value("userName").(string)
+	writeScope, err := common.ResolveWriteGovernanceScope(l.ctx, common.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, err
+	}
 	_, err = l.svcCtx.SubjectService.UpdateSubject(l.ctx, &cmsclient.UpdateSubjectReq{
 		Id:              req.Id,              // 专题id
 		CategoryId:      req.CategoryId,      // 专题分类id
@@ -55,6 +65,7 @@ func (l *UpdateSubjectLogic) UpdateSubject(req *types.UpdateSubjectReq) (resp *t
 		CategoryName:    req.CategoryName,    // 专题分类名称
 		UpdateBy:        updateBy,            // 更新者
 		Sort:            req.Sort,            // 排序
+		Scope:           common.CMSGovernanceScope(writeScope),
 	})
 
 	if err != nil {

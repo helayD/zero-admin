@@ -2,6 +2,7 @@ package order_main
 
 import (
 	"context"
+	"github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
 	"github.com/feihua/zero-admin/api/admin/internal/types"
@@ -33,16 +34,23 @@ func NewUpdateOrderMainLogic(ctx context.Context, svcCtx *svc.ServiceContext) *U
 
 // UpdateOrderMain 更新订单
 func (l *UpdateOrderMainLogic) UpdateOrderMain(req *types.UpdateOrderMainReq) (resp *types.BaseResp, err error) {
-	// userId, err := common.GetUserId(l.ctx)
-	// if err != nil {
-	// 	return nil, err
-	// }
+	writeScope, err := common.ResolveWriteGovernanceScope(l.ctx, common.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, err
+	}
 	_, err = l.svcCtx.OrderService.UpdateOrder(l.ctx, &omsclient.UpdateOrderReq{
-		Id:                 req.Id,                     //
-		OrderStatus:        req.OrderStatus,            // 订单状态：1-待支付,2-已支付,3-已发货,4-已完成,5-已取消,6-已退款,7-售后中
-		FreightAmount:      float32(req.FreightAmount), // 运费金额
-		ExpressOrderNumber: req.ExpressOrderNumber,     // 快递单号
-		Remark:             req.Remark,                 // 订单备注
+		Id:                 req.Id,                      //
+		OrderStatus:        req.OrderStatus,             // 订单状态：1-待支付,2-已支付,3-已发货,4-已完成,5-已取消,6-已退款,7-售后中
+		FreightAmount:      float32(req.FreightAmount),  // 运费金额
+		DiscountAmount:     float32(req.DiscountAmount), // 优惠金额
+		ExpressOrderNumber: req.ExpressOrderNumber,      // 快递单号
+		Remark:             req.Remark,                  // 订单备注
+		Scope:              common.OMSGovernanceScope(writeScope),
 	})
 
 	if err != nil {

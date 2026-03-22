@@ -32,10 +32,20 @@ func (l *DeliveryLogic) Delivery(req *types.DeliveryReq) (resp *types.BaseResp, 
 	if err != nil {
 		return nil, err
 	}
+	writeScope, err := common.ResolveWriteGovernanceScope(l.ctx, common.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, err
+	}
 	_, err = l.svcCtx.OrderService.Delivery(l.ctx, &omsclient.DeliveryReq{
 		OrderId:    req.OrderId,
 		DeliverySn: req.DeliverySn,
 		OperatorId: userId,
+		Scope:      common.OMSGovernanceScope(writeScope),
 	})
 
 	if err != nil {

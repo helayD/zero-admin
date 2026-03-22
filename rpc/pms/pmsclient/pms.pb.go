@@ -10109,6 +10109,7 @@ type AddProductSkuReq struct {
 	VerifyStatus       int32                  `protobuf:"varint,15,opt,name=verify_status,json=verifyStatus,proto3" json:"verify_status,omitempty"`                   //审核状态：0-未审核，1-审核通过，2-审核不通过
 	Sort               int32                  `protobuf:"varint,16,opt,name=sort,proto3" json:"sort,omitempty"`                                                       //排序
 	CreateBy           int64                  `protobuf:"varint,17,opt,name=create_by,json=createBy,proto3" json:"create_by,omitempty"`                               //创建人ID
+	Scope              *GovernanceScope       `protobuf:"bytes,18,opt,name=scope,proto3" json:"scope,omitempty"`                                                      //治理范围(platform/tenant/merchant)
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -10262,6 +10263,13 @@ func (x *AddProductSkuReq) GetCreateBy() int64 {
 	return 0
 }
 
+func (x *AddProductSkuReq) GetScope() *GovernanceScope {
+	if x != nil {
+		return x.Scope
+	}
+	return nil
+}
+
 type AddProductSkuResp struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Pong          string                 `protobuf:"bytes,1,opt,name=pong,proto3" json:"pong,omitempty"`
@@ -10310,6 +10318,7 @@ func (x *AddProductSkuResp) GetPong() string {
 type DeleteProductSkuReq struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Ids           []int64                `protobuf:"varint,1,rep,packed,name=ids,proto3" json:"ids,omitempty"`
+	Scope         *GovernanceScope       `protobuf:"bytes,2,opt,name=scope,proto3" json:"scope,omitempty"` //治理范围(platform/tenant/merchant)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10347,6 +10356,13 @@ func (*DeleteProductSkuReq) Descriptor() ([]byte, []int) {
 func (x *DeleteProductSkuReq) GetIds() []int64 {
 	if x != nil {
 		return x.Ids
+	}
+	return nil
+}
+
+func (x *DeleteProductSkuReq) GetScope() *GovernanceScope {
+	if x != nil {
+		return x.Scope
 	}
 	return nil
 }
@@ -10399,6 +10415,7 @@ func (x *DeleteProductSkuResp) GetPong() string {
 type UpdateProductSkuReq struct {
 	state         protoimpl.MessageState  `protogen:"open.v1"`
 	Data          []*UpdateProductSkuData `protobuf:"bytes,1,rep,name=data,proto3" json:"data,omitempty"`
+	Scope         *GovernanceScope        `protobuf:"bytes,2,opt,name=scope,proto3" json:"scope,omitempty"` //治理范围(platform/tenant/merchant)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10436,6 +10453,13 @@ func (*UpdateProductSkuReq) Descriptor() ([]byte, []int) {
 func (x *UpdateProductSkuReq) GetData() []*UpdateProductSkuData {
 	if x != nil {
 		return x.Data
+	}
+	return nil
+}
+
+func (x *UpdateProductSkuReq) GetScope() *GovernanceScope {
+	if x != nil {
+		return x.Scope
 	}
 	return nil
 }
@@ -13544,6 +13568,7 @@ type ProductSpuReq struct {
 	ProductFullReductionList  []*ProductFullReductionList  `protobuf:"bytes,36,rep,name=ProductFullReductionList,proto3" json:"ProductFullReductionList,omitempty"`                     //满减价格
 	ProductLadderList         []*ProductLadderList         `protobuf:"bytes,37,rep,name=ProductLadderList,proto3" json:"ProductLadderList,omitempty"`                                   //阶梯价格
 	SkuStockList              []*SkuStockList              `protobuf:"bytes,38,rep,name=SkuStockList,proto3" json:"SkuStockList,omitempty"`                                             //商品sku库存
+	Scope                     *GovernanceScope             `protobuf:"bytes,39,opt,name=scope,proto3" json:"scope,omitempty"`                                                           //治理范围(platform/tenant/merchant)
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -13823,6 +13848,13 @@ func (x *ProductSpuReq) GetSkuStockList() []*SkuStockList {
 	return nil
 }
 
+func (x *ProductSpuReq) GetScope() *GovernanceScope {
+	if x != nil {
+		return x.Scope
+	}
+	return nil
+}
+
 type ProductSpuResp struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	SpuId         int64                  `protobuf:"varint,1,opt,name=spu_id,json=spuId,proto3" json:"spu_id,omitempty"`
@@ -13871,6 +13903,7 @@ func (x *ProductSpuResp) GetSpuId() int64 {
 type DeleteProductSpuReq struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Ids           []int64                `protobuf:"varint,1,rep,packed,name=ids,proto3" json:"ids,omitempty"`
+	Scope         *GovernanceScope       `protobuf:"bytes,2,opt,name=scope,proto3" json:"scope,omitempty"` //治理范围(platform/tenant/merchant)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -13908,6 +13941,13 @@ func (*DeleteProductSpuReq) Descriptor() ([]byte, []int) {
 func (x *DeleteProductSpuReq) GetIds() []int64 {
 	if x != nil {
 		return x.Ids
+	}
+	return nil
+}
+
+func (x *DeleteProductSpuReq) GetScope() *GovernanceScope {
+	if x != nil {
+		return x.Scope
 	}
 	return nil
 }
@@ -13964,6 +14004,7 @@ type UpdateProductSpuStatusReq struct {
 	Detail        string                 `protobuf:"bytes,3,opt,name=detail,proto3" json:"detail,omitempty"`
 	UpdateBy      int64                  `protobuf:"varint,4,opt,name=update_by,json=updateBy,proto3" json:"update_by,omitempty"`   //审核人
 	ReviewMan     string                 `protobuf:"bytes,5,opt,name=review_man,json=reviewMan,proto3" json:"review_man,omitempty"` //更新人ID
+	Scope         *GovernanceScope       `protobuf:"bytes,6,opt,name=scope,proto3" json:"scope,omitempty"`                          //治理范围(platform/tenant/merchant)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -14031,6 +14072,13 @@ func (x *UpdateProductSpuStatusReq) GetReviewMan() string {
 		return x.ReviewMan
 	}
 	return ""
+}
+
+func (x *UpdateProductSpuStatusReq) GetScope() *GovernanceScope {
+	if x != nil {
+		return x.Scope
+	}
+	return nil
 }
 
 type UpdateProductSpuStatusResp struct {
@@ -17019,7 +17067,7 @@ const file_rpc_pms_pms_proto_rawDesc = "" +
 	"createTime\"p\n" +
 	"\x1eQueryProductOperateLogListResp\x12\x14\n" +
 	"\x05total\x18\x01 \x01(\x03R\x05total\x128\n" +
-	"\x04list\x18\x02 \x03(\v2$.pmsclient.ProductOperateLogListDataR\x04list\"\x96\x04\n" +
+	"\x04list\x18\x02 \x03(\v2$.pmsclient.ProductOperateLogListDataR\x04list\"\xc8\x04\n" +
 	"\x10AddProductSkuReq\x12\x15\n" +
 	"\x06spu_id\x18\x01 \x01(\x03R\x05spuId\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x19\n" +
@@ -17039,15 +17087,18 @@ const file_rpc_pms_pms_proto_rawDesc = "" +
 	"\x0epublish_status\x18\x0e \x01(\x05R\rpublishStatus\x12#\n" +
 	"\rverify_status\x18\x0f \x01(\x05R\fverifyStatus\x12\x12\n" +
 	"\x04sort\x18\x10 \x01(\x05R\x04sort\x12\x1b\n" +
-	"\tcreate_by\x18\x11 \x01(\x03R\bcreateBy\"'\n" +
+	"\tcreate_by\x18\x11 \x01(\x03R\bcreateBy\x120\n" +
+	"\x05scope\x18\x12 \x01(\v2\x1a.pmsclient.GovernanceScopeR\x05scope\"'\n" +
 	"\x11AddProductSkuResp\x12\x12\n" +
-	"\x04pong\x18\x01 \x01(\tR\x04pong\"'\n" +
+	"\x04pong\x18\x01 \x01(\tR\x04pong\"Y\n" +
 	"\x13DeleteProductSkuReq\x12\x10\n" +
-	"\x03ids\x18\x01 \x03(\x03R\x03ids\"*\n" +
+	"\x03ids\x18\x01 \x03(\x03R\x03ids\x120\n" +
+	"\x05scope\x18\x02 \x01(\v2\x1a.pmsclient.GovernanceScopeR\x05scope\"*\n" +
 	"\x14DeleteProductSkuResp\x12\x12\n" +
-	"\x04pong\x18\x01 \x01(\tR\x04pong\"J\n" +
+	"\x04pong\x18\x01 \x01(\tR\x04pong\"|\n" +
 	"\x13UpdateProductSkuReq\x123\n" +
-	"\x04data\x18\x01 \x03(\v2\x1f.pmsclient.UpdateProductSkuDataR\x04data\"\xaa\x04\n" +
+	"\x04data\x18\x01 \x03(\v2\x1f.pmsclient.UpdateProductSkuDataR\x04data\x120\n" +
+	"\x05scope\x18\x02 \x01(\v2\x1a.pmsclient.GovernanceScopeR\x05scope\"\xaa\x04\n" +
 	"\x14UpdateProductSkuData\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x15\n" +
 	"\x06spu_id\x18\x02 \x01(\x03R\x05spuId\x12\x12\n" +
@@ -17315,8 +17366,7 @@ const file_rpc_pms_pms_proto_rawDesc = "" +
 	"\x06weight\x18\r \x01(\x02R\x06weight\x12%\n" +
 	"\x0epublish_status\x18\x0e \x01(\x05R\rpublishStatus\x12#\n" +
 	"\rverify_status\x18\x0f \x01(\x05R\fverifyStatus\x12\x12\n" +
-	"\x04sort\x18\x10 \x01(\x05R\x04sort\"\xd2\n" +
-	"\n" +
+	"\x04sort\x18\x10 \x01(\x05R\x04sort\"\x84\v\n" +
 	"\rProductSpuReq\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1d\n" +
@@ -17360,20 +17410,23 @@ const file_rpc_pms_pms_proto_rawDesc = "" +
 	"\x19ProductAttributeValueList\x18# \x03(\v2$.pmsclient.ProductAttributeValueListR\x19ProductAttributeValueList\x12_\n" +
 	"\x18ProductFullReductionList\x18$ \x03(\v2#.pmsclient.ProductFullReductionListR\x18ProductFullReductionList\x12J\n" +
 	"\x11ProductLadderList\x18% \x03(\v2\x1c.pmsclient.ProductLadderListR\x11ProductLadderList\x12;\n" +
-	"\fSkuStockList\x18& \x03(\v2\x17.pmsclient.SkuStockListR\fSkuStockList\"'\n" +
+	"\fSkuStockList\x18& \x03(\v2\x17.pmsclient.SkuStockListR\fSkuStockList\x120\n" +
+	"\x05scope\x18' \x01(\v2\x1a.pmsclient.GovernanceScopeR\x05scope\"'\n" +
 	"\x0eProductSpuResp\x12\x15\n" +
-	"\x06spu_id\x18\x01 \x01(\x03R\x05spuId\"'\n" +
+	"\x06spu_id\x18\x01 \x01(\x03R\x05spuId\"Y\n" +
 	"\x13DeleteProductSpuReq\x12\x10\n" +
-	"\x03ids\x18\x01 \x03(\x03R\x03ids\"*\n" +
+	"\x03ids\x18\x01 \x03(\x03R\x03ids\x120\n" +
+	"\x05scope\x18\x02 \x01(\v2\x1a.pmsclient.GovernanceScopeR\x05scope\"*\n" +
 	"\x14DeleteProductSpuResp\x12\x12\n" +
-	"\x04pong\x18\x01 \x01(\tR\x04pong\"\x99\x01\n" +
+	"\x04pong\x18\x01 \x01(\tR\x04pong\"\xcb\x01\n" +
 	"\x19UpdateProductSpuStatusReq\x12\x10\n" +
 	"\x03ids\x18\x01 \x03(\x03R\x03ids\x12\x16\n" +
 	"\x06status\x18\x10 \x01(\x05R\x06status\x12\x16\n" +
 	"\x06detail\x18\x03 \x01(\tR\x06detail\x12\x1b\n" +
 	"\tupdate_by\x18\x04 \x01(\x03R\bupdateBy\x12\x1d\n" +
 	"\n" +
-	"review_man\x18\x05 \x01(\tR\treviewMan\"0\n" +
+	"review_man\x18\x05 \x01(\tR\treviewMan\x120\n" +
+	"\x05scope\x18\x06 \x01(\v2\x1a.pmsclient.GovernanceScopeR\x05scope\"0\n" +
 	"\x1aUpdateProductSpuStatusResp\x12\x12\n" +
 	"\x04pong\x18\x01 \x01(\tR\x04pong\"\\\n" +
 	"\x18QueryProductSpuDetailReq\x12\x0e\n" +
@@ -17976,242 +18029,248 @@ var file_rpc_pms_pms_proto_depIdxs = []int32{
 	123, // 12: pmsclient.QueryProductFullReductionListResp.list:type_name -> pmsclient.ProductFullReductionListData
 	134, // 13: pmsclient.QueryProductLadderListResp.list:type_name -> pmsclient.ProductLadderListData
 	143, // 14: pmsclient.QueryProductOperateLogListResp.list:type_name -> pmsclient.ProductOperateLogListData
-	150, // 15: pmsclient.UpdateProductSkuReq.data:type_name -> pmsclient.UpdateProductSkuData
-	0,   // 16: pmsclient.QueryProductSkuDetailReq.scope:type_name -> pmsclient.GovernanceScope
-	0,   // 17: pmsclient.QueryProductSkuListReq.scope:type_name -> pmsclient.GovernanceScope
-	155, // 18: pmsclient.QueryProductSkuListResp.list:type_name -> pmsclient.ProductSkuListData
-	158, // 19: pmsclient.UpdateSkuStockReq.data:type_name -> pmsclient.UpdateSkuStockData
-	171, // 20: pmsclient.QueryProductSpecListResp.list:type_name -> pmsclient.ProductSpecListData
-	184, // 21: pmsclient.QueryProductSpecValueListResp.list:type_name -> pmsclient.ProductSpecValueListData
-	186, // 22: pmsclient.ProductSpuReq.MemberPriceList:type_name -> pmsclient.MemberPriceList
-	187, // 23: pmsclient.ProductSpuReq.ProductAttributeValueList:type_name -> pmsclient.ProductAttributeValueList
-	188, // 24: pmsclient.ProductSpuReq.ProductFullReductionList:type_name -> pmsclient.ProductFullReductionList
-	189, // 25: pmsclient.ProductSpuReq.ProductLadderList:type_name -> pmsclient.ProductLadderList
-	190, // 26: pmsclient.ProductSpuReq.SkuStockList:type_name -> pmsclient.SkuStockList
-	0,   // 27: pmsclient.QueryProductSpuDetailReq.scope:type_name -> pmsclient.GovernanceScope
-	207, // 28: pmsclient.QueryProductSpuDetailResp.data:type_name -> pmsclient.ProductSpuListData
-	198, // 29: pmsclient.QueryProductSpuDetailResp.Brand:type_name -> pmsclient.BrandData
-	199, // 30: pmsclient.QueryProductSpuDetailResp.ProductAttributeList:type_name -> pmsclient.ProductAttributeDataList
-	200, // 31: pmsclient.QueryProductSpuDetailResp.ProductAttributeValueList:type_name -> pmsclient.ProductAttributeValueData
-	201, // 32: pmsclient.QueryProductSpuDetailResp.SkuStockList:type_name -> pmsclient.SkuStockData
-	202, // 33: pmsclient.QueryProductSpuDetailResp.ProductLadderList:type_name -> pmsclient.ProductLadderData
-	203, // 34: pmsclient.QueryProductSpuDetailResp.ProductFullReductionList:type_name -> pmsclient.ProductFullReductionData
-	204, // 35: pmsclient.QueryProductSpuDetailResp.MemberPriceList:type_name -> pmsclient.MemberPriceListData
-	0,   // 36: pmsclient.QueryProductSpuListReq.scope:type_name -> pmsclient.GovernanceScope
-	207, // 37: pmsclient.QueryProductSpuListResp.list:type_name -> pmsclient.ProductSpuListData
-	0,   // 38: pmsclient.QueryProductSpuByIdsReq.scope:type_name -> pmsclient.GovernanceScope
-	216, // 39: pmsclient.QueryProductVertifyRecordListResp.list:type_name -> pmsclient.ProductVertifyRecordListData
-	1,   // 40: pmsclient.ProductAttributeService.AddProductAttribute:input_type -> pmsclient.AddProductAttributeReq
-	3,   // 41: pmsclient.ProductAttributeService.DeleteProductAttribute:input_type -> pmsclient.DeleteProductAttributeReq
-	5,   // 42: pmsclient.ProductAttributeService.UpdateProductAttribute:input_type -> pmsclient.UpdateProductAttributeReq
-	7,   // 43: pmsclient.ProductAttributeService.UpdateProductAttributeStatus:input_type -> pmsclient.UpdateProductAttributeStatusReq
-	9,   // 44: pmsclient.ProductAttributeService.QueryProductAttributeDetail:input_type -> pmsclient.QueryProductAttributeDetailReq
-	11,  // 45: pmsclient.ProductAttributeService.QueryProductAttributeList:input_type -> pmsclient.QueryProductAttributeListReq
-	14,  // 46: pmsclient.ProductAttributeGroupService.AddProductAttributeGroup:input_type -> pmsclient.AddProductAttributeGroupReq
-	16,  // 47: pmsclient.ProductAttributeGroupService.DeleteProductAttributeGroup:input_type -> pmsclient.DeleteProductAttributeGroupReq
-	18,  // 48: pmsclient.ProductAttributeGroupService.UpdateProductAttributeGroup:input_type -> pmsclient.UpdateProductAttributeGroupReq
-	20,  // 49: pmsclient.ProductAttributeGroupService.UpdateProductAttributeGroupStatus:input_type -> pmsclient.UpdateProductAttributeGroupStatusReq
-	22,  // 50: pmsclient.ProductAttributeGroupService.QueryProductAttributeGroupDetail:input_type -> pmsclient.QueryProductAttributeGroupDetailReq
-	24,  // 51: pmsclient.ProductAttributeGroupService.QueryProductAttributeGroupList:input_type -> pmsclient.QueryProductAttributeGroupListReq
-	27,  // 52: pmsclient.ProductAttributeValueService.AddProductAttributeValue:input_type -> pmsclient.AddProductAttributeValueReq
-	29,  // 53: pmsclient.ProductAttributeValueService.DeleteProductAttributeValue:input_type -> pmsclient.DeleteProductAttributeValueReq
-	31,  // 54: pmsclient.ProductAttributeValueService.UpdateProductAttributeValue:input_type -> pmsclient.UpdateProductAttributeValueReq
-	33,  // 55: pmsclient.ProductAttributeValueService.UpdateProductAttributeValueStatus:input_type -> pmsclient.UpdateProductAttributeValueStatusReq
-	35,  // 56: pmsclient.ProductAttributeValueService.QueryProductAttributeValueDetail:input_type -> pmsclient.QueryProductAttributeValueDetailReq
-	37,  // 57: pmsclient.ProductAttributeValueService.QueryProductAttributeValueList:input_type -> pmsclient.QueryProductAttributeValueListReq
-	40,  // 58: pmsclient.ProductBrandService.AddProductBrand:input_type -> pmsclient.AddProductBrandReq
-	42,  // 59: pmsclient.ProductBrandService.DeleteProductBrand:input_type -> pmsclient.DeleteProductBrandReq
-	44,  // 60: pmsclient.ProductBrandService.UpdateProductBrand:input_type -> pmsclient.UpdateProductBrandReq
-	46,  // 61: pmsclient.ProductBrandService.UpdateProductBrandStatus:input_type -> pmsclient.UpdateProductBrandStatusReq
-	48,  // 62: pmsclient.ProductBrandService.QueryProductBrandDetail:input_type -> pmsclient.QueryProductBrandDetailReq
-	50,  // 63: pmsclient.ProductBrandService.QueryProductBrandList:input_type -> pmsclient.QueryProductBrandListReq
-	53,  // 64: pmsclient.ProductBrandService.QueryBrandListByIds:input_type -> pmsclient.QueryBrandListByIdsReq
-	46,  // 65: pmsclient.ProductBrandService.UpdateBrandRecommendStatus:input_type -> pmsclient.UpdateProductBrandStatusReq
-	54,  // 66: pmsclient.ProductBrandService.UpdateBrandSort:input_type -> pmsclient.UpdateProductBrandSortReq
-	55,  // 67: pmsclient.ProductCategoryService.AddProductCategory:input_type -> pmsclient.AddProductCategoryReq
-	57,  // 68: pmsclient.ProductCategoryService.DeleteProductCategory:input_type -> pmsclient.DeleteProductCategoryReq
-	59,  // 69: pmsclient.ProductCategoryService.UpdateProductCategory:input_type -> pmsclient.UpdateProductCategoryReq
-	61,  // 70: pmsclient.ProductCategoryService.UpdateCategoryNavStatus:input_type -> pmsclient.UpdateProductCategoryStatusReq
-	61,  // 71: pmsclient.ProductCategoryService.UpdateProductCategoryStatus:input_type -> pmsclient.UpdateProductCategoryStatusReq
-	63,  // 72: pmsclient.ProductCategoryService.QueryProductCategoryDetail:input_type -> pmsclient.QueryProductCategoryDetailReq
-	65,  // 73: pmsclient.ProductCategoryService.QueryProductCategoryList:input_type -> pmsclient.QueryProductCategoryListReq
-	68,  // 74: pmsclient.ProductCategoryService.QueryProductCategoryTreeList:input_type -> pmsclient.QueryProductCategoryTreeListReq
-	71,  // 75: pmsclient.ProductCategoryAttributeRelationService.AddProductCategoryAttributeRelation:input_type -> pmsclient.AddProductCategoryAttributeRelationReq
-	73,  // 76: pmsclient.ProductCategoryAttributeRelationService.QueryProductCategoryAttributeRelationList:input_type -> pmsclient.QueryProductCategoryAttributeRelationListReq
-	76,  // 77: pmsclient.ProductCollectService.AddProductCollect:input_type -> pmsclient.AddProductCollectReq
-	78,  // 78: pmsclient.ProductCollectService.DeleteProductCollect:input_type -> pmsclient.DeleteProductCollectReq
-	80,  // 79: pmsclient.ProductCollectService.QueryProductCollectDetail:input_type -> pmsclient.QueryProductCollectDetailReq
-	82,  // 80: pmsclient.ProductCollectService.QueryProductCollectList:input_type -> pmsclient.QueryProductCollectListReq
-	85,  // 81: pmsclient.CommentService.AddComment:input_type -> pmsclient.AddCommentReq
-	87,  // 82: pmsclient.CommentService.DeleteComment:input_type -> pmsclient.DeleteCommentReq
-	89,  // 83: pmsclient.CommentService.UpdateComment:input_type -> pmsclient.UpdateCommentReq
-	91,  // 84: pmsclient.CommentService.QueryCommentDetail:input_type -> pmsclient.QueryCommentDetailReq
-	93,  // 85: pmsclient.CommentService.QueryCommentList:input_type -> pmsclient.QueryCommentListReq
-	96,  // 86: pmsclient.CommentReplayService.AddCommentReplay:input_type -> pmsclient.AddCommentReplayReq
-	98,  // 87: pmsclient.CommentReplayService.DeleteCommentReplay:input_type -> pmsclient.DeleteCommentReplayReq
-	100, // 88: pmsclient.CommentReplayService.UpdateCommentReplay:input_type -> pmsclient.UpdateCommentReplayReq
-	102, // 89: pmsclient.CommentReplayService.QueryCommentReplayDetail:input_type -> pmsclient.QueryCommentReplayDetailReq
-	104, // 90: pmsclient.CommentReplayService.QueryCommentReplayList:input_type -> pmsclient.QueryCommentReplayListReq
-	107, // 91: pmsclient.FeightTemplateService.AddFeightTemplate:input_type -> pmsclient.AddFeightTemplateReq
-	109, // 92: pmsclient.FeightTemplateService.DeleteFeightTemplate:input_type -> pmsclient.DeleteFeightTemplateReq
-	111, // 93: pmsclient.FeightTemplateService.UpdateFeightTemplate:input_type -> pmsclient.UpdateFeightTemplateReq
-	113, // 94: pmsclient.FeightTemplateService.QueryFeightTemplateDetail:input_type -> pmsclient.QueryFeightTemplateDetailReq
-	115, // 95: pmsclient.FeightTemplateService.QueryFeightTemplateList:input_type -> pmsclient.QueryFeightTemplateListReq
-	118, // 96: pmsclient.ProductFullReductionService.AddProductFullReduction:input_type -> pmsclient.AddProductFullReductionReq
-	120, // 97: pmsclient.ProductFullReductionService.DeleteProductFullReduction:input_type -> pmsclient.DeleteProductFullReductionReq
-	122, // 98: pmsclient.ProductFullReductionService.QueryProductFullReductionList:input_type -> pmsclient.QueryProductFullReductionListReq
-	125, // 99: pmsclient.ProductLadderService.AddProductLadder:input_type -> pmsclient.AddProductLadderReq
-	127, // 100: pmsclient.ProductLadderService.DeleteProductLadder:input_type -> pmsclient.DeleteProductLadderReq
-	129, // 101: pmsclient.ProductLadderService.UpdateProductLadder:input_type -> pmsclient.UpdateProductLadderReq
-	131, // 102: pmsclient.ProductLadderService.QueryProductLadderDetail:input_type -> pmsclient.QueryProductLadderDetailReq
-	133, // 103: pmsclient.ProductLadderService.QueryProductLadderList:input_type -> pmsclient.QueryProductLadderListReq
-	136, // 104: pmsclient.ProductOperateLogService.AddProductOperateLog:input_type -> pmsclient.AddProductOperateLogReq
-	138, // 105: pmsclient.ProductOperateLogService.DeleteProductOperateLog:input_type -> pmsclient.DeleteProductOperateLogReq
-	140, // 106: pmsclient.ProductOperateLogService.QueryProductOperateLogDetail:input_type -> pmsclient.QueryProductOperateLogDetailReq
-	142, // 107: pmsclient.ProductOperateLogService.QueryProductOperateLogList:input_type -> pmsclient.QueryProductOperateLogListReq
-	145, // 108: pmsclient.ProductSkuService.AddProductSku:input_type -> pmsclient.AddProductSkuReq
-	147, // 109: pmsclient.ProductSkuService.DeleteProductSku:input_type -> pmsclient.DeleteProductSkuReq
-	149, // 110: pmsclient.ProductSkuService.UpdateProductSku:input_type -> pmsclient.UpdateProductSkuReq
-	152, // 111: pmsclient.ProductSkuService.QueryProductSkuDetail:input_type -> pmsclient.QueryProductSkuDetailReq
-	154, // 112: pmsclient.ProductSkuService.QueryProductSkuList:input_type -> pmsclient.QueryProductSkuListReq
-	157, // 113: pmsclient.ProductSkuService.ReleaseSkuStockLock:input_type -> pmsclient.UpdateSkuStockReq
-	157, // 114: pmsclient.ProductSkuService.LockSkuStockLock:input_type -> pmsclient.UpdateSkuStockReq
-	160, // 115: pmsclient.ProductSpecService.AddProductSpec:input_type -> pmsclient.AddProductSpecReq
-	162, // 116: pmsclient.ProductSpecService.DeleteProductSpec:input_type -> pmsclient.DeleteProductSpecReq
-	164, // 117: pmsclient.ProductSpecService.UpdateProductSpec:input_type -> pmsclient.UpdateProductSpecReq
-	166, // 118: pmsclient.ProductSpecService.UpdateProductSpecStatus:input_type -> pmsclient.UpdateProductSpecStatusReq
-	168, // 119: pmsclient.ProductSpecService.QueryProductSpecDetail:input_type -> pmsclient.QueryProductSpecDetailReq
-	170, // 120: pmsclient.ProductSpecService.QueryProductSpecList:input_type -> pmsclient.QueryProductSpecListReq
-	173, // 121: pmsclient.ProductSpecValueService.AddProductSpecValue:input_type -> pmsclient.AddProductSpecValueReq
-	175, // 122: pmsclient.ProductSpecValueService.DeleteProductSpecValue:input_type -> pmsclient.DeleteProductSpecValueReq
-	177, // 123: pmsclient.ProductSpecValueService.UpdateProductSpecValue:input_type -> pmsclient.UpdateProductSpecValueReq
-	179, // 124: pmsclient.ProductSpecValueService.UpdateProductSpecValueStatus:input_type -> pmsclient.UpdateProductSpecValueStatusReq
-	181, // 125: pmsclient.ProductSpecValueService.QueryProductSpecValueDetail:input_type -> pmsclient.QueryProductSpecValueDetailReq
-	183, // 126: pmsclient.ProductSpecValueService.QueryProductSpecValueList:input_type -> pmsclient.QueryProductSpecValueListReq
-	191, // 127: pmsclient.ProductSpuService.AddProductSpu:input_type -> pmsclient.ProductSpuReq
-	193, // 128: pmsclient.ProductSpuService.DeleteProductSpu:input_type -> pmsclient.DeleteProductSpuReq
-	191, // 129: pmsclient.ProductSpuService.UpdateProductSpu:input_type -> pmsclient.ProductSpuReq
-	197, // 130: pmsclient.ProductSpuService.QueryProductSpuDetail:input_type -> pmsclient.QueryProductSpuDetailReq
-	206, // 131: pmsclient.ProductSpuService.QueryProductSpuList:input_type -> pmsclient.QueryProductSpuListReq
-	195, // 132: pmsclient.ProductSpuService.UpdateVerifyStatus:input_type -> pmsclient.UpdateProductSpuStatusReq
-	195, // 133: pmsclient.ProductSpuService.UpdatePublishStatus:input_type -> pmsclient.UpdateProductSpuStatusReq
-	195, // 134: pmsclient.ProductSpuService.UpdateRecommendStatus:input_type -> pmsclient.UpdateProductSpuStatusReq
-	195, // 135: pmsclient.ProductSpuService.UpdateNewStatus:input_type -> pmsclient.UpdateProductSpuStatusReq
-	195, // 136: pmsclient.ProductSpuService.UpdateDeleteStatus:input_type -> pmsclient.UpdateProductSpuStatusReq
-	209, // 137: pmsclient.ProductSpuService.UpdateNewStatusSort:input_type -> pmsclient.UpdateProductSortReq
-	209, // 138: pmsclient.ProductSpuService.UpdateRecommendStatusSort:input_type -> pmsclient.UpdateProductSortReq
-	210, // 139: pmsclient.ProductSpuService.QueryProductSpuListByIds:input_type -> pmsclient.QueryProductSpuByIdsReq
-	211, // 140: pmsclient.ProductVertifyRecordService.AddProductVertifyRecord:input_type -> pmsclient.AddProductVertifyRecordReq
-	213, // 141: pmsclient.ProductVertifyRecordService.QueryProductVertifyRecordDetail:input_type -> pmsclient.QueryProductVertifyRecordDetailReq
-	215, // 142: pmsclient.ProductVertifyRecordService.QueryProductVertifyRecordList:input_type -> pmsclient.QueryProductVertifyRecordListReq
-	2,   // 143: pmsclient.ProductAttributeService.AddProductAttribute:output_type -> pmsclient.AddProductAttributeResp
-	4,   // 144: pmsclient.ProductAttributeService.DeleteProductAttribute:output_type -> pmsclient.DeleteProductAttributeResp
-	6,   // 145: pmsclient.ProductAttributeService.UpdateProductAttribute:output_type -> pmsclient.UpdateProductAttributeResp
-	8,   // 146: pmsclient.ProductAttributeService.UpdateProductAttributeStatus:output_type -> pmsclient.UpdateProductAttributeStatusResp
-	10,  // 147: pmsclient.ProductAttributeService.QueryProductAttributeDetail:output_type -> pmsclient.QueryProductAttributeDetailResp
-	13,  // 148: pmsclient.ProductAttributeService.QueryProductAttributeList:output_type -> pmsclient.QueryProductAttributeListResp
-	15,  // 149: pmsclient.ProductAttributeGroupService.AddProductAttributeGroup:output_type -> pmsclient.AddProductAttributeGroupResp
-	17,  // 150: pmsclient.ProductAttributeGroupService.DeleteProductAttributeGroup:output_type -> pmsclient.DeleteProductAttributeGroupResp
-	19,  // 151: pmsclient.ProductAttributeGroupService.UpdateProductAttributeGroup:output_type -> pmsclient.UpdateProductAttributeGroupResp
-	21,  // 152: pmsclient.ProductAttributeGroupService.UpdateProductAttributeGroupStatus:output_type -> pmsclient.UpdateProductAttributeGroupStatusResp
-	23,  // 153: pmsclient.ProductAttributeGroupService.QueryProductAttributeGroupDetail:output_type -> pmsclient.QueryProductAttributeGroupDetailResp
-	26,  // 154: pmsclient.ProductAttributeGroupService.QueryProductAttributeGroupList:output_type -> pmsclient.QueryProductAttributeGroupListResp
-	28,  // 155: pmsclient.ProductAttributeValueService.AddProductAttributeValue:output_type -> pmsclient.AddProductAttributeValueResp
-	30,  // 156: pmsclient.ProductAttributeValueService.DeleteProductAttributeValue:output_type -> pmsclient.DeleteProductAttributeValueResp
-	32,  // 157: pmsclient.ProductAttributeValueService.UpdateProductAttributeValue:output_type -> pmsclient.UpdateProductAttributeValueResp
-	34,  // 158: pmsclient.ProductAttributeValueService.UpdateProductAttributeValueStatus:output_type -> pmsclient.UpdateProductAttributeValueStatusResp
-	36,  // 159: pmsclient.ProductAttributeValueService.QueryProductAttributeValueDetail:output_type -> pmsclient.QueryProductAttributeValueDetailResp
-	39,  // 160: pmsclient.ProductAttributeValueService.QueryProductAttributeValueList:output_type -> pmsclient.QueryProductAttributeValueListResp
-	41,  // 161: pmsclient.ProductBrandService.AddProductBrand:output_type -> pmsclient.AddProductBrandResp
-	43,  // 162: pmsclient.ProductBrandService.DeleteProductBrand:output_type -> pmsclient.DeleteProductBrandResp
-	45,  // 163: pmsclient.ProductBrandService.UpdateProductBrand:output_type -> pmsclient.UpdateProductBrandResp
-	47,  // 164: pmsclient.ProductBrandService.UpdateProductBrandStatus:output_type -> pmsclient.UpdateProductBrandStatusResp
-	49,  // 165: pmsclient.ProductBrandService.QueryProductBrandDetail:output_type -> pmsclient.QueryProductBrandDetailResp
-	52,  // 166: pmsclient.ProductBrandService.QueryProductBrandList:output_type -> pmsclient.QueryProductBrandListResp
-	52,  // 167: pmsclient.ProductBrandService.QueryBrandListByIds:output_type -> pmsclient.QueryProductBrandListResp
-	47,  // 168: pmsclient.ProductBrandService.UpdateBrandRecommendStatus:output_type -> pmsclient.UpdateProductBrandStatusResp
-	47,  // 169: pmsclient.ProductBrandService.UpdateBrandSort:output_type -> pmsclient.UpdateProductBrandStatusResp
-	56,  // 170: pmsclient.ProductCategoryService.AddProductCategory:output_type -> pmsclient.AddProductCategoryResp
-	58,  // 171: pmsclient.ProductCategoryService.DeleteProductCategory:output_type -> pmsclient.DeleteProductCategoryResp
-	60,  // 172: pmsclient.ProductCategoryService.UpdateProductCategory:output_type -> pmsclient.UpdateProductCategoryResp
-	62,  // 173: pmsclient.ProductCategoryService.UpdateCategoryNavStatus:output_type -> pmsclient.UpdateProductCategoryStatusResp
-	62,  // 174: pmsclient.ProductCategoryService.UpdateProductCategoryStatus:output_type -> pmsclient.UpdateProductCategoryStatusResp
-	64,  // 175: pmsclient.ProductCategoryService.QueryProductCategoryDetail:output_type -> pmsclient.QueryProductCategoryDetailResp
-	67,  // 176: pmsclient.ProductCategoryService.QueryProductCategoryList:output_type -> pmsclient.QueryProductCategoryListResp
-	70,  // 177: pmsclient.ProductCategoryService.QueryProductCategoryTreeList:output_type -> pmsclient.QueryProductCategoryListTreeResp
-	72,  // 178: pmsclient.ProductCategoryAttributeRelationService.AddProductCategoryAttributeRelation:output_type -> pmsclient.AddProductCategoryAttributeRelationResp
-	75,  // 179: pmsclient.ProductCategoryAttributeRelationService.QueryProductCategoryAttributeRelationList:output_type -> pmsclient.QueryProductCategoryAttributeRelationListResp
-	77,  // 180: pmsclient.ProductCollectService.AddProductCollect:output_type -> pmsclient.AddProductCollectResp
-	79,  // 181: pmsclient.ProductCollectService.DeleteProductCollect:output_type -> pmsclient.DeleteProductCollectResp
-	81,  // 182: pmsclient.ProductCollectService.QueryProductCollectDetail:output_type -> pmsclient.QueryProductCollectDetailResp
-	84,  // 183: pmsclient.ProductCollectService.QueryProductCollectList:output_type -> pmsclient.QueryProductCollectListResp
-	86,  // 184: pmsclient.CommentService.AddComment:output_type -> pmsclient.AddCommentResp
-	88,  // 185: pmsclient.CommentService.DeleteComment:output_type -> pmsclient.DeleteCommentResp
-	90,  // 186: pmsclient.CommentService.UpdateComment:output_type -> pmsclient.UpdateCommentResp
-	92,  // 187: pmsclient.CommentService.QueryCommentDetail:output_type -> pmsclient.QueryCommentDetailResp
-	95,  // 188: pmsclient.CommentService.QueryCommentList:output_type -> pmsclient.QueryCommentListResp
-	97,  // 189: pmsclient.CommentReplayService.AddCommentReplay:output_type -> pmsclient.AddCommentReplayResp
-	99,  // 190: pmsclient.CommentReplayService.DeleteCommentReplay:output_type -> pmsclient.DeleteCommentReplayResp
-	101, // 191: pmsclient.CommentReplayService.UpdateCommentReplay:output_type -> pmsclient.UpdateCommentReplayResp
-	103, // 192: pmsclient.CommentReplayService.QueryCommentReplayDetail:output_type -> pmsclient.QueryCommentReplayDetailResp
-	106, // 193: pmsclient.CommentReplayService.QueryCommentReplayList:output_type -> pmsclient.QueryCommentReplayListResp
-	108, // 194: pmsclient.FeightTemplateService.AddFeightTemplate:output_type -> pmsclient.AddFeightTemplateResp
-	110, // 195: pmsclient.FeightTemplateService.DeleteFeightTemplate:output_type -> pmsclient.DeleteFeightTemplateResp
-	112, // 196: pmsclient.FeightTemplateService.UpdateFeightTemplate:output_type -> pmsclient.UpdateFeightTemplateResp
-	114, // 197: pmsclient.FeightTemplateService.QueryFeightTemplateDetail:output_type -> pmsclient.QueryFeightTemplateDetailResp
-	117, // 198: pmsclient.FeightTemplateService.QueryFeightTemplateList:output_type -> pmsclient.QueryFeightTemplateListResp
-	119, // 199: pmsclient.ProductFullReductionService.AddProductFullReduction:output_type -> pmsclient.AddProductFullReductionResp
-	121, // 200: pmsclient.ProductFullReductionService.DeleteProductFullReduction:output_type -> pmsclient.DeleteProductFullReductionResp
-	124, // 201: pmsclient.ProductFullReductionService.QueryProductFullReductionList:output_type -> pmsclient.QueryProductFullReductionListResp
-	126, // 202: pmsclient.ProductLadderService.AddProductLadder:output_type -> pmsclient.AddProductLadderResp
-	128, // 203: pmsclient.ProductLadderService.DeleteProductLadder:output_type -> pmsclient.DeleteProductLadderResp
-	130, // 204: pmsclient.ProductLadderService.UpdateProductLadder:output_type -> pmsclient.UpdateProductLadderResp
-	132, // 205: pmsclient.ProductLadderService.QueryProductLadderDetail:output_type -> pmsclient.QueryProductLadderDetailResp
-	135, // 206: pmsclient.ProductLadderService.QueryProductLadderList:output_type -> pmsclient.QueryProductLadderListResp
-	137, // 207: pmsclient.ProductOperateLogService.AddProductOperateLog:output_type -> pmsclient.AddProductOperateLogResp
-	139, // 208: pmsclient.ProductOperateLogService.DeleteProductOperateLog:output_type -> pmsclient.DeleteProductOperateLogResp
-	141, // 209: pmsclient.ProductOperateLogService.QueryProductOperateLogDetail:output_type -> pmsclient.QueryProductOperateLogDetailResp
-	144, // 210: pmsclient.ProductOperateLogService.QueryProductOperateLogList:output_type -> pmsclient.QueryProductOperateLogListResp
-	146, // 211: pmsclient.ProductSkuService.AddProductSku:output_type -> pmsclient.AddProductSkuResp
-	148, // 212: pmsclient.ProductSkuService.DeleteProductSku:output_type -> pmsclient.DeleteProductSkuResp
-	151, // 213: pmsclient.ProductSkuService.UpdateProductSku:output_type -> pmsclient.UpdateProductSkuResp
-	153, // 214: pmsclient.ProductSkuService.QueryProductSkuDetail:output_type -> pmsclient.QueryProductSkuDetailResp
-	156, // 215: pmsclient.ProductSkuService.QueryProductSkuList:output_type -> pmsclient.QueryProductSkuListResp
-	159, // 216: pmsclient.ProductSkuService.ReleaseSkuStockLock:output_type -> pmsclient.UpdateSkuStockLockResp
-	159, // 217: pmsclient.ProductSkuService.LockSkuStockLock:output_type -> pmsclient.UpdateSkuStockLockResp
-	161, // 218: pmsclient.ProductSpecService.AddProductSpec:output_type -> pmsclient.AddProductSpecResp
-	163, // 219: pmsclient.ProductSpecService.DeleteProductSpec:output_type -> pmsclient.DeleteProductSpecResp
-	165, // 220: pmsclient.ProductSpecService.UpdateProductSpec:output_type -> pmsclient.UpdateProductSpecResp
-	167, // 221: pmsclient.ProductSpecService.UpdateProductSpecStatus:output_type -> pmsclient.UpdateProductSpecStatusResp
-	169, // 222: pmsclient.ProductSpecService.QueryProductSpecDetail:output_type -> pmsclient.QueryProductSpecDetailResp
-	172, // 223: pmsclient.ProductSpecService.QueryProductSpecList:output_type -> pmsclient.QueryProductSpecListResp
-	174, // 224: pmsclient.ProductSpecValueService.AddProductSpecValue:output_type -> pmsclient.AddProductSpecValueResp
-	176, // 225: pmsclient.ProductSpecValueService.DeleteProductSpecValue:output_type -> pmsclient.DeleteProductSpecValueResp
-	178, // 226: pmsclient.ProductSpecValueService.UpdateProductSpecValue:output_type -> pmsclient.UpdateProductSpecValueResp
-	180, // 227: pmsclient.ProductSpecValueService.UpdateProductSpecValueStatus:output_type -> pmsclient.UpdateProductSpecValueStatusResp
-	182, // 228: pmsclient.ProductSpecValueService.QueryProductSpecValueDetail:output_type -> pmsclient.QueryProductSpecValueDetailResp
-	185, // 229: pmsclient.ProductSpecValueService.QueryProductSpecValueList:output_type -> pmsclient.QueryProductSpecValueListResp
-	192, // 230: pmsclient.ProductSpuService.AddProductSpu:output_type -> pmsclient.ProductSpuResp
-	194, // 231: pmsclient.ProductSpuService.DeleteProductSpu:output_type -> pmsclient.DeleteProductSpuResp
-	192, // 232: pmsclient.ProductSpuService.UpdateProductSpu:output_type -> pmsclient.ProductSpuResp
-	205, // 233: pmsclient.ProductSpuService.QueryProductSpuDetail:output_type -> pmsclient.QueryProductSpuDetailResp
-	208, // 234: pmsclient.ProductSpuService.QueryProductSpuList:output_type -> pmsclient.QueryProductSpuListResp
-	196, // 235: pmsclient.ProductSpuService.UpdateVerifyStatus:output_type -> pmsclient.UpdateProductSpuStatusResp
-	196, // 236: pmsclient.ProductSpuService.UpdatePublishStatus:output_type -> pmsclient.UpdateProductSpuStatusResp
-	196, // 237: pmsclient.ProductSpuService.UpdateRecommendStatus:output_type -> pmsclient.UpdateProductSpuStatusResp
-	196, // 238: pmsclient.ProductSpuService.UpdateNewStatus:output_type -> pmsclient.UpdateProductSpuStatusResp
-	196, // 239: pmsclient.ProductSpuService.UpdateDeleteStatus:output_type -> pmsclient.UpdateProductSpuStatusResp
-	196, // 240: pmsclient.ProductSpuService.UpdateNewStatusSort:output_type -> pmsclient.UpdateProductSpuStatusResp
-	196, // 241: pmsclient.ProductSpuService.UpdateRecommendStatusSort:output_type -> pmsclient.UpdateProductSpuStatusResp
-	208, // 242: pmsclient.ProductSpuService.QueryProductSpuListByIds:output_type -> pmsclient.QueryProductSpuListResp
-	212, // 243: pmsclient.ProductVertifyRecordService.AddProductVertifyRecord:output_type -> pmsclient.AddProductVertifyRecordResp
-	214, // 244: pmsclient.ProductVertifyRecordService.QueryProductVertifyRecordDetail:output_type -> pmsclient.QueryProductVertifyRecordDetailResp
-	217, // 245: pmsclient.ProductVertifyRecordService.QueryProductVertifyRecordList:output_type -> pmsclient.QueryProductVertifyRecordListResp
-	143, // [143:246] is the sub-list for method output_type
-	40,  // [40:143] is the sub-list for method input_type
-	40,  // [40:40] is the sub-list for extension type_name
-	40,  // [40:40] is the sub-list for extension extendee
-	0,   // [0:40] is the sub-list for field type_name
+	0,   // 15: pmsclient.AddProductSkuReq.scope:type_name -> pmsclient.GovernanceScope
+	0,   // 16: pmsclient.DeleteProductSkuReq.scope:type_name -> pmsclient.GovernanceScope
+	150, // 17: pmsclient.UpdateProductSkuReq.data:type_name -> pmsclient.UpdateProductSkuData
+	0,   // 18: pmsclient.UpdateProductSkuReq.scope:type_name -> pmsclient.GovernanceScope
+	0,   // 19: pmsclient.QueryProductSkuDetailReq.scope:type_name -> pmsclient.GovernanceScope
+	0,   // 20: pmsclient.QueryProductSkuListReq.scope:type_name -> pmsclient.GovernanceScope
+	155, // 21: pmsclient.QueryProductSkuListResp.list:type_name -> pmsclient.ProductSkuListData
+	158, // 22: pmsclient.UpdateSkuStockReq.data:type_name -> pmsclient.UpdateSkuStockData
+	171, // 23: pmsclient.QueryProductSpecListResp.list:type_name -> pmsclient.ProductSpecListData
+	184, // 24: pmsclient.QueryProductSpecValueListResp.list:type_name -> pmsclient.ProductSpecValueListData
+	186, // 25: pmsclient.ProductSpuReq.MemberPriceList:type_name -> pmsclient.MemberPriceList
+	187, // 26: pmsclient.ProductSpuReq.ProductAttributeValueList:type_name -> pmsclient.ProductAttributeValueList
+	188, // 27: pmsclient.ProductSpuReq.ProductFullReductionList:type_name -> pmsclient.ProductFullReductionList
+	189, // 28: pmsclient.ProductSpuReq.ProductLadderList:type_name -> pmsclient.ProductLadderList
+	190, // 29: pmsclient.ProductSpuReq.SkuStockList:type_name -> pmsclient.SkuStockList
+	0,   // 30: pmsclient.ProductSpuReq.scope:type_name -> pmsclient.GovernanceScope
+	0,   // 31: pmsclient.DeleteProductSpuReq.scope:type_name -> pmsclient.GovernanceScope
+	0,   // 32: pmsclient.UpdateProductSpuStatusReq.scope:type_name -> pmsclient.GovernanceScope
+	0,   // 33: pmsclient.QueryProductSpuDetailReq.scope:type_name -> pmsclient.GovernanceScope
+	207, // 34: pmsclient.QueryProductSpuDetailResp.data:type_name -> pmsclient.ProductSpuListData
+	198, // 35: pmsclient.QueryProductSpuDetailResp.Brand:type_name -> pmsclient.BrandData
+	199, // 36: pmsclient.QueryProductSpuDetailResp.ProductAttributeList:type_name -> pmsclient.ProductAttributeDataList
+	200, // 37: pmsclient.QueryProductSpuDetailResp.ProductAttributeValueList:type_name -> pmsclient.ProductAttributeValueData
+	201, // 38: pmsclient.QueryProductSpuDetailResp.SkuStockList:type_name -> pmsclient.SkuStockData
+	202, // 39: pmsclient.QueryProductSpuDetailResp.ProductLadderList:type_name -> pmsclient.ProductLadderData
+	203, // 40: pmsclient.QueryProductSpuDetailResp.ProductFullReductionList:type_name -> pmsclient.ProductFullReductionData
+	204, // 41: pmsclient.QueryProductSpuDetailResp.MemberPriceList:type_name -> pmsclient.MemberPriceListData
+	0,   // 42: pmsclient.QueryProductSpuListReq.scope:type_name -> pmsclient.GovernanceScope
+	207, // 43: pmsclient.QueryProductSpuListResp.list:type_name -> pmsclient.ProductSpuListData
+	0,   // 44: pmsclient.QueryProductSpuByIdsReq.scope:type_name -> pmsclient.GovernanceScope
+	216, // 45: pmsclient.QueryProductVertifyRecordListResp.list:type_name -> pmsclient.ProductVertifyRecordListData
+	1,   // 46: pmsclient.ProductAttributeService.AddProductAttribute:input_type -> pmsclient.AddProductAttributeReq
+	3,   // 47: pmsclient.ProductAttributeService.DeleteProductAttribute:input_type -> pmsclient.DeleteProductAttributeReq
+	5,   // 48: pmsclient.ProductAttributeService.UpdateProductAttribute:input_type -> pmsclient.UpdateProductAttributeReq
+	7,   // 49: pmsclient.ProductAttributeService.UpdateProductAttributeStatus:input_type -> pmsclient.UpdateProductAttributeStatusReq
+	9,   // 50: pmsclient.ProductAttributeService.QueryProductAttributeDetail:input_type -> pmsclient.QueryProductAttributeDetailReq
+	11,  // 51: pmsclient.ProductAttributeService.QueryProductAttributeList:input_type -> pmsclient.QueryProductAttributeListReq
+	14,  // 52: pmsclient.ProductAttributeGroupService.AddProductAttributeGroup:input_type -> pmsclient.AddProductAttributeGroupReq
+	16,  // 53: pmsclient.ProductAttributeGroupService.DeleteProductAttributeGroup:input_type -> pmsclient.DeleteProductAttributeGroupReq
+	18,  // 54: pmsclient.ProductAttributeGroupService.UpdateProductAttributeGroup:input_type -> pmsclient.UpdateProductAttributeGroupReq
+	20,  // 55: pmsclient.ProductAttributeGroupService.UpdateProductAttributeGroupStatus:input_type -> pmsclient.UpdateProductAttributeGroupStatusReq
+	22,  // 56: pmsclient.ProductAttributeGroupService.QueryProductAttributeGroupDetail:input_type -> pmsclient.QueryProductAttributeGroupDetailReq
+	24,  // 57: pmsclient.ProductAttributeGroupService.QueryProductAttributeGroupList:input_type -> pmsclient.QueryProductAttributeGroupListReq
+	27,  // 58: pmsclient.ProductAttributeValueService.AddProductAttributeValue:input_type -> pmsclient.AddProductAttributeValueReq
+	29,  // 59: pmsclient.ProductAttributeValueService.DeleteProductAttributeValue:input_type -> pmsclient.DeleteProductAttributeValueReq
+	31,  // 60: pmsclient.ProductAttributeValueService.UpdateProductAttributeValue:input_type -> pmsclient.UpdateProductAttributeValueReq
+	33,  // 61: pmsclient.ProductAttributeValueService.UpdateProductAttributeValueStatus:input_type -> pmsclient.UpdateProductAttributeValueStatusReq
+	35,  // 62: pmsclient.ProductAttributeValueService.QueryProductAttributeValueDetail:input_type -> pmsclient.QueryProductAttributeValueDetailReq
+	37,  // 63: pmsclient.ProductAttributeValueService.QueryProductAttributeValueList:input_type -> pmsclient.QueryProductAttributeValueListReq
+	40,  // 64: pmsclient.ProductBrandService.AddProductBrand:input_type -> pmsclient.AddProductBrandReq
+	42,  // 65: pmsclient.ProductBrandService.DeleteProductBrand:input_type -> pmsclient.DeleteProductBrandReq
+	44,  // 66: pmsclient.ProductBrandService.UpdateProductBrand:input_type -> pmsclient.UpdateProductBrandReq
+	46,  // 67: pmsclient.ProductBrandService.UpdateProductBrandStatus:input_type -> pmsclient.UpdateProductBrandStatusReq
+	48,  // 68: pmsclient.ProductBrandService.QueryProductBrandDetail:input_type -> pmsclient.QueryProductBrandDetailReq
+	50,  // 69: pmsclient.ProductBrandService.QueryProductBrandList:input_type -> pmsclient.QueryProductBrandListReq
+	53,  // 70: pmsclient.ProductBrandService.QueryBrandListByIds:input_type -> pmsclient.QueryBrandListByIdsReq
+	46,  // 71: pmsclient.ProductBrandService.UpdateBrandRecommendStatus:input_type -> pmsclient.UpdateProductBrandStatusReq
+	54,  // 72: pmsclient.ProductBrandService.UpdateBrandSort:input_type -> pmsclient.UpdateProductBrandSortReq
+	55,  // 73: pmsclient.ProductCategoryService.AddProductCategory:input_type -> pmsclient.AddProductCategoryReq
+	57,  // 74: pmsclient.ProductCategoryService.DeleteProductCategory:input_type -> pmsclient.DeleteProductCategoryReq
+	59,  // 75: pmsclient.ProductCategoryService.UpdateProductCategory:input_type -> pmsclient.UpdateProductCategoryReq
+	61,  // 76: pmsclient.ProductCategoryService.UpdateCategoryNavStatus:input_type -> pmsclient.UpdateProductCategoryStatusReq
+	61,  // 77: pmsclient.ProductCategoryService.UpdateProductCategoryStatus:input_type -> pmsclient.UpdateProductCategoryStatusReq
+	63,  // 78: pmsclient.ProductCategoryService.QueryProductCategoryDetail:input_type -> pmsclient.QueryProductCategoryDetailReq
+	65,  // 79: pmsclient.ProductCategoryService.QueryProductCategoryList:input_type -> pmsclient.QueryProductCategoryListReq
+	68,  // 80: pmsclient.ProductCategoryService.QueryProductCategoryTreeList:input_type -> pmsclient.QueryProductCategoryTreeListReq
+	71,  // 81: pmsclient.ProductCategoryAttributeRelationService.AddProductCategoryAttributeRelation:input_type -> pmsclient.AddProductCategoryAttributeRelationReq
+	73,  // 82: pmsclient.ProductCategoryAttributeRelationService.QueryProductCategoryAttributeRelationList:input_type -> pmsclient.QueryProductCategoryAttributeRelationListReq
+	76,  // 83: pmsclient.ProductCollectService.AddProductCollect:input_type -> pmsclient.AddProductCollectReq
+	78,  // 84: pmsclient.ProductCollectService.DeleteProductCollect:input_type -> pmsclient.DeleteProductCollectReq
+	80,  // 85: pmsclient.ProductCollectService.QueryProductCollectDetail:input_type -> pmsclient.QueryProductCollectDetailReq
+	82,  // 86: pmsclient.ProductCollectService.QueryProductCollectList:input_type -> pmsclient.QueryProductCollectListReq
+	85,  // 87: pmsclient.CommentService.AddComment:input_type -> pmsclient.AddCommentReq
+	87,  // 88: pmsclient.CommentService.DeleteComment:input_type -> pmsclient.DeleteCommentReq
+	89,  // 89: pmsclient.CommentService.UpdateComment:input_type -> pmsclient.UpdateCommentReq
+	91,  // 90: pmsclient.CommentService.QueryCommentDetail:input_type -> pmsclient.QueryCommentDetailReq
+	93,  // 91: pmsclient.CommentService.QueryCommentList:input_type -> pmsclient.QueryCommentListReq
+	96,  // 92: pmsclient.CommentReplayService.AddCommentReplay:input_type -> pmsclient.AddCommentReplayReq
+	98,  // 93: pmsclient.CommentReplayService.DeleteCommentReplay:input_type -> pmsclient.DeleteCommentReplayReq
+	100, // 94: pmsclient.CommentReplayService.UpdateCommentReplay:input_type -> pmsclient.UpdateCommentReplayReq
+	102, // 95: pmsclient.CommentReplayService.QueryCommentReplayDetail:input_type -> pmsclient.QueryCommentReplayDetailReq
+	104, // 96: pmsclient.CommentReplayService.QueryCommentReplayList:input_type -> pmsclient.QueryCommentReplayListReq
+	107, // 97: pmsclient.FeightTemplateService.AddFeightTemplate:input_type -> pmsclient.AddFeightTemplateReq
+	109, // 98: pmsclient.FeightTemplateService.DeleteFeightTemplate:input_type -> pmsclient.DeleteFeightTemplateReq
+	111, // 99: pmsclient.FeightTemplateService.UpdateFeightTemplate:input_type -> pmsclient.UpdateFeightTemplateReq
+	113, // 100: pmsclient.FeightTemplateService.QueryFeightTemplateDetail:input_type -> pmsclient.QueryFeightTemplateDetailReq
+	115, // 101: pmsclient.FeightTemplateService.QueryFeightTemplateList:input_type -> pmsclient.QueryFeightTemplateListReq
+	118, // 102: pmsclient.ProductFullReductionService.AddProductFullReduction:input_type -> pmsclient.AddProductFullReductionReq
+	120, // 103: pmsclient.ProductFullReductionService.DeleteProductFullReduction:input_type -> pmsclient.DeleteProductFullReductionReq
+	122, // 104: pmsclient.ProductFullReductionService.QueryProductFullReductionList:input_type -> pmsclient.QueryProductFullReductionListReq
+	125, // 105: pmsclient.ProductLadderService.AddProductLadder:input_type -> pmsclient.AddProductLadderReq
+	127, // 106: pmsclient.ProductLadderService.DeleteProductLadder:input_type -> pmsclient.DeleteProductLadderReq
+	129, // 107: pmsclient.ProductLadderService.UpdateProductLadder:input_type -> pmsclient.UpdateProductLadderReq
+	131, // 108: pmsclient.ProductLadderService.QueryProductLadderDetail:input_type -> pmsclient.QueryProductLadderDetailReq
+	133, // 109: pmsclient.ProductLadderService.QueryProductLadderList:input_type -> pmsclient.QueryProductLadderListReq
+	136, // 110: pmsclient.ProductOperateLogService.AddProductOperateLog:input_type -> pmsclient.AddProductOperateLogReq
+	138, // 111: pmsclient.ProductOperateLogService.DeleteProductOperateLog:input_type -> pmsclient.DeleteProductOperateLogReq
+	140, // 112: pmsclient.ProductOperateLogService.QueryProductOperateLogDetail:input_type -> pmsclient.QueryProductOperateLogDetailReq
+	142, // 113: pmsclient.ProductOperateLogService.QueryProductOperateLogList:input_type -> pmsclient.QueryProductOperateLogListReq
+	145, // 114: pmsclient.ProductSkuService.AddProductSku:input_type -> pmsclient.AddProductSkuReq
+	147, // 115: pmsclient.ProductSkuService.DeleteProductSku:input_type -> pmsclient.DeleteProductSkuReq
+	149, // 116: pmsclient.ProductSkuService.UpdateProductSku:input_type -> pmsclient.UpdateProductSkuReq
+	152, // 117: pmsclient.ProductSkuService.QueryProductSkuDetail:input_type -> pmsclient.QueryProductSkuDetailReq
+	154, // 118: pmsclient.ProductSkuService.QueryProductSkuList:input_type -> pmsclient.QueryProductSkuListReq
+	157, // 119: pmsclient.ProductSkuService.ReleaseSkuStockLock:input_type -> pmsclient.UpdateSkuStockReq
+	157, // 120: pmsclient.ProductSkuService.LockSkuStockLock:input_type -> pmsclient.UpdateSkuStockReq
+	160, // 121: pmsclient.ProductSpecService.AddProductSpec:input_type -> pmsclient.AddProductSpecReq
+	162, // 122: pmsclient.ProductSpecService.DeleteProductSpec:input_type -> pmsclient.DeleteProductSpecReq
+	164, // 123: pmsclient.ProductSpecService.UpdateProductSpec:input_type -> pmsclient.UpdateProductSpecReq
+	166, // 124: pmsclient.ProductSpecService.UpdateProductSpecStatus:input_type -> pmsclient.UpdateProductSpecStatusReq
+	168, // 125: pmsclient.ProductSpecService.QueryProductSpecDetail:input_type -> pmsclient.QueryProductSpecDetailReq
+	170, // 126: pmsclient.ProductSpecService.QueryProductSpecList:input_type -> pmsclient.QueryProductSpecListReq
+	173, // 127: pmsclient.ProductSpecValueService.AddProductSpecValue:input_type -> pmsclient.AddProductSpecValueReq
+	175, // 128: pmsclient.ProductSpecValueService.DeleteProductSpecValue:input_type -> pmsclient.DeleteProductSpecValueReq
+	177, // 129: pmsclient.ProductSpecValueService.UpdateProductSpecValue:input_type -> pmsclient.UpdateProductSpecValueReq
+	179, // 130: pmsclient.ProductSpecValueService.UpdateProductSpecValueStatus:input_type -> pmsclient.UpdateProductSpecValueStatusReq
+	181, // 131: pmsclient.ProductSpecValueService.QueryProductSpecValueDetail:input_type -> pmsclient.QueryProductSpecValueDetailReq
+	183, // 132: pmsclient.ProductSpecValueService.QueryProductSpecValueList:input_type -> pmsclient.QueryProductSpecValueListReq
+	191, // 133: pmsclient.ProductSpuService.AddProductSpu:input_type -> pmsclient.ProductSpuReq
+	193, // 134: pmsclient.ProductSpuService.DeleteProductSpu:input_type -> pmsclient.DeleteProductSpuReq
+	191, // 135: pmsclient.ProductSpuService.UpdateProductSpu:input_type -> pmsclient.ProductSpuReq
+	197, // 136: pmsclient.ProductSpuService.QueryProductSpuDetail:input_type -> pmsclient.QueryProductSpuDetailReq
+	206, // 137: pmsclient.ProductSpuService.QueryProductSpuList:input_type -> pmsclient.QueryProductSpuListReq
+	195, // 138: pmsclient.ProductSpuService.UpdateVerifyStatus:input_type -> pmsclient.UpdateProductSpuStatusReq
+	195, // 139: pmsclient.ProductSpuService.UpdatePublishStatus:input_type -> pmsclient.UpdateProductSpuStatusReq
+	195, // 140: pmsclient.ProductSpuService.UpdateRecommendStatus:input_type -> pmsclient.UpdateProductSpuStatusReq
+	195, // 141: pmsclient.ProductSpuService.UpdateNewStatus:input_type -> pmsclient.UpdateProductSpuStatusReq
+	195, // 142: pmsclient.ProductSpuService.UpdateDeleteStatus:input_type -> pmsclient.UpdateProductSpuStatusReq
+	209, // 143: pmsclient.ProductSpuService.UpdateNewStatusSort:input_type -> pmsclient.UpdateProductSortReq
+	209, // 144: pmsclient.ProductSpuService.UpdateRecommendStatusSort:input_type -> pmsclient.UpdateProductSortReq
+	210, // 145: pmsclient.ProductSpuService.QueryProductSpuListByIds:input_type -> pmsclient.QueryProductSpuByIdsReq
+	211, // 146: pmsclient.ProductVertifyRecordService.AddProductVertifyRecord:input_type -> pmsclient.AddProductVertifyRecordReq
+	213, // 147: pmsclient.ProductVertifyRecordService.QueryProductVertifyRecordDetail:input_type -> pmsclient.QueryProductVertifyRecordDetailReq
+	215, // 148: pmsclient.ProductVertifyRecordService.QueryProductVertifyRecordList:input_type -> pmsclient.QueryProductVertifyRecordListReq
+	2,   // 149: pmsclient.ProductAttributeService.AddProductAttribute:output_type -> pmsclient.AddProductAttributeResp
+	4,   // 150: pmsclient.ProductAttributeService.DeleteProductAttribute:output_type -> pmsclient.DeleteProductAttributeResp
+	6,   // 151: pmsclient.ProductAttributeService.UpdateProductAttribute:output_type -> pmsclient.UpdateProductAttributeResp
+	8,   // 152: pmsclient.ProductAttributeService.UpdateProductAttributeStatus:output_type -> pmsclient.UpdateProductAttributeStatusResp
+	10,  // 153: pmsclient.ProductAttributeService.QueryProductAttributeDetail:output_type -> pmsclient.QueryProductAttributeDetailResp
+	13,  // 154: pmsclient.ProductAttributeService.QueryProductAttributeList:output_type -> pmsclient.QueryProductAttributeListResp
+	15,  // 155: pmsclient.ProductAttributeGroupService.AddProductAttributeGroup:output_type -> pmsclient.AddProductAttributeGroupResp
+	17,  // 156: pmsclient.ProductAttributeGroupService.DeleteProductAttributeGroup:output_type -> pmsclient.DeleteProductAttributeGroupResp
+	19,  // 157: pmsclient.ProductAttributeGroupService.UpdateProductAttributeGroup:output_type -> pmsclient.UpdateProductAttributeGroupResp
+	21,  // 158: pmsclient.ProductAttributeGroupService.UpdateProductAttributeGroupStatus:output_type -> pmsclient.UpdateProductAttributeGroupStatusResp
+	23,  // 159: pmsclient.ProductAttributeGroupService.QueryProductAttributeGroupDetail:output_type -> pmsclient.QueryProductAttributeGroupDetailResp
+	26,  // 160: pmsclient.ProductAttributeGroupService.QueryProductAttributeGroupList:output_type -> pmsclient.QueryProductAttributeGroupListResp
+	28,  // 161: pmsclient.ProductAttributeValueService.AddProductAttributeValue:output_type -> pmsclient.AddProductAttributeValueResp
+	30,  // 162: pmsclient.ProductAttributeValueService.DeleteProductAttributeValue:output_type -> pmsclient.DeleteProductAttributeValueResp
+	32,  // 163: pmsclient.ProductAttributeValueService.UpdateProductAttributeValue:output_type -> pmsclient.UpdateProductAttributeValueResp
+	34,  // 164: pmsclient.ProductAttributeValueService.UpdateProductAttributeValueStatus:output_type -> pmsclient.UpdateProductAttributeValueStatusResp
+	36,  // 165: pmsclient.ProductAttributeValueService.QueryProductAttributeValueDetail:output_type -> pmsclient.QueryProductAttributeValueDetailResp
+	39,  // 166: pmsclient.ProductAttributeValueService.QueryProductAttributeValueList:output_type -> pmsclient.QueryProductAttributeValueListResp
+	41,  // 167: pmsclient.ProductBrandService.AddProductBrand:output_type -> pmsclient.AddProductBrandResp
+	43,  // 168: pmsclient.ProductBrandService.DeleteProductBrand:output_type -> pmsclient.DeleteProductBrandResp
+	45,  // 169: pmsclient.ProductBrandService.UpdateProductBrand:output_type -> pmsclient.UpdateProductBrandResp
+	47,  // 170: pmsclient.ProductBrandService.UpdateProductBrandStatus:output_type -> pmsclient.UpdateProductBrandStatusResp
+	49,  // 171: pmsclient.ProductBrandService.QueryProductBrandDetail:output_type -> pmsclient.QueryProductBrandDetailResp
+	52,  // 172: pmsclient.ProductBrandService.QueryProductBrandList:output_type -> pmsclient.QueryProductBrandListResp
+	52,  // 173: pmsclient.ProductBrandService.QueryBrandListByIds:output_type -> pmsclient.QueryProductBrandListResp
+	47,  // 174: pmsclient.ProductBrandService.UpdateBrandRecommendStatus:output_type -> pmsclient.UpdateProductBrandStatusResp
+	47,  // 175: pmsclient.ProductBrandService.UpdateBrandSort:output_type -> pmsclient.UpdateProductBrandStatusResp
+	56,  // 176: pmsclient.ProductCategoryService.AddProductCategory:output_type -> pmsclient.AddProductCategoryResp
+	58,  // 177: pmsclient.ProductCategoryService.DeleteProductCategory:output_type -> pmsclient.DeleteProductCategoryResp
+	60,  // 178: pmsclient.ProductCategoryService.UpdateProductCategory:output_type -> pmsclient.UpdateProductCategoryResp
+	62,  // 179: pmsclient.ProductCategoryService.UpdateCategoryNavStatus:output_type -> pmsclient.UpdateProductCategoryStatusResp
+	62,  // 180: pmsclient.ProductCategoryService.UpdateProductCategoryStatus:output_type -> pmsclient.UpdateProductCategoryStatusResp
+	64,  // 181: pmsclient.ProductCategoryService.QueryProductCategoryDetail:output_type -> pmsclient.QueryProductCategoryDetailResp
+	67,  // 182: pmsclient.ProductCategoryService.QueryProductCategoryList:output_type -> pmsclient.QueryProductCategoryListResp
+	70,  // 183: pmsclient.ProductCategoryService.QueryProductCategoryTreeList:output_type -> pmsclient.QueryProductCategoryListTreeResp
+	72,  // 184: pmsclient.ProductCategoryAttributeRelationService.AddProductCategoryAttributeRelation:output_type -> pmsclient.AddProductCategoryAttributeRelationResp
+	75,  // 185: pmsclient.ProductCategoryAttributeRelationService.QueryProductCategoryAttributeRelationList:output_type -> pmsclient.QueryProductCategoryAttributeRelationListResp
+	77,  // 186: pmsclient.ProductCollectService.AddProductCollect:output_type -> pmsclient.AddProductCollectResp
+	79,  // 187: pmsclient.ProductCollectService.DeleteProductCollect:output_type -> pmsclient.DeleteProductCollectResp
+	81,  // 188: pmsclient.ProductCollectService.QueryProductCollectDetail:output_type -> pmsclient.QueryProductCollectDetailResp
+	84,  // 189: pmsclient.ProductCollectService.QueryProductCollectList:output_type -> pmsclient.QueryProductCollectListResp
+	86,  // 190: pmsclient.CommentService.AddComment:output_type -> pmsclient.AddCommentResp
+	88,  // 191: pmsclient.CommentService.DeleteComment:output_type -> pmsclient.DeleteCommentResp
+	90,  // 192: pmsclient.CommentService.UpdateComment:output_type -> pmsclient.UpdateCommentResp
+	92,  // 193: pmsclient.CommentService.QueryCommentDetail:output_type -> pmsclient.QueryCommentDetailResp
+	95,  // 194: pmsclient.CommentService.QueryCommentList:output_type -> pmsclient.QueryCommentListResp
+	97,  // 195: pmsclient.CommentReplayService.AddCommentReplay:output_type -> pmsclient.AddCommentReplayResp
+	99,  // 196: pmsclient.CommentReplayService.DeleteCommentReplay:output_type -> pmsclient.DeleteCommentReplayResp
+	101, // 197: pmsclient.CommentReplayService.UpdateCommentReplay:output_type -> pmsclient.UpdateCommentReplayResp
+	103, // 198: pmsclient.CommentReplayService.QueryCommentReplayDetail:output_type -> pmsclient.QueryCommentReplayDetailResp
+	106, // 199: pmsclient.CommentReplayService.QueryCommentReplayList:output_type -> pmsclient.QueryCommentReplayListResp
+	108, // 200: pmsclient.FeightTemplateService.AddFeightTemplate:output_type -> pmsclient.AddFeightTemplateResp
+	110, // 201: pmsclient.FeightTemplateService.DeleteFeightTemplate:output_type -> pmsclient.DeleteFeightTemplateResp
+	112, // 202: pmsclient.FeightTemplateService.UpdateFeightTemplate:output_type -> pmsclient.UpdateFeightTemplateResp
+	114, // 203: pmsclient.FeightTemplateService.QueryFeightTemplateDetail:output_type -> pmsclient.QueryFeightTemplateDetailResp
+	117, // 204: pmsclient.FeightTemplateService.QueryFeightTemplateList:output_type -> pmsclient.QueryFeightTemplateListResp
+	119, // 205: pmsclient.ProductFullReductionService.AddProductFullReduction:output_type -> pmsclient.AddProductFullReductionResp
+	121, // 206: pmsclient.ProductFullReductionService.DeleteProductFullReduction:output_type -> pmsclient.DeleteProductFullReductionResp
+	124, // 207: pmsclient.ProductFullReductionService.QueryProductFullReductionList:output_type -> pmsclient.QueryProductFullReductionListResp
+	126, // 208: pmsclient.ProductLadderService.AddProductLadder:output_type -> pmsclient.AddProductLadderResp
+	128, // 209: pmsclient.ProductLadderService.DeleteProductLadder:output_type -> pmsclient.DeleteProductLadderResp
+	130, // 210: pmsclient.ProductLadderService.UpdateProductLadder:output_type -> pmsclient.UpdateProductLadderResp
+	132, // 211: pmsclient.ProductLadderService.QueryProductLadderDetail:output_type -> pmsclient.QueryProductLadderDetailResp
+	135, // 212: pmsclient.ProductLadderService.QueryProductLadderList:output_type -> pmsclient.QueryProductLadderListResp
+	137, // 213: pmsclient.ProductOperateLogService.AddProductOperateLog:output_type -> pmsclient.AddProductOperateLogResp
+	139, // 214: pmsclient.ProductOperateLogService.DeleteProductOperateLog:output_type -> pmsclient.DeleteProductOperateLogResp
+	141, // 215: pmsclient.ProductOperateLogService.QueryProductOperateLogDetail:output_type -> pmsclient.QueryProductOperateLogDetailResp
+	144, // 216: pmsclient.ProductOperateLogService.QueryProductOperateLogList:output_type -> pmsclient.QueryProductOperateLogListResp
+	146, // 217: pmsclient.ProductSkuService.AddProductSku:output_type -> pmsclient.AddProductSkuResp
+	148, // 218: pmsclient.ProductSkuService.DeleteProductSku:output_type -> pmsclient.DeleteProductSkuResp
+	151, // 219: pmsclient.ProductSkuService.UpdateProductSku:output_type -> pmsclient.UpdateProductSkuResp
+	153, // 220: pmsclient.ProductSkuService.QueryProductSkuDetail:output_type -> pmsclient.QueryProductSkuDetailResp
+	156, // 221: pmsclient.ProductSkuService.QueryProductSkuList:output_type -> pmsclient.QueryProductSkuListResp
+	159, // 222: pmsclient.ProductSkuService.ReleaseSkuStockLock:output_type -> pmsclient.UpdateSkuStockLockResp
+	159, // 223: pmsclient.ProductSkuService.LockSkuStockLock:output_type -> pmsclient.UpdateSkuStockLockResp
+	161, // 224: pmsclient.ProductSpecService.AddProductSpec:output_type -> pmsclient.AddProductSpecResp
+	163, // 225: pmsclient.ProductSpecService.DeleteProductSpec:output_type -> pmsclient.DeleteProductSpecResp
+	165, // 226: pmsclient.ProductSpecService.UpdateProductSpec:output_type -> pmsclient.UpdateProductSpecResp
+	167, // 227: pmsclient.ProductSpecService.UpdateProductSpecStatus:output_type -> pmsclient.UpdateProductSpecStatusResp
+	169, // 228: pmsclient.ProductSpecService.QueryProductSpecDetail:output_type -> pmsclient.QueryProductSpecDetailResp
+	172, // 229: pmsclient.ProductSpecService.QueryProductSpecList:output_type -> pmsclient.QueryProductSpecListResp
+	174, // 230: pmsclient.ProductSpecValueService.AddProductSpecValue:output_type -> pmsclient.AddProductSpecValueResp
+	176, // 231: pmsclient.ProductSpecValueService.DeleteProductSpecValue:output_type -> pmsclient.DeleteProductSpecValueResp
+	178, // 232: pmsclient.ProductSpecValueService.UpdateProductSpecValue:output_type -> pmsclient.UpdateProductSpecValueResp
+	180, // 233: pmsclient.ProductSpecValueService.UpdateProductSpecValueStatus:output_type -> pmsclient.UpdateProductSpecValueStatusResp
+	182, // 234: pmsclient.ProductSpecValueService.QueryProductSpecValueDetail:output_type -> pmsclient.QueryProductSpecValueDetailResp
+	185, // 235: pmsclient.ProductSpecValueService.QueryProductSpecValueList:output_type -> pmsclient.QueryProductSpecValueListResp
+	192, // 236: pmsclient.ProductSpuService.AddProductSpu:output_type -> pmsclient.ProductSpuResp
+	194, // 237: pmsclient.ProductSpuService.DeleteProductSpu:output_type -> pmsclient.DeleteProductSpuResp
+	192, // 238: pmsclient.ProductSpuService.UpdateProductSpu:output_type -> pmsclient.ProductSpuResp
+	205, // 239: pmsclient.ProductSpuService.QueryProductSpuDetail:output_type -> pmsclient.QueryProductSpuDetailResp
+	208, // 240: pmsclient.ProductSpuService.QueryProductSpuList:output_type -> pmsclient.QueryProductSpuListResp
+	196, // 241: pmsclient.ProductSpuService.UpdateVerifyStatus:output_type -> pmsclient.UpdateProductSpuStatusResp
+	196, // 242: pmsclient.ProductSpuService.UpdatePublishStatus:output_type -> pmsclient.UpdateProductSpuStatusResp
+	196, // 243: pmsclient.ProductSpuService.UpdateRecommendStatus:output_type -> pmsclient.UpdateProductSpuStatusResp
+	196, // 244: pmsclient.ProductSpuService.UpdateNewStatus:output_type -> pmsclient.UpdateProductSpuStatusResp
+	196, // 245: pmsclient.ProductSpuService.UpdateDeleteStatus:output_type -> pmsclient.UpdateProductSpuStatusResp
+	196, // 246: pmsclient.ProductSpuService.UpdateNewStatusSort:output_type -> pmsclient.UpdateProductSpuStatusResp
+	196, // 247: pmsclient.ProductSpuService.UpdateRecommendStatusSort:output_type -> pmsclient.UpdateProductSpuStatusResp
+	208, // 248: pmsclient.ProductSpuService.QueryProductSpuListByIds:output_type -> pmsclient.QueryProductSpuListResp
+	212, // 249: pmsclient.ProductVertifyRecordService.AddProductVertifyRecord:output_type -> pmsclient.AddProductVertifyRecordResp
+	214, // 250: pmsclient.ProductVertifyRecordService.QueryProductVertifyRecordDetail:output_type -> pmsclient.QueryProductVertifyRecordDetailResp
+	217, // 251: pmsclient.ProductVertifyRecordService.QueryProductVertifyRecordList:output_type -> pmsclient.QueryProductVertifyRecordListResp
+	149, // [149:252] is the sub-list for method output_type
+	46,  // [46:149] is the sub-list for method input_type
+	46,  // [46:46] is the sub-list for extension type_name
+	46,  // [46:46] is the sub-list for extension extendee
+	0,   // [0:46] is the sub-list for field type_name
 }
 
 func init() { file_rpc_pms_pms_proto_init() }

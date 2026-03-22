@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/feihua/zero-admin/rpc/oms/gen/model"
 	"github.com/feihua/zero-admin/rpc/oms/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/oms/internal/logic/common"
 	"github.com/zeromicro/go-zero/core/logc"
 	"gorm.io/gorm"
 	"time"
@@ -32,9 +33,16 @@ func NewUpdateOrderLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Updat
 // UpdateOrder 更新订单
 func (l *UpdateOrderLogic) UpdateOrder(in *omsclient.UpdateOrderReq) (*omsclient.UpdateOrderResp, error) {
 	q := query.OmsOrderMain.WithContext(l.ctx)
+	currentScope, err := logiccommon.ResolveWriteScope(l.ctx, l.svcCtx.DB, in.Scope, 0)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := logiccommon.EnsureOrderScope(l.ctx, l.svcCtx.DB, currentScope, []int64{in.Id}, "oms.order.update", 0, "", "update order"); err != nil {
+		return nil, err
+	}
 
 	// 1.根据订单id查询订单是否已存在
-	_, err := q.Where(query.OmsOrderMain.ID.Eq(in.Id)).First()
+	_, err = q.Where(query.OmsOrderMain.ID.Eq(in.Id)).First()
 
 	switch {
 	case errors.Is(err, gorm.ErrRecordNotFound):
@@ -46,11 +54,12 @@ func (l *UpdateOrderLogic) UpdateOrder(in *omsclient.UpdateOrderReq) (*omsclient
 	}
 
 	item := &model.OmsOrderMain{
-		ID:                 in.Id,                     // 订单ID
-		Remark:             in.Remark,                 // 订单备注
-		ExpressOrderNumber: in.ExpressOrderNumber,     // 快递单号
-		OrderStatus:        in.OrderStatus,            // 订单状态：1-待支付,2-已支付,3-已发货,4-已完成,5-已取消,6-已退款,7-售后中
-		FreightAmount:      float64(in.FreightAmount), // 运费金额
+		ID:                 in.Id,                      // 订单ID
+		Remark:             in.Remark,                  // 订单备注
+		ExpressOrderNumber: in.ExpressOrderNumber,      // 快递单号
+		OrderStatus:        in.OrderStatus,             // 订单状态：1-待支付,2-已支付,3-已发货,4-已完成,5-已取消,6-已退款,7-售后中
+		FreightAmount:      float64(in.FreightAmount),  // 运费金额
+		DiscountAmount:     float64(in.DiscountAmount), // 优惠金额
 	}
 
 	if in.OrderStatus != 0 {

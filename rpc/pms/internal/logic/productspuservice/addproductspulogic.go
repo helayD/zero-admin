@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/bytedance/sonic"
 	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/rpc/pms/gen/model"
 	"github.com/feihua/zero-admin/rpc/pms/gen/query"
@@ -84,7 +83,12 @@ func (l *AddProductSpuLogic) AddProductSpu(in *pmsclient.ProductSpuReq) (*pmscli
 		currentScope pkgscope.GovernanceScope
 	)
 
-	err := l.svcCtx.DB.WithContext(l.ctx).Transaction(func(tx *gorm.DB) error {
+	currentScope, err := logiccommon.ResolveWriteScope(l.ctx, l.svcCtx.DB, in.Scope, in.CreateBy)
+	if err != nil {
+		return nil, err
+	}
+
+	err = l.svcCtx.DB.WithContext(l.ctx).Transaction(func(tx *gorm.DB) error {
 		qtx := query.Use(tx)
 		if err := qtx.PmsProductSpu.WithContext(l.ctx).Create(item); err != nil {
 			return err
@@ -163,12 +167,6 @@ func (l *AddProductSpuLogic) AddProductSpu(in *pmsclient.ProductSpuReq) (*pmscli
 			}
 		}
 
-		var err error
-		currentScope, err = logiccommon.ResolveActorScope(l.ctx, tx, in.CreateBy)
-		if err != nil {
-			return err
-		}
-
 		return logiccommon.ApplyProductScope(l.ctx, tx, spuId, currentScope)
 	})
 	if err != nil {
@@ -176,10 +174,7 @@ func (l *AddProductSpuLogic) AddProductSpu(in *pmsclient.ProductSpuReq) (*pmscli
 		return nil, errors.New("添加商品SPU失败")
 	}
 
-	body, _ := sonic.Marshal(pkgscope.NewProductESSyncPayload(spuId, currentScope))
-	if err = l.svcCtx.RabbitMQ.SendMessage("product.event.exchange", "syn.product.to.es.queue", "syn.product.key", body); err != nil {
-		logc.Errorf(l.ctx, "发送商品ES同步消息失败,spuId:%d,scope:%+v,异常:%s", spuId, currentScope, err.Error())
-	}
+	sendProductESSync(l.ctx, l.svcCtx, spuId, currentScope)
 
 	return &pmsclient.ProductSpuResp{
 		SpuId: spuId,

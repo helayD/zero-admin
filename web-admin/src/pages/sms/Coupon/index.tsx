@@ -31,10 +31,10 @@ const {confirm} = Modal;
  * 添加节点
  * @param fields
  */
-const handleAdd = async (fields: CouponListItem) => {
+const handleAdd = async (fields: CouponListItem, scope: GovernanceScopeValue) => {
   const hide = message.loading('正在添加');
   try {
-    await addCoupon({...fields});
+    await addCoupon({...fields, ...toGovernancePayload(scope)});
     hide();
     message.success('添加成功');
     return true;
@@ -48,10 +48,10 @@ const handleAdd = async (fields: CouponListItem) => {
  * 更新节点
  * @param fields
  */
-const handleUpdate = async (fields: CouponListItem) => {
+const handleUpdate = async (fields: CouponListItem, scope: GovernanceScopeValue) => {
   const hide = message.loading('正在更新');
   try {
-    await updateCoupon(fields);
+    await updateCoupon({...fields, ...toGovernancePayload(scope)});
     hide();
 
     message.success('更新成功');
@@ -66,12 +66,13 @@ const handleUpdate = async (fields: CouponListItem) => {
  *  删除节点
  * @param selectedRows
  */
-const handleRemove = async (selectedRows: CouponListItem[]) => {
+const handleRemove = async (selectedRows: CouponListItem[], scope: GovernanceScopeValue) => {
   const hide = message.loading('正在删除');
   if (!selectedRows) return true;
   try {
     await removeCoupon({
-      ids: selectedRows.map((row) => row.id),
+      ids: selectedRows.map((row) => row.id as number),
+      ...toGovernancePayload(scope),
     });
     hide();
     message.success('删除成功，即将刷新');
@@ -96,9 +97,9 @@ const CouponList: React.FC = () => {
     confirm({
       title: '是否删除记录?',
       icon: <ExclamationCircleOutlined/>,
-      content: '删除的记录不能恢复,请确认!',
+      content: `当前主体：${buildGovernanceScopeLabel(scope)}。删除后不可恢复，请确认。`,
       onOk() {
-        handleRemove([item]).then((r) => {
+        handleRemove([item], scope).then(() => {
           actionRef.current?.reloadAndRest?.();
         });
       },
@@ -143,6 +144,7 @@ const CouponList: React.FC = () => {
     {
       title: '使用类型',
       dataIndex: 'useType',
+      hideInSearch: true,
       valueEnum: {
         0: {text: '全场通用', status: 'Error'},
         1: {text: '指定分类', status: 'Success'},
@@ -162,6 +164,7 @@ const CouponList: React.FC = () => {
     {
       title: '适用平台',
       dataIndex: 'platform',
+      hideInSearch: true,
       valueEnum: {
         0: {text: '全部', status: 'Error'},
         1: {text: '移动', status: 'Success'},
@@ -322,7 +325,7 @@ const CouponList: React.FC = () => {
         >
           <Button
             onClick={async () => {
-              await handleRemove(selectedRowsState);
+              await handleRemove(selectedRowsState, scope);
               setSelectedRows([]);
               actionRef.current?.reloadAndRest?.();
             }}
@@ -334,8 +337,9 @@ const CouponList: React.FC = () => {
 
       <CreateCouponForm
         key={'CreateCouponForm'}
+        scope={scope}
         onSubmit={async (value) => {
-          const success = await handleAdd(value);
+          const success = await handleAdd(value, scope);
           if (success) {
             handleModalVisible(false);
             setCurrentRow(undefined);
@@ -355,8 +359,9 @@ const CouponList: React.FC = () => {
 
       <UpdateCouponForm
         key={'UpdateCouponForm'}
+        scope={scope}
         onSubmit={async (value) => {
-          const success = await handleUpdate(value);
+          const success = await handleUpdate(value, scope);
           if (success) {
             handleUpdateModalVisible(false);
             setCurrentRow(undefined);
@@ -377,8 +382,9 @@ const CouponList: React.FC = () => {
 
       <CouponDetailForm
         key={'CouponDetailForm'}
+        scope={scope}
         onSubmit={async (value) => {
-          const success = await handleUpdate(value);
+          const success = await handleUpdate(value, scope);
           if (success) {
             handleUpdateModalVisible(false);
             setCurrentRow(undefined);

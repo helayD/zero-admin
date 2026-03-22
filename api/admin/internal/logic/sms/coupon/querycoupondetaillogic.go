@@ -95,7 +95,7 @@ func (l *QueryCouponDetailLogic) QueryCouponDetail(req *types.QueryCouponDetailR
 			var couponScopeDataList []*types.CouponScopeData
 			for _, scopeDetail := range scopeRes.List {
 				scopeData := types.CouponScopeData{
-					Id: scopeDetail.Id,
+					Id: scopeDetail.ScopeId,
 				}
 
 				if scopeDetail.ScopeType == 1 {

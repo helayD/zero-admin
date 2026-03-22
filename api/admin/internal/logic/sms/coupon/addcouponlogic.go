@@ -39,6 +39,15 @@ func (l *AddCouponLogic) AddCoupon(req *types.AddCouponReq) (resp *types.BaseRes
 	if err != nil {
 		return nil, err
 	}
+	writeScope, err := common.ResolveWriteGovernanceScope(l.ctx, common.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	couponReq := &smsclient.AddCouponReq{
 		TypeId:      req.TypeId,      // 优惠券类型ID
@@ -54,6 +63,7 @@ func (l *AddCouponLogic) AddCoupon(req *types.AddCouponReq) (resp *types.BaseRes
 		IsEnabled:   req.IsEnabled,   // 是否启用
 		Description: req.Description, // 使用说明
 		CreateBy:    userId,          // 创建人ID
+		Scope:       common.SMSGovernanceScope(writeScope),
 	}
 
 	if len(req.ScopeData) > 0 {

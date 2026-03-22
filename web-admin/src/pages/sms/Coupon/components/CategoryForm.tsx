@@ -4,10 +4,12 @@ import type {ActionType, ProColumns} from '@ant-design/pro-table';
 import ProTable from '@ant-design/pro-table';
 import {queryProductCategoryList} from "@/pages/sms/Coupon/service";
 import {tree} from "@/utils/utils";
+import { type GovernanceScopeValue, toGovernancePayload } from '@/pages/system/components/governance';
 
 export interface CreateFormProps {
   onSubmit: (values: any[]) => void;
   selectIds: number[];
+  scope: GovernanceScopeValue;
 }
 
 const CategoryForm: React.FC<CreateFormProps> = (props) => {
@@ -15,7 +17,7 @@ const CategoryForm: React.FC<CreateFormProps> = (props) => {
 
   const [selectedRows, setSelectedRows] = useState<number[]>(props.selectIds);
 
-  const {onSubmit} = props;
+  const {onSubmit, scope} = props;
 
   const columns: ProColumns<CategoryListItem>[] = [
     {
@@ -48,7 +50,7 @@ const CategoryForm: React.FC<CreateFormProps> = (props) => {
       actionRef={actionRef}
       rowKey="id"
       search={false}
-      request={queryProductCategoryList}
+      request={(params) => queryProductCategoryList({ ...params, ...toGovernancePayload(scope) })}
       postData={(data) => tree(data, 0, 'parentId')}
       columns={columns}
       rowSelection={{
