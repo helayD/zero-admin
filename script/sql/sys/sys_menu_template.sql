@@ -63,6 +63,11 @@ INSERT INTO sys_menu_template_item (template_id, menu_id) VALUES (1, 47);
 INSERT INTO sys_menu_template_item (template_id, menu_id) VALUES (1, 48);
 INSERT INTO sys_menu_template_item (template_id, menu_id) VALUES (1, 49);
 INSERT INTO sys_menu_template_item (template_id, menu_id) VALUES (1, 50);
+INSERT INTO sys_menu_template_item (template_id, menu_id) VALUES (1, 8);
+INSERT INTO sys_menu_template_item (template_id, menu_id) VALUES (1, 9);
+INSERT INTO sys_menu_template_item (template_id, menu_id) VALUES (1, 10);
+INSERT INTO sys_menu_template_item (template_id, menu_id) VALUES (1, 298);
+INSERT INTO sys_menu_template_item (template_id, menu_id) VALUES (1, 299);
 
 -- 商户默认模板菜单项：商品管理目录 + 商品分类 + 商品品牌 + 商品列表
 INSERT INTO sys_menu_template_item (template_id, menu_id) VALUES (2, 16);
@@ -78,3 +83,6 @@ INSERT INTO sys_menu_template_item (template_id, menu_id) VALUES (2, 68);
 INSERT INTO sys_menu_template_item (template_id, menu_id) VALUES (2, 69);
 INSERT INTO sys_menu_template_item (template_id, menu_id) VALUES (2, 70);
 INSERT INTO sys_menu_template_item (template_id, menu_id) VALUES (2, 71);
+INSERT INTO sys_menu_template_item (template_id, menu_id) VALUES (2, 8);
+INSERT INTO sys_menu_template_item (template_id, menu_id) VALUES (2, 298);
+INSERT INTO sys_menu_template_item (template_id, menu_id) VALUES (2, 299);

@@ -8,6 +8,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/feihua/zero-admin/rpc/sys/internal/config"
+	auditcenterserviceServer "github.com/feihua/zero-admin/rpc/sys/internal/server/auditcenterservice"
 	deptserviceServer "github.com/feihua/zero-admin/rpc/sys/internal/server/deptservice"
 	dictitemserviceServer "github.com/feihua/zero-admin/rpc/sys/internal/server/dictitemservice"
 	dicttypeserviceServer "github.com/feihua/zero-admin/rpc/sys/internal/server/dicttypeservice"
@@ -54,6 +55,7 @@ func main() {
 		sysclient.RegisterDictTypeServiceServer(grpcServer, dicttypeserviceServer.NewDictTypeServiceServer(ctx))
 		sysclient.RegisterDictItemServiceServer(grpcServer, dictitemserviceServer.NewDictItemServiceServer(ctx))
 		sysclient.RegisterDeptServiceServer(grpcServer, deptserviceServer.NewDeptServiceServer(ctx))
+		sysclient.RegisterAuditCenterServiceServer(grpcServer, auditcenterserviceServer.NewAuditCenterServiceServer(ctx))
 		sysclient.RegisterLoginLogServiceServer(grpcServer, loginlogserviceServer.NewLoginLogServiceServer(ctx))
 		sysclient.RegisterOperateLogServiceServer(grpcServer, operatelogServer.NewOperateLogServiceServer(ctx))
 
