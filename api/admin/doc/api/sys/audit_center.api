@@ -1,0 +1,126 @@
+import "../base/base.api"
+
+info (
+	desc:   "治理审计中心"
+	author: "OpenClaw"
+	email:  "1002219331@qq.com"
+)
+
+type (
+	QueryAuditCenterListReq {
+		Current      int64  `form:"current,default=1"`
+		PageSize     int64  `form:"pageSize,default=20"`
+		ScopeType    string `form:"scopeType,optional"`
+		PlatformId   int64  `form:"platformId,optional"`
+		TenantId     int64  `form:"tenantId,optional"`
+		MerchantId   int64  `form:"merchantId,optional"`
+		OperatorId   int64  `form:"operatorId,optional"`
+		OperatorName string `form:"operatorName,optional"`
+		TraceId      string `form:"traceId,optional"`
+		ResourceType string `form:"resourceType,optional"`
+		ResourceId   int64  `form:"resourceId,optional"`
+		EventType    string `form:"eventType,optional"`
+		Result       string `form:"result,optional"`
+		Keyword      string `form:"keyword,optional"`
+		StartTime    string `form:"startTime,optional"`
+		EndTime      string `form:"endTime,optional"`
+	}
+	QueryAuditCenterListItem {
+		SourceType      string `json:"sourceType"`
+		SourceId        int64  `json:"sourceId"`
+		TraceId         string `json:"traceId"`
+		EventType       string `json:"eventType"`
+		Action          string `json:"action"`
+		Result          string `json:"result"`
+		ScopeType       string `json:"scopeType"`
+		ScopeLabel      string `json:"scopeLabel"`
+		PlatformId      int64  `json:"platformId"`
+		TenantId        int64  `json:"tenantId"`
+		MerchantId      int64  `json:"merchantId"`
+		OperatorId      int64  `json:"operatorId"`
+		OperatorName    string `json:"operatorName"`
+		ResourceType    string `json:"resourceType"`
+		ResourceId      int64  `json:"resourceId"`
+		ResourceName    string `json:"resourceName"`
+		SubjectInfo     string `json:"subjectInfo"`
+		RequestSummary  string `json:"requestSummary"`
+		SensitiveMasked bool   `json:"sensitiveMasked"`
+		HappenedAt      string `json:"happenedAt"`
+	}
+	QueryAuditCenterListResp {
+		Code     string                      `json:"code"`
+		Message  string                      `json:"message"`
+		Current  int64                       `json:"current"`
+		Data     []*QueryAuditCenterListItem `json:"data"`
+		PageSize int64                       `json:"pageSize"`
+		Success  bool                        `json:"success"`
+		Total    int64                       `json:"total"`
+	}
+	QueryAuditCenterDetailReq {
+		SourceType string `form:"sourceType"`
+		SourceId   int64  `form:"sourceId"`
+		ScopeType  string `form:"scopeType,optional"`
+		PlatformId int64  `form:"platformId,optional"`
+		TenantId   int64  `form:"tenantId,optional"`
+		MerchantId int64  `form:"merchantId,optional"`
+	}
+	AuditTimelineItem {
+		SourceType     string `json:"sourceType"`
+		SourceId       int64  `json:"sourceId"`
+		TraceId        string `json:"traceId"`
+		EventType      string `json:"eventType"`
+		Action         string `json:"action"`
+		Result         string `json:"result"`
+		OperatorName   string `json:"operatorName"`
+		ResourceType   string `json:"resourceType"`
+		ResourceId     int64  `json:"resourceId"`
+		ResourceName   string `json:"resourceName"`
+		RequestSummary string `json:"requestSummary"`
+		HappenedAt     string `json:"happenedAt"`
+	}
+	QueryAuditCenterDetailData {
+		SourceType      string               `json:"sourceType"`
+		SourceId        int64                `json:"sourceId"`
+		TraceId         string               `json:"traceId"`
+		EventType       string               `json:"eventType"`
+		Action          string               `json:"action"`
+		Result          string               `json:"result"`
+		ScopeType       string               `json:"scopeType"`
+		ScopeLabel      string               `json:"scopeLabel"`
+		PlatformId      int64                `json:"platformId"`
+		TenantId        int64                `json:"tenantId"`
+		MerchantId      int64                `json:"merchantId"`
+		OperatorId      int64                `json:"operatorId"`
+		OperatorName    string               `json:"operatorName"`
+		ResourceType    string               `json:"resourceType"`
+		ResourceId      int64                `json:"resourceId"`
+		ResourceName    string               `json:"resourceName"`
+		SubjectInfo     string               `json:"subjectInfo"`
+		RequestSummary  string               `json:"requestSummary"`
+		DetailPayload   string               `json:"detailPayload"`
+		SensitiveMasked bool                 `json:"sensitiveMasked"`
+		HappenedAt      string               `json:"happenedAt"`
+		Timeline        []*AuditTimelineItem `json:"timeline"`
+	}
+	QueryAuditCenterDetailResp {
+		Code    string                     `json:"code"`
+		Message string                     `json:"message"`
+		Data    QueryAuditCenterDetailData `json:"data"`
+	}
+)
+
+@server (
+	jwt:        Auth
+	middleware: CheckUrl
+	group:      sys/log
+	prefix:     /api/sys/log
+	tags:       "治理审计中心"
+	authType:   apiKey
+)
+service admin-api {
+	@handler QueryAuditCenterList
+	get /queryAuditCenterList (QueryAuditCenterListReq) returns (QueryAuditCenterListResp)
+
+	@handler QueryAuditCenterDetail
+	get /queryAuditCenterDetail (QueryAuditCenterDetailReq) returns (QueryAuditCenterDetailResp)
+}

@@ -451,6 +451,21 @@ type AddUserReq struct {
 	RoleMode         string  `json:"roleMode,optional"`         //角色模式
 }
 
+type AuditTimelineItem struct {
+	SourceType     string `json:"sourceType"`
+	SourceId       int64  `json:"sourceId"`
+	TraceId        string `json:"traceId"`
+	EventType      string `json:"eventType"`
+	Action         string `json:"action"`
+	Result         string `json:"result"`
+	OperatorName   string `json:"operatorName"`
+	ResourceType   string `json:"resourceType"`
+	ResourceId     int64  `json:"resourceId"`
+	ResourceName   string `json:"resourceName"`
+	RequestSummary string `json:"requestSummary"`
+	HappenedAt     string `json:"happenedAt"`
+}
+
 type BaseResp struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
@@ -1148,6 +1163,94 @@ type ProductSpuDetailData struct {
 	SubjectIds         []int64                                `json:"subjectIds"`         //专题
 	PrefrenceAreaIds   []int64                                `json:"prefrenceAreaIds"`   //优先专区
 	CouponList         []QueryCouponDetailData                `json:"couponList"`         //优惠券
+}
+
+type QueryAuditCenterDetailData struct {
+	SourceType      string               `json:"sourceType"`
+	SourceId        int64                `json:"sourceId"`
+	TraceId         string               `json:"traceId"`
+	EventType       string               `json:"eventType"`
+	Action          string               `json:"action"`
+	Result          string               `json:"result"`
+	ScopeType       string               `json:"scopeType"`
+	ScopeLabel      string               `json:"scopeLabel"`
+	PlatformId      int64                `json:"platformId"`
+	TenantId        int64                `json:"tenantId"`
+	MerchantId      int64                `json:"merchantId"`
+	OperatorId      int64                `json:"operatorId"`
+	OperatorName    string               `json:"operatorName"`
+	ResourceType    string               `json:"resourceType"`
+	ResourceId      int64                `json:"resourceId"`
+	ResourceName    string               `json:"resourceName"`
+	SubjectInfo     string               `json:"subjectInfo"`
+	RequestSummary  string               `json:"requestSummary"`
+	DetailPayload   string               `json:"detailPayload"`
+	SensitiveMasked bool                 `json:"sensitiveMasked"`
+	HappenedAt      string               `json:"happenedAt"`
+	Timeline        []*AuditTimelineItem `json:"timeline"`
+}
+
+type QueryAuditCenterDetailReq struct {
+	SourceType string `form:"sourceType"`
+	SourceId   int64  `form:"sourceId"`
+}
+
+type QueryAuditCenterDetailResp struct {
+	Code    string                     `json:"code"`
+	Message string                     `json:"message"`
+	Data    QueryAuditCenterDetailData `json:"data"`
+}
+
+type QueryAuditCenterListItem struct {
+	SourceType      string `json:"sourceType"`
+	SourceId        int64  `json:"sourceId"`
+	TraceId         string `json:"traceId"`
+	EventType       string `json:"eventType"`
+	Action          string `json:"action"`
+	Result          string `json:"result"`
+	ScopeType       string `json:"scopeType"`
+	ScopeLabel      string `json:"scopeLabel"`
+	PlatformId      int64  `json:"platformId"`
+	TenantId        int64  `json:"tenantId"`
+	MerchantId      int64  `json:"merchantId"`
+	OperatorId      int64  `json:"operatorId"`
+	OperatorName    string `json:"operatorName"`
+	ResourceType    string `json:"resourceType"`
+	ResourceId      int64  `json:"resourceId"`
+	ResourceName    string `json:"resourceName"`
+	SubjectInfo     string `json:"subjectInfo"`
+	RequestSummary  string `json:"requestSummary"`
+	SensitiveMasked bool   `json:"sensitiveMasked"`
+	HappenedAt      string `json:"happenedAt"`
+}
+
+type QueryAuditCenterListReq struct {
+	Current      int64  `form:"current,default=1"`
+	PageSize     int64  `form:"pageSize,default=20"`
+	ScopeType    string `form:"scopeType,optional"`
+	PlatformId   int64  `form:"platformId,optional"`
+	TenantId     int64  `form:"tenantId,optional"`
+	MerchantId   int64  `form:"merchantId,optional"`
+	OperatorId   int64  `form:"operatorId,optional"`
+	OperatorName string `form:"operatorName,optional"`
+	TraceId      string `form:"traceId,optional"`
+	ResourceType string `form:"resourceType,optional"`
+	ResourceId   int64  `form:"resourceId,optional"`
+	EventType    string `form:"eventType,optional"`
+	Result       string `form:"result,optional"`
+	Keyword      string `form:"keyword,optional"`
+	StartTime    string `form:"startTime,optional"`
+	EndTime      string `form:"endTime,optional"`
+}
+
+type QueryAuditCenterListResp struct {
+	Code     string                      `json:"code"`
+	Message  string                      `json:"message"`
+	Current  int64                       `json:"current"`
+	Data     []*QueryAuditCenterListItem `json:"data"`
+	PageSize int64                       `json:"pageSize"`
+	Success  bool                        `json:"success"`
+	Total    int64                       `json:"total"`
 }
 
 type QueryCompanyAddressDetailData struct {

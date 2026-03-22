@@ -1317,18 +1317,13 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Route{
 				{
 					Method:  http.MethodGet,
-					Path:    "/deleteOperateLog",
-					Handler: syslog.DeleteOperateLogHandler(serverCtx),
+					Path:    "/queryAuditCenterDetail",
+					Handler: syslog.QueryAuditCenterDetailHandler(serverCtx),
 				},
 				{
 					Method:  http.MethodGet,
-					Path:    "/queryOperateLogDetail",
-					Handler: syslog.QueryOperateLogDetailHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodGet,
-					Path:    "/queryOperateLogList",
-					Handler: syslog.QueryOperateLogListHandler(serverCtx),
+					Path:    "/queryAuditCenterList",
+					Handler: syslog.QueryAuditCenterListHandler(serverCtx),
 				},
 			}...,
 		),
@@ -1354,6 +1349,31 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Method:  http.MethodGet,
 					Path:    "/queryLoginLogList",
 					Handler: syslog.QueryLoginLogListHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/sys/log"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.CheckUrl},
+			[]rest.Route{
+				{
+					Method:  http.MethodGet,
+					Path:    "/deleteOperateLog",
+					Handler: syslog.DeleteOperateLogHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryOperateLogDetail",
+					Handler: syslog.QueryOperateLogDetailHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryOperateLogList",
+					Handler: syslog.QueryOperateLogListHandler(serverCtx),
 				},
 			}...,
 		),

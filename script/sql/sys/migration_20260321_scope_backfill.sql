@@ -216,13 +216,15 @@ VALUES
     (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 33), (1, 34),
     (1, 35), (1, 36), (1, 37), (1, 38), (1, 39), (1, 40), (1, 41), (1, 42),
     (1, 43), (1, 44), (1, 45), (1, 46), (1, 47), (1, 48), (1, 49), (1, 50),
+    (1, 8), (1, 9), (1, 10), (1, 298), (1, 299),
     (2, 16), (2, 17), (2, 18), (2, 19), (2, 63), (2, 64), (2, 65), (2, 66),
-    (2, 67), (2, 68), (2, 69), (2, 70), (2, 71)
+    (2, 67), (2, 68), (2, 69), (2, 70), (2, 71), (2, 8), (2, 298), (2, 299)
 ON DUPLICATE KEY UPDATE
     menu_id = VALUES(menu_id);
 
 INSERT INTO sys_menu (id, menu_name, parent_id, menu_path, menu_perms, menu_type, menu_icon, menu_sort, create_by, create_time, update_by, update_time, is_deleted, vue_path, vue_component, vue_icon, vue_redirect, background_url, is_visible)
 VALUES
+    (298, '治理审计中心', 8, '/log/auditCenter/list', '', 1, '', 4, 'liufeihua', CURRENT_TIMESTAMP, 'liufeihua', CURRENT_TIMESTAMP, 1, 'auditCenterList', 'log/audit_center/index', 'el-icon-notebook-2', '', '/api/sys/log/queryAuditCenterList,/api/sys/log/queryAuditCenterDetail', 1),
     (292, '菜单模板', 2, '/system/menuTemplate/list', '', 1, '', 8, 'liufeihua', CURRENT_TIMESTAMP, 'liufeihua', CURRENT_TIMESTAMP, 1, 'menuTemplateList', 'system/menu/index', 'el-icon-postcard', '', '/api/sys/menuTemplate/queryMenuTemplateList', 0)
 ON DUPLICATE KEY UPDATE
     menu_name = VALUES(menu_name),
@@ -238,6 +240,7 @@ ON DUPLICATE KEY UPDATE
 
 INSERT INTO sys_menu (id, menu_name, parent_id, menu_path, menu_perms, menu_type, menu_icon, menu_sort, create_by, create_time, update_by, update_time, is_deleted, vue_path, vue_component, vue_icon, vue_redirect, background_url)
 VALUES
+    (299, '查询治理审计详情', 298, '', '', 2, '', 1, 'liufeihua', CURRENT_TIMESTAMP, 'liufeihua', CURRENT_TIMESTAMP, 1, '', '', '', '', '/api/sys/log/queryAuditCenterDetail'),
     (293, '新增菜单模板', 292, '', '', 2, '', 1, 'liufeihua', CURRENT_TIMESTAMP, 'liufeihua', CURRENT_TIMESTAMP, 1, '', '', '', '', '/api/sys/menuTemplate/addMenuTemplate'),
     (294, '删除菜单模板', 292, '', '', 2, '', 2, 'liufeihua', CURRENT_TIMESTAMP, 'liufeihua', CURRENT_TIMESTAMP, 1, '', '', '', '', '/api/sys/menuTemplate/deleteMenuTemplate'),
     (295, '更新菜单模板', 292, '', '', 2, '', 3, 'liufeihua', CURRENT_TIMESTAMP, 'liufeihua', CURRENT_TIMESTAMP, 1, '', '', '', '', '/api/sys/menuTemplate/updateMenuTemplate'),
