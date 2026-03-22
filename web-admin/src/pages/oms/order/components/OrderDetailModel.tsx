@@ -210,7 +210,7 @@ const OrderDetailModel: React.FC<UpdateFormProps> = (props) => {
 
   return (
     <>
-      <Modal forceRender destroyOnClose title="订单详情" open={updateModalVisible} onCancel={onCancel} footer={false} width={1200}>
+      <Modal forceRender destroyOnClose title="订单详情" visible={updateModalVisible} onCancel={onCancel} footer={false} width={1200}>
         {renderContent()}
       </Modal>
       <NoteOrderModel

@@ -4,18 +4,20 @@ import type {ProductListItem} from '../data.d';
 import {queryProduct} from '@/pages/sms/HomeRecommendProduct/service';
 import type {ActionType, ProColumns} from '@ant-design/pro-table';
 import ProTable from '@ant-design/pro-table';
+import { type GovernanceScopeValue, toGovernancePayload } from '@/pages/system/components/governance';
 
 export interface CreateFormProps {
   onCancel: () => void;
   onSubmit: (values: number[]) => void;
   createModalVisible: boolean;
+  scope: GovernanceScopeValue;
 }
 
 const AddRecommendProductModal: React.FC<CreateFormProps> = (props) => {
   const actionRef = useRef<ActionType>();
   const [selectedRowsState, setSelectedRows] = useState<ProductListItem[]>([]);
 
-  const {onSubmit, onCancel, createModalVisible} = props;
+  const {onSubmit, onCancel, createModalVisible, scope} = props;
 
   useEffect(() => {
     if (!createModalVisible) {
@@ -72,7 +74,7 @@ const AddRecommendProductModal: React.FC<CreateFormProps> = (props) => {
       forceRender
       destroyOnClose
       title="选择商品"
-      open={createModalVisible}
+      visible={createModalVisible}
       {...modalFooter}
       width={1000}
     >
@@ -84,7 +86,7 @@ const AddRecommendProductModal: React.FC<CreateFormProps> = (props) => {
         search={{
           labelWidth: 50,
         }}
-        request={queryProduct}
+        request={(params) => queryProduct({ ...params, ...toGovernancePayload(scope) })}
         columns={columns}
         rowSelection={{
           onChange: (_, selectedRows) => setSelectedRows(selectedRows),

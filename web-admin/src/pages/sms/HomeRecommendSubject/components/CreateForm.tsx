@@ -4,18 +4,20 @@ import type {SubjectListItem} from '../data.d';
 import {querySubjectList} from '@/pages/sms/HomeRecommendSubject/service';
 import type {ActionType, ProColumns} from '@ant-design/pro-table';
 import ProTable from '@ant-design/pro-table';
+import { type GovernanceScopeValue, toGovernancePayload } from '@/pages/system/components/governance';
 
 export interface CreateFormProps {
   onCancel: () => void;
   onSubmit: (values: number[]) => void;
   createModalVisible: boolean;
+  scope: GovernanceScopeValue;
 }
 
 const CreateForm: React.FC<CreateFormProps> = (props) => {
   const actionRef = useRef<ActionType>();
   const [selectedRowsState, setSelectedRows] = useState<SubjectListItem[]>([]);
 
-  const {onSubmit, onCancel, createModalVisible} = props;
+  const {onSubmit, onCancel, createModalVisible, scope} = props;
 
   useEffect(() => {
     if (!createModalVisible) {
@@ -58,7 +60,7 @@ const CreateForm: React.FC<CreateFormProps> = (props) => {
       forceRender
       destroyOnClose
       title="选择专题"
-      open={createModalVisible}
+      visible={createModalVisible}
       {...modalFooter}
       width={800}
     >
@@ -69,7 +71,7 @@ const CreateForm: React.FC<CreateFormProps> = (props) => {
         search={{
           labelWidth: 65,
         }}
-        request={querySubjectList}
+        request={(params) => querySubjectList({ ...params, ...toGovernancePayload(scope) })}
         columns={columns}
         rowSelection={{
           onChange: (_, selectedRows) => setSelectedRows(selectedRows),

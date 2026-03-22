@@ -8,9 +8,11 @@ import (
 	"github.com/feihua/zero-admin/rpc/cms/cmsclient"
 	"github.com/feihua/zero-admin/rpc/cms/gen/model"
 	"github.com/feihua/zero-admin/rpc/cms/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/cms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/cms/internal/svc"
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
 )
 
 // AddSubjectLogic 添加专题
@@ -34,16 +36,6 @@ func NewAddSubjectLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AddSub
 
 // AddSubject 添加专题
 func (l *AddSubjectLogic) AddSubject(in *cmsclient.AddSubjectReq) (*cmsclient.AddSubjectResp, error) {
-	q := query.CmsSubject
-
-	count, err := q.WithContext(l.ctx).Where(q.Title.Eq(in.Title)).Count()
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("添加专题失败"))
-	}
-
-	if count > 0 {
-		return nil, errors.New(fmt.Sprintf("专题名称：%s,已存在", in.Title))
-	}
 	item := &model.CmsSubject{
 		CategoryID:      in.CategoryId,      // 专题分类id
 		Title:           in.Title,           // 专题标题
@@ -63,10 +55,30 @@ func (l *AddSubjectLogic) AddSubject(in *cmsclient.AddSubjectReq) (*cmsclient.Ad
 		Sort:            in.Sort,            // 排序
 	}
 
-	err = q.WithContext(l.ctx).Create(item)
+	err := l.svcCtx.DB.WithContext(l.ctx).Transaction(func(tx *gorm.DB) error {
+		qtx := query.Use(tx)
+		count, err := qtx.CmsSubject.WithContext(l.ctx).Where(qtx.CmsSubject.Title.Eq(in.Title)).Count()
+		if err != nil {
+			return err
+		}
+		if count > 0 {
+			return fmt.Errorf("专题名称：%s,已存在", in.Title)
+		}
+
+		if err := qtx.CmsSubject.WithContext(l.ctx).Create(item); err != nil {
+			return err
+		}
+
+		current, err := logiccommon.ResolveActorScopeByUserName(l.ctx, tx, in.CreateBy)
+		if err != nil {
+			return err
+		}
+
+		return logiccommon.ApplySubjectScope(l.ctx, tx, item.ID, current)
+	})
 	if err != nil {
 		logc.Errorf(l.ctx, "添加专题失败,参数:%+v,异常:%s", item, err.Error())
-		return nil, errors.New("添加专题失败")
+		return nil, errors.New(err.Error())
 	}
 
 	return &cmsclient.AddSubjectResp{}, nil

@@ -41,6 +41,8 @@ import (
 	sysdict_type "github.com/feihua/zero-admin/api/admin/internal/handler/sys/dict_type"
 	syslog "github.com/feihua/zero-admin/api/admin/internal/handler/sys/log"
 	sysmenu "github.com/feihua/zero-admin/api/admin/internal/handler/sys/menu"
+	sysmenuTemplate "github.com/feihua/zero-admin/api/admin/internal/handler/sys/menuTemplate"
+	sysmerchant "github.com/feihua/zero-admin/api/admin/internal/handler/sys/merchant"
 	syspost "github.com/feihua/zero-admin/api/admin/internal/handler/sys/post"
 	sysrole "github.com/feihua/zero-admin/api/admin/internal/handler/sys/role"
 	syssys_notice "github.com/feihua/zero-admin/api/admin/internal/handler/sys/sys_notice"
@@ -1402,6 +1404,101 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		),
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
 		rest.WithPrefix("/api/sys/menu"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.CheckUrl},
+			[]rest.Route{
+				{
+					Method:  http.MethodPost,
+					Path:    "/addMenuTemplate",
+					Handler: sysmenuTemplate.AddMenuTemplateHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/deleteMenuTemplate",
+					Handler: sysmenuTemplate.DeleteMenuTemplateHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryMenuIdsByScope",
+					Handler: sysmenuTemplate.QueryMenuIdsByScopeHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryMenuTemplateDetail",
+					Handler: sysmenuTemplate.QueryMenuTemplateDetailHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryMenuTemplateList",
+					Handler: sysmenuTemplate.QueryMenuTemplateListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/updateMenuTemplate",
+					Handler: sysmenuTemplate.UpdateMenuTemplateHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/sys/menuTemplate"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.CheckUrl},
+			[]rest.Route{
+				{
+					Method:  http.MethodPost,
+					Path:    "/approveMerchant",
+					Handler: sysmerchant.ApproveMerchantHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/archiveMerchant",
+					Handler: sysmerchant.ArchiveMerchantHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/createMerchant",
+					Handler: sysmerchant.CreateMerchantHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/disableMerchant",
+					Handler: sysmerchant.DisableMerchantHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/enableMerchant",
+					Handler: sysmerchant.EnableMerchantHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryMerchantDetail",
+					Handler: sysmerchant.QueryMerchantDetailHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryMerchantList",
+					Handler: sysmerchant.QueryMerchantListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/rejectMerchant",
+					Handler: sysmerchant.RejectMerchantHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/requestMerchantMaterial",
+					Handler: sysmerchant.RequestMerchantMaterialHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/sys/merchant"),
 	)
 
 	server.AddRoutes(

@@ -6,7 +6,7 @@ import {
   RiseOutlined,
   StepForwardOutlined
 } from '@ant-design/icons';
-import {Divider, Drawer, message, Modal} from 'antd';
+import {Alert, Divider, Drawer, message, Modal} from 'antd';
 import React, {useRef, useState} from 'react';
 import {PageContainer} from '@ant-design/pro-layout';
 import type {ActionType, ProColumns} from '@ant-design/pro-table';
@@ -19,6 +19,13 @@ import {queryOrderList, removeOrder} from './service';
 import NoteOrderModel from "@/pages/oms/order/components/NoteOrderModel";
 import DeliveryModel from "@/pages/oms/order/components/DeliveryModel";
 import OrderTrackingModel from "@/pages/oms/order/components/OrderTrackingModel";
+import GovernanceScopeBar from '@/pages/system/components/GovernanceScopeBar';
+import {
+  buildGovernanceScopeLabel,
+  defaultGovernanceScope,
+  type GovernanceScopeValue,
+  toGovernancePayload,
+} from '@/pages/system/components/governance';
 
 
 const {confirm} = Modal;
@@ -69,6 +76,7 @@ const OrderList: React.FC = () => {
   const [showDetail, setShowDetail] = useState<boolean>(false);
   const actionRef = useRef<ActionType>();
   const [currentRow, setCurrentRow] = useState<OrderListItem>();
+  const [scope, setScope] = useState<GovernanceScopeValue>(defaultGovernanceScope);
 
   const showDeleteConfirm = (item: OrderListItem) => {
     confirm({
@@ -250,6 +258,22 @@ const OrderList: React.FC = () => {
 
   return (
     <PageContainer>
+      <GovernanceScopeBar
+        value={scope}
+        onChange={(nextScope) => {
+          setScope(nextScope);
+          actionRef.current?.reload?.();
+        }}
+        entityLabel="订单"
+        style={{ marginBottom: 16 }}
+      />
+      <Alert
+        showIcon
+        type="info"
+        style={{ marginBottom: 16 }}
+        message={`当前查询范围：${buildGovernanceScopeLabel(scope)}`}
+        description="订单详情、订单项、支付与操作日志会跟随同一治理范围一起过滤，避免跨主体串单。"
+      />
       <ProTable<OrderListItem>
         headerTitle="订单列表"
         actionRef={actionRef}
@@ -258,7 +282,7 @@ const OrderList: React.FC = () => {
           labelWidth: 120,
         }}
         toolBarRender={false}
-        request={queryOrderList}
+        request={(params) => queryOrderList({ ...params, ...toGovernancePayload(scope) })}
         columns={columns}
         rowSelection={{
           onChange: (_, selectedRows) => console.log(selectedRows),

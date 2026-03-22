@@ -51,7 +51,11 @@ type (
 	}
 	// 查询商品SKU详情请求参数
 	QueryProductSkuDetailReq {
-		Id int64 `form:"id"`
+		Id         int64  `form:"id"`
+		ScopeType  string `form:"scopeType,optional"` //治理范围(platform/tenant/merchant)
+		PlatformId int64  `form:"platformId,optional"` //平台ID
+		TenantId   int64  `form:"tenantId,optional"` //租户ID
+		MerchantId int64  `form:"merchantId,optional"` //商户ID
 	}
 	QueryProductSkuDetailData {
 		Id                 int64   `json:"id"` //商品SpuId
@@ -93,6 +97,10 @@ type (
 		PromotionEndTime   string `form:"promotionEndTime,optional"` //促销结束时间
 		PublishStatus      int32  `form:"publishStatus,default=2"` //上架状态：0-下架，1-上架
 		VerifyStatus       int32  `form:"verifyStatus,default=2"` //审核状态：0-未审核，1-审核通过，2-审核不通过
+		ScopeType          string `form:"scopeType,optional"` //治理范围(platform/tenant/merchant)
+		PlatformId         int64  `form:"platformId,optional"` //平台ID
+		TenantId           int64  `form:"tenantId,optional"` //租户ID
+		MerchantId         int64  `form:"merchantId,optional"` //商户ID
 	}
 	QueryProductSkuListData {
 		Id                 int64   `json:"id"` //商品SpuId

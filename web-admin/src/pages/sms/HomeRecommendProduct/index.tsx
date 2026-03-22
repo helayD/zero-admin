@@ -1,5 +1,5 @@
 import { EditOutlined, ExclamationCircleOutlined, PlusOutlined} from '@ant-design/icons';
-import {Button, Drawer, message, Modal, Select, Switch} from 'antd';
+import {Alert, Button, Drawer, message, Modal, Select, Switch} from 'antd';
 import React, {useRef, useState} from 'react';
 import {PageContainer} from '@ant-design/pro-layout';
 import type {ActionType, ProColumns} from '@ant-design/pro-table';
@@ -15,6 +15,13 @@ import {
   removeHomeRecommendProduct,
   updateRecommendProductSort,
 } from './service';
+import GovernanceScopeBar from '@/pages/system/components/GovernanceScopeBar';
+import {
+  buildGovernanceScopeLabel,
+  defaultGovernanceScope,
+  type GovernanceScopeValue,
+  toGovernancePayload,
+} from '@/pages/system/components/governance';
 
 const {confirm} = Modal;
 
@@ -85,6 +92,7 @@ const RecommendProductList: React.FC = () => {
   const [showDetail, setShowDetail] = useState<boolean>(false);
   const actionRef = useRef<ActionType>();
   const [currentRow, setCurrentRow] = useState<HomeRecommendProductListItem>();
+  const [scope, setScope] = useState<GovernanceScopeValue>(defaultGovernanceScope);
 
 
   const showStatusConfirm = (item: HomeRecommendProductListItem, status: number, productIds: number[]) => {
@@ -183,6 +191,22 @@ const RecommendProductList: React.FC = () => {
 
   return (
     <PageContainer>
+      <GovernanceScopeBar
+        value={scope}
+        onChange={(nextScope) => {
+          setScope(nextScope);
+          actionRef.current?.reload?.();
+        }}
+        entityLabel="人气推荐商品"
+        style={{ marginBottom: 16 }}
+      />
+      <Alert
+        showIcon
+        type="info"
+        style={{ marginBottom: 16 }}
+        message={`当前查询范围：${buildGovernanceScopeLabel(scope)}`}
+        description="列表与“选择商品”弹窗都会按同一主体过滤，只能操作当前治理范围内的人气推荐商品。"
+      />
       <ProTable<HomeRecommendProductListItem>
         headerTitle="商品推荐列表"
         actionRef={actionRef}
@@ -195,7 +219,7 @@ const RecommendProductList: React.FC = () => {
             <PlusOutlined/> 选择商品
           </Button>,
         ]}
-        request={queryHomeRecommendProductList}
+        request={(params) => queryHomeRecommendProductList({ ...params, ...toGovernancePayload(scope) })}
         columns={columns}
         rowSelection={{}}
         pagination={{pageSize: 10}}
@@ -221,6 +245,7 @@ const RecommendProductList: React.FC = () => {
           }
         }}
         createModalVisible={createModalVisible}
+        scope={scope}
       />
 
       <SetSortModal

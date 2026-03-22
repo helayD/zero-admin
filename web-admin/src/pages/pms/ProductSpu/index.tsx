@@ -1,5 +1,5 @@
 import {DeleteOutlined, EditOutlined, ExclamationCircleOutlined, PlusOutlined} from '@ant-design/icons';
-import { Button, Divider, Drawer, message, Modal, Select, Space, Switch, Tag } from 'antd';
+import { Alert, Button, Divider, Drawer, message, Modal, Select, Space, Switch, Tag } from 'antd';
 import React, {useRef, useState} from 'react';
 import {PageContainer} from '@ant-design/pro-layout';
 import type {ActionType, ProColumns} from '@ant-design/pro-table';
@@ -11,6 +11,13 @@ import UpdateModal from './components/UpdateModal';
 import type { ProductSpuListItem} from './data.d';
 import {addProductSpu, queryProductSpuList, removeProductSpu, updateProductSpu, updateProductSpuStatus} from './service';
 import SkuModal from '@/pages/pms/ProductSpu/components/SkuModal';
+import GovernanceScopeBar from '@/pages/system/components/GovernanceScopeBar';
+import {
+  buildGovernanceScopeLabel,
+  defaultGovernanceScope,
+  type GovernanceScopeValue,
+  toGovernancePayload,
+} from '@/pages/system/components/governance';
 
 const {confirm} = Modal;
 
@@ -96,6 +103,7 @@ const ProductSpuList: React.FC = () => {
   const actionRef = useRef<ActionType>();
   const [currentRow, setCurrentRow] = useState<ProductSpuListItem>();
   const [skuVisible, handleSkuVisible] = useState<boolean>(false);
+  const [scope, setScope] = useState<GovernanceScopeValue>(defaultGovernanceScope);
   const showDeleteConfirm = (ids: number[]) => {
     confirm({
       title: '是否删除记录?',
@@ -552,6 +560,22 @@ const ProductSpuList: React.FC = () => {
 
 return (
     <PageContainer>
+      <GovernanceScopeBar
+        value={scope}
+        onChange={(nextScope) => {
+          setScope(nextScope);
+          actionRef.current?.reload?.();
+        }}
+        entityLabel="商品 SPU"
+        style={{ marginBottom: 16 }}
+      />
+      <Alert
+        showIcon
+        type="info"
+        style={{ marginBottom: 16 }}
+        message={`当前查询范围：${buildGovernanceScopeLabel(scope)}`}
+        description="平台管理员可切换到租户/商户视角查看商品；租户和商户账号只会看到自己的主体数据。"
+      />
       <ProTable<ProductSpuListItem>
         headerTitle="商品SPU管理"
         actionRef={actionRef}
@@ -564,7 +588,7 @@ return (
             <PlusOutlined/> 新增
           </Button>,
         ]}
-        request={queryProductSpuList}
+        request={(params) => queryProductSpuList({ ...params, ...toGovernancePayload(scope) })}
         columns={columns}
         rowSelection={ {} }
         pagination={ {pageSize: 10}}
@@ -656,10 +680,11 @@ return (
         }}
         modalVisible={skuVisible}
         spuId={currentRow?.id || 0 }
+        scope={scope}
       />
       <Drawer
         width={600}
-        open={showDetail}
+        visible={showDetail}
         onClose={() => {
           setCurrentRow(undefined);
           setShowDetail(false)

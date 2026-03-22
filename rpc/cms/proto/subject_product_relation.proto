@@ -19,6 +19,7 @@ message AddSubjectProductRelationResp {
 // 分页查询专题商品关系表列表
 message QuerySubjectProductRelationListReq {
   int64 product_id = 1; //
+  GovernanceScope scope = 2; //治理范围(platform/tenant/merchant)
 }
 
 message QuerySubjectProductRelationListResp {

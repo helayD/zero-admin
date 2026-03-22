@@ -3,7 +3,6 @@ syntax = "proto3";
 package smsclient;
 
 option go_package = "./smsclient";
-
 message couponScopeData {
   int32 scope_type = 1; //范围类型：0-全场，1-分类，2-商品
   int64 scope_id = 2; //范围ID（分类ID或商品ID）
@@ -79,6 +78,7 @@ message UpdateCouponStatusResp {
 // 查询优惠券详情
 message QueryCouponDetailReq {
     int64 id = 1;
+    GovernanceScope scope = 2; //治理范围(platform/tenant/merchant)
 }
 
 message QueryCouponDetailResp {
@@ -116,6 +116,7 @@ message QueryCouponListReq {
   int32 is_enabled = 7; //是否启用
   int32 page_num = 8; //第几页
   int32 page_size = 9; //每页的数量
+  GovernanceScope scope = 10; //治理范围(platform/tenant/merchant)
 }
 
 message CouponListData {
@@ -148,6 +149,7 @@ message QueryCouponListResp {
 
 message QueryCouponByScopeIdReq {
   repeated int64 scope_ids = 1;
+  GovernanceScope scope = 2; //治理范围(platform/tenant/merchant)
 }
 
 message QueryCouponByScopeIdResp {
@@ -156,6 +158,7 @@ message QueryCouponByScopeIdResp {
 
 message QueryCouponByCodeReq {
   string code = 1; //优惠券类型编码
+  GovernanceScope scope = 2; //治理范围(platform/tenant/merchant)
 }
 message QueryCouponByCodeResp {
   repeated  CouponListData list = 1;
@@ -193,8 +196,6 @@ service CouponService {
   rpc HandleExpirationCoupon(HandleExpirationCouponReq) returns(HandleExpirationCouponResp);
 
 }
-
-
 // 添加优惠券领取记录
 message AddCouponRecordReq {
   int64 coupon_id = 1; //优惠券ID
@@ -329,8 +330,6 @@ service CouponRecordService {
   rpc QueryMemberCouponList(QueryMemberCouponListReq) returns(QueryMemberCouponListResp);
 
 }
-
-
 // 添加优惠券使用范围
 message AddCouponScopeReq {
   repeated AddCouponScopeData data = 1; //
@@ -423,8 +422,6 @@ service CouponScopeService {
 
 
 }
-
-
 // 添加优惠券类型
 message AddCouponTypeReq {
   int64 id = 1; //主键ID
@@ -544,8 +541,13 @@ service CouponTypeService {
 
 
 }
-
-
+message GovernanceScope {
+  string scope_type = 1; // 主体范围(platform/tenant/merchant)
+  int64 platform_id = 2; // 平台ID
+  int64 tenant_id = 3; // 租户ID
+  int64 merchant_id = 4; // 商户ID
+  string scope_label = 5; // 主体范围标签
+}
 // 添加首页轮播广告
 message AddHomeAdvertiseReq {
   int64 id = 1; //编号
@@ -675,8 +677,6 @@ service HomeAdvertiseService {
 
 
 }
-
-
 // 添加秒杀活动
 message AddSeckillActivityReq {
   int64 id = 1; //编号
@@ -807,8 +807,6 @@ service SeckillActivityService {
   rpc QuerySeckillActivityListByDate(QuerySeckillActivityListByDateReq) returns(QueryFlashPromotionListByDateResp);
 
 }
-
-
 // 添加秒杀商品
 message AddSeckillProductReq {
   repeated AddSeckillProductData data= 1;
@@ -952,8 +950,6 @@ service SeckillProductService {
   // 查询秒杀商品详情(app)
   rpc QuerySeckillProductBySkuId(QuerySeckillProductBySkuIdReq) returns (QuerySeckillProductDetailResp){}
 }
-
-
 // 添加秒杀预约
 message AddSeckillReservationReq {
   int64 id = 1; //ID
@@ -1058,8 +1054,6 @@ service SeckillReservationService {
 
 
 }
-
-
 // 添加秒杀场次
 message AddSeckillSessionReq {
   int64 id = 1; //秒杀场次ID

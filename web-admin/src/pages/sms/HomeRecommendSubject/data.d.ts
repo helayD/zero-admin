@@ -26,6 +26,10 @@ export interface RecommendSubjectListData {
 
 export interface RecommendSubjectListParams {
   recommendStatus?: number;
+  scopeType?: 'platform' | 'tenant' | 'merchant';
+  platformId?: number;
+  tenantId?: number;
+  merchantId?: number;
   pageSize?: number;
   currentPage?: number;
   filter?: { [key: string]: any[] };
@@ -34,6 +38,10 @@ export interface RecommendSubjectListParams {
 
 export interface SubjectListParams {
   subjectName?: string;
+  scopeType?: 'platform' | 'tenant' | 'merchant';
+  platformId?: number;
+  tenantId?: number;
+  merchantId?: number;
   pageSize?: number;
   current?: number;
   filter?: { [key: string]: any[] };

@@ -1,4 +1,4 @@
-# generated: 2026-03-20T09:05:50+0800
+# generated: 2026-03-21T11:48:30+0800
 # project: ai_flutter_client
 # project_key: NOKEY
 # tracking_system: file-system
@@ -30,10 +30,10 @@
 # ===============
 # - Epic transitions to 'in-progress' automatically when first story is created
 # - Stories can be worked in parallel if team capacity allows
-# - SM typically creates next story after previous one is 'done' to incorporate learnings
-# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+# - SM typically creates next story after previous one is "done" to incorporate learnings
+# - Dev moves story to "review", then runs code-review (fresh context, different LLM recommended)
 
-generated: 2026-03-20T09:05:50+0800
+generated: 2026-03-21T11:48:30+0800
 project: ai_flutter_client
 project_key: NOKEY
 tracking_system: file-system
@@ -45,8 +45,9 @@ development_status:
   1-2-租户创建与管理员初始化: review
   1-3-后台用户-组织元数据与系统字典管理: review
   1-4-作用域角色-菜单模板与数据授权: review
-  1-5-商户入驻审核与主体启停: backlog
-  1-6-核心业务对象作用域隔离: backlog
+  1-5-商户入驻审核与主体启停: review
+  1-6a-核心业务对象查询范围过滤与主体透传: review
+  1-6b-核心业务对象关键写操作校验与越权审计: backlog
   1-7-治理审计与安全事件检索: backlog
   epic-1-retrospective: optional
 
@@ -97,7 +98,8 @@ development_status:
   epic-7: backlog
   7-1-商品索引同步事件链: backlog
   7-2-前台关键词搜索与筛选排序: backlog
-  7-3-订单与权益状态一致性编排: backlog
+  7-3a-统一交易事件契约与幂等消费: backlog
+  7-3b-支付与取消驱动的订单权益一致性编排: backlog
   7-4-超时订单关闭与资源补偿: backlog
   7-5-异步链路监控视图: backlog
   7-6-授权链路重试回放与升级: backlog
@@ -111,3 +113,11 @@ development_status:
   8-5-复购分析与结果导出: backlog
   8-6-多渠道与第三方集成模板: backlog
   epic-8-retrospective: optional
+
+  epic-9: backlog
+  9-1-app-启动恢复与最近有效上下文回流: backlog
+  9-2-移动端统一加载-空态-错误态与弱网壳层: backlog
+  9-3-消息-活动与优惠券意图唤回链路: backlog
+  9-4-场景化权限请求与拒绝后的替代路径: backlog
+  9-5-版本升级闸门与升级后任务恢复: backlog
+  epic-9-retrospective: optional

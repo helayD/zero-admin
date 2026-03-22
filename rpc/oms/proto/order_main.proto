@@ -86,6 +86,7 @@ message UpdateOrderStatusResp {
 message QueryOrderDetailReq {
   int64 id = 1;
   int64 user_id = 2; //用户ID
+  GovernanceScope scope = 3; //治理范围(platform/tenant/merchant)
 }
 
 message QueryOrderDetailResp {
@@ -104,6 +105,7 @@ message QueryOrderListReq {
   string express_order_number = 6; //快递单号
   int32 page_num = 7; //第几页
   int32 page_size = 8; //每页的数量
+  GovernanceScope scope = 9; //治理范围(platform/tenant/merchant)
 }
 
 message OrderOptLogData {

@@ -5,8 +5,10 @@ import (
 	"errors"
 
 	"github.com/feihua/zero-admin/pkg/pointerprocess"
+	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/pkg/time_util"
-	"github.com/feihua/zero-admin/rpc/pms/gen/query"
+	"github.com/feihua/zero-admin/rpc/pms/gen/model"
+	logiccommon "github.com/feihua/zero-admin/rpc/pms/internal/logic/common"
 	"github.com/zeromicro/go-zero/core/logc"
 
 	"github.com/feihua/zero-admin/rpc/pms/internal/svc"
@@ -31,8 +33,22 @@ func NewQueryProductSpuListByIdsLogic(ctx context.Context, svcCtx *svc.ServiceCo
 
 // QueryProductSpuListByIds 根据id集合查询商品信息
 func (l *QueryProductSpuListByIdsLogic) QueryProductSpuListByIds(in *pmsclient.QueryProductSpuByIdsReq) (*pmsclient.QueryProductSpuListResp, error) {
-	q := query.PmsProductSpu
-	result, err := q.WithContext(l.ctx).Where(q.ID.In(in.Ids...)).Find()
+	if len(in.Ids) == 0 {
+		return &pmsclient.QueryProductSpuListResp{Total: 0, List: nil}, nil
+	}
+
+	current, err := logiccommon.NormalizeProtoScope(in.Scope)
+	if err != nil {
+		logc.Errorf(l.ctx, "根据id集合查询商品scope非法,参数:%+v,异常:%s", in, err.Error())
+		return nil, errors.New("查询商品列表失败")
+	}
+
+	var result []model.PmsProductSpu
+	err = pkgscope.ApplyGovernanceScope(
+		l.svcCtx.DB.WithContext(l.ctx).Model(&model.PmsProductSpu{}),
+		current,
+		"",
+	).Where("id IN ?", in.Ids).Find(&result).Error
 
 	if err != nil {
 		logc.Errorf(l.ctx, "查询商品列表失败,参数:%+v,异常:%s", in, err.Error())

@@ -36,8 +36,12 @@ type (
 	AddUserResp                  = sysclient.AddUserResp
 	CancelAuthorizationReq       = sysclient.CancelAuthorizationReq
 	CancelAuthorizationResp      = sysclient.CancelAuthorizationResp
+	ChangeMerchantStatusReq      = sysclient.ChangeMerchantStatusReq
+	ChangeMerchantStatusResp     = sysclient.ChangeMerchantStatusResp
 	ChangeTenantStatusReq        = sysclient.ChangeTenantStatusReq
 	ChangeTenantStatusResp       = sysclient.ChangeTenantStatusResp
+	CreateMerchantReq            = sysclient.CreateMerchantReq
+	CreateMerchantResp           = sysclient.CreateMerchantResp
 	CreateTenantReq              = sysclient.CreateTenantReq
 	CreateTenantResp             = sysclient.CreateTenantResp
 	DeleteDeptReq                = sysclient.DeleteDeptReq
@@ -76,6 +80,7 @@ type (
 	MenuListData                 = sysclient.MenuListData
 	MenuListTree                 = sysclient.MenuListTree
 	MenuTemplateListData         = sysclient.MenuTemplateListData
+	MerchantData                 = sysclient.MerchantData
 	OperateLogListData           = sysclient.OperateLogListData
 	PostData                     = sysclient.PostData
 	PostListData                 = sysclient.PostListData
@@ -107,6 +112,10 @@ type (
 	QueryMenuTemplateDetailResp  = sysclient.QueryMenuTemplateDetailResp
 	QueryMenuTemplateListReq     = sysclient.QueryMenuTemplateListReq
 	QueryMenuTemplateListResp    = sysclient.QueryMenuTemplateListResp
+	QueryMerchantDetailReq       = sysclient.QueryMerchantDetailReq
+	QueryMerchantDetailResp      = sysclient.QueryMerchantDetailResp
+	QueryMerchantListReq         = sysclient.QueryMerchantListReq
+	QueryMerchantListResp        = sysclient.QueryMerchantListResp
 	QueryNoticeDetailReq         = sysclient.QueryNoticeDetailReq
 	QueryNoticeDetailResp        = sysclient.QueryNoticeDetailResp
 	QueryNoticeListData          = sysclient.QueryNoticeListData
@@ -140,6 +149,8 @@ type (
 	QueryUserRoleListResp        = sysclient.QueryUserRoleListResp
 	ReSetPasswordReq             = sysclient.ReSetPasswordReq
 	ReSetPasswordResp            = sysclient.ReSetPasswordResp
+	ReviewMerchantReq            = sysclient.ReviewMerchantReq
+	ReviewMerchantResp           = sysclient.ReviewMerchantResp
 	RoleData                     = sysclient.RoleData
 	RoleListData                 = sysclient.RoleListData
 	TenantData                   = sysclient.TenantData

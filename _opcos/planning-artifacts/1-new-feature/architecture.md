@@ -76,7 +76,7 @@ _本架构文档基于 PRD、UX 设计、项目上下文与现有代码结构整
 - 管理端与前台网关的错误包装与中间件链不同，不能假定二者对称。
 - 当前项目已有 Dockerfile、`make build/start/stop`、K8s manifest 和 `service_manager.sh`，说明部署结构已具备多服务独立交付能力，但 CI/CD 还未在仓库中标准化。
 - 多租户、多商户模型已在 PRD 中被正式确立，但代码层仍缺少统一的作用域上下文包、作用域中间件和跨域查询/写入的一致约束，这是 MVP 实现阶段的第一优先缺口。
-- 最新 readiness 评估已明确指出，现有 `architecture.md` 与 `epic.md` 的旧版本曾停留在 `59 FR` 基线，因此本次刷新必须把 `FR60-FR64` 作为正式架构输入而不是附录说明。
+- 此前旧版 `architecture.md` 与 `epic.md` 曾停留在 `59 FR` 基线；本轮已把 `FR60-FR64` 作为正式架构输入并同步收口到最新 Epic/Story 链。
 
 ### Cross-Cutting Concerns Identified
 
@@ -356,7 +356,7 @@ cd flutter-mall && flutter pub get
 - 高风险交易节点采用“状态确认优先”的交互：确认订单、支付发起、订单恢复、售后申请必须以服务端状态为准。
 - 新增统一 **App Lifecycle Shell**，负责冷启动、热启动、登录态恢复、前后台切换与目标意图恢复，避免在 `home/cart/mine/order` 页面各自维护会话恢复逻辑。
 - 新增统一 **Commerce State Shell**，覆盖首页、分类、搜索、商品详情、购物车、确认订单、订单列表/详情和售后页面的加载态、空态、错误态与弱网态。
-- 新增统一 **Permission Broker** 与 **Upgrade Gate**，只在真实业务触发时请求通知 / 相册 / 相机权限，并在强制或限时升级后恢复原始目标上下文。
+- 新增统一 **Permission Request Sheet** 与 **Upgrade Gate**；具体权限编排由内部 **Permission Broker** 承接，只在真实业务触发时请求通知 / 相册 / 相机权限，并在强制或限时升级后恢复原始目标上下文。
 
 **Cross-End UX Architecture**
 
@@ -369,7 +369,7 @@ cd flutter-mall && flutter pub get
   - `Commerce State Shell`
   - `Intent Recovery Loop`
   - `Permission Request Sheet`
-  - `Upgrade Gate Dialog`
+  - `Upgrade Gate`
 - 同一业务对象在前后台必须使用统一状态命名、金额口径与时间语义。
 
 ### Infrastructure & Deployment
@@ -986,8 +986,8 @@ zero-admin/
 
 **Epic / Feature Coverage:**
 
-- 当前 `epic.md` 已完成首轮 Epic/Story 拆解，但它仍停留在 `FR1-FR59` 的旧基线。
-- 因此本次覆盖性验证以最新 PRD、UX 和 readiness 评估为主，并明确把 `FR60-FR64` 的新增架构要求先纳入本文件，再要求下游 Epic/Story 链补齐。
+- 当前 `epic.md` 已完成覆盖 `FR1-FR64` 的 Epic/Story 刷新，移动端新增需求已进入正式 Story 链。
+- 当前覆盖性验证的重点不再是补齐缺失范围，而是确保 Story 尺寸可执行、Flutter 相关组件命名一致，并与 readiness 结论收口。
 - 在现有前提下，全部 9 个功能能力簇都已有明确的服务归属、网关边界和 UI 承载位置。
 
 **Functional Requirements Coverage:**
@@ -1030,7 +1030,7 @@ zero-admin/
 
 **Critical Gaps:**
 
-- 架构文档本身已无阻塞性空白，但下游 `epic.md` / story 链仍未吸收 `FR60-FR64`，进入实现前必须先刷新 Epic/Story 拆解。
+- 当前未发现新的架构级阻塞缺口；下一步重点是通过 readiness 复核确认 PRD、UX、Architecture 与 Epic/Story 已完全对齐。
 
 **Important Gaps:**
 
@@ -1047,7 +1047,7 @@ zero-admin/
 ### Validation Issues Addressed
 
 - 已明确拒绝“为追新而全量升级技术栈”的高风险路线，改为“业务闭环优先、升级后置”的低风险路线。
-- 已将 `FR60-FR64`、`Commerce State Shell`、`Intent Recovery Loop`、`Permission Request Sheet` 和 `Upgrade Gate Dialog` 正式纳入架构主文档。
+- 已将 `FR60-FR64`、`Commerce State Shell`、`Intent Recovery Loop`、`Permission Request Sheet` 和 `Upgrade Gate` 正式纳入架构主文档。
 - 已将 Epic/Story 规划纳入整体实施验证链路，因此后续 readiness 校验可以直接对照 Story 清单检查跨文档一致性。
 
 ### Architecture Completeness Checklist
@@ -1112,7 +1112,7 @@ zero-admin/
 
 第一批实现故事应围绕以下内容展开：
 
-1. 先刷新 `epic.md` / stories，把 `FR60-FR64` 与新增移动端组件纳入正式 Story 链
+1. 先基于已收口的 `epic.md` 重新确认实施顺序，不再沿用旧的 sprint / story 状态直接推进
 2. 建立 `pkg/scope`、网关 `scope` / `audit` / `idempotency` 中间件
 3. 把 `oms/pms/sms/cms/ums` 的关键查询与写操作接入平台 / 租户 / 商户作用域校验
 4. 建立移动端 `Intent Recovery Loop`、`Commerce State Shell`、权限闸门与升级闸门
@@ -1120,21 +1120,21 @@ zero-admin/
 
 ## Completion Summary & Next Workflow Recommendations
 
-架构工作流已经完成，当前文档已经吸收最新 PRD / UX / readiness 对 `FR60-FR64` 的修订，可以继续作为实现阶段的技术单一事实源使用。按照 BMAD 流程，建议的后续步骤是：
+架构工作流已经完成，当前文档已经吸收最新 PRD / UX / readiness 对 `FR60-FR64` 的修订，并与最新 Epic/Story 链完成收口，可以继续作为实现阶段的技术单一事实源使用。按照 BMAD 流程，建议的后续步骤是：
 
-1. **Create Epics and Stories**
-   - Command: `/bmad-bmm-create-epics-and-stories`
-   - Agent: 📋 Product Manager
-   - 目的：基于最新 Architecture 重新拆解 Epic / Story，尤其补齐 `FR60-FR64` 与移动端恢复 / 权限 / 升级相关故事
-
-2. **Check Implementation Readiness**
+1. **Check Implementation Readiness**
    - Command: `/bmad-bmm-check-implementation-readiness`
    - Agent: 🏗️ Architect
-   - 目的：在 Epic / Story 刷新后重新校验 PRD、UX、Architecture 与 Epics/Stories 是否已经完全对齐
+   - 目的：重新校验 PRD、UX、Architecture 与 Epics/Stories 是否已经完全对齐
 
-3. **Sprint Planning**
+2. **Sprint Planning**
    - Command: `/bmad-bmm-sprint-planning`
    - Agent: 🏃 Scrum Master
    - 目的：在 readiness 通过后生成实现阶段的 sprint plan
 
-如需继续，我建议下一步直接进入 **Create Epics and Stories**，先把 `FR60-FR64` 的 Story 链补齐。
+3. **Create Story / Code Review**
+   - Command: `/bmad-bmm-create-story` 或 `/bmad-bmm-code-review`
+   - Agent: 🏃 Scrum Master / 💻 Developer Agent
+   - 目的：根据新的 sprint 结果决定是继续推进下一个故事，还是先收口当前已进入 review 的故事
+
+如需继续，我建议下一步直接进入 **Check Implementation Readiness**，先确认规划层已经完全对齐，再刷新实施队列。

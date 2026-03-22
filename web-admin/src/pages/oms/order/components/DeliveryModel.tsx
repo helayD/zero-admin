@@ -142,7 +142,7 @@ const DeliveryModel: React.FC<UpdateFormProps> = (props) => {
       forceRender
       destroyOnClose
       title="发货信息"
-      open={deliveryModelVisible}
+      visible={deliveryModelVisible}
       {...modalFooter}
     >
       <Form

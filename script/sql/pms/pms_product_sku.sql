@@ -3,6 +3,9 @@ create table pms_product_sku
 (
     id                   bigint auto_increment
         primary key comment '商品SkuId',
+    platform_id          bigint    default 1                 not null comment '平台ID',
+    tenant_id            bigint    default 0                 not null comment '租户ID',
+    merchant_id          bigint    default 0                 not null comment '商户ID',
     spu_id               bigint                             not null comment '商品SpuId',
     name                 varchar(200)                       not null comment 'SKU名称',
     sku_code             varchar(50)                        not null comment 'SKU编码',
@@ -32,6 +35,9 @@ create table pms_product_sku
 
 create index idx_spu_id
     on pms_product_sku (spu_id, is_deleted);
+
+create index idx_scope_spu_status
+    on pms_product_sku (platform_id, tenant_id, merchant_id, spu_id, publish_status, verify_status, id);
 
 -- 插入商品SKU数据
 insert into pms_product_sku ( spu_id, name, sku_code, main_pic, album_pics, price, promotion_price, stock, low_stock, spec_data, weight, publish_status, verify_status, sort, sales)

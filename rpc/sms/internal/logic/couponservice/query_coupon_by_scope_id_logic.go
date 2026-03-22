@@ -9,6 +9,7 @@ import (
 	"github.com/feihua/zero-admin/pkg/time_util"
 	"github.com/feihua/zero-admin/rpc/sms/gen/model"
 	"github.com/feihua/zero-admin/rpc/sms/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/sms/internal/logic/common"
 	"github.com/zeromicro/go-zero/core/logc"
 
 	"github.com/feihua/zero-admin/rpc/sms/internal/svc"
@@ -38,15 +39,26 @@ func NewQueryCouponByScopeIdLogic(ctx context.Context, svcCtx *svc.ServiceContex
 
 // QueryCouponByScopeId 根据商品Id和分类id查询可用的优惠券
 func (l *QueryCouponByScopeIdLogic) QueryCouponByScopeId(in *smsclient.QueryCouponByScopeIdReq) (*smsclient.QueryCouponByScopeIdResp, error) {
-	sql := `select t1.*
-	from sms_coupon t1,
-		 sms_coupon_scope t2
-	where t1.id = t2.coupon_id
-	  and t2.scope_id in (?)`
+	current, err := logiccommon.NormalizeProtoScope(in.Scope)
+	if err != nil {
+		logc.Errorf(l.ctx, "根据商品Id和分类id查询可用的优惠券scope非法,参数:%+v,异常:%s", in, err.Error())
+		return nil, errors.New("根据商品Id和分类id查询可用的优惠券(app)失败")
+	}
+
+	sql := `select distinct t1.*
+	from sms_coupon t1
+		 join sms_coupon_scope t2 on t1.id = t2.coupon_id
+	where (t2.scope_type = 0 or t2.scope_id in (?))
+	  and t1.platform_id = ?
+	  and t1.tenant_id = ?
+	  and t1.merchant_id = ?
+	  and t1.status = 1
+	  and t1.is_enabled = 1
+	  and now() between t1.start_time and t1.end_time`
 
 	var result []model.SmsCoupon
 	db := l.svcCtx.DB
-	err := db.WithContext(l.ctx).Raw(sql, in.ScopeIds).Scan(&result).Error
+	err = db.WithContext(l.ctx).Raw(sql, in.ScopeIds, current.PlatformID, current.TenantID, current.MerchantID).Scan(&result).Error
 
 	if err != nil {
 		logc.Errorf(l.ctx, "根据商品Id和分类id查询可用的优惠券(app)失败,参数:%+v,异常:%s", in, err.Error())

@@ -138,7 +138,7 @@ const CouponDetailForm: React.FC<CreateFormProps> = (props) => {
       forceRender
       destroyOnClose
       title="优惠券详情"
-      open={detailModalVisible}
+      visible={detailModalVisible}
       footer={false}
       width={1200}
       onCancel={onCancel}

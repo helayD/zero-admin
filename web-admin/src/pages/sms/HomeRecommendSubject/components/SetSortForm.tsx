@@ -66,7 +66,7 @@ const SetSortForm: React.FC<UpdateFormProps> = (props) => {
       forceRender
       destroyOnClose
       title="设置排序"
-      open={updateModalVisible}
+      visible={updateModalVisible}
       {...modalFooter}
     >
       <Form {...formLayout} form={form} onFinish={handleFinish}>

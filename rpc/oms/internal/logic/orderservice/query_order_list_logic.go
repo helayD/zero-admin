@@ -4,14 +4,18 @@ import (
 	"context"
 	"errors"
 
+	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/pkg/time_util"
+	"github.com/feihua/zero-admin/rpc/oms/gen/model"
 	"github.com/feihua/zero-admin/rpc/oms/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/oms/internal/logic/common"
 	"github.com/zeromicro/go-zero/core/logc"
 
 	"github.com/feihua/zero-admin/rpc/oms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/oms/omsclient"
 
 	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
 )
 
 type QueryOrderListLogic struct {
@@ -30,30 +34,46 @@ func NewQueryOrderListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Qu
 
 // QueryOrderList 查询订单列表
 func (l *QueryOrderListLogic) QueryOrderList(in *omsclient.QueryOrderListReq) (*omsclient.QueryOrderListResp, error) {
-	orderMain := query.OmsOrderMain
-	q := orderMain.WithContext(l.ctx)
+	current, err := logiccommon.NormalizeProtoScope(in.Scope)
+	if err != nil {
+		logc.Errorf(l.ctx, "查询订单列表scope非法,参数:%+v,异常:%s", in, err.Error())
+		return nil, errors.New("查询订单列表失败")
+	}
+
+	q := pkgscope.ApplyGovernanceScope(
+		l.svcCtx.DB.WithContext(l.ctx).Model(&model.OmsOrderMain{}),
+		current,
+		"",
+	)
 	if len(in.OrderNo) > 0 {
-		q = q.Where(orderMain.OrderNo.Like("%" + in.OrderNo + "%"))
+		q = q.Where("order_no LIKE ?", "%"+in.OrderNo+"%")
 	}
 	if in.UserId != 0 {
-		q = q.Where(orderMain.UserID.Eq(in.UserId))
+		q = q.Where("user_id = ?", in.UserId)
 	}
 	if in.OrderStatus != 0 {
-		q = q.Where(orderMain.OrderStatus.Eq(in.OrderStatus))
+		q = q.Where("order_status = ?", in.OrderStatus)
 	}
 
 	if in.PayType != 0 {
-		q = q.Where(orderMain.PayType.Eq(in.PayType))
+		q = q.Where("pay_type = ?", in.PayType)
 	}
 
 	if in.SourceType != 0 {
-		q = q.Where(orderMain.SourceType.Eq(in.SourceType))
+		q = q.Where("source_type = ?", in.SourceType)
 	}
 	if len(in.ExpressOrderNumber) > 0 {
-		q = q.Where(orderMain.ExpressOrderNumber.Like("%" + in.ExpressOrderNumber + "%"))
+		q = q.Where("express_order_number LIKE ?", "%"+in.ExpressOrderNumber+"%")
 	}
 
-	result, count, err := q.FindByPage(int((in.PageNum-1)*in.PageSize), int(in.PageSize))
+	var (
+		result []model.OmsOrderMain
+		count  int64
+	)
+	err = q.Session(&gorm.Session{}).Count(&count).Error
+	if err == nil {
+		err = q.Offset(int((in.PageNum - 1) * in.PageSize)).Limit(int(in.PageSize)).Find(&result).Error
+	}
 
 	if err != nil {
 		logc.Errorf(l.ctx, "查询订单列表失败,参数:%+v,异常:%s", in, err.Error())

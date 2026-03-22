@@ -3,8 +3,13 @@ package logic
 import (
 	"bytes"
 	"context"
-	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"strings"
+
 	"github.com/bytedance/sonic"
+	logiccommon "github.com/feihua/zero-admin/rpc/search/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/search/internal/svc"
 	"github.com/feihua/zero-admin/rpc/search/search"
 
@@ -27,15 +32,27 @@ func NewSearchSimpleLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Sear
 
 // SearchSimple 简单搜索-根据关键字通过名称或副标题查询商品
 func (l *SearchSimpleLogic) SearchSimple(in *search.SearchSimpleReq) (*search.SearchResp, error) {
+	current, err := logiccommon.NormalizeProtoScope(in.Scope)
+	if err != nil {
+		return nil, errors.New("搜索范围无效")
+	}
+
+	pageNum, pageSize := logiccommon.NormalizePage(in.PageNum, in.PageSize)
 	query := map[string]interface{}{
 		"query": map[string]interface{}{
-			"multi_match": map[string]interface{}{
-				"query":  in.Keyword,
-				"fields": []string{"name", "brief"},
+			"bool": map[string]interface{}{
+				"must": logiccommon.KeywordMust(in.Keyword),
+				"filter": logiccommon.ScopeFilters(
+					current.ScopeType,
+					current.PlatformID,
+					current.TenantID,
+					current.MerchantID,
+				),
 			},
 		},
-		"from": (in.PageNum - 1) * in.PageSize,
-		"size": in.PageSize,
+		"from":             (pageNum - 1) * pageSize,
+		"size":             pageSize,
+		"track_total_hits": true,
 		"highlight": map[string]interface{}{
 			"fields": map[string]interface{}{
 				"name":  map[string]interface{}{},
@@ -53,27 +70,21 @@ func (l *SearchSimpleLogic) SearchSimple(in *search.SearchSimpleReq) (*search.Se
 	if err != nil {
 		return nil, err
 	}
-	var result struct {
-		Hits struct {
-			Hits []struct {
-				Source    search.ProductData  `json:"_source"`
-				Highlight map[string][]string `json:"highlight"`
-			} `json:"hits"`
-		} `json:"hits"`
+	defer func() {
+		_ = res.Body.Close()
+	}()
+	if res.IsError() {
+		body, _ := io.ReadAll(res.Body)
+		return nil, fmt.Errorf("es search error: %s", strings.TrimSpace(string(body)))
 	}
-	err = json.NewDecoder(res.Body).Decode(&result)
+
+	products, total, _, err := logiccommon.DecodeProductSearchResult(res.Body)
 	if err != nil {
 		return nil, err
-	}
-	products := make([]*search.ProductData, 0, len(result.Hits.Hits))
-	for _, hit := range result.Hits.Hits {
-		p := hit.Source
-		// 可处理高亮字段
-		products = append(products, &p)
 	}
 
 	return &search.SearchResp{
 		Data:  products,
-		Total: 0,
+		Total: total,
 	}, nil
 }

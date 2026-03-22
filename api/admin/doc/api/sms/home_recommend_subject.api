@@ -15,6 +15,10 @@ type (
 		PageSize        int64  `form:"pageSize,default=20"`
 		SubjectName     string `form:"name,optional"` // 专题名称
 		RecommendStatus int32  `form:"recommendStatus,default=2"` // 推荐状态：0->不推荐;1->推荐
+		ScopeType       string `form:"scopeType,optional"` //治理范围(platform/tenant/merchant)
+		PlatformId      int64  `form:"platformId,optional"` //平台ID
+		TenantId        int64  `form:"tenantId,optional"` //租户ID
+		MerchantId      int64  `form:"merchantId,optional"` //商户ID
 	}
 	ListHomeRecommendSubjectData {
 		Id              int64  `json:"id"` //专题id
@@ -81,4 +85,3 @@ service admin-api {
 	@handler HomeRecommendSubjectList
 	get /queryHomeRecommendSubjectList (ListHomeRecommendSubjectReq) returns (ListHomeRecommendSubjectResp)
 }
-

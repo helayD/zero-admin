@@ -55,6 +55,7 @@ type (
 	DeliveryData                      = omsclient.DeliveryData
 	DeliveryReq                       = omsclient.DeliveryReq
 	DeliveryResp                      = omsclient.DeliveryResp
+	GovernanceScope                   = omsclient.GovernanceScope
 	OrderDeliveryListData             = omsclient.OrderDeliveryListData
 	OrderItemData                     = omsclient.OrderItemData
 	OrderListData                     = omsclient.OrderListData

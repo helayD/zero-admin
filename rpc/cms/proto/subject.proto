@@ -78,6 +78,7 @@ message UpdateSubjectStatusResp {
 // 查询专题详情
 message QuerySubjectDetailReq {
     int64 id = 1;
+    GovernanceScope scope = 2; //治理范围(platform/tenant/merchant)
 }
 
 message QuerySubjectDetailResp {
@@ -112,6 +113,7 @@ message QuerySubjectListReq {
   string category_name = 5; //专题分类名称
   int64 page_num = 6; //第几页
   int64 page_size = 7; //每页的数量
+  GovernanceScope scope = 8; //治理范围(platform/tenant/merchant)
 }
 
 message SubjectListData {
@@ -153,6 +155,7 @@ message UpdateSubjectRecommendStatusResp {
 
 message SubjectListByIdsReq {
   repeated int64 ids = 1;
+  GovernanceScope scope = 2; //治理范围(platform/tenant/merchant)
 
 }
 message UpdateSubjectSortReq {

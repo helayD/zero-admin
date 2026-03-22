@@ -3,6 +3,9 @@ create table oms_order_delivery
 (
     id                bigint auto_increment
         primary key,
+    platform_id       bigint       default 1                 not null comment '平台ID',
+    tenant_id         bigint       default 0                 not null comment '租户ID',
+    merchant_id       bigint       default 0                 not null comment '商户ID',
     order_id          bigint                                not null comment '订单ID',
     order_no          varchar(32)                           not null comment '订单编号',
     receiver_name     varchar(50)                           not null comment '收货人姓名',
@@ -23,6 +26,9 @@ create table oms_order_delivery
 
 create index idx_delivery
     on oms_order_delivery (delivery_no, is_deleted);
+
+create index idx_scope_delivery_order
+    on oms_order_delivery (platform_id, tenant_id, merchant_id, order_id);
 
 
 INSERT INTO oms_order_delivery (

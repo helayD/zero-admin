@@ -2,6 +2,7 @@ package order_main
 
 import (
 	"context"
+	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
 	"github.com/feihua/zero-admin/api/admin/internal/types"
@@ -33,6 +34,16 @@ func NewQueryOrderMainListLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 
 // QueryOrderMainList 查询订单列表
 func (l *QueryOrderMainListLogic) QueryOrderMainList(req *types.QueryOrderMainListReq) (resp *types.QueryOrderMainListResp, err error) {
+	queryScope, err := admincommon.ResolveQueryGovernanceScope(l.ctx, admincommon.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
+
 	result, err := l.svcCtx.OrderService.QueryOrderList(l.ctx, &omsclient.QueryOrderListReq{
 		PageNum:            req.Current,            // 当前页
 		PageSize:           req.PageSize,           // 每页条数
@@ -42,6 +53,7 @@ func (l *QueryOrderMainListLogic) QueryOrderMainList(req *types.QueryOrderMainLi
 		PayType:            req.PayType,            // 支付方式：1-支付宝,2-微信,3-银联
 		SourceType:         req.SourceType,         // 订单来源：1-APP,2-PC,3-小程序
 		ExpressOrderNumber: req.ExpressOrderNumber, // 快递单号
+		Scope:              admincommon.OMSGovernanceScope(queryScope),
 	})
 
 	if err != nil {

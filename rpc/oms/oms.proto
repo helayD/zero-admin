@@ -3,7 +3,6 @@ syntax = "proto3";
 package omsclient;
 
 option go_package = "./omsclient";
-
 // 添加购物车
 message AddCartItemReq {
   int32 source = 1; //来源 1-PC 2-H5 3-小程序 4-APP
@@ -121,8 +120,6 @@ service CartItemService {
 
 
 }
-
-
 // 添加公司收发货地址
 message AddCompanyAddressReq {
   int64 id = 1; //主键ID
@@ -257,8 +254,13 @@ service CompanyAddressService {
   // 更新公司默认收货地址
   rpc UpdateCompanyAddressReceiveStatus(UpdateCompanyAddressStatusReq) returns (UpdateCompanyAddressStatusResp ){}
 }
-
-
+message GovernanceScope {
+  string scope_type = 1; // 主体范围(platform/tenant/merchant)
+  int64 platform_id = 2; // 平台ID
+  int64 tenant_id = 3; // 租户ID
+  int64 merchant_id = 4; // 商户ID
+  string scope_label = 5; // 主体范围标签
+}
 // 添加订单收货地址
 message AddOrderDeliveryReq {
   int64 id = 1; //
@@ -381,8 +383,6 @@ service OrderDeliveryService {
 
 
 }
-
-
 message OrderItemData {
   int64 id = 1; //
   int64 order_id = 2; //订单ID
@@ -465,6 +465,7 @@ message UpdateOrderStatusResp {
 message QueryOrderDetailReq {
   int64 id = 1;
   int64 user_id = 2; //用户ID
+  GovernanceScope scope = 3; //治理范围(platform/tenant/merchant)
 }
 
 message QueryOrderDetailResp {
@@ -483,6 +484,7 @@ message QueryOrderListReq {
   string express_order_number = 6; //快递单号
   int32 page_num = 7; //第几页
   int32 page_size = 8; //每页的数量
+  GovernanceScope scope = 9; //治理范围(platform/tenant/merchant)
 }
 
 message OrderOptLogData {
@@ -653,8 +655,6 @@ service OrderService {
   //查询超时、未支付的订单及订单详情
   rpc QueryTimeOutOrderList(QueryTimeOutOrderListReq) returns(QueryOrderListResp);
 }
-
-
 // 添加订单操作记录
 message AddOrderOperationLogReq {
   int64 id = 1; //主键ID
@@ -715,8 +715,6 @@ service OrderOperationLogService {
 
 
 }
-
-
 // 添加订单支付
 message OrderPaymentReq {
   int64 id = 1; //主键ID
@@ -793,8 +791,6 @@ service OrderPaymentService {
 
 
 }
-
-
 // 添加订单优惠信息
 message AddOrderPromotionReq {
   int64 order_id = 1; //订单ID
@@ -877,8 +873,6 @@ service OrderPromotionService {
 
 
 }
-
-
 // 添加/更新-退货/售后
 message OrderReturnReq {
   int64 id = 1; //主键ID
@@ -1014,8 +1008,6 @@ service OrderReturnService {
 
 
 }
-
-
 // 添加退货原因
 message AddOrderReturnReasonReq {
   int64 id = 1; //主键ID
@@ -1121,8 +1113,6 @@ service OrderReturnReasonService {
 
 
 }
-
-
 // 添加订单设置
 message AddOrderSettingReq {
   int64 id = 1; //主键ID

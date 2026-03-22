@@ -4,7 +4,7 @@ import {
   DeleteOutlined,
   EditOutlined, EyeOutlined,
 } from '@ant-design/icons';
-import {Button, Divider, message, Drawer, Modal} from 'antd';
+import {Alert, Button, Divider, message, Drawer, Modal} from 'antd';
 import React, {useState, useRef} from 'react';
 import {PageContainer, FooterToolbar} from '@ant-design/pro-layout';
 import ProTable from '@ant-design/pro-table';
@@ -17,6 +17,13 @@ import type {CouponListItem} from './data.d';
 import {queryCoupon, updateCoupon, addCoupon, removeCoupon} from './service';
 import moment from "moment";
 import CouponDetailForm from "@/pages/sms/Coupon/components/CouponDetailForm";
+import GovernanceScopeBar from '@/pages/system/components/GovernanceScopeBar';
+import {
+  buildGovernanceScopeLabel,
+  defaultGovernanceScope,
+  type GovernanceScopeValue,
+  toGovernancePayload,
+} from '@/pages/system/components/governance';
 
 const {confirm} = Modal;
 
@@ -83,6 +90,7 @@ const CouponList: React.FC = () => {
   const actionRef = useRef<ActionType>();
   const [currentRow, setCurrentRow] = useState<CouponListItem>();
   const [selectedRowsState, setSelectedRows] = useState<CouponListItem[]>([]);
+  const [scope, setScope] = useState<GovernanceScopeValue>(defaultGovernanceScope);
 
   const showDeleteConfirm = (item: CouponListItem) => {
     confirm({
@@ -269,6 +277,22 @@ const CouponList: React.FC = () => {
 
   return (
     <PageContainer>
+      <GovernanceScopeBar
+        value={scope}
+        onChange={(nextScope) => {
+          setScope(nextScope);
+          actionRef.current?.reload?.();
+        }}
+        entityLabel="优惠券"
+        style={{ marginBottom: 16 }}
+      />
+      <Alert
+        showIcon
+        type="info"
+        style={{ marginBottom: 16 }}
+        message={`当前查询范围：${buildGovernanceScopeLabel(scope)}`}
+        description="这里只展示当前主体可见的优惠券；跨主体的券不会再出现在列表和详情里。"
+      />
       <ProTable<CouponListItem>
         headerTitle="优惠券列表"
         actionRef={actionRef}
@@ -281,7 +305,7 @@ const CouponList: React.FC = () => {
             <PlusOutlined/> 新建优惠券
           </Button>,
         ]}
-        request={queryCoupon}
+        request={(params) => queryCoupon({ ...params, ...toGovernancePayload(scope) })}
         columns={columns}
         rowSelection={{
           onChange: (_, selectedRows) => setSelectedRows(selectedRows),
@@ -375,7 +399,7 @@ const CouponList: React.FC = () => {
 
       <Drawer
         width={600}
-        open={showDetail}
+        visible={showDetail}
         onClose={() => {
           setCurrentRow(undefined);
           setShowDetail(false);

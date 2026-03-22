@@ -13,6 +13,14 @@ type RabbitMQ struct {
 	MqUrl   string
 }
 
+func (r *RabbitMQ) openChannel() (*amqp.Channel, error) {
+	if r.conn == nil {
+		return nil, fmt.Errorf("rabbitmq connection is not initialized")
+	}
+
+	return r.conn.Channel()
+}
+
 // NewRabbitMQ 创建结构体实例
 func NewRabbitMQ(MqUrl string) *RabbitMQ {
 	return &RabbitMQ{MqUrl: MqUrl}
@@ -20,13 +28,16 @@ func NewRabbitMQ(MqUrl string) *RabbitMQ {
 
 // Destroy 断开channel 和 connection
 func (r *RabbitMQ) Destroy() {
-	err := r.channel.Close()
-	if err != nil {
-		return
+	if r.channel != nil {
+		if err := r.channel.Close(); err != nil {
+			return
+		}
 	}
-	err = r.conn.Close()
-	if err != nil {
-		return
+
+	if r.conn != nil {
+		if err := r.conn.Close(); err != nil {
+			return
+		}
 	}
 }
 
@@ -54,8 +65,17 @@ func NewRabbitMQSimple(MqUrl string) *RabbitMQ {
 
 // PublishSimple 直接模式队列生产
 func (r *RabbitMQ) PublishSimple(queueName string, message []byte) error {
+	channel, err := r.openChannel()
+	if err != nil {
+		logx.Errorf("rabbitmq获取channel失败：%s:%+v", "failed to open a channel", err)
+		return fmt.Errorf("rabbitmq获取channel失败: %v", err)
+	}
+	defer func() {
+		_ = channel.Close()
+	}()
+
 	// 1.申请队列，如果队列不存在会自动创建，存在则跳过创建
-	_, err := r.channel.QueueDeclare(
+	_, err = channel.QueueDeclare(
 		queueName,
 		// 是否持久化
 		true,
@@ -69,12 +89,11 @@ func (r *RabbitMQ) PublishSimple(queueName string, message []byte) error {
 		nil,
 	)
 	if err != nil {
-		r.Destroy()
 		logx.Errorf("rabbitmq申请队列：%s失败, 错误消息: %+v", queueName, err)
 		return fmt.Errorf("rabbitmq申请队列失败: %v", err)
 	}
 	// 调用channel 发送消息到队列中
-	return r.channel.Publish(
+	return channel.Publish(
 		"",
 		queueName,
 		// 如果为true，根据自身exchange类型和routeKey规则无法找到符合条件的队列会把消息返还给发送者
@@ -89,8 +108,14 @@ func (r *RabbitMQ) PublishSimple(queueName string, message []byte) error {
 
 // ConsumeSimple simple 模式下消费者
 func (r *RabbitMQ) ConsumeSimple(queueName string, handler func([]byte)) {
+	channel, err := r.openChannel()
+	if err != nil {
+		logx.Errorf("rabbitmq获取channel失败：%s:%+v", "failed to open a channel", err)
+		panic(err)
+	}
+
 	// 1.申请队列，如果队列不存在会自动创建，存在则跳过创建
-	q, err := r.channel.QueueDeclare(
+	q, err := channel.QueueDeclare(
 		queueName,
 		// 是否持久化
 		true,
@@ -104,13 +129,13 @@ func (r *RabbitMQ) ConsumeSimple(queueName string, handler func([]byte)) {
 		nil,
 	)
 	if err != nil {
-		r.Destroy()
+		_ = channel.Close()
 		logx.Errorf("rabbitmq申请队列：%s失败, 错误消息: %+v", queueName, err)
 		panic(err)
 	}
 
 	// 接收消息
-	msgs, err := r.channel.Consume(
+	msgs, err := channel.Consume(
 		q.Name, // queue
 		// 用来区分多个消费者
 		"", // consumer
@@ -125,6 +150,7 @@ func (r *RabbitMQ) ConsumeSimple(queueName string, handler func([]byte)) {
 		nil,   // args
 	)
 	if err != nil {
+		_ = channel.Close()
 		logx.Errorf("rabbitmq队列：%s接收消息失败, 错误消息: %+v", queueName, err)
 		panic(err)
 	}
@@ -132,6 +158,9 @@ func (r *RabbitMQ) ConsumeSimple(queueName string, handler func([]byte)) {
 	forever := make(chan bool)
 	// 启用协程处理消息
 	go func() {
+		defer func() {
+			_ = channel.Close()
+		}()
 		for d := range msgs {
 			// 消息逻辑处理
 			// log.Printf("Received a message: %s", d.Body)
@@ -147,8 +176,17 @@ func (r *RabbitMQ) ConsumeSimple(queueName string, handler func([]byte)) {
 
 // SendDelayMessage 发送延时取消消息
 func (r *RabbitMQ) SendDelayMessage(exchange, queueName, key string, message []byte, delayMinutes int) error {
+	channel, err := r.openChannel()
+	if err != nil {
+		logx.Errorf("rabbitmq获取channel失败：%s:%+v", "failed to open a channel", err)
+		return fmt.Errorf("rabbitmq获取channel失败: %v", err)
+	}
+	defer func() {
+		_ = channel.Close()
+	}()
+
 	// 声明延时交换机
-	err := r.channel.ExchangeDeclare(
+	err = channel.ExchangeDeclare(
 		exchange,            // 交换机名称
 		"x-delayed-message", // 类型（需要延时插件）
 		true,                // 持久化
@@ -160,13 +198,12 @@ func (r *RabbitMQ) SendDelayMessage(exchange, queueName, key string, message []b
 		},
 	)
 	if err != nil {
-		r.Destroy()
 		logx.Errorf("声明延时交换机失败：%+v", err)
 		return fmt.Errorf("声明延时交换机失败: %v", err)
 	}
 
 	// 声明订单取消队列
-	_, err = r.channel.QueueDeclare(
+	_, err = channel.QueueDeclare(
 		queueName, // 队列名称
 		true,      // 持久化
 		false,     // 自动删除
@@ -175,13 +212,12 @@ func (r *RabbitMQ) SendDelayMessage(exchange, queueName, key string, message []b
 		nil,
 	)
 	if err != nil {
-		r.Destroy()
 		logx.Errorf("声明队列失败：%+v", err)
 		return fmt.Errorf("声明队列失败: %v", err)
 	}
 
 	// 绑定队列到交换机
-	err = r.channel.QueueBind(
+	err = channel.QueueBind(
 		queueName, // 队列名
 		key,       // 路由键
 		exchange,  // 交换机
@@ -189,12 +225,11 @@ func (r *RabbitMQ) SendDelayMessage(exchange, queueName, key string, message []b
 		nil,
 	)
 	if err != nil {
-		r.Destroy()
 		logx.Errorf("绑定队列失败：%+v", err)
 		return fmt.Errorf("绑定队列失败: %v", err)
 	}
 
-	err = r.channel.Publish(
+	err = channel.Publish(
 		exchange, // 交换机
 		key,      // 路由键
 		false,    // 强制
@@ -217,8 +252,17 @@ func (r *RabbitMQ) SendDelayMessage(exchange, queueName, key string, message []b
 
 // SendMessage 发送消息
 func (r *RabbitMQ) SendMessage(exchange, queueName, key string, message []byte) error {
+	channel, err := r.openChannel()
+	if err != nil {
+		logx.Errorf("rabbitmq获取channel失败：%s:%+v", "failed to open a channel", err)
+		return fmt.Errorf("rabbitmq获取channel失败: %v", err)
+	}
+	defer func() {
+		_ = channel.Close()
+	}()
+
 	// 声明交换机
-	err := r.channel.ExchangeDeclare(
+	err = channel.ExchangeDeclare(
 		exchange, // 交换机名称
 		"direct", // 类型
 		true,     // 持久化
@@ -228,13 +272,12 @@ func (r *RabbitMQ) SendMessage(exchange, queueName, key string, message []byte) 
 		nil,      // 其他属性
 	)
 	if err != nil {
-		r.Destroy()
 		logx.Errorf("声明交换机失败：%+v", err)
 		return fmt.Errorf("声明交换机失败: %v", err)
 	}
 
 	// 声明队列
-	_, err = r.channel.QueueDeclare(
+	_, err = channel.QueueDeclare(
 		queueName, // 队列名称
 		true,      // 持久化
 		false,     // 自动删除
@@ -243,13 +286,12 @@ func (r *RabbitMQ) SendMessage(exchange, queueName, key string, message []byte) 
 		nil,
 	)
 	if err != nil {
-		r.Destroy()
 		logx.Errorf("声明队列失败：%+v", err)
 		return fmt.Errorf("声明队列失败: %v", err)
 	}
 
 	// 绑定队列到交换机
-	err = r.channel.QueueBind(
+	err = channel.QueueBind(
 		queueName, // 队列名
 		key,       // 路由键
 		exchange,  // 交换机
@@ -257,12 +299,11 @@ func (r *RabbitMQ) SendMessage(exchange, queueName, key string, message []byte) 
 		nil,
 	)
 	if err != nil {
-		r.Destroy()
 		logx.Errorf("绑定队列失败：%+v", err)
 		return fmt.Errorf("绑定队列失败: %v", err)
 	}
 
-	err = r.channel.Publish(
+	err = channel.Publish(
 		exchange, // 交换机
 		key,      // 路由键
 		false,    // 强制

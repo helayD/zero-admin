@@ -24,6 +24,10 @@ export interface HomeNewProductListData {
 
 export interface HomeNewProductListParams {
   recommendStatus?: number;
+  scopeType?: 'platform' | 'tenant' | 'merchant';
+  platformId?: number;
+  tenantId?: number;
+  merchantId?: number;
   pageSize?: number;
   currentPage?: number;
   filter?: { [key: string]: any[] };

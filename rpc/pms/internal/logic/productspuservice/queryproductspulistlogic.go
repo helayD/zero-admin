@@ -5,12 +5,15 @@ import (
 	"errors"
 
 	"github.com/feihua/zero-admin/pkg/pointerprocess"
+	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/pkg/time_util"
-	"github.com/feihua/zero-admin/rpc/pms/gen/query"
+	"github.com/feihua/zero-admin/rpc/pms/gen/model"
+	logiccommon "github.com/feihua/zero-admin/rpc/pms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/pms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
 )
 
 // QueryProductSpuListLogic 查询商品SPU列表
@@ -34,52 +37,68 @@ func NewQueryProductSpuListLogic(ctx context.Context, svcCtx *svc.ServiceContext
 
 // QueryProductSpuList 查询商品SPU列表
 func (l *QueryProductSpuListLogic) QueryProductSpuList(in *pmsclient.QueryProductSpuListReq) (*pmsclient.QueryProductSpuListResp, error) {
-	productSpu := query.PmsProductSpu
-	q := productSpu.WithContext(l.ctx)
+	current, err := logiccommon.NormalizeProtoScope(in.Scope)
+	if err != nil {
+		logc.Errorf(l.ctx, "查询商品SPU列表scope非法,参数:%+v,异常:%s", in, err.Error())
+		return nil, errors.New("查询商品SPU列表失败")
+	}
+
+	q := pkgscope.ApplyGovernanceScope(
+		l.svcCtx.DB.WithContext(l.ctx).Model(&model.PmsProductSpu{}),
+		current,
+		"",
+	)
 	if len(in.Name) > 0 {
-		q = q.Where(productSpu.Name.Like("%" + in.Name + "%"))
+		q = q.Where("name LIKE ?", "%"+in.Name+"%")
 	}
 	if in.CategoryId != 0 {
-		q = q.Where(productSpu.CategoryID.Eq(in.CategoryId))
+		q = q.Where("category_id = ?", in.CategoryId)
 	}
 	if len(in.CategoryIds) > 0 {
-		q = q.Where(productSpu.CategoryIds.Like("%" + in.CategoryIds + "%"))
+		q = q.Where("category_ids LIKE ?", "%"+in.CategoryIds+"%")
 	}
 	if len(in.CategoryName) > 0 {
-		q = q.Where(productSpu.CategoryName.Like("%" + in.CategoryName + "%"))
+		q = q.Where("category_name LIKE ?", "%"+in.CategoryName+"%")
 	}
 	if in.BrandId != 0 {
-		q = q.Where(productSpu.BrandID.Eq(in.BrandId))
+		q = q.Where("brand_id = ?", in.BrandId)
 	}
 	if len(in.BrandName) > 0 {
-		q = q.Where(productSpu.BrandName.Like("%" + in.BrandName + "%"))
+		q = q.Where("brand_name LIKE ?", "%"+in.BrandName+"%")
 	}
 
 	if len(in.Keywords) > 0 {
-		q = q.Where(productSpu.Keywords.Like("%" + in.Keywords + "%"))
+		q = q.Where("keywords LIKE ?", "%"+in.Keywords+"%")
 	}
 
 	if in.PublishStatus != 2 {
-		q = q.Where(productSpu.PublishStatus.Eq(in.PublishStatus))
+		q = q.Where("publish_status = ?", in.PublishStatus)
 	}
 	if in.NewStatus != 2 {
-		q = q.Where(productSpu.NewStatus.Eq(in.NewStatus))
+		q = q.Where("new_status = ?", in.NewStatus)
 	}
 	if in.RecommendStatus != 2 {
-		q = q.Where(productSpu.RecommendStatus.Eq(in.RecommendStatus))
+		q = q.Where("recommend_status = ?", in.RecommendStatus)
 	}
 	if in.VerifyStatus != 2 {
-		q = q.Where(productSpu.VerifyStatus.Eq(in.VerifyStatus))
+		q = q.Where("verify_status = ?", in.VerifyStatus)
 	}
 	if in.PreviewStatus != 2 {
-		q = q.Where(productSpu.PreviewStatus.Eq(in.PreviewStatus))
+		q = q.Where("preview_status = ?", in.PreviewStatus)
 	}
 
 	if in.PromotionType != 6 {
-		q = q.Where(productSpu.PromotionType.Eq(in.PromotionType))
+		q = q.Where("promotion_type = ?", in.PromotionType)
 	}
 
-	result, count, err := q.FindByPage(int((in.PageNum-1)*in.PageSize), int(in.PageSize))
+	var (
+		result []model.PmsProductSpu
+		count  int64
+	)
+	err = q.Session(&gorm.Session{}).Count(&count).Error
+	if err == nil {
+		err = q.Offset(int((in.PageNum - 1) * in.PageSize)).Limit(int(in.PageSize)).Find(&result).Error
+	}
 
 	if err != nil {
 		logc.Errorf(l.ctx, "查询商品SPU列表失败,参数:%+v,异常:%s", in, err.Error())

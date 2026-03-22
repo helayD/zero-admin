@@ -70,6 +70,7 @@ message UpdateProductSkuResp {
 // 查询商品SKU详情
 message QueryProductSkuDetailReq {
   int64 id = 1;
+  GovernanceScope scope = 2; //治理范围(platform/tenant/merchant)
 }
 
 message QueryProductSkuDetailResp {
@@ -109,6 +110,7 @@ message QueryProductSkuListReq {
   int32 verify_status = 7; //审核状态：0-未审核，1-审核通过，2-审核不通过
   int32 page_num = 8; //第几页
   int32 page_size = 9; //每页的数量
+  GovernanceScope scope = 10; //治理范围(platform/tenant/merchant)
 }
 
 message ProductSkuListData {

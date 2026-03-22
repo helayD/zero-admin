@@ -141,7 +141,7 @@ zero-admin/
 
 ## 开发规范
 
-详见 [project-context.md](../gogogo/project-context.md)
+详见 [project-context.md](../_opcos/project-context.md)
 
 ## 部署
 

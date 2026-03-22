@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	frontcommon "github.com/feihua/zero-admin/api/front/internal/logic/common"
 	"github.com/feihua/zero-admin/pkg/errorx"
 	"github.com/feihua/zero-admin/rpc/oms/omsclient"
 	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
@@ -115,12 +116,23 @@ func QueryCartListPromotion(ids []int64, ctx context.Context, svcCtx *svc.Servic
 
 	// 4.查询所有商品的优惠相关信息(商品的促销信息，包括sku、打折优惠、满减优惠)
 	// 过滤出所有商品的id,查询表pms_product,pms_sku_stock,pms_product_ladder,pms_product_full_reduction
+	currentScope := frontcommon.ResolveEffectiveGovernanceScope(ctx)
 	productList := make([]*pmsclient.QueryProductSpuDetailResp, 0)            // 方便后面统计金额
 	productListMap := make(map[int64]*pmsclient.QueryProductSpuDetailResp, 0) // 方便取数判断
 	for _, item := range cartItemListData {
-		productResp, _ := svcCtx.ProductSpuService.QueryProductSpuDetail(ctx, &pmsclient.QueryProductSpuDetailReq{
-			Id: item.ProductId,
+		productResp, err := svcCtx.ProductSpuService.QueryProductSpuDetail(ctx, &pmsclient.QueryProductSpuDetailReq{
+			Id:    item.ProductId,
+			Scope: frontcommon.PMSGovernanceScope(currentScope),
 		})
+		if err != nil {
+			logc.Errorf(ctx, "查询购物车商品详情失败,productId:%d,scope:%+v,异常:%s", item.ProductId, currentScope, err.Error())
+			s, _ := status.FromError(err)
+			return nil, errorx.NewDefaultError(s.Message())
+		}
+		if productResp == nil || productResp.Data == nil {
+			logc.Errorf(ctx, "查询购物车商品详情为空,productId:%d,scope:%+v", item.ProductId, currentScope)
+			return nil, errorx.NewDefaultError("购物车中存在当前主体不可见商品")
+		}
 		productList = append(productList, productResp)
 		productListMap[item.ProductId] = productResp
 	}
