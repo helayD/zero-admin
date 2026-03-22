@@ -1193,6 +1193,10 @@ type QueryAuditCenterDetailData struct {
 type QueryAuditCenterDetailReq struct {
 	SourceType string `form:"sourceType"`
 	SourceId   int64  `form:"sourceId"`
+	ScopeType  string `form:"scopeType,optional"`
+	PlatformId int64  `form:"platformId,optional"`
+	TenantId   int64  `form:"tenantId,optional"`
+	MerchantId int64  `form:"merchantId,optional"`
 }
 
 type QueryAuditCenterDetailResp struct {
