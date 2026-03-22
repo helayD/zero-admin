@@ -34,6 +34,8 @@ type (
 	AddRoleResp                  = sysclient.AddRoleResp
 	AddUserReq                   = sysclient.AddUserReq
 	AddUserResp                  = sysclient.AddUserResp
+	AuditCenterListItem          = sysclient.AuditCenterListItem
+	AuditTimelineItem            = sysclient.AuditTimelineItem
 	CancelAuthorizationReq       = sysclient.CancelAuthorizationReq
 	CancelAuthorizationResp      = sysclient.CancelAuthorizationResp
 	ChangeMerchantStatusReq      = sysclient.ChangeMerchantStatusReq
@@ -84,6 +86,10 @@ type (
 	OperateLogListData           = sysclient.OperateLogListData
 	PostData                     = sysclient.PostData
 	PostListData                 = sysclient.PostListData
+	QueryAuditCenterDetailReq    = sysclient.QueryAuditCenterDetailReq
+	QueryAuditCenterDetailResp   = sysclient.QueryAuditCenterDetailResp
+	QueryAuditCenterListReq      = sysclient.QueryAuditCenterListReq
+	QueryAuditCenterListResp     = sysclient.QueryAuditCenterListResp
 	QueryDeptAndPostListReq      = sysclient.QueryDeptAndPostListReq
 	QueryDeptAndPostListResp     = sysclient.QueryDeptAndPostListResp
 	QueryDeptDetailReq           = sysclient.QueryDeptDetailReq
