@@ -17,7 +17,6 @@ MYSQL_DB="${ZERO_ADMIN_MYSQL_DB:-gozero}"
 MYSQL_USER="${ZERO_ADMIN_MYSQL_USER:-root}"
 MYSQL_PASSWORD="${ZERO_ADMIN_MYSQL_PASSWORD:-12341qweqfsd2356}"
 
-SYNC_MODE="${ZERO_ADMIN_SYNC_MODE:-auto}"
 GIT_REMOTE="${ZERO_ADMIN_GIT_REMOTE:-origin}"
 GIT_REMOTE_URL="${ZERO_ADMIN_GIT_REMOTE_URL:-}"
 GIT_PUSH_REMOTE="${ZERO_ADMIN_GIT_PUSH_REMOTE:-}"
@@ -47,7 +46,6 @@ DEFAULT_SERVICES="all"
 SERVICES_CSV="${ZERO_ADMIN_DEPLOY_SERVICES:-$DEFAULT_SERVICES}"
 SKIP_SERVICES_CSV=""
 RUN_SMOKE=1
-RUN_SYNC=1
 MIGRATION_PATH=""
 
 ALL_SERVICES=(
@@ -77,17 +75,14 @@ Options:
   --services <csv|all>         Deploy the given services. Default: all
   --skip-services <csv>        Remove services from the deploy set after --services is applied
   --migration <repo-sql>       Apply a repo SQL migration after backing up the remote DB
-  --sync-mode <auto|git|rsync|none>
-                               Source sync mode. Default: auto. Auto commits/rebases/pushes the current branch before deploy
   --git-remote <name>          Local git remote used to resolve the fetch URL. Default: origin
   --git-push-remote <target>   Local git push target used before deploy. Default: same as --git-remote
   --git-remote-url <url>       Explicit git URL to fetch on the remote host
-  --git-ref <ref>              Git ref to deploy in strict git mode. Default: current branch after the script pushes it
+  --git-ref <ref>              Deploy an already-pushed ref instead of publishing the current branch. Requires a clean local worktree
   --skip-web                   Backward-compatible shortcut for --skip-services web-admin
   --skip-admin-api             Backward-compatible shortcut for --skip-services admin-api
   --skip-sys-rpc               Backward-compatible shortcut for --skip-services sys-rpc
   --skip-smoke                 Skip post-deploy smoke checks
-  --skip-sync                  Skip repo source sync to the remote host
   -h, --help                   Show this help
 EOF
 }
@@ -197,75 +192,6 @@ apply_skip_services() {
   done
 }
 
-service_is_binary() {
-  local service="$1"
-  [[ "$service" != "web-admin" ]]
-}
-
-service_entrypoint() {
-  case "$1" in
-    admin-api) echo "./api/admin/admin.go" ;;
-    front-api) echo "./api/front/front.go" ;;
-    sys-rpc) echo "./rpc/sys/sys.go" ;;
-    ums-rpc) echo "./rpc/ums/ums.go" ;;
-    pms-rpc) echo "./rpc/pms/pms.go" ;;
-    oms-rpc) echo "./rpc/oms/oms.go" ;;
-    sms-rpc) echo "./rpc/sms/sms.go" ;;
-    cms-rpc) echo "./rpc/cms/cms.go" ;;
-    search-rpc) echo "./rpc/search/search.go" ;;
-    consumer) echo "./consumer/consumer.go" ;;
-    job) echo "./job/job.go" ;;
-    *)
-      echo "No entrypoint for service: $1" >&2
-      exit 1
-      ;;
-  esac
-}
-
-service_config_source() {
-  case "$1" in
-    admin-api) echo "api/admin/etc/admin-api.yaml" ;;
-    front-api) echo "api/front/etc/front-api.yaml" ;;
-    sys-rpc) echo "rpc/sys/etc/sys.yaml" ;;
-    ums-rpc) echo "rpc/ums/etc/ums.yaml" ;;
-    pms-rpc) echo "rpc/pms/etc/pms.yaml" ;;
-    oms-rpc) echo "rpc/oms/etc/oms.yaml" ;;
-    sms-rpc) echo "rpc/sms/etc/sms.yaml" ;;
-    cms-rpc) echo "rpc/cms/etc/cms.yaml" ;;
-    search-rpc) echo "rpc/search/etc/search.yaml" ;;
-    consumer) echo "consumer/etc/consumer-api.yaml" ;;
-    job) echo "job/etc/job-api.yaml" ;;
-    *)
-      echo "No config source for service: $1" >&2
-      exit 1
-      ;;
-  esac
-}
-
-service_config_name() {
-  case "$1" in
-    consumer) echo "consumer-api.yaml" ;;
-    job) echo "job-api.yaml" ;;
-    *) echo "$1.yaml" ;;
-  esac
-}
-
-runtime_config_paths() {
-  cat <<'EOF'
-api/admin/etc/admin-api.yaml
-api/front/etc/front-api.yaml
-rpc/sys/etc/sys.yaml
-rpc/ums/etc/ums.yaml
-rpc/pms/etc/pms.yaml
-rpc/oms/etc/oms.yaml
-rpc/sms/etc/sms.yaml
-rpc/cms/etc/cms.yaml
-rpc/search/etc/search.yaml
-consumer/etc/consumer-api.yaml
-job/etc/job-api.yaml
-EOF
-}
-
 service_selected() {
   local service="$1"
   local item
@@ -281,34 +207,13 @@ local_git_dirty() {
   [[ -n "$(git -C "$REPO_ROOT" status --porcelain 2>/dev/null || true)" ]]
 }
 
-resolve_effective_sync_mode() {
-  local mode="$SYNC_MODE"
-
-  if [[ "$RUN_SYNC" -eq 0 || "$mode" == "none" ]]; then
-    echo "none"
-    return 0
-  fi
-
-  if [[ "$mode" == "auto" ]]; then
-    echo "git"
-    return 0
-  fi
-
-  if [[ "$mode" != "git" && "$mode" != "rsync" ]]; then
-    echo "Unsupported sync mode: $mode" >&2
-    exit 1
-  fi
-
-  echo "$mode"
-}
-
 print_local_git_status() {
   git -C "$REPO_ROOT" status --short --branch >&2 || true
 }
 
 require_clean_git_tree() {
   if local_git_dirty; then
-    echo "Strict git deploy requires a clean local worktree. Use the default auto mode if you want the script to commit and push the current branch for you." >&2
+    echo "Deploying an explicit --git-ref requires a clean local worktree. Omit --git-ref if you want the script to commit and push the current branch for you." >&2
     print_local_git_status
     exit 1
   fi
@@ -443,54 +348,6 @@ resolve_git_ref() {
   printf '%s' "$GIT_REF"
 }
 
-rsync_supports_info_flag() {
-  rsync --help 2>&1 | grep -q -- '--info'
-}
-
-sync_source_with_rsync() {
-  local rsync_args=(
-    -az
-    --delete
-    --exclude=.git/
-    --exclude=.agents/
-    --exclude=.claude/
-    --exclude=.vscode/
-    --exclude=.idea/
-    --exclude=.run/
-    --exclude=.windsurf/
-    --exclude=.windsurfrules
-    --exclude=_bmad/
-    --exclude=_opcos/
-    --exclude=deploy-backup/
-    --exclude=target/
-    --exclude=logs/
-    --exclude=node_modules/
-    --exclude=web-admin/node_modules/
-    --exclude=web-admin/dist/
-    --exclude=flutter-mall/
-    --exclude=api/admin/etc/admin-api.yaml
-    --exclude=api/front/etc/front-api.yaml
-    --exclude=rpc/sys/etc/sys.yaml
-    --exclude=rpc/ums/etc/ums.yaml
-    --exclude=rpc/pms/etc/pms.yaml
-    --exclude=rpc/oms/etc/oms.yaml
-    --exclude=rpc/sms/etc/sms.yaml
-    --exclude=rpc/cms/etc/cms.yaml
-    --exclude=rpc/search/etc/search.yaml
-    --exclude=consumer/etc/consumer-api.yaml
-    --exclude=job/etc/job-api.yaml
-  )
-
-  if rsync_supports_info_flag; then
-    rsync_args+=(--info=stats1)
-  else
-    rsync_args+=(--stats)
-  fi
-
-  echo "[3/7] Syncing repo source via rsync to $SSH_TARGET:$REMOTE_ROOT"
-  rsync "${rsync_args[@]}" "$REPO_ROOT/" "$SSH_TARGET:$REMOTE_ROOT/"
-}
-
 sync_source_with_git() {
   local git_remote_url="$1"
   local git_ref="$2"
@@ -580,10 +437,6 @@ while [[ $# -gt 0 ]]; do
       MIGRATION_PATH="$2"
       shift 2
       ;;
-    --sync-mode)
-      SYNC_MODE="$2"
-      shift 2
-      ;;
     --git-remote)
       GIT_REMOTE="$2"
       shift 2
@@ -616,10 +469,6 @@ while [[ $# -gt 0 ]]; do
       RUN_SMOKE=0
       shift
       ;;
-    --skip-sync)
-      RUN_SYNC=0
-      shift
-      ;;
     -h|--help)
       usage
       exit 0
@@ -645,59 +494,22 @@ if [[ "${#SELECTED_SERVICES[@]}" -eq 0 && -z "$MIGRATION_PATH" ]]; then
 fi
 
 TS="$(date +%Y%m%d-%H%M%S)"
-RELEASE_DIR="/tmp/zero-admin-remote-deploy/$TS"
-mkdir -p "$RELEASE_DIR"
-
-EFFECTIVE_SYNC_MODE="$(resolve_effective_sync_mode)"
-if [[ "$EFFECTIVE_SYNC_MODE" == "git" ]]; then
-  require_cmd git
-fi
-
-if [[ "$EFFECTIVE_SYNC_MODE" == "git" ]]; then
-  if [[ -n "$GIT_REF" && "$SYNC_MODE" != "git" ]]; then
-    echo "--git-ref is only supported with --sync-mode git. Default auto mode always publishes the current branch before deploy." >&2
-    exit 1
-  fi
-
-  if [[ -n "$GIT_REMOTE_URL" ]]; then
-    RESOLVED_GIT_REMOTE_URL="$GIT_REMOTE_URL"
-  else
-    RESOLVED_GIT_REMOTE_URL="$(resolve_named_remote_url "$GIT_PUSH_REMOTE")"
-  fi
-
-  if [[ -n "$GIT_REF" ]]; then
-    require_clean_git_tree
-    RESOLVED_GIT_REF="$(resolve_git_ref)"
-  elif [[ "$SYNC_MODE" == "git" ]]; then
-    require_clean_git_tree
-    RESOLVED_GIT_REF="$(publish_current_branch_for_deploy "$TS" 0)"
-  else
-    RESOLVED_GIT_REF="$(publish_current_branch_for_deploy "$TS" 1)"
-  fi
-fi
-
+require_cmd git
 require_cmd ssh
 require_cmd scp
-require_cmd rsync
 require_cmd python3
 
-NEEDS_GO=0
-NEEDS_NPM=0
-for service in "${SELECTED_SERVICES[@]}"; do
-  if service_is_binary "$service"; then
-    NEEDS_GO=1
-  fi
-  if [[ "$service" == "web-admin" ]]; then
-    NEEDS_NPM=1
-  fi
-done
-
-if [[ "$EFFECTIVE_SYNC_MODE" != "git" && "$NEEDS_GO" -eq 1 ]]; then
-  require_cmd go
+if [[ -n "$GIT_REMOTE_URL" ]]; then
+  RESOLVED_GIT_REMOTE_URL="$GIT_REMOTE_URL"
+else
+  RESOLVED_GIT_REMOTE_URL="$(resolve_named_remote_url "$GIT_PUSH_REMOTE")"
 fi
 
-if [[ "$EFFECTIVE_SYNC_MODE" != "git" && "$NEEDS_NPM" -eq 1 ]]; then
-  require_cmd npm
+if [[ -n "$GIT_REF" ]]; then
+  require_clean_git_tree
+  RESOLVED_GIT_REF="$(resolve_git_ref)"
+else
+  RESOLVED_GIT_REF="$(publish_current_branch_for_deploy "$TS" 1)"
 fi
 
 cd "$REPO_ROOT"
@@ -715,39 +527,9 @@ echo "[1/7] Verifying SSH access: $SSH_TARGET"
 ssh -o BatchMode=yes -o StrictHostKeyChecking=no "$SSH_TARGET" "test -d '$REMOTE_ROOT'"
 
 echo "[2/7] Preparing build artifacts"
-if [[ "$EFFECTIVE_SYNC_MODE" == "git" ]]; then
-  echo "  - git-backed mode will build artifacts from remote fetched source"
-else
-  for service in "${SELECTED_SERVICES[@]}"; do
-    if ! service_is_binary "$service"; then
-      continue
-    fi
-    echo "  - building $service locally"
-    GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o "$RELEASE_DIR/$service" "$(service_entrypoint "$service")"
-  done
+echo "  - remote host will build artifacts from git-synced source"
 
-  if service_selected "web-admin"; then
-    if [[ ! -d "$REPO_ROOT/web-admin/node_modules" ]]; then
-      (cd "$REPO_ROOT/web-admin" && npm install)
-    fi
-    (cd "$REPO_ROOT/web-admin" && NODE_OPTIONS=--openssl-legacy-provider npm run build)
-  fi
-fi
-
-case "$EFFECTIVE_SYNC_MODE" in
-  git)
-    sync_source_with_git "$RESOLVED_GIT_REMOTE_URL" "$RESOLVED_GIT_REF"
-    ;;
-  rsync)
-    if local_git_dirty; then
-      echo "  - local workspace is dirty, using rsync so uncommitted changes are included"
-    fi
-    sync_source_with_rsync
-    ;;
-  none)
-    echo "[3/7] Source sync skipped"
-    ;;
-esac
+sync_source_with_git "$RESOLVED_GIT_REMOTE_URL" "$RESOLVED_GIT_REF"
 
 if [[ -n "$MIGRATION_PATH" ]]; then
   echo "[4/7] Uploading and applying migration: ${MIGRATION_PATH#$REPO_ROOT/}"
@@ -767,13 +549,12 @@ echo "[5/7] Uploading deployable artifacts"
 ssh -o BatchMode=yes -o StrictHostKeyChecking=no "$SSH_TARGET" \
   "mkdir -p '$REMOTE_ROOT/deploy-backup/$TS/artifacts' '$REMOTE_ROOT/web-admin'"
 
-if [[ "$EFFECTIVE_SYNC_MODE" == "git" ]]; then
-  remote_go_arg="$REMOTE_GO_BIN"
-  remote_npm_arg="$REMOTE_NPM_BIN"
-  [[ -z "$remote_go_arg" ]] && remote_go_arg="$REMOTE_BIN_AUTO"
-  [[ -z "$remote_npm_arg" ]] && remote_npm_arg="$REMOTE_BIN_AUTO"
-  ssh -o BatchMode=yes -o StrictHostKeyChecking=no "$SSH_TARGET" \
-    "bash -s" -- "$REMOTE_ROOT" "$TS" "$(join_by , "${SELECTED_SERVICES[@]}")" "$remote_go_arg" "$remote_npm_arg" <<'EOF'
+remote_go_arg="$REMOTE_GO_BIN"
+remote_npm_arg="$REMOTE_NPM_BIN"
+[[ -z "$remote_go_arg" ]] && remote_go_arg="$REMOTE_BIN_AUTO"
+[[ -z "$remote_npm_arg" ]] && remote_npm_arg="$REMOTE_BIN_AUTO"
+ssh -o BatchMode=yes -o StrictHostKeyChecking=no "$SSH_TARGET" \
+  "bash -s" -- "$REMOTE_ROOT" "$TS" "$(join_by , "${SELECTED_SERVICES[@]}")" "$remote_go_arg" "$remote_npm_arg" <<'EOF'
 set -euo pipefail
 
 remote_root="$1"
@@ -882,23 +663,6 @@ for service in "${services[@]}"; do
   "$GO_BIN" build -o "$artifact_dir/$service" "$(service_entrypoint "$service")"
 done
 EOF
-else
-  artifact_files=()
-  for service in "${SELECTED_SERVICES[@]}"; do
-    if service_is_binary "$service"; then
-      artifact_files+=("$RELEASE_DIR/$service")
-    fi
-  done
-
-  if [[ "${#artifact_files[@]}" -gt 0 ]]; then
-    scp -o BatchMode=yes -o StrictHostKeyChecking=no "${artifact_files[@]}" \
-      "$SSH_TARGET:$REMOTE_ROOT/deploy-backup/$TS/artifacts/"
-  fi
-
-  if service_selected "web-admin"; then
-    rsync -az --delete "$REPO_ROOT/web-admin/dist/" "$SSH_TARGET:$REMOTE_ROOT/web-admin/dist.new/"
-  fi
-fi
 
 echo "[6/7] Backing up and swapping remote services"
 SERVICE_LIST="$(join_by , "${SELECTED_SERVICES[@]}")"
@@ -1051,9 +815,6 @@ fi
 
 echo "Deployment complete."
 echo "Services: $(join_by , "${SELECTED_SERVICES[@]}")"
-echo "Sync mode: $EFFECTIVE_SYNC_MODE"
-if [[ "$EFFECTIVE_SYNC_MODE" == "git" ]]; then
-  echo "Git source: $RESOLVED_GIT_REMOTE_URL @ $RESOLVED_GIT_REF"
-fi
-echo "Release dir: $RELEASE_DIR"
+echo "Deploy source: git"
+echo "Git source: $RESOLVED_GIT_REMOTE_URL @ $RESOLVED_GIT_REF"
 echo "Remote backup: $REMOTE_ROOT/deploy-backup/$TS"
