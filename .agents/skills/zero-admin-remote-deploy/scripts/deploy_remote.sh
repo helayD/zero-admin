@@ -131,7 +131,7 @@ service_exists() {
 append_service_unique() {
   local service="$1"
   local item
-  for item in "${SELECTED_SERVICES[@]}"; do
+  for item in "${SELECTED_SERVICES[@]-}"; do
     if [[ "$item" == "$service" ]]; then
       return 0
     fi
@@ -143,7 +143,7 @@ remove_service() {
   local service="$1"
   local filtered=()
   local item
-  for item in "${SELECTED_SERVICES[@]}"; do
+  for item in "${SELECTED_SERVICES[@]-}"; do
     if [[ "$item" != "$service" ]]; then
       filtered+=("$item")
     fi
