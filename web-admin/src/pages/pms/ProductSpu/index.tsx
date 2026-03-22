@@ -21,14 +21,24 @@ import {
 
 const {confirm} = Modal;
 
+type ProductSpuStatusAction = 'publish' | 'verify' | 'recommend' | 'new' | 'delete';
+
+const productSpuActionLabel: Record<ProductSpuStatusAction, string> = {
+  publish: '上架状态',
+  verify: '审核状态',
+  recommend: '推荐状态',
+  new: '新品状态',
+  delete: '删除状态',
+};
+
 /**
  * 添加商品SPU
  * @param fields
  */
-const handleAdd = async (fields: ProductSpuListItem) => {
+const handleAdd = async (fields: ProductSpuListItem, scope: GovernanceScopeValue) => {
   const hide = message.loading('正在添加');
   try {
-    await addProductSpu({...fields});
+    await addProductSpu({...fields, ...toGovernancePayload(scope)});
     hide();
     message.success('添加成功');
     return true;
@@ -42,7 +52,7 @@ const handleAdd = async (fields: ProductSpuListItem) => {
  * 更新商品SPU
  * @param fields
  */
-const handleUpdate = async (fields: ProductSpuListItem) => {
+const handleUpdate = async (fields: ProductSpuListItem & GovernanceScopeValue) => {
   const hide = message.loading('正在更新');
   try {
     await updateProductSpu(fields);
@@ -60,11 +70,11 @@ const handleUpdate = async (fields: ProductSpuListItem) => {
  *  删除商品SPU
  * @param ids
  */
-const handleRemove = async (ids: number[]) => {
+const handleRemove = async (ids: number[], scope: GovernanceScopeValue) => {
   const hide = message.loading('正在删除');
   if (ids.length === 0) return true;
   try {
-    await removeProductSpu(ids);
+    await removeProductSpu(ids, toGovernancePayload(scope));
     hide();
     message.success('删除成功，即将刷新');
     return true;
@@ -76,19 +86,29 @@ const handleRemove = async (ids: number[]) => {
 
 /**
  * 更新商品SPU状态
+ * @param action
  * @param ids
  * @param status
  */
-const handleStatus = async (ids: number[], status: number) => {
+const handleStatus = async (
+  action: ProductSpuStatusAction,
+  ids: number[],
+  status: number,
+  scope: GovernanceScopeValue,
+) => {
   const hide = message.loading('正在更新状态');
   if (ids.length == 0) {
     hide();
     return true;
   }
   try {
-    await updateProductSpuStatus({ productSpuIds: ids, productSpuStatus: status});
+    await updateProductSpuStatus(action, {
+      ids,
+      status,
+      ...toGovernancePayload(scope),
+    });
     hide();
-    message.success('更新状态成功');
+    message.success(`${productSpuActionLabel[action]}更新成功`);
     return true;
   } catch (error) {
     hide();
@@ -104,13 +124,14 @@ const ProductSpuList: React.FC = () => {
   const [currentRow, setCurrentRow] = useState<ProductSpuListItem>();
   const [skuVisible, handleSkuVisible] = useState<boolean>(false);
   const [scope, setScope] = useState<GovernanceScopeValue>(defaultGovernanceScope);
+
   const showDeleteConfirm = (ids: number[]) => {
     confirm({
       title: '是否删除记录?',
       icon: <ExclamationCircleOutlined/>,
-      content: '删除的记录不能恢复,请确认!',
+      content: `当前主体：${buildGovernanceScopeLabel(scope)}。删除后不可恢复，请确认。`,
       onOk() {
-        handleRemove(ids).then(() => {
+        handleRemove(ids, scope).then(() => {
           actionRef.current?.reloadAndRest?.();
         });
       },
@@ -119,12 +140,13 @@ const ProductSpuList: React.FC = () => {
     });
   };
 
-  const showStatusConfirm = (ids: number[], status: number) => {
+  const showStatusConfirm = (action: ProductSpuStatusAction, ids: number[], status: number) => {
     confirm({
-      title: `确定${status == 1 ? "启用" : "禁用"}吗？`,
+      title: `确定更新${productSpuActionLabel[action]}吗？`,
       icon: <ExclamationCircleOutlined/>,
+      content: `当前主体：${buildGovernanceScopeLabel(scope)}。将影响 ${ids.length} 个商品。`,
       async onOk() {
-        await handleStatus(ids, status)
+        await handleStatus(action, ids, status, scope)
         actionRef.current?.clearSelected?.();
         actionRef.current?.reload?.();
       },
@@ -279,7 +301,7 @@ const ProductSpuList: React.FC = () => {
           <Switch
             checked={entity.publishStatus == 1}
             onChange={(flag) => {
-              showStatusConfirm([entity.id], flag ? 1 : 0);
+              showStatusConfirm('publish', [entity.id], flag ? 1 : 0);
             }}
           />
         );
@@ -305,7 +327,7 @@ const ProductSpuList: React.FC = () => {
           <Switch
             checked={entity.newStatus == 1}
             onChange={(flag) => {
-              showStatusConfirm([entity.id], flag ? 1 : 0);
+              showStatusConfirm('new', [entity.id], flag ? 1 : 0);
             }}
           />
         );
@@ -331,7 +353,7 @@ const ProductSpuList: React.FC = () => {
           <Switch
             checked={entity.recommendStatus == 1}
             onChange={(flag) => {
-              showStatusConfirm([entity.id], flag ? 1 : 0);
+              showStatusConfirm('recommend', [entity.id], flag ? 1 : 0);
             }}
           />
         );
@@ -356,7 +378,7 @@ const ProductSpuList: React.FC = () => {
           <Switch
             checked={entity.verifyStatus == 1}
             onChange={(flag) => {
-              showStatusConfirm([entity.id], flag ? 1 : 0);
+              showStatusConfirm('verify', [entity.id], flag ? 1 : 0);
             }}
           />
         );
@@ -378,14 +400,7 @@ const ProductSpuList: React.FC = () => {
         );
       },
       render: (dom, entity) => {
-        return (
-          <Switch
-            checked={entity.previewStatus == 1}
-            onChange={(flag) => {
-              showStatusConfirm([entity.id], flag ? 1 : 0);
-            }}
-          />
-        );
+        return entity.previewStatus == 1 ? <Tag color="gold">预告中</Tag> : <Tag>普通</Tag>;
       },
     },
     {
@@ -604,16 +619,16 @@ return (
                 icon={<EditOutlined/>}
                 style={ {borderRadius: '5px'}}
                 onClick={async () => {
-                  showStatusConfirm(ids, 1)
+                  showStatusConfirm('publish', ids, 1)
                 }}
-              >批量启用</Button>
+              >批量上架</Button>
               <Button
                 icon={<EditOutlined/>}
                 style={ {borderRadius: '5px'} }
                 onClick={async () => {
-                  showStatusConfirm(ids, 0)
+                  showStatusConfirm('publish', ids, 0)
                 }}
-              >批量禁用</Button>
+              >批量下架</Button>
               <Button
                 icon={<DeleteOutlined/>}
                 danger
@@ -631,7 +646,7 @@ return (
       <AddModal
         key={'AddModal'}
         onSubmit={async (value) => {
-          const success = await handleAdd(value);
+          const success = await handleAdd(value, scope);
           if (success) {
             handleAddVisible(false);
             setCurrentRow(undefined);
@@ -652,7 +667,7 @@ return (
       <UpdateModal
         key={'UpdateModal'}
         onSubmit={async (value) => {
-          const success = await handleUpdate(value);
+          const success = await handleUpdate({...value, ...toGovernancePayload(scope)});
           if (success) {
             handleUpdateVisible(false);
             setCurrentRow(undefined);

@@ -28,10 +28,18 @@ type (
 		IsEnabled     int32       `json:"isEnabled"` //是否启用
 		Description   string      `json:"description,optional"` //使用说明
 		ScopeData     []ScopeData `json:"couponScopeData,optional"` //使用说明
+		ScopeType     string      `json:"scopeType,optional"` //治理范围(platform/tenant/merchant)
+		PlatformId    int64       `json:"platformId,optional"` //平台ID
+		TenantId      int64       `json:"tenantId,optional"` //租户ID
+		MerchantId    int64       `json:"merchantId,optional"` //商户ID
 	}
 	// 删除优惠券请求参数
 	DeleteCouponReq {
-		Ids []int64 `form:"ids"`
+		Ids        []int64 `form:"ids"`
+		ScopeType  string  `form:"scopeType,optional"` //治理范围(platform/tenant/merchant)
+		PlatformId int64   `form:"platformId,optional"` //平台ID
+		TenantId   int64   `form:"tenantId,optional"` //租户ID
+		MerchantId int64   `form:"merchantId,optional"` //商户ID
 	}
 	// 更新优惠券请求参数
 	UpdateCouponReq {
@@ -51,11 +59,19 @@ type (
 		IsEnabled     int32       `json:"isEnabled"` //是否启用
 		Description   string      `json:"description,optional"` //使用说明
 		ScopeData     []ScopeData `json:"couponScopeData,optional"` //使用说明
+		ScopeType     string      `json:"scopeType,optional"` //治理范围(platform/tenant/merchant)
+		PlatformId    int64       `json:"platformId,optional"` //平台ID
+		TenantId      int64       `json:"tenantId,optional"` //租户ID
+		MerchantId    int64       `json:"merchantId,optional"` //商户ID
 	}
 	// 更新优惠券状态请求参数
 	UpdateSmsCouponStatusReq {
-		Ids    []int64 `json:"ids"` //优惠券ID
-		Status int32   `json:"status"` //状态：0-未开始，1-进行中，2-已结束，3-已取消
+		Ids        []int64 `json:"ids"` //优惠券ID
+		Status     int32   `json:"status"` //状态：0-未开始，1-进行中，2-已结束，3-已取消
+		ScopeType  string  `json:"scopeType,optional"` //治理范围(platform/tenant/merchant)
+		PlatformId int64   `json:"platformId,optional"` //平台ID
+		TenantId   int64   `json:"tenantId,optional"` //租户ID
+		MerchantId int64   `json:"merchantId,optional"` //商户ID
 	}
 	// 查询优惠券详情请求参数
 	QueryCouponDetailReq {
@@ -179,4 +195,3 @@ service admin-api {
 	@handler QueryCouponList
 	get /queryCouponList (QueryCouponListReq) returns (QueryCouponListResp)
 }
-

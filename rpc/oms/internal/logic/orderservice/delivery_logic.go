@@ -3,11 +3,12 @@ package orderservicelogic
 import (
 	"context"
 	"errors"
-	"github.com/bytedance/sonic"
 	"github.com/feihua/zero-admin/rpc/oms/gen/model"
 	"github.com/feihua/zero-admin/rpc/oms/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/oms/internal/logic/common"
 	"github.com/zeromicro/go-zero/core/logc"
 	"gorm.io/gorm"
+	"time"
 
 	"github.com/feihua/zero-admin/rpc/oms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/oms/omsclient"
@@ -32,6 +33,13 @@ func NewDeliveryLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Delivery
 // Delivery 订单发货
 func (l *DeliveryLogic) Delivery(in *omsclient.DeliveryReq) (*omsclient.DeliveryResp, error) {
 	q := query.OmsOrderMain.WithContext(l.ctx)
+	currentScope, err := logiccommon.ResolveWriteScope(l.ctx, l.svcCtx.DB, in.Scope, in.OperatorId)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := logiccommon.EnsureOrderScope(l.ctx, l.svcCtx.DB, currentScope, []int64{in.OrderId}, "oms.order.delivery", in.OperatorId, "", "orderId"); err != nil {
+		return nil, err
+	}
 
 	item, err := q.Where(query.OmsOrderMain.ID.Eq(in.OrderId)).First()
 
@@ -46,6 +54,8 @@ func (l *DeliveryLogic) Delivery(in *omsclient.DeliveryReq) (*omsclient.Delivery
 
 	item.OrderStatus = 3
 	item.ExpressOrderNumber = in.DeliverySn
+	now := time.Now()
+	item.DeliveryTime = &now
 	_, err = q.Where(query.OmsOrderMain.ID.Eq(in.OrderId)).Updates(item)
 
 	if err != nil {
@@ -68,9 +78,7 @@ func (l *DeliveryLogic) Delivery(in *omsclient.DeliveryReq) (*omsclient.Delivery
 		return nil, errors.New("添加订单操作记录失败")
 	}
 
-	message := map[string]any{"ids": in.OrderId}
-	body, _ := sonic.Marshal(message)
-	err = l.svcCtx.RabbitMQ.SendMessage("order.event.exchange", "order.delivery.queue", "order.delivery.key", body)
+	sendOrderEvent(l.ctx, l.svcCtx, "order.delivery.queue", "order.delivery.key", "oms.order.delivery", in.OrderId, currentScope)
 
 	return &omsclient.DeliveryResp{}, nil
 }

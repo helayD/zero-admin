@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/feihua/zero-admin/rpc/sms/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/sms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/sms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/sms/smsclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -32,8 +33,15 @@ func NewUpdateCouponStatusLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 // UpdateCouponStatus 更新优惠券状态
 func (l *UpdateCouponStatusLogic) UpdateCouponStatus(in *smsclient.UpdateCouponStatusReq) (*smsclient.UpdateCouponStatusResp, error) {
 	q := query.SmsCoupon
+	currentScope, err := logiccommon.ResolveWriteScope(l.ctx, l.svcCtx.DB, in.Scope, in.UpdateBy)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := logiccommon.EnsureCouponScope(l.ctx, l.svcCtx.DB, currentScope, in.Ids, "sms.coupon.status", in.UpdateBy, "", "update coupon status"); err != nil {
+		return nil, err
+	}
 
-	_, err := q.WithContext(l.ctx).Where(q.ID.In(in.Ids...)).Update(q.Status, in.Status)
+	_, err = q.WithContext(l.ctx).Where(q.ID.In(in.Ids...)).Update(q.Status, in.Status)
 
 	if err != nil {
 		logc.Errorf(l.ctx, "更新优惠券状态失败,参数:%+v,异常:%s", in, err.Error())

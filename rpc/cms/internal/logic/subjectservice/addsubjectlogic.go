@@ -2,7 +2,6 @@ package subjectservicelogic
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/feihua/zero-admin/rpc/cms/cmsclient"
@@ -36,6 +35,11 @@ func NewAddSubjectLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AddSub
 
 // AddSubject 添加专题
 func (l *AddSubjectLogic) AddSubject(in *cmsclient.AddSubjectReq) (*cmsclient.AddSubjectResp, error) {
+	currentScope, err := logiccommon.ResolveWriteScope(l.ctx, l.svcCtx.DB, in.Scope, in.CreateBy)
+	if err != nil {
+		return nil, err
+	}
+
 	item := &model.CmsSubject{
 		CategoryID:      in.CategoryId,      // 专题分类id
 		Title:           in.Title,           // 专题标题
@@ -55,7 +59,7 @@ func (l *AddSubjectLogic) AddSubject(in *cmsclient.AddSubjectReq) (*cmsclient.Ad
 		Sort:            in.Sort,            // 排序
 	}
 
-	err := l.svcCtx.DB.WithContext(l.ctx).Transaction(func(tx *gorm.DB) error {
+	err = l.svcCtx.DB.WithContext(l.ctx).Transaction(func(tx *gorm.DB) error {
 		qtx := query.Use(tx)
 		count, err := qtx.CmsSubject.WithContext(l.ctx).Where(qtx.CmsSubject.Title.Eq(in.Title)).Count()
 		if err != nil {
@@ -69,16 +73,11 @@ func (l *AddSubjectLogic) AddSubject(in *cmsclient.AddSubjectReq) (*cmsclient.Ad
 			return err
 		}
 
-		current, err := logiccommon.ResolveActorScopeByUserName(l.ctx, tx, in.CreateBy)
-		if err != nil {
-			return err
-		}
-
-		return logiccommon.ApplySubjectScope(l.ctx, tx, item.ID, current)
+		return logiccommon.ApplySubjectScope(l.ctx, tx, item.ID, currentScope)
 	})
 	if err != nil {
 		logc.Errorf(l.ctx, "添加专题失败,参数:%+v,异常:%s", item, err.Error())
-		return nil, errors.New(err.Error())
+		return nil, err
 	}
 
 	return &cmsclient.AddSubjectResp{}, nil

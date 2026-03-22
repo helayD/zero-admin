@@ -31,6 +31,10 @@ type AddCouponReq struct {
 	IsEnabled     int32       `json:"isEnabled"`                //是否启用
 	Description   string      `json:"description,optional"`     //使用说明
 	ScopeData     []ScopeData `json:"couponScopeData,optional"` //使用说明
+	ScopeType     string      `json:"scopeType,optional"`       //治理范围(platform/tenant/merchant)
+	PlatformId    int64       `json:"platformId,optional"`      //平台ID
+	TenantId      int64       `json:"tenantId,optional"`        //租户ID
+	MerchantId    int64       `json:"merchantId,optional"`      //商户ID
 }
 
 type AddCouponScopeData struct {
@@ -316,6 +320,10 @@ type AddProductSkuReq struct {
 	PublishStatus      int32   `json:"publishStatus"`               //上架状态：0-下架，1-上架
 	VerifyStatus       int32   `json:"verifyStatus"`                //审核状态：0-未审核，1-审核通过，2-审核不通过
 	Sort               int32   `json:"sort"`                        //排序
+	ScopeType          string  `json:"scopeType,optional"`          //治理范围(platform/tenant/merchant)
+	PlatformId         int64   `json:"platformId,optional"`         //平台ID
+	TenantId           int64   `json:"tenantId,optional"`           //租户ID
+	MerchantId         int64   `json:"merchantId,optional"`         //商户ID
 }
 
 type AddProductSpecReq struct {
@@ -341,6 +349,10 @@ type AddProductSpuReq struct {
 	AttributeValueList []AddProductAttributeValueReq `json:"attributeValueList"`        //商品属性值
 	SubjectIds         []int64                       `json:"subjectIds,optional"`       //专题
 	PrefrenceAreaIds   []int64                       `json:"prefrenceAreaIds,optional"` //优先专区
+	ScopeType          string                        `json:"scopeType,optional"`        //治理范围(platform/tenant/merchant)
+	PlatformId         int64                         `json:"platformId,optional"`       //平台ID
+	TenantId           int64                         `json:"tenantId,optional"`         //租户ID
+	MerchantId         int64                         `json:"merchantId,optional"`       //商户ID
 }
 
 type AddRoleReq struct {
@@ -412,6 +424,10 @@ type AddSubjectReq struct {
 	ForwardCount    int32  `json:"forwardCount"`              //转发数
 	CategoryName    string `json:"categoryName"`              //专题分类名称
 	Sort            int32  `json:"sort"`                      // 排序
+	ScopeType       string `json:"scopeType,optional"`        //治理范围(platform/tenant/merchant)
+	PlatformId      int64  `json:"platformId,optional"`       //平台ID
+	TenantId        int64  `json:"tenantId,optional"`         //租户ID
+	MerchantId      int64  `json:"merchantId,optional"`       //商户ID
 }
 
 type AddUserReq struct {
@@ -457,8 +473,12 @@ type ChangeTenantStatusReq struct {
 }
 
 type CloseOrderReq struct {
-	Ids  []int64 `json:"ids"` //订单id
-	Note string  `json:"note"`
+	Ids        []int64 `json:"ids"` //订单id
+	Note       string  `json:"note"`
+	ScopeType  string  `json:"scopeType,optional"`  //治理范围(platform/tenant/merchant)
+	PlatformId int64   `json:"platformId,optional"` //平台ID
+	TenantId   int64   `json:"tenantId,optional"`   //租户ID
+	MerchantId int64   `json:"merchantId,optional"` //商户ID
 }
 
 type CouponScopeData struct {
@@ -529,7 +549,11 @@ type DeleteCompanyAddressReq struct {
 }
 
 type DeleteCouponReq struct {
-	Ids []int64 `form:"ids"`
+	Ids        []int64 `form:"ids"`
+	ScopeType  string  `form:"scopeType,optional"`  //治理范围(platform/tenant/merchant)
+	PlatformId int64   `form:"platformId,optional"` //平台ID
+	TenantId   int64   `form:"tenantId,optional"`   //租户ID
+	MerchantId int64   `form:"merchantId,optional"` //商户ID
 }
 
 type DeleteCouponScopeReq struct {
@@ -617,7 +641,11 @@ type DeleteOperateLogReq struct {
 }
 
 type DeleteOrderMainReq struct {
-	Ids []int64 `form:"ids"`
+	Ids        []int64 `form:"ids"`
+	ScopeType  string  `form:"scopeType,optional"`  //治理范围(platform/tenant/merchant)
+	PlatformId int64   `form:"platformId,optional"` //平台ID
+	TenantId   int64   `form:"tenantId,optional"`   //租户ID
+	MerchantId int64   `form:"merchantId,optional"` //商户ID
 }
 
 type DeleteOrderMainResp struct {
@@ -662,7 +690,11 @@ type DeleteProductCategoryReq struct {
 }
 
 type DeleteProductSkuReq struct {
-	Ids []int64 `form:"ids"`
+	Ids        []int64 `form:"ids"`
+	ScopeType  string  `form:"scopeType,optional"`  //治理范围(platform/tenant/merchant)
+	PlatformId int64   `form:"platformId,optional"` //平台ID
+	TenantId   int64   `form:"tenantId,optional"`   //租户ID
+	MerchantId int64   `form:"merchantId,optional"` //商户ID
 }
 
 type DeleteProductSpecReq struct {
@@ -674,7 +706,11 @@ type DeleteProductSpecValueReq struct {
 }
 
 type DeleteProductSpuReq struct {
-	Ids []int64 `form:"ids"`
+	Ids        []int64 `form:"ids"`
+	ScopeType  string  `form:"scopeType,optional"`  //治理范围(platform/tenant/merchant)
+	PlatformId int64   `form:"platformId,optional"` //平台ID
+	TenantId   int64   `form:"tenantId,optional"`   //租户ID
+	MerchantId int64   `form:"merchantId,optional"` //商户ID
 }
 
 type DeleteRoleReq struct {
@@ -698,7 +734,11 @@ type DeleteSubjectCategoryReq struct {
 }
 
 type DeleteSubjectReq struct {
-	Ids []int64 `form:"ids"`
+	Ids        []int64 `form:"ids"`
+	ScopeType  string  `form:"scopeType,optional"`  //治理范围(platform/tenant/merchant)
+	PlatformId int64   `form:"platformId,optional"` //平台ID
+	TenantId   int64   `form:"tenantId,optional"`   //租户ID
+	MerchantId int64   `form:"merchantId,optional"` //商户ID
 }
 
 type DeleteUserReq struct {
@@ -706,9 +746,13 @@ type DeleteUserReq struct {
 }
 
 type DeliveryReq struct {
-	OrderId         int64  `json:"orderId"`         //订单id
-	DeliveryCompany string `json:"deliveryCompany"` // 物流公司
-	DeliverySn      string `json:"deliverySn"`      // 物流单号
+	OrderId         int64  `json:"orderId"`             //订单id
+	DeliveryCompany string `json:"deliveryCompany"`     // 物流公司
+	DeliverySn      string `json:"deliverySn"`          // 物流单号
+	ScopeType       string `json:"scopeType,optional"`  //治理范围(platform/tenant/merchant)
+	PlatformId      int64  `json:"platformId,optional"` //平台ID
+	TenantId        int64  `json:"tenantId,optional"`   //租户ID
+	MerchantId      int64  `json:"merchantId,optional"` //商户ID
 }
 
 type DeptList struct {
@@ -4479,6 +4523,10 @@ type UpdateCouponReq struct {
 	IsEnabled     int32       `json:"isEnabled"`                //是否启用
 	Description   string      `json:"description,optional"`     //使用说明
 	ScopeData     []ScopeData `json:"couponScopeData,optional"` //使用说明
+	ScopeType     string      `json:"scopeType,optional"`       //治理范围(platform/tenant/merchant)
+	PlatformId    int64       `json:"platformId,optional"`      //平台ID
+	TenantId      int64       `json:"tenantId,optional"`        //租户ID
+	MerchantId    int64       `json:"merchantId,optional"`      //商户ID
 }
 
 type UpdateCouponScopeReq struct {
@@ -4718,10 +4766,14 @@ type UpdateMenuTemplateReq struct {
 }
 
 type UpdateMoneyInfoReq struct {
-	Id             int64 `json:"id"`              // 订单id
-	Status         int32 `json:"status,optional"` // 订单状态：1-待支付,2-已支付,3-已发货,4-已完成,5-已取消,6-已退款,7-售后中
-	FreightAmount  int64 `json:"freightAmount"`   // 运费金额
-	DiscountAmount int64 `json:"discountAmount"`  // 管理员后台调整订单所使用的折扣金额
+	Id             int64  `json:"id"`                  // 订单id
+	Status         int32  `json:"status,optional"`     // 订单状态：1-待支付,2-已支付,3-已发货,4-已完成,5-已取消,6-已退款,7-售后中
+	FreightAmount  int64  `json:"freightAmount"`       // 运费金额
+	DiscountAmount int64  `json:"discountAmount"`      // 管理员后台调整订单所使用的折扣金额
+	ScopeType      string `json:"scopeType,optional"`  //治理范围(platform/tenant/merchant)
+	PlatformId     int64  `json:"platformId,optional"` //平台ID
+	TenantId       int64  `json:"tenantId,optional"`   //租户ID
+	MerchantId     int64  `json:"merchantId,optional"` //商户ID
 }
 
 type UpdateNewProductSortReq struct {
@@ -4730,9 +4782,13 @@ type UpdateNewProductSortReq struct {
 }
 
 type UpdateNoteReq struct {
-	Id     int64  `json:"id"`              // 订单id
-	Status int32  `json:"status,optional"` // 订单状态：1-待支付,2-已支付,3-已发货,4-已完成,5-已取消,6-已退款,7-售后中
-	Note   string `json:"note,optional"`   // 订单备注
+	Id         int64  `json:"id"`                  // 订单id
+	Status     int32  `json:"status,optional"`     // 订单状态：1-待支付,2-已支付,3-已发货,4-已完成,5-已取消,6-已退款,7-售后中
+	Note       string `json:"note,optional"`       // 订单备注
+	ScopeType  string `json:"scopeType,optional"`  //治理范围(platform/tenant/merchant)
+	PlatformId int64  `json:"platformId,optional"` //平台ID
+	TenantId   int64  `json:"tenantId,optional"`   //租户ID
+	MerchantId int64  `json:"merchantId,optional"` //商户ID
 }
 
 type UpdateNoticeReq struct {
@@ -4792,6 +4848,10 @@ type UpdateOrderMainReq struct {
 	UsePoints          int32   `json:"usePoints"`             //下单时使用的积分
 	ReceiveStatus      int32   `json:"receiveStatus"`         //是否确认收货：0->否,1->是
 	Remark             string  `json:"remark,optional"`       //订单备注
+	ScopeType          string  `json:"scopeType,optional"`    //治理范围(platform/tenant/merchant)
+	PlatformId         int64   `json:"platformId,optional"`   //平台ID
+	TenantId           int64   `json:"tenantId,optional"`     //租户ID
+	MerchantId         int64   `json:"merchantId,optional"`   //商户ID
 }
 
 type UpdateOrderMainResp struct {
@@ -4977,7 +5037,11 @@ type UpdateProductSkuData struct {
 }
 
 type UpdateProductSkuReq struct {
-	Data []UpdateProductSkuData `json:"data"`
+	Data       []UpdateProductSkuData `json:"data"`
+	ScopeType  string                 `json:"scopeType,optional"`  //治理范围(platform/tenant/merchant)
+	PlatformId int64                  `json:"platformId,optional"` //平台ID
+	TenantId   int64                  `json:"tenantId,optional"`   //租户ID
+	MerchantId int64                  `json:"merchantId,optional"` //商户ID
 }
 
 type UpdateProductSpecReq struct {
@@ -5015,12 +5079,20 @@ type UpdateProductSpuReq struct {
 	AttributeValueList []AddProductAttributeValueReq `json:"attributeValueList"`        //商品属性值
 	SubjectIds         []int64                       `json:"subjectIds,optional"`       //专题
 	PrefrenceAreaIds   []int64                       `json:"prefrenceAreaIds,optional"` //优先专区
+	ScopeType          string                        `json:"scopeType,optional"`        //治理范围(platform/tenant/merchant)
+	PlatformId         int64                         `json:"platformId,optional"`       //平台ID
+	TenantId           int64                         `json:"tenantId,optional"`         //租户ID
+	MerchantId         int64                         `json:"merchantId,optional"`       //商户ID
 }
 
 type UpdateProductSpuStatusReq struct {
-	Ids    []int64 `json:"ids"`    //商品SpuId
-	Status int32   `json:"status"` //状态
-	Detail string  `form:"detail,optional"`
+	Ids        []int64 `json:"ids"`    //商品SpuId
+	Status     int32   `json:"status"` //状态
+	Detail     string  `form:"detail,optional"`
+	ScopeType  string  `json:"scopeType,optional"`  //治理范围(platform/tenant/merchant)
+	PlatformId int64   `json:"platformId,optional"` //平台ID
+	TenantId   int64   `json:"tenantId,optional"`   //租户ID
+	MerchantId int64   `json:"merchantId,optional"` //商户ID
 }
 
 type UpdateRecommendProductSortReq struct {
@@ -5105,8 +5177,12 @@ type UpdateSeckillSessionStatusReq struct {
 }
 
 type UpdateSmsCouponStatusReq struct {
-	Ids    []int64 `json:"ids"`    //优惠券ID
-	Status int32   `json:"status"` //状态：0-未开始，1-进行中，2-已结束，3-已取消
+	Ids        []int64 `json:"ids"`                 //优惠券ID
+	Status     int32   `json:"status"`              //状态：0-未开始，1-进行中，2-已结束，3-已取消
+	ScopeType  string  `json:"scopeType,optional"`  //治理范围(platform/tenant/merchant)
+	PlatformId int64   `json:"platformId,optional"` //平台ID
+	TenantId   int64   `json:"tenantId,optional"`   //租户ID
+	MerchantId int64   `json:"merchantId,optional"` //商户ID
 }
 
 type UpdateStatusReq struct {
@@ -5144,12 +5220,20 @@ type UpdateSubjectReq struct {
 	ForwardCount    int32  `json:"forwardCount"`              //转发数
 	CategoryName    string `json:"categoryName"`              //专题分类名称
 	Sort            int32  `json:"sort"`                      // 排序
+	ScopeType       string `json:"scopeType,optional"`        //治理范围(platform/tenant/merchant)
+	PlatformId      int64  `json:"platformId,optional"`       //平台ID
+	TenantId        int64  `json:"tenantId,optional"`         //租户ID
+	MerchantId      int64  `json:"merchantId,optional"`       //商户ID
 }
 
 type UpdateSubjectStatusReq struct {
 	Ids             []int64 `json:"ids"`
-	RecommendStatus int32   `json:"recommendStatus"` //推荐状态：0->不推荐；1->推荐
-	ShowStatus      int32   `json:"showStatus"`      //显示状态：0->不显示；1->显示
+	RecommendStatus int32   `json:"recommendStatus"`     //推荐状态：0->不推荐；1->推荐
+	ShowStatus      int32   `json:"showStatus"`          //显示状态：0->不显示；1->显示
+	ScopeType       string  `json:"scopeType,optional"`  //治理范围(platform/tenant/merchant)
+	PlatformId      int64   `json:"platformId,optional"` //平台ID
+	TenantId        int64   `json:"tenantId,optional"`   //租户ID
+	MerchantId      int64   `json:"merchantId,optional"` //商户ID
 }
 
 type UpdateUserReq struct {

@@ -2,6 +2,7 @@ package product_sku
 
 import (
 	"context"
+	"github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
 	"github.com/feihua/zero-admin/api/admin/internal/types"
@@ -33,8 +34,18 @@ func NewDeleteProductSkuLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 
 // DeleteProductSku 删除商品SKU
 func (l *DeleteProductSkuLogic) DeleteProductSku(req *types.DeleteProductSkuReq) (resp *types.BaseResp, err error) {
+	writeScope, err := common.ResolveWriteGovernanceScope(l.ctx, common.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, err
+	}
 	_, err = l.svcCtx.ProductSkuService.DeleteProductSku(l.ctx, &pmsclient.DeleteProductSkuReq{
-		Ids: req.Ids,
+		Ids:   req.Ids,
+		Scope: common.PMSGovernanceScope(writeScope),
 	})
 
 	if err != nil {

@@ -4,21 +4,19 @@ import {
   EditOutlined,
   ExclamationCircleOutlined,
   RiseOutlined,
-  StepForwardOutlined
+  StepForwardOutlined,
 } from '@ant-design/icons';
-import {Alert, Divider, Drawer, message, Modal} from 'antd';
-import React, {useRef, useState} from 'react';
-import {PageContainer} from '@ant-design/pro-layout';
-import type {ActionType, ProColumns} from '@ant-design/pro-table';
+import { Alert, Divider, message, Modal } from 'antd';
+import React, { useRef, useState } from 'react';
+import { PageContainer } from '@ant-design/pro-layout';
+import type { ActionType, ProColumns } from '@ant-design/pro-table';
 import ProTable from '@ant-design/pro-table';
-import type {ProDescriptionsItemProps} from '@ant-design/pro-descriptions';
-import ProDescriptions from '@ant-design/pro-descriptions';
 import OrderDetailModel from './components/OrderDetailModel';
-import type {OrderListItem} from './data.d';
-import {queryOrderList, removeOrder} from './service';
-import NoteOrderModel from "@/pages/oms/order/components/NoteOrderModel";
-import DeliveryModel from "@/pages/oms/order/components/DeliveryModel";
-import OrderTrackingModel from "@/pages/oms/order/components/OrderTrackingModel";
+import type { OrderListItem } from './data.d';
+import { closeOrder, delivery, queryOrderList, removeOrder, updateNote } from './service';
+import NoteOrderModel from '@/pages/oms/order/components/NoteOrderModel';
+import DeliveryModel from '@/pages/oms/order/components/DeliveryModel';
+import OrderTrackingModel from '@/pages/oms/order/components/OrderTrackingModel';
 import GovernanceScopeBar from '@/pages/system/components/GovernanceScopeBar';
 import {
   buildGovernanceScopeLabel,
@@ -27,37 +25,64 @@ import {
   toGovernancePayload,
 } from '@/pages/system/components/governance';
 
+const { confirm } = Modal;
 
-const {confirm} = Modal;
+type OrderMutationAction = 'close' | 'delivery' | 'note';
 
-/**
- * 更新节点
- * @param fields
- */
-const handleUpdate = async (fields: OrderListItem) => {
-  const hide = message.loading('正在更新');
+const handleMutation = async (
+  action: OrderMutationAction,
+  fields: OrderListItem,
+  scope: GovernanceScopeValue,
+) => {
+  const hide = message.loading('正在提交订单操作');
   try {
-    // await updateOrder(fields);
-    hide();
+    if (action === 'delivery') {
+      await delivery({
+        orderId: fields.id as number,
+        deliveryCompany: fields.deliveryCompany || '',
+        deliverySn: fields.deliverySn || '',
+        ...toGovernancePayload(scope),
+      });
+    }
 
-    message.success('更新成功');
+    if (action === 'close') {
+      await closeOrder({
+        ids: [fields.id as number],
+        note: fields.note || '',
+        ...toGovernancePayload(scope),
+      });
+    }
+
+    if (action === 'note') {
+      await updateNote({
+        id: fields.id as number,
+        status: fields.status,
+        note: fields.note || '',
+        ...toGovernancePayload(scope),
+      });
+    }
+
+    hide();
+    message.success('订单操作成功');
     return true;
   } catch (error) {
     hide();
-    message.error('更新失败请重试！');
+    message.error('订单操作失败，请稍后重试');
     return false;
   }
 };
 
-/**
- *  删除节点
- * @param selectedRows
- */
-const handleRemove = async (selectedRows: OrderListItem[]) => {
-  const hide = message.loading('正在删除');
-  if (!selectedRows) return true;
+const handleRemove = async (selectedRows: OrderListItem[], scope: GovernanceScopeValue) => {
+  const hide = message.loading('正在删除订单');
+  if (!selectedRows.length) {
+    hide();
+    return true;
+  }
   try {
-    await removeOrder(selectedRows.map((row) => row.id));
+    await removeOrder(
+      selectedRows.map((row) => row.id as number),
+      toGovernancePayload(scope),
+    );
     hide();
     message.success('删除成功，即将刷新');
     return true;
@@ -69,26 +94,25 @@ const handleRemove = async (selectedRows: OrderListItem[]) => {
 };
 
 const OrderList: React.FC = () => {
-  const [updateModalVisible, handleUpdateModalVisible] = useState<boolean>(false);
-  const [closeOrderModelVisible, handleCloseOrderModelVisible] = useState<boolean>(false);
-  const [deliveryModelVisible, handleDeliveryModelVisible] = useState<boolean>(false);
-  const [orderTrackingModalVisible, handleOrderTrackingModalVisible] = useState<boolean>(false);
-  const [showDetail, setShowDetail] = useState<boolean>(false);
+  const [detailVisible, setDetailVisible] = useState<boolean>(false);
+  const [closeOrderModelVisible, setCloseOrderModelVisible] = useState<boolean>(false);
+  const [deliveryModelVisible, setDeliveryModelVisible] = useState<boolean>(false);
+  const [orderTrackingModalVisible, setOrderTrackingModalVisible] = useState<boolean>(false);
   const actionRef = useRef<ActionType>();
   const [currentRow, setCurrentRow] = useState<OrderListItem>();
   const [scope, setScope] = useState<GovernanceScopeValue>(defaultGovernanceScope);
 
+  const scopeLabel = buildGovernanceScopeLabel(scope);
+
   const showDeleteConfirm = (item: OrderListItem) => {
     confirm({
       title: '是否删除记录?',
-      icon: <ExclamationCircleOutlined/>,
-      content: '删除的记录不能恢复,请确认!',
+      icon: <ExclamationCircleOutlined />,
+      content: `当前主体：${scopeLabel}。删除后不可恢复，请确认。`,
       onOk() {
-        handleRemove([item]).then(() => {
+        return handleRemove([item], scope).then(() => {
           actionRef.current?.reloadAndRest?.();
         });
-      },
-      onCancel() {
       },
     });
   };
@@ -103,10 +127,16 @@ const OrderList: React.FC = () => {
       title: '订单编号',
       dataIndex: 'orderSn',
       render: (dom, entity) => {
-        return <a onClick={() => {
-          setCurrentRow(entity);
-          handleUpdateModalVisible(true);
-        }}>{dom}</a>;
+        return (
+          <a
+            onClick={() => {
+              setCurrentRow(entity);
+              setDetailVisible(true);
+            }}
+          >
+            {dom}
+          </a>
+        );
       },
     },
     {
@@ -117,6 +147,7 @@ const OrderList: React.FC = () => {
     {
       title: '用户帐号',
       dataIndex: 'memberUserName',
+      hideInSearch: true,
     },
     {
       title: '订单总金额',
@@ -136,7 +167,7 @@ const OrderList: React.FC = () => {
       hideInTable: true,
     },
     {
-      title: '促销优化金额',
+      title: '促销优惠金额',
       dataIndex: 'promotionAmount',
       hideInSearch: true,
       hideInTable: true,
@@ -157,38 +188,29 @@ const OrderList: React.FC = () => {
       title: '支付方式',
       dataIndex: 'payType',
       valueEnum: {
-        0: {text: '未支付', status: 'Error'},
-        1: {text: '支付宝', status: 'Success'},
-        2: {text: '微信', status: 'Success'},
+        0: { text: '未支付', status: 'Error' },
+        1: { text: '支付宝', status: 'Success' },
+        2: { text: '微信', status: 'Success' },
       },
     },
     {
       title: '来源',
       dataIndex: 'sourceType',
       valueEnum: {
-        0: {text: 'PC订单', status: 'Error'},
-        1: {text: 'app订单', status: 'Success'},
+        0: { text: 'PC订单', status: 'Error' },
+        1: { text: 'app订单', status: 'Success' },
       },
     },
     {
       title: '状态',
       dataIndex: 'status',
       valueEnum: {
-        0: {text: '待付款', status: 'Success'},
-        1: {text: '待发货', status: 'Success'},
-        2: {text: '已发货', status: 'Success'},
-        3: {text: '已完成', status: 'Success'},
-        4: {text: '已关闭', status: 'Error'},
-        5: {text: '无效订单', status: 'Error'},
-      },
-    },
-    {
-      title: '订单类型',
-      dataIndex: 'orderType',
-      hideInTable: true,
-      valueEnum: {
-        0: {text: '正常订单', status: 'Success'},
-        1: {text: '秒杀订单', status: 'Success'},
+        0: { text: '待付款', status: 'Success' },
+        1: { text: '待发货', status: 'Success' },
+        2: { text: '已发货', status: 'Success' },
+        3: { text: '已完成', status: 'Success' },
+        4: { text: '已关闭', status: 'Error' },
+        5: { text: '无效订单', status: 'Error' },
       },
     },
     {
@@ -198,59 +220,69 @@ const OrderList: React.FC = () => {
       render: (_, record) => (
         <>
           <a
-            key="1"
+            key="view"
             onClick={() => {
-              handleUpdateModalVisible(true);
+              setDetailVisible(true);
               setCurrentRow(record);
             }}
           >
-            <EditOutlined/> 查看订单
+            <EditOutlined /> 查看订单
           </a>
-          <Divider type="vertical"/>
-          {record.status === 0 && <a
-            key="2"
-            onClick={() => {
-              handleCloseOrderModelVisible(true);
-              setCurrentRow(record);
-            }}
-          >
-            <CloseOutlined/> 关闭订单
-            <Divider type="vertical"/>
-          </a>}
-
-          {record.status === 4 && <a
-            key="3"
-            style={{color: '#ff4d4f'}}
-            onClick={() => {
-              showDeleteConfirm(record);
-              setCurrentRow(record);
-            }}
-          >
-            <DeleteOutlined/> 删除订单
-            <Divider type="vertical"/>
-          </a>}
-
-          {record.status === 1 && <a
-            key="4"
-            onClick={() => {
-              handleDeliveryModelVisible(true);
-              setCurrentRow(record);
-            }}
-          >
-            <StepForwardOutlined/> 订单发货
-            <Divider type="vertical"/>
-          </a>}
-
-          {(record.status === 2 || record.status === 3) && <a
-            key="5"
-            onClick={() => {
-              handleOrderTrackingModalVisible(true);
-              setCurrentRow(record);
-            }}
-          >
-            <RiseOutlined/> 订单跟踪
-          </a>}
-
+          <Divider type="vertical" />
+          {record.status === 0 && (
+            <a
+              key="close"
+              onClick={() => {
+                setCloseOrderModelVisible(true);
+                setCurrentRow(record);
+              }}
+            >
+              <CloseOutlined /> 关闭订单
+            </a>
+          )}
+          {record.status === 4 && (
+            <>
+              <Divider type="vertical" />
+              <a
+                key="delete"
+                style={{ color: '#ff4d4f' }}
+                onClick={() => {
+                  showDeleteConfirm(record);
+                  setCurrentRow(record);
+                }}
+              >
+                <DeleteOutlined /> 删除订单
+              </a>
+            </>
+          )}
+          {record.status === 1 && (
+            <>
+              <Divider type="vertical" />
+              <a
+                key="delivery"
+                onClick={() => {
+                  setDeliveryModelVisible(true);
+                  setCurrentRow(record);
+                }}
+              >
+                <StepForwardOutlined /> 订单发货
+              </a>
+            </>
+          )}
+          {(record.status === 2 || record.status === 3) && (
+            <>
+              <Divider type="vertical" />
+              <a
+                key="tracking"
+                onClick={() => {
+                  setOrderTrackingModalVisible(true);
+                  setCurrentRow(record);
+                }}
+              >
+                <RiseOutlined /> 订单跟踪
+              </a>
+            </>
+          )}
         </>
       ),
     },
@@ -271,8 +303,8 @@ const OrderList: React.FC = () => {
         showIcon
         type="info"
         style={{ marginBottom: 16 }}
-        message={`当前查询范围：${buildGovernanceScopeLabel(scope)}`}
-        description="订单详情、订单项、支付与操作日志会跟随同一治理范围一起过滤，避免跨主体串单。"
+        message={`当前查询范围：${scopeLabel}`}
+        description="发货、关单、删除和备注都会按当前主体写入；如果切换到其他租户或商户视角，请先确认影响范围。"
       />
       <ProTable<OrderListItem>
         headerTitle="订单列表"
@@ -284,127 +316,83 @@ const OrderList: React.FC = () => {
         toolBarRender={false}
         request={(params) => queryOrderList({ ...params, ...toGovernancePayload(scope) })}
         columns={columns}
-        rowSelection={{
-          onChange: (_, selectedRows) => console.log(selectedRows),
-        }}
-        pagination={{pageSize: 10}}
+        rowSelection={false}
+        pagination={{ pageSize: 10 }}
       />
 
-
       <OrderDetailModel
-        key={'OrderDetailModel'}
-        onSubmit={async (value) => {
-          const success = await handleUpdate(value);
-          if (success) {
-            handleUpdateModalVisible(false);
-            setCurrentRow(undefined);
-            if (actionRef.current) {
-              actionRef.current.reload();
-            }
-          }
-        }}
+        key="OrderDetailModel"
         onRefresh={() => {
-          handleUpdateModalVisible(false);
-          if (!showDetail) {
-            setCurrentRow(undefined);
-          }
-          if (actionRef.current) {
-            actionRef.current.reload();
-          }
+          actionRef.current?.reload?.();
         }}
         onCancel={() => {
-          handleUpdateModalVisible(false);
-          if (!showDetail) {
+          setDetailVisible(false);
+          setCurrentRow(undefined);
+        }}
+        updateModalVisible={detailVisible}
+        currentData={currentRow || { id: 0 }}
+        scope={scope}
+        onDeleteOrder={async (value) => {
+          const success = await handleRemove([value], scope);
+          if (success) {
+            setDetailVisible(false);
             setCurrentRow(undefined);
           }
-          if (actionRef.current) {
-            actionRef.current.reload();
-          }
+          return success;
         }}
-        updateModalVisible={updateModalVisible}
-        currentData={currentRow || {id: 0}}
+        onCloseOrder={(value) => handleMutation('close', value, scope)}
+        onDeliveryOrder={(value) => handleMutation('delivery', value, scope)}
+        onNoteOrder={(value) => handleMutation('note', value, scope)}
       />
 
       <NoteOrderModel
-        key={'CloseOrderModel'}
-        onSubmit={async (value) => {
-          value.status = 4
-          const success = await handleUpdate(value);
-          if (success) {
-            handleCloseOrderModelVisible(false);
-            setCurrentRow(undefined);
-            if (actionRef.current) {
-              actionRef.current.reload();
-            }
-          }
-        }}
+        title="关闭订单"
+        submitText="关闭订单"
+        confirmTitle="确认关闭订单"
+        confirmHint={`当前主体：${scopeLabel}。关闭后用户将无法继续支付。`}
+        visible={closeOrderModelVisible}
+        currentData={currentRow || { id: 0 }}
         onCancel={() => {
-          handleCloseOrderModelVisible(false);
-          if (!showDetail) {
+          setCloseOrderModelVisible(false);
+          setCurrentRow(undefined);
+        }}
+        onSubmit={async (value) => {
+          const success = await handleMutation('close', value, scope);
+          if (success) {
+            setCloseOrderModelVisible(false);
             setCurrentRow(undefined);
+            actionRef.current?.reload?.();
           }
         }}
-        closeOrderModelVisible={closeOrderModelVisible}
-        currentData={currentRow || {id: 0}}
       />
 
       <DeliveryModel
-        key={'DeliveryModel'}
+        key="DeliveryModel"
         onSubmit={async (value) => {
-          value.status = 2
-          const success = await handleUpdate(value);
+          const success = await handleMutation('delivery', value, scope);
           if (success) {
-            handleDeliveryModelVisible(false);
+            setDeliveryModelVisible(false);
             setCurrentRow(undefined);
-            if (actionRef.current) {
-              actionRef.current.reload();
-            }
+            actionRef.current?.reload?.();
           }
         }}
         onCancel={() => {
-          handleDeliveryModelVisible(false);
-          if (!showDetail) {
-            setCurrentRow(undefined);
-          }
+          setDeliveryModelVisible(false);
+          setCurrentRow(undefined);
         }}
         deliveryModelVisible={deliveryModelVisible}
-        currentData={currentRow || {id: 0}}
+        currentData={currentRow || { id: 0 }}
       />
 
       <OrderTrackingModel
-        key={'OrderTrackingModel'}
+        key="OrderTrackingModel"
         onCancel={() => {
-          handleOrderTrackingModalVisible(false);
-          if (!showDetail) {
-            setCurrentRow(undefined);
-          }
+          setOrderTrackingModalVisible(false);
+          setCurrentRow(undefined);
         }}
         orderTrackingModalVisible={orderTrackingModalVisible}
-        currentData={currentRow || {id: 0}}
+        currentData={currentRow || { id: 0 }}
       />
-      <Drawer
-        width={600}
-        visible={showDetail}
-        onClose={() => {
-          setCurrentRow(undefined);
-          setShowDetail(false)
-        }}
-        closable={false}
-      >
-        {currentRow?.id && (
-          <ProDescriptions<OrderListItem>
-            column={2}
-            title={"订单详情"}
-            request={async () => ({
-              data: currentRow || {},
-            })}
-            params={{
-              id: currentRow?.id,
-            }}
-            columns={columns as ProDescriptionsItemProps<OrderListItem>[]}
-          />
-        )}
-      </Drawer>
     </PageContainer>
   );
 };

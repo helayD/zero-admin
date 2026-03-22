@@ -3,15 +3,17 @@ import type {ProductListItem} from '../data.d';
 import type {ActionType, ProColumns} from '@ant-design/pro-table';
 import ProTable from '@ant-design/pro-table';
 import {queryProductList} from "@/pages/sms/Coupon/service";
+import { type GovernanceScopeValue, toGovernancePayload } from '@/pages/system/components/governance';
 
 export interface CreateFormProps {
   onSubmit: (values: any[]) => void;
   selectIds: number[];
+  scope: GovernanceScopeValue;
 }
 
 const ProductForm: React.FC<CreateFormProps> = (props) => {
   const actionRef = useRef<ActionType>();
-  const {onSubmit} = props;
+  const {onSubmit, scope} = props;
   const [selectedRows, setSelectedRows] = useState<number[]>(props.selectIds);
 
   const columns: ProColumns<ProductListItem>[] = [
@@ -53,7 +55,7 @@ const ProductForm: React.FC<CreateFormProps> = (props) => {
       search={{
         labelWidth: 50,
       }}
-      request={queryProductList}
+      request={(params) => queryProductList({ ...params, ...toGovernancePayload(scope) })}
       columns={columns}
       rowSelection={{
         selectedRowKeys: selectedRows,

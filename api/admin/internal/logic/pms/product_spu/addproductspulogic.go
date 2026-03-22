@@ -59,16 +59,33 @@ func (l *AddProductSpuLogic) AddProductSpu(req *types.AddProductSpuReq) (resp *t
 	// 商品id
 	spuId := result.SpuId
 	// 7.关联专题
-	addSubjectProductRelation(req, l, spuId)
+	if err := addSubjectProductRelation(req, l, spuId); err != nil {
+		logc.Errorf(l.ctx, "添加商品专题关联失败,spuId:%d,参数：%+v,响应：%s", spuId, req, err.Error())
+		s, _ := status.FromError(err)
+		return nil, errorx.NewDefaultError(s.Message())
+	}
 
 	// 8.关联优选
-	addPreferredAreaProductRelation(req, l, spuId)
+	if err := addPreferredAreaProductRelation(req, l, spuId); err != nil {
+		logc.Errorf(l.ctx, "添加商品优选专区关联失败,spuId:%d,参数：%+v,响应：%s", spuId, req, err.Error())
+		s, _ := status.FromError(err)
+		return nil, errorx.NewDefaultError(s.Message())
+	}
 
 	return res.Success()
 }
 
 func (l *AddProductSpuLogic) addProductSpuInfo(req *types.AddProductSpuReq) (*productspuservice.ProductSpuResp, error) {
 	userId, err := common.GetUserId(l.ctx)
+	if err != nil {
+		return nil, err
+	}
+	writeScope, err := common.ResolveWriteGovernanceScope(l.ctx, common.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -106,6 +123,7 @@ func (l *AddProductSpuLogic) addProductSpuInfo(req *types.AddProductSpuReq) (*pr
 		ProductFullReductionList:  buildProductFullReductionList(req),  // 满减价格
 		ProductLadderList:         buildProductLadderList(req),         // 阶梯价格
 		SkuStockList:              buildSkuStockList(req),              // sku库存信息
+		Scope:                     common.PMSGovernanceScope(writeScope),
 	})
 }
 
@@ -184,18 +202,27 @@ func buildSkuStockList(req *types.AddProductSpuReq) []*pmsclient.SkuStockList {
 }
 
 // 添加专题关联
-func addSubjectProductRelation(req *types.AddProductSpuReq, l *AddProductSpuLogic, productId int64) {
-	_, _ = l.svcCtx.SubjectProductRelationService.AddSubjectProductRelation(l.ctx, &cmsclient.AddSubjectProductRelationReq{
+func addSubjectProductRelation(req *types.AddProductSpuReq, l *AddProductSpuLogic, productId int64) error {
+	if req.SubjectIds == nil {
+		return nil
+	}
+
+	_, err := l.svcCtx.SubjectProductRelationService.AddSubjectProductRelation(l.ctx, &cmsclient.AddSubjectProductRelationReq{
 		SubjectId: req.SubjectIds, // 专题ID
 		ProductId: productId,      // 商品ID
 	})
+	return err
 }
 
 // 添加优选商品关联
-func addPreferredAreaProductRelation(req *types.AddProductSpuReq, l *AddProductSpuLogic, productId int64) {
-	_, _ = l.svcCtx.PreferredAreaProductRelationService.AddPreferredAreaProductRelation(l.ctx, &cmsclient.AddPreferredAreaProductRelationReq{
+func addPreferredAreaProductRelation(req *types.AddProductSpuReq, l *AddProductSpuLogic, productId int64) error {
+	if req.PrefrenceAreaIds == nil {
+		return nil
+	}
+
+	_, err := l.svcCtx.PreferredAreaProductRelationService.AddPreferredAreaProductRelation(l.ctx, &cmsclient.AddPreferredAreaProductRelationReq{
 		PreferredAreaId: req.PrefrenceAreaIds, // 优选专区ID
 		ProductId:       productId,            // 商品ID
 	})
-
+	return err
 }

@@ -2,6 +2,7 @@ package subject
 
 import (
 	"context"
+	"github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/common/res"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
@@ -35,11 +36,21 @@ func NewUpdateSubjectStatusLogic(ctx context.Context, svcCtx *svc.ServiceContext
 // UpdateSubjectStatus 更新专题表状态
 func (l *UpdateSubjectStatusLogic) UpdateSubjectStatus(req *types.UpdateSubjectStatusReq) (resp *types.BaseResp, err error) {
 	updateBy := l.ctx.Value("userName").(string)
+	writeScope, err := common.ResolveWriteGovernanceScope(l.ctx, common.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, err
+	}
 	_, err = l.svcCtx.SubjectService.UpdateSubjectStatus(l.ctx, &cmsclient.UpdateSubjectStatusReq{
 		Ids:             req.Ids,             // 专题id
 		RecommendStatus: req.RecommendStatus, // 推荐状态：0->不推荐；1->推荐
 		ShowStatus:      req.ShowStatus,      // 显示状态：0->不显示；1->显示
 		UpdateBy:        updateBy,            // 更新者
+		Scope:           common.CMSGovernanceScope(writeScope),
 	})
 
 	if err != nil {

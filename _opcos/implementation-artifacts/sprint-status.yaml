@@ -47,7 +47,7 @@ development_status:
   1-4-作用域角色-菜单模板与数据授权: review
   1-5-商户入驻审核与主体启停: review
   1-6a-核心业务对象查询范围过滤与主体透传: review
-  1-6b-核心业务对象关键写操作校验与越权审计: backlog
+  1-6b-核心业务对象关键写操作校验与越权审计: review
   1-7-治理审计与安全事件检索: backlog
   epic-1-retrospective: optional
 

@@ -78,6 +78,7 @@ message ProductSpuReq {
   repeated ProductFullReductionList      ProductFullReductionList = 36; //满减价格
   repeated ProductLadderList      ProductLadderList = 37; //阶梯价格
   repeated SkuStockList      SkuStockList = 38; //商品sku库存
+  GovernanceScope scope = 39; //治理范围(platform/tenant/merchant)
 }
 
 message ProductSpuResp {
@@ -87,6 +88,7 @@ message ProductSpuResp {
 // 删除商品SPU
 message DeleteProductSpuReq {
   repeated int64 ids = 1;
+  GovernanceScope scope = 2; //治理范围(platform/tenant/merchant)
 }
 
 message DeleteProductSpuResp {
@@ -100,6 +102,7 @@ message UpdateProductSpuStatusReq {
   string detail = 3;
   int64 update_by = 4; //审核人
   string review_man = 5; //更新人ID
+  GovernanceScope scope = 6; //治理范围(platform/tenant/merchant)
 }
 
 message UpdateProductSpuStatusResp {

@@ -23,6 +23,7 @@ message AddSubjectReq {
   string category_name = 15; //专题分类名称
   string create_by = 16; //创建者
   int32 sort = 17; //排序
+  GovernanceScope scope = 18; //治理范围(platform/tenant/merchant)
 }
 
 message AddSubjectResp {
@@ -32,6 +33,7 @@ message AddSubjectResp {
 // 删除专题
 message DeleteSubjectReq {
   repeated int64 ids = 1;
+  GovernanceScope scope = 2; //治理范围(platform/tenant/merchant)
 }
 
 message DeleteSubjectResp {
@@ -57,6 +59,7 @@ message UpdateSubjectReq {
   string category_name = 15; //专题分类名称
   string update_by = 18; //更新者
   int32 sort = 19; //排序
+  GovernanceScope scope = 20; //治理范围(platform/tenant/merchant)
 }
 
 message UpdateSubjectResp {
@@ -69,6 +72,7 @@ message UpdateSubjectStatusReq {
   int32 recommend_status = 6; //推荐状态：0->不推荐；1->推荐
   int32 show_status = 12; //显示状态：0->不显示；1->显示
   string update_by = 18; //更新者
+  GovernanceScope scope = 19; //治理范围(platform/tenant/merchant)
 }
 
 message UpdateSubjectStatusResp {

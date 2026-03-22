@@ -23,6 +23,7 @@ message AddProductSkuReq {
   int32 verify_status = 15; //审核状态：0-未审核，1-审核通过，2-审核不通过
   int32 sort = 16; //排序
   int64 create_by = 17; //创建人ID
+  GovernanceScope scope = 18; //治理范围(platform/tenant/merchant)
 }
 
 message AddProductSkuResp {
@@ -32,6 +33,7 @@ message AddProductSkuResp {
 // 删除商品SKU
 message DeleteProductSkuReq {
   repeated int64 ids = 1;
+  GovernanceScope scope = 2; //治理范围(platform/tenant/merchant)
 }
 
 message DeleteProductSkuResp {
@@ -41,6 +43,7 @@ message DeleteProductSkuResp {
 // 更新商品SKU
 message UpdateProductSkuReq {
   repeated UpdateProductSkuData data = 1;
+  GovernanceScope scope = 2; //治理范围(platform/tenant/merchant)
 }
 message UpdateProductSkuData {
   int64 id = 1; //商品SpuId

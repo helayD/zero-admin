@@ -39,6 +39,13 @@ func NewUpdateCouponLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Upda
 func (l *UpdateCouponLogic) UpdateCoupon(in *smsclient.UpdateCouponReq) (*smsclient.UpdateCouponResp, error) {
 	coupon := query.SmsCoupon
 	q := coupon.WithContext(l.ctx)
+	currentScope, err := logiccommon.ResolveWriteScope(l.ctx, l.svcCtx.DB, in.Scope, in.UpdateBy)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := logiccommon.EnsureCouponScope(l.ctx, l.svcCtx.DB, currentScope, []int64{in.Id}, "sms.coupon.update", in.UpdateBy, "", "update coupon"); err != nil {
+		return nil, err
+	}
 
 	// 1.根据优惠券id查询优惠券是否已存在
 	detail, err := q.Where(coupon.ID.Eq(in.Id)).First()
@@ -111,11 +118,7 @@ func (l *UpdateCouponLogic) UpdateCoupon(in *smsclient.UpdateCouponReq) (*smscli
 			return err
 		}
 
-		current, err := logiccommon.ResolveActorScope(l.ctx, tx, in.UpdateBy)
-		if err != nil {
-			return err
-		}
-		if err := logiccommon.ApplyCouponScope(l.ctx, tx, item.ID, current); err != nil {
+		if err := logiccommon.ApplyCouponScope(l.ctx, tx, item.ID, currentScope); err != nil {
 			return err
 		}
 
@@ -126,7 +129,7 @@ func (l *UpdateCouponLogic) UpdateCoupon(in *smsclient.UpdateCouponReq) (*smscli
 	})
 	if err != nil {
 		logc.Errorf(l.ctx, "更新优惠券失败,参数:%+v,异常:%s", in, err.Error())
-		return nil, errors.New(err.Error())
+		return nil, err
 	}
 	return &smsclient.UpdateCouponResp{}, nil
 }
