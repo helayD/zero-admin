@@ -3,6 +3,9 @@ create table oms_order_payment
 (
     id             bigint auto_increment
         primary key comment '主键ID',
+    platform_id    bigint       default 1                 not null comment '平台ID',
+    tenant_id      bigint       default 0                 not null comment '租户ID',
+    merchant_id    bigint       default 0                 not null comment '商户ID',
     order_id       bigint                                not null comment '订单ID',
     order_no       varchar(32)                           not null comment '订单编号',
     pay_type       tinyint                               not null comment '支付方式：1-支付宝，2-微信，3-银联',
@@ -19,6 +22,9 @@ create table oms_order_payment
 
 create index idx_transaction
     on oms_order_payment (transaction_id, is_deleted);
+
+create index idx_scope_payment_order
+    on oms_order_payment (platform_id, tenant_id, merchant_id, order_id, pay_status);
 
 INSERT INTO oms_order_payment (
     order_id, order_no, pay_type, transaction_id, total_amount,

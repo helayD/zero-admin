@@ -27,6 +27,10 @@ export interface CouponListParams {
   type?: number;
   platform?: number;
   useType?: number;
+  scopeType?: 'platform' | 'tenant' | 'merchant';
+  platformId?: number;
+  tenantId?: number;
+  merchantId?: number;
   /** 当前的页码 */
   current?: number;
   /** 页面的容量 */
@@ -89,4 +93,3 @@ export interface CouponDetailData {
   code:                        string;
   memberLevel:                 number;
 }
-

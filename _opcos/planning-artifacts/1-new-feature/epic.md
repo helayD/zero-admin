@@ -131,7 +131,7 @@ NFR27: 租户和商户的配额、启停状态与关键作用域变更必须在�
 - Flutter Mall 需要落地统一 `App Lifecycle Shell`、`Commerce State Shell`、`Intent Recovery Loop`、`Permission Broker` 和 `Upgrade Gate`，覆盖冷启动、热启动、登录恢复、前后台切换、消息唤回、弱网重试、权限请求和版本升级拦截。
 - 交易关键流坚持“状态确认优先”：确认订单、支付发起、订单恢复和售后申请必须以服务端状态为准，只在低风险场景允许乐观更新。
 - 后台 UX 主骨架采用 `Scope-first Split Pane`，复杂治理 / 审核任务叠加 `Guided Task Workspace`；商城端采用“摘要卡片 + 分段内容 + 吸附底部 CTA + 状态页”的移动交易节奏。
-- 需落地共享业务组件：`Scope Context Bar`、`Order Timeline Panel`、`Price Breakdown Card`、`Promotion Stack / Coupon Sheet`、`Batch Action Dock`、`Sync Status Badge`、`Request State Panel`、`Intent Recovery Shell`、`Permission Rationale Sheet`、`Upgrade Gate Sheet`。
+- 需落地共享业务组件：`Scope Context Bar`、`Order Timeline Panel`、`Price Breakdown Card`、`Promotion Stack / Coupon Sheet`、`Batch Action Dock`、`Sync Status Badge`、`Commerce State Shell`、`Intent Recovery Loop`、`Permission Request Sheet`、`Upgrade Gate`。
 - 所有高风险操作都要提供 `Consequence Preview` 与 `Recovery-first Feedback`，即在提交前明确影响范围、在失败时给出原因、修复入口和保留上下文的恢复路径。
 - 视觉与交互需要共享语义 token（`brand / accent / success / warning / danger / scope / surface / border / text`），禁止在业务页面各自定义状态色和间距规则。
 - Web 管理端默认支持 Chrome / Edge 主流桌面版本，Safari / Firefox 为补充兼容范围；移动端首批正式支持 iOS 与 Android 手机端，平板与折叠屏属于兼容性补充范围。
@@ -355,23 +355,43 @@ So that 商户可以在合规和授权边界内进入经营状态。
 **Then** 商户后台访问与关键经营能力同步收回或恢复  
 **And** 状态变更写入治理审计记录并在监控面板中可见。
 
-### Story 1.6: 核心业务对象作用域隔离
+### Story 1.6A: 核心业务对象查询范围过滤与主体透传
 
 As a 平台管理员,
-I want 为商品、订单、优惠券、库存和内容配置统一作用域规则,
-So that 不同租户和商户只能访问与修改属于自己的业务对象。
+I want 为商品、订单、优惠券、库存和内容查询链路建立统一主体透传与范围过滤,
+So that 不同租户和商户只能看到属于自己的业务对象。
 
-**FRs implemented:** FR47, FR51
+**FRs implemented:** FR47
 
 **Acceptance Criteria:**
 
 **Given** 平台已存在平台级、租户级和商户级主体  
-**When** 用户在对应作用域内查询或写入商品、订单、优惠券、库存和内容对象  
-**Then** 系统自动带入并校验主体标识  
-**And** 仅返回当前作用域允许访问的数据。
+**When** 用户在对应作用域内查询商品、订单、优惠券、库存或内容对象  
+**Then** 系统自动透传并校验主体标识  
+**And** 仅返回当前作用域允许访问的数据与聚合结果。
 
-**Given** 用户尝试跨租户或跨商户访问不属于自己的资源  
-**When** 发起关键写操作或敏感查询  
+**Given** 查询经过缓存、搜索读模型或列表筛选链路  
+**When** 系统生成查询条件、缓存 key 或读模型过滤条件  
+**Then** 主体范围信息必须被一并纳入  
+**And** 不会因为共享缓存或读模型延迟返回跨租户、跨商户结果。
+
+### Story 1.6B: 核心业务对象关键写操作校验与越权审计
+
+As a 平台管理员,
+I want 对商品、订单、优惠券、库存和内容配置的关键写操作执行资源级作用域校验,
+So that 不同租户和商户不能修改不属于自己的业务对象。
+
+**FRs implemented:** FR51
+
+**Acceptance Criteria:**
+
+**Given** 用户发起商品发布、订单处理、优惠券配置、库存调整或内容上下架等关键写操作  
+**When** 服务端执行保存、发布、关闭、回退或删除逻辑  
+**Then** 系统校验目标资源归属与当前主体范围一致  
+**And** 仅允许在授权作用域内完成变更。
+
+**Given** 用户尝试跨租户或跨商户修改不属于自己的资源  
+**When** 发起关键写操作或敏感配置变更  
 **Then** 系统拒绝请求并返回可理解的错误反馈  
 **And** 越权尝试被记录到安全或审计日志中。
 
@@ -1039,11 +1059,11 @@ So that 我可以更快找到想买的商品而不只依赖导购入口。
 **Then** 页面展示明确的空状态或提示信息  
 **And** 不返回与真实商品状态不一致的过期结果。
 
-### Story 7.3: 订单与权益状态一致性编排
+### Story 7.3A: 统一交易事件契约与幂等消费
 
 As a 技术运营人员,
-I want 让订单、优惠券、积分和库存状态在关键交易链路中保持一致,
-So that 用户与运营在前后台看到的交易结果不会长期互相矛盾。
+I want 为订单、优惠券、积分和库存链路建立统一事件契约与幂等消费规范,
+So that 各服务可以基于一致业务事实同步状态而不产生重复副作用。
 
 **FRs implemented:** FR39
 
@@ -1057,7 +1077,27 @@ So that 用户与运营在前后台看到的交易结果不会长期互相矛盾
 **Given** 某个消费方重复接收消息或发生临时故障  
 **When** 消费逻辑执行  
 **Then** 系统通过幂等控制避免重复副作用  
-**And** 不会因为单个消费者异常让订单与权益状态长期失去一致性。
+**And** 不会因为单个消费者异常放大错误状态。
+
+### Story 7.3B: 支付与取消驱动的订单权益一致性编排
+
+As a 技术运营人员,
+I want 把支付结果、订单取消和售后状态变化编排成统一的权益同步流程,
+So that 用户与运营在前后台看到的订单、库存、优惠券和积分结果不会长期互相矛盾。
+
+**FRs implemented:** FR39
+
+**Acceptance Criteria:**
+
+**Given** 支付成功、支付失败、订单取消或售后状态更新触发了库存、优惠券或积分变化  
+**When** 一致性编排链路执行  
+**Then** 系统按统一状态语义驱动下游更新  
+**And** 当前同步阶段对前后台与运营视图都是可见的。
+
+**Given** 某个下游状态仍在处理中或出现阶段性失败  
+**When** 运营人员查看订单详情或链路状态  
+**Then** 系统展示当前同步阶段、最近结果和待处理提示  
+**And** 不让不同端长期停留在互相矛盾的最终状态。
 
 ### Story 7.4: 超时订单关闭与资源补偿
 
@@ -1319,7 +1359,7 @@ So that 我不会被无关授权打断购物、售后或评价流程。
 
 **Given** 用户执行消息提醒订阅、售后凭证上传或评价图片上传  
 **When** 当前操作首次需要通知、相册或相机权限  
-**Then** 系统通过 `Permission Rationale Sheet` 说明权限用途并请求授权  
+**Then** 系统通过 `Permission Request Sheet` 说明权限用途并请求授权  
 **And** 不在首次启动阶段预取与当前任务无关的权限。
 
 **Given** 用户拒绝或永久拒绝权限  
@@ -1329,9 +1369,9 @@ So that 我不会被无关授权打断购物、售后或评价流程。
 
 ### Story 9.5: 版本升级闸门与升级后任务恢复
 
-As a 平台和消费者,
+As a 消费者,
 I want 在版本不满足关键交易、合规或接口兼容要求时看到明确升级闸门,
-So that 平台可以安全拦截高风险旧版本，用户也知道升级后如何继续原任务。
+So that 我能理解受影响范围，并在升级后继续原任务。
 
 **FRs implemented:** FR64
 

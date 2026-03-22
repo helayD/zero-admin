@@ -1,5 +1,5 @@
 import { EditOutlined, ExclamationCircleOutlined, PlusOutlined } from '@ant-design/icons';
-import { Button, Drawer, message, Modal, Select, Switch } from 'antd';
+import { Alert, Button, Drawer, message, Modal, Select, Switch } from 'antd';
 import React, { useRef, useState } from 'react';
 import { PageContainer } from '@ant-design/pro-layout';
 import type { ActionType, ProColumns } from '@ant-design/pro-table';
@@ -15,6 +15,13 @@ import {
   removeRecommendSubject,
   updateRecommendSubjectSort,
 } from './service';
+import GovernanceScopeBar from '@/pages/system/components/GovernanceScopeBar';
+import {
+  buildGovernanceScopeLabel,
+  defaultGovernanceScope,
+  type GovernanceScopeValue,
+  toGovernancePayload,
+} from '@/pages/system/components/governance';
 
 const { confirm } = Modal;
 
@@ -84,6 +91,7 @@ const RecommendSubjectList: React.FC = () => {
   const [showDetail, setShowDetail] = useState<boolean>(false);
   const actionRef = useRef<ActionType>();
   const [currentRow, setCurrentRow] = useState<RecommendSubjectListItem>();
+  const [scope, setScope] = useState<GovernanceScopeValue>(defaultGovernanceScope);
 
   const showStatusConfirm = (item: RecommendSubjectListItem, status: number) => {
     confirm({
@@ -173,6 +181,22 @@ const RecommendSubjectList: React.FC = () => {
 
   return (
     <PageContainer>
+      <GovernanceScopeBar
+        value={scope}
+        onChange={(nextScope) => {
+          setScope(nextScope);
+          actionRef.current?.reload?.();
+        }}
+        entityLabel="专题推荐"
+        style={{ marginBottom: 16 }}
+      />
+      <Alert
+        showIcon
+        type="info"
+        style={{ marginBottom: 16 }}
+        message={`当前查询范围：${buildGovernanceScopeLabel(scope)}`}
+        description="专题推荐列表和“选择专题”弹窗会共用同一治理范围，避免把别的主体专题误加进首页推荐。"
+      />
       <ProTable<RecommendSubjectListItem>
         headerTitle="专题推荐列表"
         actionRef={actionRef}
@@ -185,7 +209,7 @@ const RecommendSubjectList: React.FC = () => {
             <PlusOutlined /> 选择专题
           </Button>,
         ]}
-        request={queryRecommendSubjectList}
+        request={(params) => queryRecommendSubjectList({ ...params, ...toGovernancePayload(scope) })}
         columns={columns}
         rowSelection={{}}
         pagination={{ pageSize: 10 }}
@@ -211,6 +235,7 @@ const RecommendSubjectList: React.FC = () => {
           }
         }}
         createModalVisible={createModalVisible}
+        scope={scope}
       />
 
       <SetSortForm
@@ -237,7 +262,7 @@ const RecommendSubjectList: React.FC = () => {
 
       <Drawer
         width={600}
-        open={showDetail}
+        visible={showDetail}
         onClose={() => {
           setCurrentRow(undefined);
           setShowDetail(false);

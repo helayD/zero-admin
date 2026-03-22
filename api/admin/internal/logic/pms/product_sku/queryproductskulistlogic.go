@@ -2,6 +2,7 @@ package product_sku
 
 import (
 	"context"
+	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
 	"github.com/feihua/zero-admin/api/admin/internal/types"
@@ -33,6 +34,16 @@ func NewQueryProductSkuListLogic(ctx context.Context, svcCtx *svc.ServiceContext
 
 // QueryProductSkuList 查询商品SKU列表
 func (l *QueryProductSkuListLogic) QueryProductSkuList(req *types.QueryProductSkuListReq) (resp *types.QueryProductSkuListResp, err error) {
+	queryScope, err := admincommon.ResolveQueryGovernanceScope(l.ctx, admincommon.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
+
 	result, err := l.svcCtx.ProductSkuService.QueryProductSkuList(l.ctx, &pmsclient.QueryProductSkuListReq{
 		PageNum:            req.Current,
 		PageSize:           req.PageSize,
@@ -43,6 +54,7 @@ func (l *QueryProductSkuListLogic) QueryProductSkuList(req *types.QueryProductSk
 		PromotionEndTime:   req.PromotionEndTime,   // 促销结束时间
 		PublishStatus:      req.PublishStatus,      // 上架状态：0-下架，1-上架
 		VerifyStatus:       req.VerifyStatus,       // 审核状态：0-未审核，1-审核通过，2-审核不通过
+		Scope:              admincommon.PMSGovernanceScope(queryScope),
 	})
 
 	if err != nil {

@@ -71,7 +71,10 @@ export interface ProductListData {
 }
 
 export interface ProductListParams {
-
+  scopeType?: 'platform' | 'tenant' | 'merchant';
+  platformId?: number;
+  tenantId?: number;
+  merchantId?: number;
   pageSize?: number;
   current?: number;
   newStatus?: number;

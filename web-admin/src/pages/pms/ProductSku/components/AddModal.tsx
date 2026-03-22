@@ -225,7 +225,7 @@ const AddModal: React.FC<AddModalProps> = (props) => {
       forceRender
       destroyOnClose
       title="新增"
-      open={addVisible}
+      visible={addVisible}
       {...modalFooter}
     >
       <Form

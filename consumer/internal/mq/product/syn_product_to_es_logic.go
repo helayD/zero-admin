@@ -3,7 +3,7 @@ package product
 import (
 	"context"
 
-	"github.com/bytedance/sonic"
+	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/rpc/pms/client/productspuservice"
 	"github.com/feihua/zero-admin/rpc/search/search_client"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -12,16 +12,21 @@ import (
 // SynProductToEs 同步商品到es
 func SynProductToEs(ctx context.Context, body []byte, Search search_client.Search, productSpuService productspuservice.ProductSpuService) {
 	logc.Infof(ctx, "需要同步商品的id: %s", body)
-	var orderInfo map[string]int64
-	err := sonic.Unmarshal(body, &orderInfo)
+	payload, current, err := pkgscope.DecodeProductESSyncPayload(body)
 	if err != nil {
-		logc.Errorf(ctx, "序列化 JSON 失败: %v", err)
+		logc.Errorf(ctx, "解析商品 ES 同步消息失败: %v", err)
 		return
 	}
-	id := orderInfo["id"]
 
 	res, err := productSpuService.QueryProductSpuDetail(ctx, &productspuservice.QueryProductSpuDetailReq{
-		Id: id,
+		Id: payload.ID,
+		Scope: &productspuservice.GovernanceScope{
+			ScopeType:  current.ScopeType,
+			PlatformId: current.PlatformID,
+			TenantId:   current.TenantID,
+			MerchantId: current.MerchantID,
+			ScopeLabel: current.Label(),
+		},
 	})
 	if err != nil {
 		logc.Errorf(ctx, "查询商品异常,请求参数: %s, 异常信息: %+v", body, err)
@@ -66,6 +71,13 @@ func SynProductToEs(ctx context.Context, body []byte, Search search_client.Searc
 		CreateTime:       product.CreateTime,       // 创建时间
 		UpdateBy:         product.UpdateBy,         // 更新人ID
 		UpdateTime:       product.UpdateTime,       // 更新时间
+		Scope: &search_client.GovernanceScope{
+			ScopeType:  current.ScopeType,
+			PlatformId: current.PlatformID,
+			TenantId:   current.TenantID,
+			MerchantId: current.MerchantID,
+			ScopeLabel: current.Label(),
+		},
 	}
 
 	var list []*search_client.ProductData

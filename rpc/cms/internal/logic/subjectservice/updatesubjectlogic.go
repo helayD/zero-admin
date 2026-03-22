@@ -8,6 +8,7 @@ import (
 	"github.com/feihua/zero-admin/rpc/cms/cmsclient"
 	"github.com/feihua/zero-admin/rpc/cms/gen/model"
 	"github.com/feihua/zero-admin/rpc/cms/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/cms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/cms/internal/svc"
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -72,9 +73,18 @@ func (l *UpdateSubjectLogic) UpdateSubject(in *cmsclient.UpdateSubjectReq) (*cms
 		Sort:            in.Sort,            // 排序
 	}
 
-	// 2.专题存在时,则直接更新专题
-	err = l.svcCtx.DB.Model(&model.CmsSubject{}).WithContext(l.ctx).Where(query.CmsSubject.ID.Eq(in.Id)).Save(item).Error
+	err = l.svcCtx.DB.WithContext(l.ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&model.CmsSubject{}).Where("id = ?", in.Id).Save(item).Error; err != nil {
+			return err
+		}
 
+		current, err := logiccommon.ResolveActorScopeByUserName(l.ctx, tx, in.UpdateBy)
+		if err != nil {
+			return err
+		}
+
+		return logiccommon.ApplySubjectScope(l.ctx, tx, item.ID, current)
+	})
 	if err != nil {
 		logc.Errorf(l.ctx, "更新专题失败,参数:%+v,异常:%s", item, err.Error())
 		return nil, errors.New("更新专题失败")

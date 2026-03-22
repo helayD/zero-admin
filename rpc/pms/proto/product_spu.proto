@@ -109,6 +109,7 @@ message UpdateProductSpuStatusResp {
 // 查询商品SPU详情
 message QueryProductSpuDetailReq {
   int64 id = 1;
+  GovernanceScope scope = 2; //治理范围(platform/tenant/merchant)
 }
 
 message BrandData {
@@ -237,6 +238,7 @@ message QueryProductSpuListReq {
   int32 page_size = 14; //每页的数量
   string keywords = 15; //关键词
   string product_sn = 16; //商品货号
+  GovernanceScope scope = 17; //治理范围(platform/tenant/merchant)
 }
 
 message ProductSpuListData {
@@ -288,6 +290,7 @@ message UpdateProductSortReq {
 }
 message QueryProductSpuByIdsReq {
   repeated int64  Ids = 1;
+  GovernanceScope scope = 2; //治理范围(platform/tenant/merchant)
 }
 // 商品SPU
 service ProductSpuService {

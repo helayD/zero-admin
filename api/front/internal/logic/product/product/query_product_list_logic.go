@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	frontcommon "github.com/feihua/zero-admin/api/front/internal/logic/common"
 	"github.com/feihua/zero-admin/pkg/errorx"
 	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -30,6 +31,8 @@ func NewQueryProductListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 func (l *QueryProductListLogic) QueryProductList(req *types.QueryProductListReq) (resp *types.QueryProductListResp, err error) {
+	currentScope := frontcommon.ResolveEffectiveGovernanceScope(l.ctx)
+
 	productListResp, err := l.svcCtx.ProductSpuService.QueryProductSpuList(l.ctx, &pmsclient.QueryProductSpuListReq{
 		PageNum:         req.Current,
 		PageSize:        req.PageSize,
@@ -42,6 +45,7 @@ func (l *QueryProductListLogic) QueryProductList(req *types.QueryProductListReq)
 		VerifyStatus:    1,                   // 审核状态：0->未审核；1->审核通过
 		PreviewStatus:   0,                   // 是否为预告商品：0->不是；1->是
 		PromotionType:   6,                   // 促销类型：0->没有促销使用原价;1->使用促销价；2->使用会员价；3->使用阶梯价格；4->使用满减价格；5->秒杀
+		Scope:           frontcommon.PMSGovernanceScope(currentScope),
 	})
 
 	if err != nil {

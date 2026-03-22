@@ -226,7 +226,7 @@ const UpdateCouponForm: React.FC<CreateFormProps> = (props) => {
       forceRender
       destroyOnClose
       title="新建"
-      open={updateModalVisible}
+      visible={updateModalVisible}
       {...modalFooter}
       width={820}
     >

@@ -1,0 +1,119 @@
+syntax = "proto3";
+
+package main;
+
+option go_package = "./proto";
+
+message CreateMerchantReq {
+  int64 tenant_id = 1;
+  string merchant_name = 2;
+  string merchant_short_name = 3;
+  string merchant_code = 4;
+  string contact_name = 5;
+  string contact_mobile = 6;
+  string contact_email = 7;
+  repeated string available_channels = 8;
+  repeated string capability_flags = 9;
+  string visible_scope_hint = 10;
+  int64 primary_admin_user_id = 11;
+  string remark = 12;
+  string create_by = 13;
+  int64 operator_id = 14;
+}
+
+message CreateMerchantResp {
+  int64 merchant_id = 1;
+  string merchant_code = 2;
+  int32 review_status = 3;
+  int32 business_status = 4;
+}
+
+message QueryMerchantDetailReq {
+  int64 id = 1;
+}
+
+message QueryMerchantListReq {
+  int64 tenant_id = 1;
+  string merchant_name = 2;
+  string merchant_code = 3;
+  int32 review_status = 4;
+  int32 business_status = 5;
+  string channel = 6;
+  string capability_flag = 7;
+  int64 page_num = 8;
+  int64 page_size = 9;
+}
+
+message MerchantData {
+  int64 id = 1;
+  int64 tenant_id = 2;
+  string tenant_code = 3;
+  string tenant_name = 4;
+  int32 tenant_status = 5;
+  string merchant_code = 6;
+  string merchant_name = 7;
+  string merchant_short_name = 8;
+  string contact_name = 9;
+  string contact_mobile = 10;
+  string contact_email = 11;
+  repeated string available_channels = 12;
+  repeated string capability_flags = 13;
+  int32 review_status = 14;
+  string review_reason = 15;
+  int64 reviewed_by = 16;
+  string reviewed_by_name = 17;
+  string reviewed_at = 18;
+  int32 business_status = 19;
+  string status_reason = 20;
+  string visible_scope_hint = 21;
+  int64 primary_admin_user_id = 22;
+  string remark = 23;
+  repeated string next_actions = 24;
+  string created_by = 25;
+  string created_at = 26;
+  string updated_by = 27;
+  string updated_at = 28;
+}
+
+message QueryMerchantDetailResp {
+  MerchantData data = 1;
+}
+
+message QueryMerchantListResp {
+  int64 total = 1;
+  repeated MerchantData list = 2;
+}
+
+message ReviewMerchantReq {
+  repeated int64 ids = 1;
+  string review_reason = 2;
+  string update_by = 3;
+  int64 operator_id = 4;
+}
+
+message ReviewMerchantResp {
+  string pong = 1;
+}
+
+message ChangeMerchantStatusReq {
+  repeated int64 ids = 1;
+  string status_reason = 2;
+  string update_by = 3;
+  int64 operator_id = 4;
+}
+
+message ChangeMerchantStatusResp {
+  string pong = 1;
+}
+
+service MerchantService {
+  rpc CreateMerchant(CreateMerchantReq) returns (CreateMerchantResp) {}
+  rpc QueryMerchantDetail(QueryMerchantDetailReq) returns (QueryMerchantDetailResp) {}
+  rpc QueryMerchantList(QueryMerchantListReq) returns (QueryMerchantListResp) {}
+  rpc ApproveMerchant(ReviewMerchantReq) returns (ReviewMerchantResp) {}
+  rpc RejectMerchant(ReviewMerchantReq) returns (ReviewMerchantResp) {}
+  rpc RequestMerchantMaterial(ReviewMerchantReq) returns (ReviewMerchantResp) {}
+  rpc EnableMerchant(ChangeMerchantStatusReq) returns (ChangeMerchantStatusResp) {}
+  rpc DisableMerchant(ChangeMerchantStatusReq) returns (ChangeMerchantStatusResp) {}
+  rpc ArchiveMerchant(ChangeMerchantStatusReq) returns (ChangeMerchantStatusResp) {}
+}

@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 
+	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/pkg/time_util"
 	"github.com/feihua/zero-admin/rpc/cms/cmsclient"
-	"github.com/feihua/zero-admin/rpc/cms/gen/query"
+	"github.com/feihua/zero-admin/rpc/cms/gen/model"
+	logiccommon "github.com/feihua/zero-admin/rpc/cms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/cms/internal/svc"
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -34,7 +36,18 @@ func NewQuerySubjectDetailLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 
 // QuerySubjectDetail 查询专题详情
 func (l *QuerySubjectDetailLogic) QuerySubjectDetail(in *cmsclient.QuerySubjectDetailReq) (*cmsclient.QuerySubjectDetailResp, error) {
-	item, err := query.CmsSubject.WithContext(l.ctx).Where(query.CmsSubject.ID.Eq(in.Id)).First()
+	current, err := logiccommon.NormalizeProtoScope(in.Scope)
+	if err != nil {
+		logc.Errorf(l.ctx, "专题详情scope非法, 请求参数：%+v, 异常信息: %s", in, err.Error())
+		return nil, errors.New("查询专题异常")
+	}
+
+	var item model.CmsSubject
+	err = pkgscope.ApplyGovernanceScope(
+		l.svcCtx.DB.WithContext(l.ctx).Model(&model.CmsSubject{}),
+		current,
+		"",
+	).Where("id = ?", in.Id).Take(&item).Error
 
 	switch {
 	case errors.Is(err, gorm.ErrRecordNotFound):

@@ -4,8 +4,10 @@ import (
 	"context"
 	"strings"
 
+	frontcommon "github.com/feihua/zero-admin/api/front/internal/logic/common"
 	"github.com/feihua/zero-admin/api/front/internal/svc"
 	"github.com/feihua/zero-admin/api/front/internal/types"
+	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/rpc/cms/cmsclient"
 	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
 	"github.com/feihua/zero-admin/rpc/sms/smsclient"
@@ -33,6 +35,8 @@ func NewIndexLogic(ctx context.Context, svcCtx *svc.ServiceContext) *IndexLogic 
 }
 
 func (l *IndexLogic) Index(req *types.HomeReq) (resp *types.HomeResp, err error) {
+	currentScope := frontcommon.ResolveEffectiveGovernanceScope(l.ctx)
+
 	return &types.HomeResp{
 		Code:    0,
 		Message: "操作成功",
@@ -40,15 +44,15 @@ func (l *IndexLogic) Index(req *types.HomeReq) (resp *types.HomeResp, err error)
 			AdvertiseList:      queryAdvertiseList(l),
 			BrandList:          queryBrandList(l, req),
 			HomeFlashPromotion: queryHomeFlashPromotion(l, req),
-			NewProductList:     queryNewProductList(l, req),
-			HotProductList:     queryHotProductList(l, req),
-			SubjectList:        querySubjectList(l, req), // 推荐专题
+			NewProductList:     queryNewProductList(l, req, currentScope),
+			HotProductList:     queryHotProductList(l, req, currentScope),
+			SubjectList:        querySubjectList(l, req, currentScope), // 推荐专题
 		},
 	}, nil
 }
 
 // 推荐专题
-func querySubjectList(l *IndexLogic, req *types.HomeReq) []types.SubjectList {
+func querySubjectList(l *IndexLogic, req *types.HomeReq, currentScope pkgscope.GovernanceScope) []types.SubjectList {
 	var list []types.SubjectList
 	res, err := l.svcCtx.SubjectService.QuerySubjectList(l.ctx, &cmsclient.QuerySubjectListReq{
 		PageNum:         1,
@@ -56,6 +60,7 @@ func querySubjectList(l *IndexLogic, req *types.HomeReq) []types.SubjectList {
 		Title:           "", // 专题标题
 		RecommendStatus: 1,  // 推荐状态：0->不推荐；1->推荐
 		ShowStatus:      1,  // 显示状态：0->不显示；1->显示
+		Scope:           frontcommon.CMSGovernanceScope(currentScope),
 	})
 
 	// 没有推荐专题的时候返回空数据
@@ -87,7 +92,7 @@ func querySubjectList(l *IndexLogic, req *types.HomeReq) []types.SubjectList {
 }
 
 // 人气推荐
-func queryHotProductList(l *IndexLogic, req *types.HomeReq) []types.IndexProductData {
+func queryHotProductList(l *IndexLogic, req *types.HomeReq, currentScope pkgscope.GovernanceScope) []types.IndexProductData {
 	var resp, _ = l.svcCtx.ProductSpuService.QueryProductSpuList(l.ctx, &pmsclient.QueryProductSpuListReq{
 		PageNum:         1,
 		PageSize:        req.HotProductNumber,
@@ -100,6 +105,7 @@ func queryHotProductList(l *IndexLogic, req *types.HomeReq) []types.IndexProduct
 		VerifyStatus:    1, // 审核状态：0->未审核；1->审核通过
 		PreviewStatus:   0, // 是否为预告商品：0->不是；1->是
 		PromotionType:   6, // 促销类型：0->没有促销使用原价;1->使用促销价；2->使用会员价；3->使用阶梯价格；4->使用满减价格；5->秒杀
+		Scope:           frontcommon.PMSGovernanceScope(currentScope),
 	})
 
 	var list []types.IndexProductData
@@ -143,7 +149,7 @@ func queryHotProductList(l *IndexLogic, req *types.HomeReq) []types.IndexProduct
 }
 
 // 新品推荐
-func queryNewProductList(l *IndexLogic, req *types.HomeReq) []types.IndexProductData {
+func queryNewProductList(l *IndexLogic, req *types.HomeReq, currentScope pkgscope.GovernanceScope) []types.IndexProductData {
 	var resp, _ = l.svcCtx.ProductSpuService.QueryProductSpuList(l.ctx, &pmsclient.QueryProductSpuListReq{
 		PageNum:         1,
 		PageSize:        req.NewProductNumber,
@@ -155,6 +161,7 @@ func queryNewProductList(l *IndexLogic, req *types.HomeReq) []types.IndexProduct
 		VerifyStatus:    1, // 审核状态：0->未审核；1->审核通过
 		PreviewStatus:   0, // 是否为预告商品：0->不是；1->是
 		PromotionType:   6, // 促销类型：0->没有促销使用原价;1->使用促销价；2->使用会员价；3->使用阶梯价格；4->使用满减价格；5->秒杀
+		Scope:           frontcommon.PMSGovernanceScope(currentScope),
 	})
 
 	var list []types.IndexProductData
@@ -257,7 +264,7 @@ func queryHomeFlashPromotion(l *IndexLogic, req *types.HomeReq) types.HomeFlashP
 	// productIdLists = append(productIdLists, 32)
 	//
 	// // 设置商品
-	resp.ProductList = queryNewProductList(l, req)
+	resp.ProductList = queryNewProductList(l, req, frontcommon.ResolveEffectiveGovernanceScope(l.ctx))
 	return resp
 }
 

@@ -3,6 +3,7 @@ package order_main
 import (
 	"context"
 
+	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
 	"github.com/feihua/zero-admin/api/admin/internal/types"
@@ -34,9 +35,19 @@ func NewQueryOrderMainDetailLogic(ctx context.Context, svcCtx *svc.ServiceContex
 
 // QueryOrderMainDetail 查询订单详情
 func (l *QueryOrderMainDetailLogic) QueryOrderMainDetail(req *types.QueryOrderMainDetailReq) (resp *types.QueryOrderMainDetailResp, err error) {
+	queryScope, err := admincommon.ResolveQueryGovernanceScope(l.ctx, admincommon.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
 
 	result, err := l.svcCtx.OrderService.QueryOrderDetail(l.ctx, &omsclient.QueryOrderDetailReq{
-		Id: req.Id,
+		Id:    req.Id,
+		Scope: admincommon.OMSGovernanceScope(queryScope),
 	})
 
 	if err != nil {

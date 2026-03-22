@@ -4,8 +4,11 @@ import (
 	"context"
 	"errors"
 
+	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/pkg/time_util"
+	"github.com/feihua/zero-admin/rpc/oms/gen/model"
 	"github.com/feihua/zero-admin/rpc/oms/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/oms/internal/logic/common"
 	"github.com/zeromicro/go-zero/core/logc"
 	"gorm.io/gorm"
 
@@ -31,15 +34,25 @@ func NewQueryOrderDetailLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 
 // QueryOrderDetail 查询订单详情:订单信息、商品信息、操作记录
 func (l *QueryOrderDetailLogic) QueryOrderDetail(in *omsclient.QueryOrderDetailReq) (*omsclient.QueryOrderDetailResp, error) {
-	orderMain := query.OmsOrderMain
-	q := orderMain.WithContext(l.ctx)
-	q = q.Where(orderMain.ID.Eq(in.Id), orderMain.IsDeleted.Eq(0))
-
-	if in.UserId != 0 {
-		q = q.Where(orderMain.UserID.Eq(in.UserId))
+	current, err := logiccommon.NormalizeProtoScope(in.Scope)
+	if err != nil {
+		logc.Errorf(l.ctx, "订单详情scope非法, 请求参数：%+v, 异常信息: %s", in, err.Error())
+		return nil, errors.New("查询订单异常")
 	}
 
-	item, err := q.First()
+	q := pkgscope.ApplyGovernanceScope(
+		l.svcCtx.DB.WithContext(l.ctx).Model(&model.OmsOrderMain{}),
+		current,
+		"",
+	)
+	q = q.Where("id = ? AND is_deleted = 0", in.Id)
+
+	if in.UserId != 0 {
+		q = q.Where("user_id = ?", in.UserId)
+	}
+
+	var item model.OmsOrderMain
+	err = q.Take(&item).Error
 
 	switch {
 	case errors.Is(err, gorm.ErrRecordNotFound):

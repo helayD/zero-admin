@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	frontcommon "github.com/feihua/zero-admin/api/front/internal/logic/common"
 	"github.com/feihua/zero-admin/pkg/errorx"
 	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
 	"github.com/feihua/zero-admin/rpc/sms/smsclient"
@@ -42,8 +43,11 @@ func NewQueryProductDetailLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 // 9.商品可用优惠券
 // 注意: 步骤1到7是在商品模块(rpc),9是在营销模块(rpc)
 func (l *QueryProductDetailLogic) QueryProductDetail(req *types.QueryProductDetailReq) (resp *types.QueryProductDetailResp, err error) {
+	currentScope := frontcommon.ResolveEffectiveGovernanceScope(l.ctx)
+
 	detail, err := l.svcCtx.ProductSpuService.QueryProductSpuDetail(l.ctx, &pmsclient.QueryProductSpuDetailReq{
-		Id: req.ProductId,
+		Id:    req.ProductId,
+		Scope: frontcommon.PMSGovernanceScope(currentScope),
 	})
 
 	if err != nil {
@@ -55,6 +59,7 @@ func (l *QueryProductDetailLogic) QueryProductDetail(req *types.QueryProductDeta
 	// 8.商品可用优惠券(根据商品id和分类id查询)
 	couponList, _ := l.svcCtx.CouponService.QueryCouponByScopeId(l.ctx, &smsclient.QueryCouponByScopeIdReq{
 		ScopeIds: []int64{req.ProductId, detail.Data.CategoryId},
+		Scope:    frontcommon.SMSGovernanceScope(currentScope),
 	})
 
 	return &types.QueryProductDetailResp{

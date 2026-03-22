@@ -97,7 +97,7 @@ const CreatePostForm: React.FC<CreateFormProps> = (props) => {
       forceRender
       destroyOnClose
       title="新增"
-      open={createModalVisible}
+      visible={createModalVisible}
       {...modalFooter}
     >
       <Form

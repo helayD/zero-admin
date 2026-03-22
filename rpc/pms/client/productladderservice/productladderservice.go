@@ -84,6 +84,7 @@ type (
 	DeleteProductSpuReq                           = pmsclient.DeleteProductSpuReq
 	DeleteProductSpuResp                          = pmsclient.DeleteProductSpuResp
 	FeightTemplateListData                        = pmsclient.FeightTemplateListData
+	GovernanceScope                               = pmsclient.GovernanceScope
 	MemberPriceList                               = pmsclient.MemberPriceList
 	MemberPriceListData                           = pmsclient.MemberPriceListData
 	ProductAttributeDataList                      = pmsclient.ProductAttributeDataList

@@ -4,18 +4,20 @@ import type {ProductListItem} from '../data.d';
 import {queryProduct} from '@/pages/sms/HomeNewProduct/service';
 import type {ActionType, ProColumns} from '@ant-design/pro-table';
 import ProTable from '@ant-design/pro-table';
+import { type GovernanceScopeValue, toGovernancePayload } from '@/pages/system/components/governance';
 
 export interface CreateFormProps {
   onCancel: () => void;
   onSubmit: (values: number[]) => void;
   createModalVisible: boolean;
+  scope: GovernanceScopeValue;
 }
 
 const AddNewProductModal: React.FC<CreateFormProps> = (props) => {
   const actionRef = useRef<ActionType>();
   const [selectedRowsState, setSelectedRows] = useState<ProductListItem[]>([]);
 
-  const {onSubmit, onCancel, createModalVisible} = props;
+  const {onSubmit, onCancel, createModalVisible, scope} = props;
 
   useEffect(() => {
     if (!createModalVisible) {
@@ -72,7 +74,7 @@ const AddNewProductModal: React.FC<CreateFormProps> = (props) => {
       forceRender
       destroyOnClose
       title="选择商品"
-      open={createModalVisible}
+      visible={createModalVisible}
       {...modalFooter}
       width={1000}
       onCancel={onCancel}
@@ -94,6 +96,7 @@ const AddNewProductModal: React.FC<CreateFormProps> = (props) => {
           }
           return queryProduct({
             ...params,
+            ...toGovernancePayload(scope),
           }).then((res) => {
             console.log(res)
             if (res.code === '000000') {

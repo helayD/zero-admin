@@ -8,8 +8,10 @@ import (
 	"time"
 
 	"github.com/bytedance/sonic"
+	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/rpc/pms/gen/model"
 	"github.com/feihua/zero-admin/rpc/pms/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/pms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/pms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -97,88 +99,118 @@ func (l *UpdateProductSpuLogic) UpdateProductSpu(in *pmsclient.ProductSpuReq) (*
 		UpdateTime:          &now,                   // 更新时间
 	}
 
-	// 2.商品SPU存在时,则直接更新商品SPU
-	err = l.svcCtx.DB.Model(&model.PmsProductSpu{}).WithContext(l.ctx).Where(spu.ID.Eq(in.Id)).Save(item).Error
+	spuId := in.Id
+	var currentScope pkgscope.GovernanceScope
 
+	err = l.svcCtx.DB.WithContext(l.ctx).Transaction(func(tx *gorm.DB) error {
+		qtx := query.Use(tx)
+		if err := tx.Model(&model.PmsProductSpu{}).Where("id = ?", in.Id).Save(item).Error; err != nil {
+			return err
+		}
+
+		memberPrice := qtx.PmsMemberPrice.WithContext(l.ctx)
+		if _, err := memberPrice.Where(qtx.PmsMemberPrice.ProductID.Eq(spuId)).Delete(); err != nil {
+			return err
+		}
+		for _, list := range in.MemberPriceList {
+			if err := memberPrice.Create(&model.PmsMemberPrice{
+				ProductID:       spuId,
+				MemberLevelID:   list.LevelId,
+				MemberPrice:     list.Price,
+				MemberLevelName: list.LevelName,
+			}); err != nil {
+				return err
+			}
+		}
+
+		ladder := qtx.PmsProductLadder.WithContext(l.ctx)
+		if _, err := ladder.Where(qtx.PmsProductLadder.ProductID.Eq(spuId)).Delete(); err != nil {
+			return err
+		}
+		for _, list := range in.ProductLadderList {
+			if err := ladder.Create(&model.PmsProductLadder{
+				ProductID: spuId,
+				Count:     list.Count,
+				Discount:  list.Discount,
+				Price:     list.Price,
+			}); err != nil {
+				return err
+			}
+		}
+
+		full := qtx.PmsProductFullReduction.WithContext(l.ctx)
+		if _, err := full.Where(qtx.PmsProductFullReduction.ProductID.Eq(spuId)).Delete(); err != nil {
+			return err
+		}
+		for _, list := range in.ProductFullReductionList {
+			if err := full.Create(&model.PmsProductFullReduction{
+				ProductID:   spuId,
+				FullPrice:   list.FullPrice,
+				ReducePrice: list.ReducePrice,
+			}); err != nil {
+				return err
+			}
+		}
+
+		sku := qtx.PmsProductSku.WithContext(l.ctx)
+		if _, err := sku.Where(qtx.PmsProductSku.SpuID.Eq(spuId)).Delete(); err != nil {
+			return err
+		}
+		for _, list := range in.SkuStockList {
+			skuCode := time.Now().Format("200601021504") + strconv.Itoa(rand.Intn(10))
+			if err := sku.Create(&model.PmsProductSku{
+				SpuID:          spuId,                        // 商品SpuId
+				Name:           list.Name,                    // SKU名称
+				SkuCode:        skuCode,                      // SKU编码
+				MainPic:        list.MainPic,                 // 主图
+				AlbumPics:      list.AlbumPics,               // 图片集
+				Price:          float64(list.Price),          // 价格
+				PromotionPrice: float64(list.PromotionPrice), // 单品促销价格
+				Stock:          list.Stock,                   // 库存
+				LowStock:       list.LowStock,                // 预警库存
+				SpecData:       list.SpecData,                // 规格数据
+				Weight:         float64(list.Weight),         // 重量(kg)
+				PublishStatus:  list.PublishStatus,           // 上架状态：0-下架，1-上架
+				VerifyStatus:   list.VerifyStatus,            // 审核状态：0-未审核，1-审核通过，2-审核不通过
+				Sort:           list.Sort,                    // 排序
+				CreateBy:       in.CreateBy,                  // 创建人ID
+			}); err != nil {
+				return err
+			}
+		}
+
+		attr := qtx.PmsProductAttributeValue.WithContext(l.ctx)
+		if _, err := attr.Where(qtx.PmsProductAttributeValue.SpuID.Eq(spuId)).Delete(); err != nil {
+			return err
+		}
+		for _, list := range in.ProductAttributeValueList {
+			if err := attr.Create(&model.PmsProductAttributeValue{
+				SpuID:       spuId,                   // 商品SPU ID
+				AttributeID: list.ProductAttributeId, // 属性ID
+				Value:       list.AttributeValues,    // 属性值
+				CreateBy:    in.CreateBy,             // 创建人ID
+			}); err != nil {
+				return err
+			}
+		}
+
+		var err error
+		currentScope, err = logiccommon.ResolveActorScope(l.ctx, tx, in.CreateBy)
+		if err != nil {
+			return err
+		}
+
+		return logiccommon.ApplyProductScope(l.ctx, tx, spuId, currentScope)
+	})
 	if err != nil {
 		logc.Errorf(l.ctx, "更新商品SPU失败,参数:%+v,异常:%s", item, err.Error())
 		return nil, errors.New("更新商品SPU失败")
 	}
 
-	spuId := in.Id
-	// 根据促销类型设置价格：会员价格、阶梯价格、满减价格
-	// 2.会员价格
-	memberPrice := query.PmsMemberPrice.WithContext(l.ctx)
-	_, _ = memberPrice.Where(query.PmsMemberPrice.ProductID.Eq(spuId)).Delete()
-	for _, list := range in.MemberPriceList {
-		_ = memberPrice.Create(&model.PmsMemberPrice{
-			ProductID:       spuId,
-			MemberLevelID:   list.LevelId,
-			MemberPrice:     list.Price,
-			MemberLevelName: list.LevelName,
-		})
+	body, _ := sonic.Marshal(pkgscope.NewProductESSyncPayload(spuId, currentScope))
+	if err = l.svcCtx.RabbitMQ.SendMessage("product.event.exchange", "syn.product.to.es.queue", "syn.product.key", body); err != nil {
+		logc.Errorf(l.ctx, "发送商品ES同步消息失败,spuId:%d,scope:%+v,异常:%s", spuId, currentScope, err.Error())
 	}
-
-	// 3.阶梯价格
-	ladder := query.PmsProductLadder.WithContext(l.ctx)
-	_, _ = ladder.Where(query.PmsProductLadder.ProductID.Eq(spuId)).Delete()
-	for _, list := range in.ProductLadderList {
-		_ = ladder.Create(&model.PmsProductLadder{
-			ProductID: spuId,
-			Count:     list.Count,
-			Discount:  list.Discount,
-			Price:     list.Price,
-		})
-	}
-	// 4.满减价格
-	full := query.PmsProductFullReduction.WithContext(l.ctx)
-	_, _ = full.Where(query.PmsProductFullReduction.ProductID.Eq(spuId)).Delete()
-	for _, list := range in.ProductFullReductionList {
-		_ = full.Create(&model.PmsProductFullReduction{
-			ProductID:   spuId,
-			FullPrice:   list.FullPrice,
-			ReducePrice: list.ReducePrice,
-		})
-	}
-
-	// 5.更新sku库存信息
-	sku := query.PmsProductSku.WithContext(l.ctx)
-	_, _ = sku.Where(query.PmsProductSku.SpuID.Eq(spuId)).Delete()
-	for _, list := range in.SkuStockList {
-		skuCode := time.Now().Format("200601021504") + strconv.Itoa(rand.Intn(10))
-		_ = sku.Create(&model.PmsProductSku{
-			SpuID:          spuId,                        // 商品SpuId
-			Name:           list.Name,                    // SKU名称
-			SkuCode:        skuCode,                      // SKU编码
-			MainPic:        list.MainPic,                 // 主图
-			AlbumPics:      list.AlbumPics,               // 图片集
-			Price:          float64(list.Price),          // 价格
-			PromotionPrice: float64(list.PromotionPrice), // 单品促销价格
-			Stock:          list.Stock,                   // 库存
-			LowStock:       list.LowStock,                // 预警库存
-			SpecData:       list.SpecData,                // 规格数据
-			Weight:         float64(list.Weight),         // 重量(kg)
-			PublishStatus:  list.PublishStatus,           // 上架状态：0-下架，1-上架
-			VerifyStatus:   list.VerifyStatus,            // 审核状态：0-未审核，1-审核通过，2-审核不通过
-			Sort:           list.Sort,                    // 排序
-			CreateBy:       in.CreateBy,                  // 创建人ID
-		})
-	}
-	// 6.更新商品参数,添加自定义商品规格
-	attr := query.PmsProductAttributeValue.WithContext(l.ctx)
-	_, _ = attr.Where(query.PmsProductAttributeValue.SpuID.Eq(spuId)).Delete()
-	for _, list := range in.ProductAttributeValueList {
-		_ = attr.Create(&model.PmsProductAttributeValue{
-			SpuID:       spuId,                   // 商品SPU ID
-			AttributeID: list.ProductAttributeId, // 属性ID
-			Value:       list.AttributeValues,    // 属性值
-			CreateBy:    in.CreateBy,             // 创建人ID
-		})
-	}
-
-	message := map[string]any{"id": spuId}
-	body, _ := sonic.Marshal(message)
-	err = l.svcCtx.RabbitMQ.SendMessage("product.event.exchange", "syn.product.to.es.queue", "syn.product.key", body)
 
 	return &pmsclient.ProductSpuResp{}, nil
 }

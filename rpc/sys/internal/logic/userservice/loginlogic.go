@@ -9,7 +9,9 @@ import (
 	"github.com/feihua/zero-admin/rpc/sys/gen/model"
 	"github.com/feihua/zero-admin/rpc/sys/gen/query"
 	"github.com/feihua/zero-admin/rpc/sys/internal/logic/common"
+	"github.com/feihua/zero-admin/rpc/sys/internal/merchantmodel"
 	"github.com/feihua/zero-admin/rpc/sys/internal/svc"
+	"github.com/feihua/zero-admin/rpc/sys/internal/tenantmodel"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
 	"github.com/zeromicro/go-zero/core/logc"
 	"gorm.io/gorm"
@@ -87,6 +89,15 @@ func (l *LoginLogic) Login(in *sysclient.LoginReq) (*sysclient.LoginResp, error)
 	defaultScope, scopeErr := common.QueryUserDefaultScope(l.ctx, l.svcCtx.DB, user.ID)
 	if scopeErr != nil {
 		defaultScope = common.DefaultScope(0, 0, 0)
+	}
+	scopeBinding, err := queryBindingForLoginScope(l.ctx, l.svcCtx.DB, user.ID, defaultScope)
+	if err != nil {
+		logc.Errorf(l.ctx, "查询用户主体绑定异常, userId=%d, err=%v", user.ID, err)
+		return nil, errors.New("查询用户主体范围异常")
+	}
+	if err := validateLoginScope(l.ctx, l.svcCtx.DB, scopeBinding, defaultScope); err != nil {
+		l.savaLoginLog(in, 0, err.Error())
+		return nil, err
 	}
 
 	// 5.生成token
@@ -180,4 +191,71 @@ func (l *LoginLogic) createToken(userId, deptID int64, userName, deptName string
 	token := jwt.New(jwt.SigningMethodHS256) // 创建token
 	token.Claims = claims                    // 设置claims
 	return token.SignedString([]byte(accessSecret))
+}
+
+func queryBindingForLoginScope(ctx context.Context, db *gorm.DB, userID int64, currentScope scope.GovernanceScope) (*common.UserScopeBinding, error) {
+	var binding common.UserScopeBinding
+	err := db.WithContext(ctx).
+		Table("sys_user_scope").
+		Where("user_id = ? AND scope_type = ? AND platform_id = ? AND tenant_id = ? AND merchant_id = ?", userID, currentScope.ScopeType, currentScope.PlatformID, currentScope.TenantID, currentScope.MerchantID).
+		Take(&binding).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return &binding, nil
+}
+
+func validateLoginScope(ctx context.Context, db *gorm.DB, binding *common.UserScopeBinding, currentScope scope.GovernanceScope) error {
+	if binding != nil {
+		switch binding.ActivationStatus {
+		case common.UserActivationDisabled:
+			return errors.New("当前主体已停用，暂不能登录后台")
+		case common.UserActivationArchived:
+			return errors.New("当前主体已归档，暂不能登录后台")
+		case common.UserActivationPending:
+			if currentScope.ScopeType == scope.SubjectTypeTenant || currentScope.ScopeType == scope.SubjectTypeMerchant {
+				return errors.New("当前主体尚未激活，暂不能登录后台")
+			}
+		}
+	}
+
+	if currentScope.TenantID > 0 {
+		var tenant tenantmodel.SysTenant
+		err := db.WithContext(ctx).
+			Select("id, status").
+			Where("id = ?", currentScope.TenantID).
+			Take(&tenant).Error
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return errors.New("当前租户不存在，暂不能登录后台")
+			}
+			return err
+		}
+		if tenant.Status == tenantmodel.TenantStatusDisabled || tenant.Status == tenantmodel.TenantStatusArchived {
+			return errors.New("当前租户已停用或已归档，暂不能登录后台")
+		}
+	}
+
+	if currentScope.MerchantID > 0 {
+		var merchant merchantmodel.SysMerchant
+		err := db.WithContext(ctx).
+			Select("id, review_status, business_status").
+			Where("id = ?", currentScope.MerchantID).
+			Take(&merchant).Error
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return errors.New("当前商户不存在，暂不能登录后台")
+			}
+			return err
+		}
+		if merchant.ReviewStatus != merchantmodel.MerchantReviewApproved || merchant.BusinessStatus != merchantmodel.MerchantBusinessEnabled {
+			return errors.New("当前商户未处于可用经营状态，暂不能登录后台")
+		}
+	}
+
+	return nil
 }

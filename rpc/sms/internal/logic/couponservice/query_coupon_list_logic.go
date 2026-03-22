@@ -6,12 +6,16 @@ import (
 	"time"
 
 	"github.com/feihua/zero-admin/pkg/pointerprocess"
+	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/pkg/time_util"
+	"github.com/feihua/zero-admin/rpc/sms/gen/model"
 	"github.com/feihua/zero-admin/rpc/sms/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/sms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/sms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/sms/smsclient"
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
 )
 
 // QueryCouponListLogic 查询优惠券列表
@@ -35,35 +39,51 @@ func NewQueryCouponListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Q
 
 // QueryCouponList 查询优惠券列表
 func (l *QueryCouponListLogic) QueryCouponList(in *smsclient.QueryCouponListReq) (*smsclient.QueryCouponListResp, error) {
-	coupon := query.SmsCoupon
-	q := coupon.WithContext(l.ctx)
+	current, err := logiccommon.NormalizeProtoScope(in.Scope)
+	if err != nil {
+		logc.Errorf(l.ctx, "查询优惠券列表scope非法,参数:%+v,异常:%s", in, err.Error())
+		return nil, errors.New("查询优惠券列表失败")
+	}
+
+	q := pkgscope.ApplyGovernanceScope(
+		l.svcCtx.DB.WithContext(l.ctx).Model(&model.SmsCoupon{}),
+		current,
+		"",
+	)
 	if in.TypeId != 0 {
-		q = q.Where(coupon.TypeID.Eq(in.TypeId))
+		q = q.Where("type_id = ?", in.TypeId)
 	}
 	if len(in.Name) > 0 {
-		q = q.Where(coupon.Name.Like("%" + in.Name + "%"))
+		q = q.Where("name LIKE ?", "%"+in.Name+"%")
 	}
 	if len(in.Code) > 0 {
-		q = q.Where(coupon.Code.Like("%" + in.Code + "%"))
+		q = q.Where("code LIKE ?", "%"+in.Code+"%")
 	}
 
 	if len(in.StartTime) > 0 {
 		startTime, _ := time.Parse("2006-01-02 15:04:05", in.StartTime)
-		q = q.Where(coupon.StartTime.Gte(startTime))
+		q = q.Where("start_time >= ?", startTime)
 	}
 	if len(in.EndTime) > 0 {
 		endTime, _ := time.Parse("2006-01-02 15:04:05", in.EndTime)
-		q = q.Where(coupon.EndTime.Lte(endTime))
+		q = q.Where("end_time <= ?", endTime)
 	}
 
 	if in.Status != 4 {
-		q = q.Where(coupon.Status.Eq(in.Status))
+		q = q.Where("status = ?", in.Status)
 	}
 	if in.IsEnabled != 2 {
-		q = q.Where(coupon.IsEnabled.Eq(in.IsEnabled))
+		q = q.Where("is_enabled = ?", in.IsEnabled)
 	}
 
-	result, count, err := q.FindByPage(int((in.PageNum-1)*in.PageSize), int(in.PageSize))
+	var (
+		result []model.SmsCoupon
+		count  int64
+	)
+	err = q.Session(&gorm.Session{}).Count(&count).Error
+	if err == nil {
+		err = q.Offset(int((in.PageNum - 1) * in.PageSize)).Limit(int(in.PageSize)).Find(&result).Error
+	}
 
 	if err != nil {
 		logc.Errorf(l.ctx, "查询优惠券列表失败,参数:%+v,异常:%s", in, err.Error())

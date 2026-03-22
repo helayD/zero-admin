@@ -65,7 +65,7 @@ const NoteOrderModel: React.FC<UpdateFormProps> = (props) => {
       forceRender
       destroyOnClose
       title="关闭订单"
-      open={closeOrderModelVisible}
+      visible={closeOrderModelVisible}
       onCancel={onCancel}
       footer={false}
     >

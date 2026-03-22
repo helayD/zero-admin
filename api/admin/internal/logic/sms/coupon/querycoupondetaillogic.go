@@ -3,6 +3,7 @@ package coupon
 import (
 	"context"
 
+	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
 	"github.com/feihua/zero-admin/api/admin/internal/types"
@@ -35,9 +36,19 @@ func NewQueryCouponDetailLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 
 // QueryCouponDetail 查询优惠券详情
 func (l *QueryCouponDetailLogic) QueryCouponDetail(req *types.QueryCouponDetailReq) (resp *types.QueryCouponDetailResp, err error) {
+	queryScope, err := admincommon.ResolveQueryGovernanceScope(l.ctx, admincommon.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
 
 	detail, err := l.svcCtx.CouponService.QueryCouponDetail(l.ctx, &smsclient.QueryCouponDetailReq{
-		Id: req.Id,
+		Id:    req.Id,
+		Scope: admincommon.SMSGovernanceScope(queryScope),
 	})
 
 	if err != nil {
@@ -96,7 +107,8 @@ func (l *QueryCouponDetailLogic) QueryCouponDetail(req *types.QueryCouponDetailR
 
 				if scopeDetail.ScopeType == 2 {
 					item, _ := l.svcCtx.ProductSpuService.QueryProductSpuDetail(l.ctx, &pmsclient.QueryProductSpuDetailReq{
-						Id: scopeDetail.ScopeId,
+						Id:    scopeDetail.ScopeId,
+						Scope: admincommon.PMSGovernanceScope(queryScope),
 					})
 					scopeData.Name = item.Data.Name
 					scopeData.ProductSn = item.Data.ProductSn

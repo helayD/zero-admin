@@ -3,6 +3,9 @@ create table pms_product_spu
 (
     id                    bigint auto_increment
         primary key comment '商品SpuId',
+    platform_id           bigint       default 1                 not null comment '平台ID',
+    tenant_id             bigint       default 0                 not null comment '租户ID',
+    merchant_id           bigint       default 0                 not null comment '商户ID',
     name                  varchar(200)                           not null comment '商品名称',
     subTitle              varchar(200)                           not null comment '副标题',
     product_sn            varchar(64)                            not null comment '商品货号',
@@ -44,6 +47,9 @@ create index idx_brand
 
 create index idx_category
     on pms_product_spu (category_id, is_deleted);
+
+create index idx_scope_publish_verify
+    on pms_product_spu (platform_id, tenant_id, merchant_id, publish_status, verify_status, id);
 
 -- 插入商品SPU数据
 insert into gozero.pms_product_spu (id, name, subTitle, product_sn, category_id, category_ids, category_name, brand_id, brand_name, unit, weight, keywords, album_pics, main_pic, price_range, publish_status, new_status, recommend_status, verify_status, preview_status, sort, new_status_sort, recommend_status_sort, sales, stock, low_stock, promotion_type, detail_html, detail_mobile_html, create_by, create_time, update_by, update_time, is_deleted)

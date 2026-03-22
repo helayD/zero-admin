@@ -5,9 +5,11 @@ import (
 	"errors"
 
 	"github.com/feihua/zero-admin/pkg/pointerprocess"
+	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/pkg/time_util"
 	"github.com/feihua/zero-admin/rpc/pms/gen/model"
 	"github.com/feihua/zero-admin/rpc/pms/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/pms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/pms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -44,7 +46,18 @@ func NewQueryProductSpuDetailLogic(ctx context.Context, svcCtx *svc.ServiceConte
 // 7.商品满减价格设置
 // 8.获取商品的会员价格
 func (l *QueryProductSpuDetailLogic) QueryProductSpuDetail(in *pmsclient.QueryProductSpuDetailReq) (*pmsclient.QueryProductSpuDetailResp, error) {
-	item, err := query.PmsProductSpu.WithContext(l.ctx).Where(query.PmsProductSpu.ID.Eq(in.Id)).First()
+	current, err := logiccommon.NormalizeProtoScope(in.Scope)
+	if err != nil {
+		logc.Errorf(l.ctx, "商品SPU详情scope非法, 请求参数：%+v, 异常信息: %s", in, err.Error())
+		return nil, errors.New("查询商品SPU异常")
+	}
+
+	var item model.PmsProductSpu
+	err = pkgscope.ApplyGovernanceScope(
+		l.svcCtx.DB.WithContext(l.ctx).Model(&model.PmsProductSpu{}),
+		current,
+		"",
+	).Where("id = ?", in.Id).Take(&item).Error
 
 	switch {
 	case errors.Is(err, gorm.ErrRecordNotFound):
@@ -91,16 +104,16 @@ func (l *QueryProductSpuDetailLogic) QueryProductSpuDetail(in *pmsclient.QueryPr
 		UpdateTime:          time_util.TimeToString(item.UpdateTime),          // 更新时间
 	}
 
-	productAttributeListData, attributeIds := buildProductAttributeListData(l, item)
+	productAttributeListData, attributeIds := buildProductAttributeListData(l, &item)
 	return &pmsclient.QueryProductSpuDetailResp{
 		Data:                      product,
-		Brand:                     buildBrandListData(l, item),
+		Brand:                     buildBrandListData(l, &item),
 		ProductAttributeList:      productAttributeListData,
-		ProductAttributeValueList: buildProductAttributeValueListData(l, item, attributeIds),
-		SkuStockList:              buildSkuStockListData(l, item),
-		ProductLadderList:         buildProductLadderListData(l, item),
-		ProductFullReductionList:  buildProductFullReductionListData(l, item),
-		MemberPriceList:           buildProductMemberListData(l, item),
+		ProductAttributeValueList: buildProductAttributeValueListData(l, &item, attributeIds),
+		SkuStockList:              buildSkuStockListData(l, &item, current),
+		ProductLadderList:         buildProductLadderListData(l, &item),
+		ProductFullReductionList:  buildProductFullReductionListData(l, &item),
+		MemberPriceList:           buildProductMemberListData(l, &item),
 	}, nil
 }
 
@@ -186,12 +199,16 @@ func buildProductAttributeValueListData(l *QueryProductSpuDetailLogic, pmsProduc
 }
 
 // 5.获取商品SKU库存信息
-func buildSkuStockListData(l *QueryProductSpuDetailLogic, pmsProduct *model.PmsProductSpu) []*pmsclient.SkuStockData {
-	q := query.PmsProductSku
-	result, _ := q.WithContext(l.ctx).Where(q.SpuID.Eq(pmsProduct.ID)).Find()
+func buildSkuStockListData(l *QueryProductSpuDetailLogic, pmsProduct *model.PmsProductSpu, current pkgscope.GovernanceScope) []*pmsclient.SkuStockData {
+	var result []model.PmsProductSku
+	_ = pkgscope.ApplyGovernanceScope(
+		l.svcCtx.DB.WithContext(l.ctx).Model(&model.PmsProductSku{}),
+		current,
+		"",
+	).Where("spu_id = ?", pmsProduct.ID).Find(&result).Error
+
 	var list []*pmsclient.SkuStockData
 	for _, item := range result {
-
 		list = append(list, &pmsclient.SkuStockData{
 			Id:                 item.ID,                                          // 商品SpuId
 			SpuId:              item.SpuID,                                       // 商品SpuId

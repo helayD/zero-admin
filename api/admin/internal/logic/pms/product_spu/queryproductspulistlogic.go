@@ -3,6 +3,7 @@ package product_spu
 import (
 	"context"
 
+	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
 	"github.com/feihua/zero-admin/api/admin/internal/types"
@@ -34,6 +35,16 @@ func NewQueryProductSpuListLogic(ctx context.Context, svcCtx *svc.ServiceContext
 
 // QueryProductSpuList 查询商品SPU列表
 func (l *QueryProductSpuListLogic) QueryProductSpuList(req *types.QueryProductSpuListReq) (resp *types.QueryProductSpuListResp, err error) {
+	queryScope, err := admincommon.ResolveQueryGovernanceScope(l.ctx, admincommon.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
+
 	result, err := l.svcCtx.ProductSpuService.QueryProductSpuList(l.ctx, &pmsclient.QueryProductSpuListReq{
 		PageNum:         req.Current,
 		PageSize:        req.PageSize,
@@ -47,6 +58,7 @@ func (l *QueryProductSpuListLogic) QueryProductSpuList(req *types.QueryProductSp
 		VerifyStatus:    req.VerifyStatus,    // 审核状态：0->未审核；1->审核通过
 		PreviewStatus:   req.PreviewStatus,   // 是否为预告商品：0->不是；1->是
 		PromotionType:   req.PromotionType,   // 促销类型：0->没有促销使用原价;1->使用促销价；2->使用会员价；3->使用阶梯价格；4->使用满减价格；5->秒杀
+		Scope:           admincommon.PMSGovernanceScope(queryScope),
 	})
 
 	if err != nil {

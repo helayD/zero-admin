@@ -112,7 +112,7 @@ const UpdatePostForm: React.FC<UpdateFormProps> = (props) => {
       forceRender
       destroyOnClose
       title="编辑"
-      open={updateModalVisible}
+      visible={updateModalVisible}
       {...modalFooter}
     >
       <Form

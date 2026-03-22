@@ -3,6 +3,9 @@ create table oms_order_main
 (
     id                   bigint auto_increment
         primary key,
+    platform_id          bigint        default 1                 not null comment '平台ID',
+    tenant_id            bigint        default 0                 not null comment '租户ID',
+    merchant_id          bigint        default 0                 not null comment '商户ID',
     order_no             varchar(32)                              not null comment '订单编号',
     user_id              bigint                                   not null comment '用户ID',
     order_status         tinyint        default 1                 not null comment '订单状态：1-待支付,2-已支付,3-已发货,4-已完成,5-已取消,6-已退款,7-售后中',
@@ -36,6 +39,9 @@ create index idx_time
 
 create index idx_user
     on oms_order_main (user_id, order_status, is_deleted);
+
+create index idx_scope_order_status
+    on oms_order_main (platform_id, tenant_id, merchant_id, order_status, user_id, id);
 
 INSERT INTO oms_order_main (
     order_no, user_id, order_status, total_amount, promotion_amount, coupon_amount,

@@ -514,28 +514,28 @@ flowchart TD
 **States:** 可领、已领、已使用、不可用、即将过期。  
 **Accessibility:** 活动规则可展开阅读，状态标签与时间信息同时可见。
 
-#### Request State Panel
+#### Commerce State Shell
 
 **Purpose:** 统一移动端关键页面的加载态、空态、错误态和弱网态表达。  
 **Usage:** 首页、分类、搜索、商品详情、购物车、确认订单、订单列表/详情、售后申请页。  
 **States:** 初次加载、空结果、请求失败、超时、弱网恢复中。  
 **Accessibility:** 状态文案、失败原因摘要和重试入口必须可读屏，不能只有插图或骨架。
 
-#### Intent Recovery Shell
+#### Intent Recovery Loop
 
 **Purpose:** 保存并恢复通知、活动、优惠券、待支付订单等入口带来的目标意图。  
 **Usage:** App 冷启动、热启动、登录恢复、前后台切换、消息唤回和支付恢复场景。  
 **States:** 恢复中、已恢复、目标失效、替代落点已提供。  
 **Accessibility:** 恢复结果必须以文本说明当前将进入的页面或失败原因，不允许静默跳转。
 
-#### Permission Rationale Sheet
+#### Permission Request Sheet
 
 **Purpose:** 在消息通知、相册上传或相机拍摄等真实触发场景下解释权限用途并请求授权。  
 **Usage:** 售后凭证上传、评价图片上传、消息提醒订阅。  
 **States:** 首次请求、已拒绝、永久拒绝、已授权。  
 **Accessibility:** 提供清晰用途说明、再次授权入口和不阻断当前任务的替代路径。
 
-#### Upgrade Gate Sheet
+#### Upgrade Gate
 
 **Purpose:** 当版本不满足关键交易、合规或接口兼容要求时，明确提示升级边界。  
 **Usage:** App 启动、关键交易前置校验、接口兼容检查失败时。  
@@ -571,20 +571,20 @@ flowchart TD
 - Price Breakdown Card
 - Order Timeline Panel
 - Promotion Stack & Coupon Sheet
-- Request State Panel
-- Intent Recovery Shell
+- Commerce State Shell
+- Intent Recovery Loop
 
 **Phase 2 - 后台效率**
 
 - Batch Action Dock
 - 统一筛选条与保存/发布动作区
 - 统一异常提示与恢复面板
-- Permission Rationale Sheet
+- Permission Request Sheet
 
 **Phase 3 - 系统状态与增强**
 
 - Sync Status Badge
-- Upgrade Gate Sheet
+- Upgrade Gate
 - 复购推荐模块卡片
 - 更细粒度的空状态/告警卡片
 

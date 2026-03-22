@@ -1,0 +1,3 @@
+interface:
+  display_name: "Zero Admin Remote Deploy"
+  short_description: "Deploy zero-admin to the private test server"
