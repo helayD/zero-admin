@@ -2,6 +2,7 @@ package coupon
 
 import (
 	"context"
+	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
 	"github.com/feihua/zero-admin/api/admin/internal/types"
@@ -33,6 +34,16 @@ func NewQueryCouponListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Q
 
 // QueryCouponList 查询优惠券列表
 func (l *QueryCouponListLogic) QueryCouponList(req *types.QueryCouponListReq) (resp *types.QueryCouponListResp, err error) {
+	queryScope, err := admincommon.ResolveQueryGovernanceScope(l.ctx, admincommon.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
+
 	result, err := l.svcCtx.CouponService.QueryCouponList(l.ctx, &smsclient.QueryCouponListReq{
 		PageNum:   req.Current,
 		PageSize:  req.PageSize,
@@ -43,6 +54,7 @@ func (l *QueryCouponListLogic) QueryCouponList(req *types.QueryCouponListReq) (r
 		EndTime:   req.EndTime,   // 失效时间
 		Status:    req.Status,    // 状态：0-未开始，1-进行中，2-已结束，3-已取消
 		IsEnabled: req.IsEnabled, // 是否启用
+		Scope:     admincommon.SMSGovernanceScope(queryScope),
 	})
 
 	if err != nil {

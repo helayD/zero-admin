@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -35,7 +36,17 @@ func NewHomeRecommendProductListLogic(ctx context.Context, svcCtx *svc.ServiceCo
 
 // HomeRecommendProductList 查询人气推荐商品
 func (l *HomeRecommendProductListLogic) HomeRecommendProductList(req *types.ListHomeRecommendProductReq) (*types.ListHomeRecommendProductResp, error) {
-	var resp, err = l.svcCtx.ProductSpuService.QueryProductSpuList(l.ctx, &pmsclient.QueryProductSpuListReq{
+	queryScope, err := admincommon.ResolveQueryGovernanceScope(l.ctx, admincommon.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
+
+	resp, err := l.svcCtx.ProductSpuService.QueryProductSpuList(l.ctx, &pmsclient.QueryProductSpuListReq{
 		PageNum:         req.Current,
 		PageSize:        req.PageSize,
 		Name:            strings.TrimSpace(req.ProductName),
@@ -47,6 +58,7 @@ func (l *HomeRecommendProductListLogic) HomeRecommendProductList(req *types.List
 		RecommendStatus: req.RecommendStatus,
 		PromotionType:   6,
 		PreviewStatus:   2,
+		Scope:           admincommon.PMSGovernanceScope(queryScope),
 	})
 
 	if err != nil {

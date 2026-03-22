@@ -67,10 +67,13 @@ export async function queryRecommendSubjectList(params: RecommendSubjectListPara
 
 
 export async function querySubjectList(params: SubjectListParams) {
+  const {subjectName, ...rest} = params;
   return request('/api/cms/subject/querySubjectList', {
     method: 'GET',
     params: {
-      ...params, recommendStatus: 0
+      ...rest,
+      title: subjectName,
+      recommendStatus: 0,
     },
   });
 }

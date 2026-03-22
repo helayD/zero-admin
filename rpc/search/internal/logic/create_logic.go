@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+
 	"github.com/bytedance/sonic"
+	logiccommon "github.com/feihua/zero-admin/rpc/search/internal/logic/common"
 	"strconv"
 
 	"github.com/feihua/zero-admin/rpc/search/internal/svc"
@@ -33,6 +35,11 @@ func (l *CreateLogic) Create(in *search.CreateReq) (*search.CreateResp, error) {
 
 	var deleteBuf bytes.Buffer
 	for _, p := range in.Data {
+		current, err := logiccommon.NormalizeProtoScope(p.Scope)
+		if err != nil {
+			return nil, fmt.Errorf("product %d scope invalid: %w", p.Id, err)
+		}
+		p.Scope = logiccommon.ProtoScope(current)
 
 		deleteMeta := map[string]map[string]string{
 			"delete": {"_index": svc.IndexName, "_id": strconv.FormatInt(p.Id, 10)},

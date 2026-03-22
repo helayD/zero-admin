@@ -87,6 +87,10 @@ export interface OrderListParams {
   sourceType?: number;
   status?: number;
   orderType?: number;
+  scopeType?: 'platform' | 'tenant' | 'merchant';
+  platformId?: number;
+  tenantId?: number;
+  merchantId?: number;
   pageSize?: number;
   current?: number;
   filter?: { [key: string]: any[] };

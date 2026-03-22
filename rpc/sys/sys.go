@@ -13,6 +13,8 @@ import (
 	dicttypeserviceServer "github.com/feihua/zero-admin/rpc/sys/internal/server/dicttypeservice"
 	loginlogserviceServer "github.com/feihua/zero-admin/rpc/sys/internal/server/loginlogservice"
 	menuserviceServer "github.com/feihua/zero-admin/rpc/sys/internal/server/menuservice"
+	menutemplateserviceServer "github.com/feihua/zero-admin/rpc/sys/internal/server/menutemplateservice"
+	merchantserviceServer "github.com/feihua/zero-admin/rpc/sys/internal/server/merchantservice"
 	noticeserviceServer "github.com/feihua/zero-admin/rpc/sys/internal/server/noticeservice"
 	operatelogServer "github.com/feihua/zero-admin/rpc/sys/internal/server/operatelogservice"
 	postserviceServer "github.com/feihua/zero-admin/rpc/sys/internal/server/postservice"
@@ -46,7 +48,9 @@ func main() {
 		sysclient.RegisterPostServiceServer(grpcServer, postserviceServer.NewPostServiceServer(ctx))
 		sysclient.RegisterNoticeServiceServer(grpcServer, noticeserviceServer.NewNoticeServiceServer(ctx))
 		sysclient.RegisterTenantServiceServer(grpcServer, tenantserviceServer.NewTenantServiceServer(ctx))
+		sysclient.RegisterMerchantServiceServer(grpcServer, merchantserviceServer.NewMerchantServiceServer(ctx))
 		sysclient.RegisterMenuServiceServer(grpcServer, menuserviceServer.NewMenuServiceServer(ctx))
+		sysclient.RegisterMenuTemplateServiceServer(grpcServer, menutemplateserviceServer.NewMenuTemplateServiceServer(ctx))
 		sysclient.RegisterDictTypeServiceServer(grpcServer, dicttypeserviceServer.NewDictTypeServiceServer(ctx))
 		sysclient.RegisterDictItemServiceServer(grpcServer, dictitemserviceServer.NewDictItemServiceServer(ctx))
 		sysclient.RegisterDeptServiceServer(grpcServer, deptserviceServer.NewDeptServiceServer(ctx))

@@ -58,6 +58,7 @@ type (
 	DeleteTopicCommentResp                    = cmsclient.DeleteTopicCommentResp
 	DeleteTopicReq                            = cmsclient.DeleteTopicReq
 	DeleteTopicResp                           = cmsclient.DeleteTopicResp
+	GovernanceScope                           = cmsclient.GovernanceScope
 	HelpCategoryListData                      = cmsclient.HelpCategoryListData
 	HelpListData                              = cmsclient.HelpListData
 	MemberReportListData                      = cmsclient.MemberReportListData

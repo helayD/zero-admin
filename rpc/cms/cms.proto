@@ -3,7 +3,13 @@ syntax = "proto3";
 package cmsclient;
 
 option go_package = "./cmsclient";
-
+message GovernanceScope {
+  string scope_type = 1; // 主体范围(platform/tenant/merchant)
+  int64 platform_id = 2; // 平台ID
+  int64 tenant_id = 3; // 租户ID
+  int64 merchant_id = 4; // 商户ID
+  string scope_label = 5; // 主体范围标签
+}
 // 添加帮助
 message AddHelpReq {
   int64 id = 1; //主键ID
@@ -125,8 +131,6 @@ service HelpService {
 
 
 }
-
-
 // 添加帮助分类
 message AddHelpCategoryReq {
   int64 id = 1; //主键ID
@@ -242,8 +246,6 @@ service HelpCategoryService {
 
 
 }
-
-
 // 添加用户举报
 message AddMemberReportReq {
   int64 id = 1; //编号
@@ -357,8 +359,6 @@ service MemberReportService {
 
 
 }
-
-
 // 添加优选专区
 message AddPreferredAreaReq {
   int64 id = 1; //主键ID
@@ -474,8 +474,6 @@ service PreferredAreaService {
 
 
 }
-
-
 // 添加优选专区和产品关系表
 message AddPreferredAreaProductRelationReq {
   repeated int64 preferred_area_id = 1; //
@@ -506,8 +504,6 @@ service PreferredAreaProductRelationService {
 
 
 }
-
-
 // 添加专题
 message AddSubjectReq {
   int64 id = 1; //专题id
@@ -582,6 +578,7 @@ message UpdateSubjectStatusResp {
 // 查询专题详情
 message QuerySubjectDetailReq {
     int64 id = 1;
+    GovernanceScope scope = 2; //治理范围(platform/tenant/merchant)
 }
 
 message QuerySubjectDetailResp {
@@ -616,6 +613,7 @@ message QuerySubjectListReq {
   string category_name = 5; //专题分类名称
   int64 page_num = 6; //第几页
   int64 page_size = 7; //每页的数量
+  GovernanceScope scope = 8; //治理范围(platform/tenant/merchant)
 }
 
 message SubjectListData {
@@ -657,6 +655,7 @@ message UpdateSubjectRecommendStatusResp {
 
 message SubjectListByIdsReq {
   repeated int64 ids = 1;
+  GovernanceScope scope = 2; //治理范围(platform/tenant/merchant)
 
 }
 message UpdateSubjectSortReq {
@@ -687,8 +686,6 @@ service SubjectService {
   rpc UpdateSubjectSort(UpdateSubjectSortReq) returns (UpdateSubjectResp){}
 
 }
-
-
 // 添加专题分类
 message AddSubjectCategoryReq {
   int64 id = 1; //主键ID
@@ -804,8 +801,6 @@ service SubjectCategoryService {
 
 
 }
-
-
 // 添加专题评论
 message AddSubjectCommentReq {
   int64 id = 1; //编号
@@ -913,8 +908,6 @@ service SubjectCommentService {
 
 
 }
-
-
 // 添加专题商品关系表
 message AddSubjectProductRelationReq {
   int64 product_id = 1; //
@@ -930,6 +923,7 @@ message AddSubjectProductRelationResp {
 // 分页查询专题商品关系表列表
 message QuerySubjectProductRelationListReq {
   int64 product_id = 1; //
+  GovernanceScope scope = 2; //治理范围(platform/tenant/merchant)
 }
 
 message QuerySubjectProductRelationListResp {
@@ -947,8 +941,6 @@ service SubjectProductRelationService {
 
 
 }
-
-
 // 添加话题
 message AddTopicReq {
   int64 id = 1; //主键ID
@@ -1089,8 +1081,6 @@ service TopicService {
 
 
 }
-
-
 // 添加话题分类
 message AddTopicCategoryReq {
   int64 id = 1; //主键ID
@@ -1206,8 +1196,6 @@ service TopicCategoryService {
 
 
 }
-
-
 // 添加专题评论
 message AddTopicCommentReq {
   int64 id = 1; //主键ID

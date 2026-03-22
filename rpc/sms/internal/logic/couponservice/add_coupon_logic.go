@@ -8,10 +8,12 @@ import (
 
 	"github.com/feihua/zero-admin/rpc/sms/gen/model"
 	"github.com/feihua/zero-admin/rpc/sms/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/sms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/sms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/sms/smsclient"
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
 )
 
 // AddCouponLogic 添加优惠券
@@ -35,19 +37,6 @@ func NewAddCouponLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AddCoup
 
 // AddCoupon 添加优惠券
 func (l *AddCouponLogic) AddCoupon(in *smsclient.AddCouponReq) (*smsclient.AddCouponResp, error) {
-	q := query.SmsCoupon
-
-	count, err := query.SmsCoupon.WithContext(l.ctx).Where(query.SmsCoupon.Name.Eq(in.Name)).Count()
-
-	if err != nil {
-		logc.Errorf(l.ctx, "添加优惠券失败,参数：%+v, 异常:%s", in, err.Error())
-		return nil, errors.New(fmt.Sprintf("添加优惠券失败"))
-	}
-
-	if count > 0 {
-		return nil, errors.New(fmt.Sprintf("优惠券：%s,已存在", in.Name))
-	}
-
 	startTime, _ := time.Parse("2006-01-02 15:04:05", in.StartTime)
 	endTime, _ := time.Parse("2006-01-02 15:04:05", in.EndTime)
 	item := &model.SmsCoupon{
@@ -67,12 +56,6 @@ func (l *AddCouponLogic) AddCoupon(in *smsclient.AddCouponReq) (*smsclient.AddCo
 
 	}
 
-	err = q.WithContext(l.ctx).Create(item)
-	if err != nil {
-		logc.Errorf(l.ctx, "添加优惠券失败,参数:%+v,异常:%s", item, err.Error())
-		return nil, errors.New("添加优惠券失败")
-	}
-
 	var data []*model.SmsCouponScope
 	if len(in.Scopes) == 0 {
 		data = append(data, &model.SmsCouponScope{
@@ -90,11 +73,36 @@ func (l *AddCouponLogic) AddCoupon(in *smsclient.AddCouponReq) (*smsclient.AddCo
 		}
 	}
 
-	err = query.SmsCouponScope.WithContext(l.ctx).CreateInBatches(data, len(data))
+	err := l.svcCtx.DB.WithContext(l.ctx).Transaction(func(tx *gorm.DB) error {
+		qtx := query.Use(tx)
+		count, err := qtx.SmsCoupon.WithContext(l.ctx).Where(qtx.SmsCoupon.Name.Eq(in.Name)).Count()
+		if err != nil {
+			return err
+		}
+		if count > 0 {
+			return fmt.Errorf("优惠券：%s,已存在", in.Name)
+		}
 
+		if err := qtx.SmsCoupon.WithContext(l.ctx).Create(item); err != nil {
+			return err
+		}
+		for _, row := range data {
+			row.CouponID = item.ID
+		}
+
+		current, err := logiccommon.ResolveActorScope(l.ctx, tx, in.CreateBy)
+		if err != nil {
+			return err
+		}
+		if err := logiccommon.ApplyCouponScope(l.ctx, tx, item.ID, current); err != nil {
+			return err
+		}
+
+		return qtx.SmsCouponScope.WithContext(l.ctx).CreateInBatches(data, len(data))
+	})
 	if err != nil {
-		logc.Errorf(l.ctx, "添加优惠券使用范围失败,参数:%+v,异常:%s", data, err.Error())
-		return nil, errors.New("添加优惠券使用范围失败")
+		logc.Errorf(l.ctx, "添加优惠券失败,参数:%+v,异常:%s", in, err.Error())
+		return nil, errors.New(err.Error())
 	}
 	return &smsclient.AddCouponResp{}, nil
 }

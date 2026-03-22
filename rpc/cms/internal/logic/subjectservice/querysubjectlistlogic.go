@@ -3,14 +3,17 @@ package subjectservicelogic
 import (
 	"context"
 
+	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/pkg/time_util"
-	"github.com/feihua/zero-admin/rpc/cms/gen/query"
+	"github.com/feihua/zero-admin/rpc/cms/gen/model"
+	logiccommon "github.com/feihua/zero-admin/rpc/cms/internal/logic/common"
 	"github.com/zeromicro/go-zero/core/logc"
 
 	"github.com/feihua/zero-admin/rpc/cms/cmsclient"
 	"github.com/feihua/zero-admin/rpc/cms/internal/svc"
 
 	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
 )
 
 // QuerySubjectListLogic 查询专题表列表
@@ -34,18 +37,35 @@ func NewQuerySubjectListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 
 // QuerySubjectList 查询专题表列表
 func (l *QuerySubjectListLogic) QuerySubjectList(in *cmsclient.QuerySubjectListReq) (*cmsclient.QuerySubjectListResp, error) {
-	q := query.CmsSubject.WithContext(l.ctx)
-	if len(in.Title) > 0 {
-		q = q.Where(query.CmsSubject.Title.Like("%" + in.Title + "%"))
-	}
-	if in.RecommendStatus != 2 {
-		q = q.Where(query.CmsSubject.RecommendStatus.Eq(in.RecommendStatus))
-	}
-	if in.ShowStatus != 2 {
-		q = q.Where(query.CmsSubject.ShowStatus.Eq(in.ShowStatus))
+	current, err := logiccommon.NormalizeProtoScope(in.Scope)
+	if err != nil {
+		logc.Errorf(l.ctx, "查询专题列表scope非法,参数:%+v,异常:%s", in, err.Error())
+		return nil, err
 	}
 
-	result, count, err := q.FindByPage(int((in.PageNum-1)*in.PageSize), int(in.PageSize))
+	q := pkgscope.ApplyGovernanceScope(
+		l.svcCtx.DB.WithContext(l.ctx).Model(&model.CmsSubject{}),
+		current,
+		"",
+	)
+	if len(in.Title) > 0 {
+		q = q.Where("title LIKE ?", "%"+in.Title+"%")
+	}
+	if in.RecommendStatus != 2 {
+		q = q.Where("recommend_status = ?", in.RecommendStatus)
+	}
+	if in.ShowStatus != 2 {
+		q = q.Where("show_status = ?", in.ShowStatus)
+	}
+
+	var (
+		result []model.CmsSubject
+		count  int64
+	)
+	err = q.Session(&gorm.Session{}).Count(&count).Error
+	if err == nil {
+		err = q.Offset(int((in.PageNum - 1) * in.PageSize)).Limit(int(in.PageSize)).Find(&result).Error
+	}
 
 	if err != nil {
 		logc.Errorf(l.ctx, "查询专题列表信息失败,参数:%+v,异常:%s", in, err.Error())

@@ -3,8 +3,10 @@ package subjectservicelogic
 import (
 	"context"
 
+	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/pkg/time_util"
-	"github.com/feihua/zero-admin/rpc/cms/gen/query"
+	"github.com/feihua/zero-admin/rpc/cms/gen/model"
+	logiccommon "github.com/feihua/zero-admin/rpc/cms/internal/logic/common"
 	"github.com/zeromicro/go-zero/core/logc"
 
 	"github.com/feihua/zero-admin/rpc/cms/cmsclient"
@@ -28,8 +30,22 @@ func NewSubjectListByIdsLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 func (l *SubjectListByIdsLogic) SubjectListByIds(in *cmsclient.SubjectListByIdsReq) (*cmsclient.QuerySubjectListResp, error) {
-	q := query.CmsSubject
-	subjects, err := q.WithContext(l.ctx).Where(q.ID.In(in.Ids...)).Find()
+	if len(in.Ids) == 0 {
+		return &cmsclient.QuerySubjectListResp{Total: 0, List: nil}, nil
+	}
+
+	current, err := logiccommon.NormalizeProtoScope(in.Scope)
+	if err != nil {
+		logc.Errorf(l.ctx, "按id查询专题scope非法,参数：%+v,异常:%s", in, err.Error())
+		return nil, err
+	}
+
+	var subjects []model.CmsSubject
+	err = pkgscope.ApplyGovernanceScope(
+		l.svcCtx.DB.WithContext(l.ctx).Model(&model.CmsSubject{}),
+		current,
+		"",
+	).Where("id IN ?", in.Ids).Find(&subjects).Error
 
 	if err != nil {
 		logc.Errorf(l.ctx, "查询商品品牌列表信息失败,参数：%+v,异常:%s", in, err.Error())

@@ -103,7 +103,10 @@ func (l *GenerateConfirmOrderLogic) GenerateConfirmOrder(req *types.GenerateConf
 		})
 	}
 	// 3.获取该用户所有未使用优惠券
-	enableList, disableList := coupon.QueryCouponList(l.svcCtx, l.ctx, cartPromotionItemList)
+	enableList, disableList, err := coupon.QueryCouponList(l.svcCtx, l.ctx, cartPromotionItemList)
+	if err != nil {
+		return nil, err
+	}
 	// 4.获取用户积分
 	memberInfo, _ := l.svcCtx.MemberService.QueryMemberInfoDetail(l.ctx, &umsclient.QueryMemberInfoDetailReq{
 		MemberId: memberId,

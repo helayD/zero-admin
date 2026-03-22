@@ -9,6 +9,7 @@ import AddModal from './components/AddModal';
 import UpdateModal from './components/UpdateModal';
 import type { ProductSkuListItem} from './data.d';
 import {addProductSku, queryProductSkuList, removeProductSku, updateProductSku, updateProductSkuStatus} from './service';
+import { defaultGovernanceScope, type GovernanceScopeValue, toGovernancePayload } from '@/pages/system/components/governance';
 
 const {confirm} = Modal;
 
@@ -89,6 +90,7 @@ const handleStatus = async (ids: number[], status: number) => {
 
 export interface SignProps {
   spuId: number;
+  scope?: GovernanceScopeValue;
 }
 const ProductSkuList: React.FC<SignProps> = (props) => {
   const [addVisible, handleAddVisible] = useState<boolean>(false);
@@ -96,6 +98,7 @@ const ProductSkuList: React.FC<SignProps> = (props) => {
   const [showDetail, setShowDetail] = useState<boolean>(false);
   const actionRef = useRef<ActionType>();
   const [currentRow, setCurrentRow] = useState<ProductSkuListItem>();
+  const effectiveScope = props.scope || defaultGovernanceScope;
 
   const showDeleteConfirm = (ids: number[]) => {
     confirm({
@@ -346,6 +349,7 @@ return (
           return queryProductSkuList({
             ...params,
             spuId: props.spuId,
+            ...toGovernancePayload(effectiveScope),
           }).then((res) => {
             if (res.code === '000000') {
               return {
@@ -443,7 +447,7 @@ return (
 
       <Drawer
         width={600}
-        open={showDetail}
+        visible={showDetail}
         onClose={() => {
           setCurrentRow(undefined);
           setShowDetail(false)

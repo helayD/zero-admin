@@ -3,6 +3,7 @@ package product_spu
 import (
 	"context"
 
+	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
 	"github.com/feihua/zero-admin/api/admin/internal/types"
@@ -46,9 +47,19 @@ func NewQueryProductSpuDetailLogic(ctx context.Context, svcCtx *svc.ServiceConte
 // 10.商品优惠券
 // 注意: 步骤1到7是在商品模块(rpc),8,9是在内容模块(rpc),10是在营销模块(rpc)
 func (l *QueryProductSpuDetailLogic) QueryProductSpuDetail(req *types.QueryProductSpuDetailReq) (resp *types.QueryProductSpuDetailResp, err error) {
+	queryScope, err := admincommon.ResolveQueryGovernanceScope(l.ctx, admincommon.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
 
 	detail, err := l.svcCtx.ProductSpuService.QueryProductSpuDetail(l.ctx, &pmsclient.QueryProductSpuDetailReq{
-		Id: req.Id,
+		Id:    req.Id,
+		Scope: admincommon.PMSGovernanceScope(queryScope),
 	})
 
 	if err != nil {
@@ -61,6 +72,7 @@ func (l *QueryProductSpuDetailLogic) QueryProductSpuDetail(req *types.QueryProdu
 	subjectIds := make([]int64, 0)
 	res, _ := l.svcCtx.SubjectProductRelationService.QuerySubjectProductRelationList(l.ctx, &cmsclient.QuerySubjectProductRelationListReq{
 		ProductId: req.Id,
+		Scope:     admincommon.CMSGovernanceScope(queryScope),
 	})
 
 	// 9.查询优选关联
@@ -72,6 +84,7 @@ func (l *QueryProductSpuDetailLogic) QueryProductSpuDetail(req *types.QueryProdu
 	// 10.商品可用优惠券(根据商品id和分类id查询)
 	couponList, _ := l.svcCtx.CouponService.QueryCouponByScopeId(l.ctx, &smsclient.QueryCouponByScopeIdReq{
 		ScopeIds: []int64{req.Id, detail.Data.CategoryId},
+		Scope:    admincommon.SMSGovernanceScope(queryScope),
 	})
 
 	return &types.QueryProductSpuDetailResp{

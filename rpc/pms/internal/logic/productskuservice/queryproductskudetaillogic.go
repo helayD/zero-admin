@@ -3,9 +3,12 @@ package productskuservicelogic
 import (
 	"context"
 	"errors"
+
 	"github.com/feihua/zero-admin/pkg/pointerprocess"
+	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/pkg/time_util"
-	"github.com/feihua/zero-admin/rpc/pms/gen/query"
+	"github.com/feihua/zero-admin/rpc/pms/gen/model"
+	logiccommon "github.com/feihua/zero-admin/rpc/pms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/pms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -34,7 +37,18 @@ func NewQueryProductSkuDetailLogic(ctx context.Context, svcCtx *svc.ServiceConte
 
 // QueryProductSkuDetail 查询商品SKU详情
 func (l *QueryProductSkuDetailLogic) QueryProductSkuDetail(in *pmsclient.QueryProductSkuDetailReq) (*pmsclient.QueryProductSkuDetailResp, error) {
-	item, err := query.PmsProductSku.WithContext(l.ctx).Where(query.PmsProductSku.ID.Eq(in.Id)).First()
+	current, err := logiccommon.NormalizeProtoScope(in.Scope)
+	if err != nil {
+		logc.Errorf(l.ctx, "商品SKU详情scope非法, 请求参数：%+v, 异常信息: %s", in, err.Error())
+		return nil, errors.New("查询商品SKU异常")
+	}
+
+	var item model.PmsProductSku
+	err = pkgscope.ApplyGovernanceScope(
+		l.svcCtx.DB.WithContext(l.ctx).Model(&model.PmsProductSku{}),
+		current,
+		"",
+	).Where("id = ?", in.Id).Take(&item).Error
 
 	switch {
 	case errors.Is(err, gorm.ErrRecordNotFound):

@@ -1,0 +1,139 @@
+import "../base/base.api"
+
+info (
+	desc:   "商户治理"
+	author: "Codex"
+	email:  "1002219331@qq.com"
+)
+
+type (
+	CreateMerchantReq {
+		TenantId           int64    `json:"tenantId"`
+		MerchantName       string   `json:"merchantName"`
+		MerchantShortName  string   `json:"merchantShortName,optional"`
+		MerchantCode       string   `json:"merchantCode,optional"`
+		ContactName        string   `json:"contactName"`
+		ContactMobile      string   `json:"contactMobile"`
+		ContactEmail       string   `json:"contactEmail,optional"`
+		AvailableChannels  []string `json:"availableChannels"`
+		CapabilityFlags    []string `json:"capabilityFlags"`
+		VisibleScopeHint   string   `json:"visibleScopeHint,optional"`
+		PrimaryAdminUserId int64    `json:"primaryAdminUserId,optional,default=0"`
+		Remark             string   `json:"remark,optional"`
+	}
+	CreateMerchantData {
+		MerchantId     int64  `json:"merchantId"`
+		MerchantCode   string `json:"merchantCode"`
+		ReviewStatus   int32  `json:"reviewStatus"`
+		BusinessStatus int32  `json:"businessStatus"`
+	}
+	CreateMerchantResp {
+		Code    string             `json:"code"`
+		Message string             `json:"message"`
+		Data    CreateMerchantData `json:"data"`
+	}
+	QueryMerchantDetailReq {
+		Id int64 `form:"id"`
+	}
+	MerchantData {
+		Id                 int64    `json:"id"`
+		TenantId           int64    `json:"tenantId"`
+		TenantCode         string   `json:"tenantCode"`
+		TenantName         string   `json:"tenantName"`
+		TenantStatus       int32    `json:"tenantStatus"`
+		MerchantCode       string   `json:"merchantCode"`
+		MerchantName       string   `json:"merchantName"`
+		MerchantShortName  string   `json:"merchantShortName"`
+		ContactName        string   `json:"contactName"`
+		ContactMobile      string   `json:"contactMobile"`
+		ContactEmail       string   `json:"contactEmail"`
+		AvailableChannels  []string `json:"availableChannels"`
+		CapabilityFlags    []string `json:"capabilityFlags"`
+		ReviewStatus       int32    `json:"reviewStatus"`
+		ReviewReason       string   `json:"reviewReason"`
+		ReviewedBy         int64    `json:"reviewedBy"`
+		ReviewedByName     string   `json:"reviewedByName"`
+		ReviewedAt         string   `json:"reviewedAt"`
+		BusinessStatus     int32    `json:"businessStatus"`
+		StatusReason       string   `json:"statusReason"`
+		VisibleScopeHint   string   `json:"visibleScopeHint"`
+		PrimaryAdminUserId int64    `json:"primaryAdminUserId"`
+		Remark             string   `json:"remark"`
+		NextActions        []string `json:"nextActions"`
+		CreatedBy          string   `json:"createdBy"`
+		CreatedAt          string   `json:"createdAt"`
+		UpdatedBy          string   `json:"updatedBy"`
+		UpdatedAt          string   `json:"updatedAt"`
+	}
+	QueryMerchantDetailResp {
+		Code    string       `json:"code"`
+		Message string       `json:"message"`
+		Data    MerchantData `json:"data"`
+	}
+	QueryMerchantListReq {
+		Current        int64  `form:"current,default=1"`
+		PageSize       int64  `form:"pageSize,default=20"`
+		TenantId       int64  `form:"tenantId,optional,default=0"`
+		MerchantName   string `form:"merchantName,optional"`
+		MerchantCode   string `form:"merchantCode,optional"`
+		ReviewStatus   int32  `form:"reviewStatus,default=-1"`
+		BusinessStatus int32  `form:"businessStatus,default=-1"`
+		Channel        string `form:"channel,optional"`
+		CapabilityFlag string `form:"capabilityFlag,optional"`
+	}
+	QueryMerchantListResp {
+		Code     string          `json:"code"`
+		Message  string          `json:"message"`
+		Current  int64           `json:"current,default=1"`
+		Data     []*MerchantData `json:"data"`
+		PageSize int64           `json:"pageSize,default=20"`
+		Success  bool            `json:"success"`
+		Total    int64           `json:"total"`
+	}
+	ReviewMerchantReq {
+		Ids          []int64 `json:"ids"`
+		ReviewReason string  `json:"reviewReason,optional"`
+	}
+	ChangeMerchantStatusReq {
+		Ids          []int64 `json:"ids"`
+		StatusReason string  `json:"statusReason,optional"`
+	}
+)
+
+@server (
+	jwt:        Auth
+	middleware: CheckUrl
+	group:      sys/merchant
+	prefix:     /api/sys/merchant
+	tags:       "商户治理"
+	authType:   apiKey
+)
+service admin-api {
+	@handler CreateMerchant
+	post /createMerchant (CreateMerchantReq) returns (CreateMerchantResp)
+
+	@handler QueryMerchantDetail
+	get /queryMerchantDetail (QueryMerchantDetailReq) returns (QueryMerchantDetailResp)
+
+	@handler QueryMerchantList
+	get /queryMerchantList (QueryMerchantListReq) returns (QueryMerchantListResp)
+
+	@handler ApproveMerchant
+	post /approveMerchant (ReviewMerchantReq) returns (BaseResp)
+
+	@handler RejectMerchant
+	post /rejectMerchant (ReviewMerchantReq) returns (BaseResp)
+
+	@handler RequestMerchantMaterial
+	post /requestMerchantMaterial (ReviewMerchantReq) returns (BaseResp)
+
+	@handler EnableMerchant
+	post /enableMerchant (ChangeMerchantStatusReq) returns (BaseResp)
+
+	@handler DisableMerchant
+	post /disableMerchant (ChangeMerchantStatusReq) returns (BaseResp)
+
+	@handler ArchiveMerchant
+	post /archiveMerchant (ChangeMerchantStatusReq) returns (BaseResp)
+}
+

@@ -40,7 +40,7 @@ const OrderTrackingModel: React.FC<UpdateFormProps> = (props) => {
       forceRender
       destroyOnClose
       title="订单跟踪"
-      open={props.orderTrackingModalVisible}
+      visible={props.orderTrackingModalVisible}
       onCancel={onCancel}
       footer={false}
     >

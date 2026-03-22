@@ -3,6 +3,9 @@ create table oms_order_promotion
 (
     id              bigint auto_increment comment '主键ID'
         primary key,
+    platform_id     bigint       default 1                 not null comment '平台ID',
+    tenant_id       bigint       default 0                 not null comment '租户ID',
+    merchant_id     bigint       default 0                 not null comment '商户ID',
     order_id        bigint                             not null comment '订单ID',
     order_no        varchar(32)                        not null comment '订单编号',
     promotion_type  tinyint                            not null comment '优惠类型：1-优惠券，2-积分抵扣，3-会员折扣，4-促销活动',
@@ -16,6 +19,9 @@ create table oms_order_promotion
 
 create index idx_order
     on oms_order_promotion (order_id, is_deleted);
+
+create index idx_scope_promotion_order
+    on oms_order_promotion (platform_id, tenant_id, merchant_id, order_id, promotion_type);
 
 -- 模拟数据
 insert into gozero.oms_order_promotion (id, order_id, order_no, promotion_type, promotion_id, promotion_name, discount_amount, is_deleted)

@@ -25,7 +25,7 @@ func main() {
 	var fileContents []byte
 	var startContents []byte
 	for _, file := range files {
-		if file.IsDir() || file.Name() == "main.go" {
+		if file.IsDir() || file.Name() == "main.go" || !strings.HasSuffix(file.Name(), ".proto") {
 			continue
 		}
 
@@ -35,8 +35,10 @@ func main() {
 			fmt.Printf("Error reading file %s: %s\n", fileName, err)
 			continue
 		}
-		startContents = fileData[:69]
-		fileData = fileData[70:]
+		if len(startContents) == 0 {
+			startContents = []byte(protoHeader(fileData))
+		}
+		fileData = []byte(trimProtoHeader(fileData))
 
 		fileContents = append(fileContents, fileData...)
 	}
@@ -51,4 +53,34 @@ func main() {
 	}
 
 	fmt.Println("Merged files to", outputFilePath)
+}
+
+func protoHeader(fileData []byte) string {
+	lines := strings.Split(string(fileData), "\n")
+	header := make([]string, 0, 4)
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "syntax = ") || strings.HasPrefix(trimmed, "package ") || strings.HasPrefix(trimmed, "option go_package = ") || trimmed == "" {
+			header = append(header, line)
+			if strings.HasPrefix(trimmed, "option go_package = ") {
+				header = append(header, "")
+				break
+			}
+		}
+	}
+	return strings.Join(header, "\n")
+}
+
+func trimProtoHeader(fileData []byte) string {
+	lines := strings.Split(string(fileData), "\n")
+	start := 0
+	for start < len(lines) {
+		trimmed := strings.TrimSpace(lines[start])
+		if strings.HasPrefix(trimmed, "syntax = ") || strings.HasPrefix(trimmed, "package ") || strings.HasPrefix(trimmed, "option go_package = ") || trimmed == "" {
+			start++
+			continue
+		}
+		break
+	}
+	return strings.Join(lines[start:], "\n")
 }

@@ -22,12 +22,11 @@ create table sys_operate_log
     arch             varchar(50)   default ''                not null comment '体系结构信息',
     engine           varchar(50)   default ''                not null comment '渲染引擎信息',
     engine_details   varchar(50)   default ''                not null comment '渲染引擎详细信息',
-    extra            varchar(50)   default ''                not null comment '其他信息（可选）',
+    extra            varchar(1000) default ''                not null comment '其他信息（可选）',
     status           tinyint       default 0                 not null comment ' 操作状态(0:异常,正常) ',
     error_msg        varchar(2000) default ''                not null comment ' 错误消息 ',
     operate_time     datetime      default CURRENT_TIMESTAMP not null comment ' 操作时间 ',
     cost_time        bigint(20)    default 0                 not null comment ' 消耗时间 '
 
 ) comment = '系统操作日志表';
-
 

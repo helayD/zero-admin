@@ -86,6 +86,10 @@ export interface ProductSpuListParams {
     updateBy?: number; //更新人ID
     updateTime?: string; //更新时间
     isDeleted?: number; //是否删除
+    scopeType?: 'platform' | 'tenant' | 'merchant';
+    platformId?: number;
+    tenantId?: number;
+    merchantId?: number;
 
     pageSize?: number;
     current?: number;

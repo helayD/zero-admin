@@ -59,7 +59,11 @@ type (
 	}
 	// 查询优惠券详情请求参数
 	QueryCouponDetailReq {
-		Id int64 `form:"id"`
+		Id         int64  `form:"id"`
+		ScopeType  string `form:"scopeType,optional"` //治理范围(platform/tenant/merchant)
+		PlatformId int64  `form:"platformId,optional"` //平台ID
+		TenantId   int64  `form:"tenantId,optional"` //租户ID
+		MerchantId int64  `form:"merchantId,optional"` //商户ID
 	}
 	CouponScopeData {
 		Id        int64  `json:"id"` //商品id/分类id
@@ -96,15 +100,19 @@ type (
 	}
 	// 分页查询优惠券列表请求参数
 	QueryCouponListReq {
-		Current   int32  `form:"current,default=1"` //第几页
-		PageSize  int32  `form:"pageSize,default=20"` //每页的数量
-		TypeId    int64  `form:"typeId,default=0"` //优惠券类型ID
-		Name      string `form:"name,optional"` //优惠券名称
-		Code      string `form:"code,optional"` //优惠券码
-		StartTime string `form:"startTime,optional"` //生效时间
-		EndTime   string `form:"endTime,optional"` //失效时间
-		Status    int32  `form:"status,default=4"` //状态：0-未开始，1-进行中，2-已结束，3-已取消
-		IsEnabled int32  `form:"isEnabled,default=2"` //是否启用
+		Current    int32  `form:"current,default=1"` //第几页
+		PageSize   int32  `form:"pageSize,default=20"` //每页的数量
+		TypeId     int64  `form:"typeId,default=0"` //优惠券类型ID
+		Name       string `form:"name,optional"` //优惠券名称
+		Code       string `form:"code,optional"` //优惠券码
+		StartTime  string `form:"startTime,optional"` //生效时间
+		EndTime    string `form:"endTime,optional"` //失效时间
+		Status     int32  `form:"status,default=4"` //状态：0-未开始，1-进行中，2-已结束，3-已取消
+		IsEnabled  int32  `form:"isEnabled,default=2"` //是否启用
+		ScopeType  string `form:"scopeType,optional"` //治理范围(platform/tenant/merchant)
+		PlatformId int64  `form:"platformId,optional"` //平台ID
+		TenantId   int64  `form:"tenantId,optional"` //租户ID
+		MerchantId int64  `form:"merchantId,optional"` //商户ID
 	}
 	QueryCouponListData {
 		Id            int64   `json:"id"` //优惠券ID

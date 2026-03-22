@@ -3,6 +3,13 @@ syntax = "proto3";
 package search;
 option go_package = "./search";
 
+message GovernanceScope {
+  string scope_type = 1; // 主体范围(platform/tenant/merchant)
+  int64 platform_id = 2; // 平台ID
+  int64 tenant_id = 3; // 租户ID
+  int64 merchant_id = 4; // 商户ID
+  string scope_label = 5; // 主体范围标签
+}
 
 message CreateReq {
   repeated ProductData data = 1;
@@ -44,6 +51,7 @@ message ProductData {
   string create_time = 33; //创建时间
   int64 update_by = 34; //更新人ID
   string update_time = 35; //更新时间
+  GovernanceScope scope = 36; //治理范围(platform/tenant/merchant)
 
 }
 
@@ -64,6 +72,7 @@ message SearchSimpleReq {
   string keyword = 1; //关键字
   int64 page_num = 2; //页码
   int64 page_size = 3; //每页数量
+  GovernanceScope scope = 4; //治理范围(platform/tenant/merchant)
 }
 
 message SearchReq {
@@ -73,6 +82,7 @@ message SearchReq {
   int32 sort = 4; //排序字段:0->按相关度；1->按新品；2->按销量；3->价格从低到高；4->价格从高到低
   int64 category_id = 5; //商品分类ID
   int64 brand_id = 6; //品牌ID
+  GovernanceScope scope = 7; //治理范围(platform/tenant/merchant)
 }
 
 
@@ -88,6 +98,7 @@ message RecommendReq {
   string sort = 4; //排序
   int64 category_id = 5; //商品分类ID
   int64 brand_id = 6; //品牌ID
+  GovernanceScope scope = 7; //治理范围(platform/tenant/merchant)
 }
 
 
@@ -96,6 +107,7 @@ message RecommendResp {
 }
 message SearchRelatedReq {
   string keyword = 1; //关键字
+  GovernanceScope scope = 2; //治理范围(platform/tenant/merchant)
 }
 
 

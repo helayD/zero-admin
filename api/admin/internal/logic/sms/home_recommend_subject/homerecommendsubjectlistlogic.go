@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/rpc/cms/cmsclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -35,12 +36,23 @@ func NewHomeRecommendSubjectListLogic(ctx context.Context, svcCtx *svc.ServiceCo
 
 // HomeRecommendSubjectList 查询人气推荐专题
 func (l *HomeRecommendSubjectListLogic) HomeRecommendSubjectList(req *types.ListHomeRecommendSubjectReq) (*types.ListHomeRecommendSubjectResp, error) {
+	queryScope, err := admincommon.ResolveQueryGovernanceScope(l.ctx, admincommon.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
+
 	subjectList, err := l.svcCtx.SubjectService.QuerySubjectList(l.ctx, &cmsclient.QuerySubjectListReq{
 		PageNum:         req.Current,
 		PageSize:        req.PageSize,
 		Title:           strings.TrimSpace(req.SubjectName), // 专题标题
 		RecommendStatus: req.RecommendStatus,                // 推荐状态：0->不推荐；1->推荐
 		ShowStatus:      1,                                  // 显示状态：0->不显示；1->显示
+		Scope:           admincommon.CMSGovernanceScope(queryScope),
 	})
 
 	if err != nil {

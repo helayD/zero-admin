@@ -9,6 +9,7 @@ import (
 	"github.com/feihua/zero-admin/pkg/time_util"
 	"github.com/feihua/zero-admin/rpc/sms/gen/model"
 	"github.com/feihua/zero-admin/rpc/sms/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/sms/internal/logic/common"
 	"github.com/zeromicro/go-zero/core/logc"
 
 	"github.com/feihua/zero-admin/rpc/sms/internal/svc"
@@ -33,17 +34,26 @@ func NewQueryCouponByCodeLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 
 // QueryCouponByCode 根据优惠券类型的code查询优惠券
 func (l *QueryCouponByCodeLogic) QueryCouponByCode(in *smsclient.QueryCouponByCodeReq) (*smsclient.QueryCouponByCodeResp, error) {
+	current, err := logiccommon.NormalizeProtoScope(in.Scope)
+	if err != nil {
+		logc.Errorf(l.ctx, "根据优惠券类型的code查询优惠券scope非法,参数:%+v,异常:%s", in, err.Error())
+		return nil, errors.New("根据优惠券类型的code查询优惠券失败")
+	}
+
 	sql := `select t1.*
 	from sms_coupon t1,
 		 sms_coupon_type t2
 	where t1.type_id = t2.id
 	  and t1.status=1
 	  and t2.status=1
-	  and t2.code = ?`
+	  and t2.code = ?
+	  and t1.platform_id = ?
+	  and t1.tenant_id = ?
+	  and t1.merchant_id = ?`
 
 	var result []model.SmsCoupon
 	db := l.svcCtx.DB
-	err := db.WithContext(l.ctx).Raw(sql, in.Code).Scan(&result).Error
+	err = db.WithContext(l.ctx).Raw(sql, in.Code, current.PlatformID, current.TenantID, current.MerchantID).Scan(&result).Error
 
 	if err != nil {
 		logc.Errorf(l.ctx, "根据优惠券类型的code查询优惠券失败,参数:%+v,异常:%s", in, err.Error())

@@ -100,6 +100,12 @@
         path: '/system/tenant/list',
         component: './system/tenant',
       },
+      {
+        name: '商户治理',
+        icon: 'table',
+        path: '/system/merchant/list',
+        component: './system/merchant',
+      },
       // {
       //   name: '参数管理',
       //   icon: 'table',

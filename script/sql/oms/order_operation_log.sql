@@ -3,6 +3,9 @@ create table oms_order_operation_log
 (
     id             bigint auto_increment
         primary key comment '主键ID',
+    platform_id    bigint       default 1                 not null comment '平台ID',
+    tenant_id      bigint       default 0                 not null comment '租户ID',
+    merchant_id    bigint       default 0                 not null comment '商户ID',
     order_id       bigint                                 not null comment '订单ID',
     order_no       varchar(32)                            not null comment '订单编号',
     operation_type tinyint                                not null comment '操作类型：1-创建订单，2-支付订单，3-发货，4-确认收货，5-取消订单，6-退款',
@@ -18,6 +21,9 @@ create index idx_operator
 
 create index idx_order
     on oms_order_operation_log (order_id);
+
+create index idx_scope_order_operation
+    on oms_order_operation_log (platform_id, tenant_id, merchant_id, order_id, operation_type);
 
 INSERT INTO oms_order_operation_log (
     order_id, order_no, operation_type, operator_id, operator_type, operator_note, create_time

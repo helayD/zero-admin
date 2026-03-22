@@ -8,6 +8,7 @@ import (
 
 	"github.com/feihua/zero-admin/rpc/sms/gen/model"
 	"github.com/feihua/zero-admin/rpc/sms/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/sms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/sms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/sms/smsclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -87,14 +88,6 @@ func (l *UpdateCouponLogic) UpdateCoupon(in *smsclient.UpdateCouponReq) (*smscli
 		UpdateTime:    &now,                  // 更新时间
 	}
 
-	// 2.优惠券存在时,则直接更新优惠券
-	err = l.svcCtx.DB.Model(&model.SmsCoupon{}).WithContext(l.ctx).Where(coupon.ID.Eq(in.Id)).Save(item).Error
-
-	if err != nil {
-		logc.Errorf(l.ctx, "更新优惠券失败,参数:%+v,异常:%s", item, err.Error())
-		return nil, errors.New("更新优惠券失败")
-	}
-
 	var data []*model.SmsCouponScope
 	if len(in.Scopes) == 0 {
 		data = append(data, &model.SmsCouponScope{
@@ -111,13 +104,29 @@ func (l *UpdateCouponLogic) UpdateCoupon(in *smsclient.UpdateCouponReq) (*smscli
 			})
 		}
 	}
-	_, _ = query.SmsCouponScope.WithContext(l.ctx).Where(query.SmsCouponScope.CouponID.Eq(in.Id)).Delete()
 
-	err = query.SmsCouponScope.WithContext(l.ctx).CreateInBatches(data, len(data))
+	err = l.svcCtx.DB.WithContext(l.ctx).Transaction(func(tx *gorm.DB) error {
+		qtx := query.Use(tx)
+		if err := tx.Model(&model.SmsCoupon{}).Where("id = ?", in.Id).Save(item).Error; err != nil {
+			return err
+		}
 
+		current, err := logiccommon.ResolveActorScope(l.ctx, tx, in.UpdateBy)
+		if err != nil {
+			return err
+		}
+		if err := logiccommon.ApplyCouponScope(l.ctx, tx, item.ID, current); err != nil {
+			return err
+		}
+
+		if _, err := qtx.SmsCouponScope.WithContext(l.ctx).Where(qtx.SmsCouponScope.CouponID.Eq(in.Id)).Delete(); err != nil {
+			return err
+		}
+		return qtx.SmsCouponScope.WithContext(l.ctx).CreateInBatches(data, len(data))
+	})
 	if err != nil {
-		logc.Errorf(l.ctx, "添加优惠券使用范围失败,参数:%+v,异常:%s", data, err.Error())
-		return nil, errors.New("添加优惠券使用范围失败")
+		logc.Errorf(l.ctx, "更新优惠券失败,参数:%+v,异常:%s", in, err.Error())
+		return nil, errors.New(err.Error())
 	}
 	return &smsclient.UpdateCouponResp{}, nil
 }

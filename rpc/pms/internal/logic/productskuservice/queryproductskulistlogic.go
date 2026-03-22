@@ -6,12 +6,15 @@ import (
 	"time"
 
 	"github.com/feihua/zero-admin/pkg/pointerprocess"
+	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/pkg/time_util"
-	"github.com/feihua/zero-admin/rpc/pms/gen/query"
+	"github.com/feihua/zero-admin/rpc/pms/gen/model"
+	logiccommon "github.com/feihua/zero-admin/rpc/pms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/pms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
 )
 
 // QueryProductSkuListLogic 查询商品SKU列表
@@ -35,35 +38,51 @@ func NewQueryProductSkuListLogic(ctx context.Context, svcCtx *svc.ServiceContext
 
 // QueryProductSkuList 查询商品SKU列表
 func (l *QueryProductSkuListLogic) QueryProductSkuList(in *pmsclient.QueryProductSkuListReq) (*pmsclient.QueryProductSkuListResp, error) {
-	productSku := query.PmsProductSku
-	q := productSku.WithContext(l.ctx)
+	current, err := logiccommon.NormalizeProtoScope(in.Scope)
+	if err != nil {
+		logc.Errorf(l.ctx, "查询商品SKU列表scope非法,参数:%+v,异常:%s", in, err.Error())
+		return nil, errors.New("查询商品SKU列表失败")
+	}
+
+	q := pkgscope.ApplyGovernanceScope(
+		l.svcCtx.DB.WithContext(l.ctx).Model(&model.PmsProductSku{}),
+		current,
+		"",
+	)
 	if in.SpuId != 0 {
-		q = q.Where(productSku.SpuID.Eq(in.SpuId))
+		q = q.Where("spu_id = ?", in.SpuId)
 	}
 	if len(in.Name) > 0 {
-		q = q.Where(productSku.Name.Like("%" + in.Name + "%"))
+		q = q.Where("name LIKE ?", "%"+in.Name+"%")
 	}
 	if len(in.SkuCode) > 0 {
-		q = q.Where(productSku.SkuCode.Like("%" + in.SkuCode + "%"))
+		q = q.Where("sku_code LIKE ?", "%"+in.SkuCode+"%")
 	}
 
 	if len(in.PromotionStartTime) > 0 {
 		startTime, _ := time.Parse("2006-01-02 15:04:05", in.PromotionStartTime)
-		q = q.Where(productSku.PromotionStartTime.Gte(startTime))
+		q = q.Where("promotion_start_time >= ?", startTime)
 	}
 	if len(in.PromotionEndTime) > 0 {
 		endTime, _ := time.Parse("2006-01-02 15:04:05", in.PromotionEndTime)
-		q = q.Where(productSku.PromotionEndTime.Lte(endTime))
+		q = q.Where("promotion_end_time <= ?", endTime)
 	}
 
 	if in.PublishStatus != 2 {
-		q = q.Where(productSku.PublishStatus.Eq(in.PublishStatus))
+		q = q.Where("publish_status = ?", in.PublishStatus)
 	}
 	if in.VerifyStatus != 2 {
-		q = q.Where(productSku.VerifyStatus.Eq(in.VerifyStatus))
+		q = q.Where("verify_status = ?", in.VerifyStatus)
 	}
 
-	result, count, err := q.FindByPage(int((in.PageNum-1)*in.PageSize), int(in.PageSize))
+	var (
+		result []model.PmsProductSku
+		count  int64
+	)
+	err = q.Session(&gorm.Session{}).Count(&count).Error
+	if err == nil {
+		err = q.Offset(int((in.PageNum - 1) * in.PageSize)).Limit(int(in.PageSize)).Find(&result).Error
+	}
 
 	if err != nil {
 		logc.Errorf(l.ctx, "查询商品SKU列表失败,参数:%+v,异常:%s", in, err.Error())

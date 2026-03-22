@@ -79,6 +79,7 @@ message UpdateCouponStatusResp {
 // 查询优惠券详情
 message QueryCouponDetailReq {
     int64 id = 1;
+    GovernanceScope scope = 2; //治理范围(platform/tenant/merchant)
 }
 
 message QueryCouponDetailResp {
@@ -116,6 +117,7 @@ message QueryCouponListReq {
   int32 is_enabled = 7; //是否启用
   int32 page_num = 8; //第几页
   int32 page_size = 9; //每页的数量
+  GovernanceScope scope = 10; //治理范围(platform/tenant/merchant)
 }
 
 message CouponListData {
@@ -148,6 +150,7 @@ message QueryCouponListResp {
 
 message QueryCouponByScopeIdReq {
   repeated int64 scope_ids = 1;
+  GovernanceScope scope = 2; //治理范围(platform/tenant/merchant)
 }
 
 message QueryCouponByScopeIdResp {
@@ -156,6 +159,7 @@ message QueryCouponByScopeIdResp {
 
 message QueryCouponByCodeReq {
   string code = 1; //优惠券类型编码
+  GovernanceScope scope = 2; //治理范围(platform/tenant/merchant)
 }
 message QueryCouponByCodeResp {
   repeated  CouponListData list = 1;

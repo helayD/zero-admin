@@ -1785,6 +1785,412 @@ var MenuTemplateService_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
+	MerchantService_CreateMerchant_FullMethodName          = "/sysclient.MerchantService/CreateMerchant"
+	MerchantService_QueryMerchantDetail_FullMethodName     = "/sysclient.MerchantService/QueryMerchantDetail"
+	MerchantService_QueryMerchantList_FullMethodName       = "/sysclient.MerchantService/QueryMerchantList"
+	MerchantService_ApproveMerchant_FullMethodName         = "/sysclient.MerchantService/ApproveMerchant"
+	MerchantService_RejectMerchant_FullMethodName          = "/sysclient.MerchantService/RejectMerchant"
+	MerchantService_RequestMerchantMaterial_FullMethodName = "/sysclient.MerchantService/RequestMerchantMaterial"
+	MerchantService_EnableMerchant_FullMethodName          = "/sysclient.MerchantService/EnableMerchant"
+	MerchantService_DisableMerchant_FullMethodName         = "/sysclient.MerchantService/DisableMerchant"
+	MerchantService_ArchiveMerchant_FullMethodName         = "/sysclient.MerchantService/ArchiveMerchant"
+)
+
+// MerchantServiceClient is the client API for MerchantService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type MerchantServiceClient interface {
+	CreateMerchant(ctx context.Context, in *CreateMerchantReq, opts ...grpc.CallOption) (*CreateMerchantResp, error)
+	QueryMerchantDetail(ctx context.Context, in *QueryMerchantDetailReq, opts ...grpc.CallOption) (*QueryMerchantDetailResp, error)
+	QueryMerchantList(ctx context.Context, in *QueryMerchantListReq, opts ...grpc.CallOption) (*QueryMerchantListResp, error)
+	ApproveMerchant(ctx context.Context, in *ReviewMerchantReq, opts ...grpc.CallOption) (*ReviewMerchantResp, error)
+	RejectMerchant(ctx context.Context, in *ReviewMerchantReq, opts ...grpc.CallOption) (*ReviewMerchantResp, error)
+	RequestMerchantMaterial(ctx context.Context, in *ReviewMerchantReq, opts ...grpc.CallOption) (*ReviewMerchantResp, error)
+	EnableMerchant(ctx context.Context, in *ChangeMerchantStatusReq, opts ...grpc.CallOption) (*ChangeMerchantStatusResp, error)
+	DisableMerchant(ctx context.Context, in *ChangeMerchantStatusReq, opts ...grpc.CallOption) (*ChangeMerchantStatusResp, error)
+	ArchiveMerchant(ctx context.Context, in *ChangeMerchantStatusReq, opts ...grpc.CallOption) (*ChangeMerchantStatusResp, error)
+}
+
+type merchantServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewMerchantServiceClient(cc grpc.ClientConnInterface) MerchantServiceClient {
+	return &merchantServiceClient{cc}
+}
+
+func (c *merchantServiceClient) CreateMerchant(ctx context.Context, in *CreateMerchantReq, opts ...grpc.CallOption) (*CreateMerchantResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateMerchantResp)
+	err := c.cc.Invoke(ctx, MerchantService_CreateMerchant_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *merchantServiceClient) QueryMerchantDetail(ctx context.Context, in *QueryMerchantDetailReq, opts ...grpc.CallOption) (*QueryMerchantDetailResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(QueryMerchantDetailResp)
+	err := c.cc.Invoke(ctx, MerchantService_QueryMerchantDetail_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *merchantServiceClient) QueryMerchantList(ctx context.Context, in *QueryMerchantListReq, opts ...grpc.CallOption) (*QueryMerchantListResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(QueryMerchantListResp)
+	err := c.cc.Invoke(ctx, MerchantService_QueryMerchantList_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *merchantServiceClient) ApproveMerchant(ctx context.Context, in *ReviewMerchantReq, opts ...grpc.CallOption) (*ReviewMerchantResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ReviewMerchantResp)
+	err := c.cc.Invoke(ctx, MerchantService_ApproveMerchant_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *merchantServiceClient) RejectMerchant(ctx context.Context, in *ReviewMerchantReq, opts ...grpc.CallOption) (*ReviewMerchantResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ReviewMerchantResp)
+	err := c.cc.Invoke(ctx, MerchantService_RejectMerchant_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *merchantServiceClient) RequestMerchantMaterial(ctx context.Context, in *ReviewMerchantReq, opts ...grpc.CallOption) (*ReviewMerchantResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ReviewMerchantResp)
+	err := c.cc.Invoke(ctx, MerchantService_RequestMerchantMaterial_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *merchantServiceClient) EnableMerchant(ctx context.Context, in *ChangeMerchantStatusReq, opts ...grpc.CallOption) (*ChangeMerchantStatusResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ChangeMerchantStatusResp)
+	err := c.cc.Invoke(ctx, MerchantService_EnableMerchant_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *merchantServiceClient) DisableMerchant(ctx context.Context, in *ChangeMerchantStatusReq, opts ...grpc.CallOption) (*ChangeMerchantStatusResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ChangeMerchantStatusResp)
+	err := c.cc.Invoke(ctx, MerchantService_DisableMerchant_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *merchantServiceClient) ArchiveMerchant(ctx context.Context, in *ChangeMerchantStatusReq, opts ...grpc.CallOption) (*ChangeMerchantStatusResp, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ChangeMerchantStatusResp)
+	err := c.cc.Invoke(ctx, MerchantService_ArchiveMerchant_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// MerchantServiceServer is the server API for MerchantService service.
+// All implementations must embed UnimplementedMerchantServiceServer
+// for forward compatibility.
+type MerchantServiceServer interface {
+	CreateMerchant(context.Context, *CreateMerchantReq) (*CreateMerchantResp, error)
+	QueryMerchantDetail(context.Context, *QueryMerchantDetailReq) (*QueryMerchantDetailResp, error)
+	QueryMerchantList(context.Context, *QueryMerchantListReq) (*QueryMerchantListResp, error)
+	ApproveMerchant(context.Context, *ReviewMerchantReq) (*ReviewMerchantResp, error)
+	RejectMerchant(context.Context, *ReviewMerchantReq) (*ReviewMerchantResp, error)
+	RequestMerchantMaterial(context.Context, *ReviewMerchantReq) (*ReviewMerchantResp, error)
+	EnableMerchant(context.Context, *ChangeMerchantStatusReq) (*ChangeMerchantStatusResp, error)
+	DisableMerchant(context.Context, *ChangeMerchantStatusReq) (*ChangeMerchantStatusResp, error)
+	ArchiveMerchant(context.Context, *ChangeMerchantStatusReq) (*ChangeMerchantStatusResp, error)
+	mustEmbedUnimplementedMerchantServiceServer()
+}
+
+// UnimplementedMerchantServiceServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedMerchantServiceServer struct{}
+
+func (UnimplementedMerchantServiceServer) CreateMerchant(context.Context, *CreateMerchantReq) (*CreateMerchantResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateMerchant not implemented")
+}
+func (UnimplementedMerchantServiceServer) QueryMerchantDetail(context.Context, *QueryMerchantDetailReq) (*QueryMerchantDetailResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QueryMerchantDetail not implemented")
+}
+func (UnimplementedMerchantServiceServer) QueryMerchantList(context.Context, *QueryMerchantListReq) (*QueryMerchantListResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QueryMerchantList not implemented")
+}
+func (UnimplementedMerchantServiceServer) ApproveMerchant(context.Context, *ReviewMerchantReq) (*ReviewMerchantResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ApproveMerchant not implemented")
+}
+func (UnimplementedMerchantServiceServer) RejectMerchant(context.Context, *ReviewMerchantReq) (*ReviewMerchantResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RejectMerchant not implemented")
+}
+func (UnimplementedMerchantServiceServer) RequestMerchantMaterial(context.Context, *ReviewMerchantReq) (*ReviewMerchantResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RequestMerchantMaterial not implemented")
+}
+func (UnimplementedMerchantServiceServer) EnableMerchant(context.Context, *ChangeMerchantStatusReq) (*ChangeMerchantStatusResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EnableMerchant not implemented")
+}
+func (UnimplementedMerchantServiceServer) DisableMerchant(context.Context, *ChangeMerchantStatusReq) (*ChangeMerchantStatusResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DisableMerchant not implemented")
+}
+func (UnimplementedMerchantServiceServer) ArchiveMerchant(context.Context, *ChangeMerchantStatusReq) (*ChangeMerchantStatusResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ArchiveMerchant not implemented")
+}
+func (UnimplementedMerchantServiceServer) mustEmbedUnimplementedMerchantServiceServer() {}
+func (UnimplementedMerchantServiceServer) testEmbeddedByValue()                         {}
+
+// UnsafeMerchantServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to MerchantServiceServer will
+// result in compilation errors.
+type UnsafeMerchantServiceServer interface {
+	mustEmbedUnimplementedMerchantServiceServer()
+}
+
+func RegisterMerchantServiceServer(s grpc.ServiceRegistrar, srv MerchantServiceServer) {
+	// If the following call pancis, it indicates UnimplementedMerchantServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&MerchantService_ServiceDesc, srv)
+}
+
+func _MerchantService_CreateMerchant_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateMerchantReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MerchantServiceServer).CreateMerchant(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MerchantService_CreateMerchant_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MerchantServiceServer).CreateMerchant(ctx, req.(*CreateMerchantReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MerchantService_QueryMerchantDetail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryMerchantDetailReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MerchantServiceServer).QueryMerchantDetail(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MerchantService_QueryMerchantDetail_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MerchantServiceServer).QueryMerchantDetail(ctx, req.(*QueryMerchantDetailReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MerchantService_QueryMerchantList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryMerchantListReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MerchantServiceServer).QueryMerchantList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MerchantService_QueryMerchantList_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MerchantServiceServer).QueryMerchantList(ctx, req.(*QueryMerchantListReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MerchantService_ApproveMerchant_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReviewMerchantReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MerchantServiceServer).ApproveMerchant(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MerchantService_ApproveMerchant_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MerchantServiceServer).ApproveMerchant(ctx, req.(*ReviewMerchantReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MerchantService_RejectMerchant_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReviewMerchantReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MerchantServiceServer).RejectMerchant(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MerchantService_RejectMerchant_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MerchantServiceServer).RejectMerchant(ctx, req.(*ReviewMerchantReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MerchantService_RequestMerchantMaterial_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReviewMerchantReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MerchantServiceServer).RequestMerchantMaterial(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MerchantService_RequestMerchantMaterial_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MerchantServiceServer).RequestMerchantMaterial(ctx, req.(*ReviewMerchantReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MerchantService_EnableMerchant_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ChangeMerchantStatusReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MerchantServiceServer).EnableMerchant(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MerchantService_EnableMerchant_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MerchantServiceServer).EnableMerchant(ctx, req.(*ChangeMerchantStatusReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MerchantService_DisableMerchant_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ChangeMerchantStatusReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MerchantServiceServer).DisableMerchant(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MerchantService_DisableMerchant_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MerchantServiceServer).DisableMerchant(ctx, req.(*ChangeMerchantStatusReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MerchantService_ArchiveMerchant_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ChangeMerchantStatusReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MerchantServiceServer).ArchiveMerchant(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MerchantService_ArchiveMerchant_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MerchantServiceServer).ArchiveMerchant(ctx, req.(*ChangeMerchantStatusReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// MerchantService_ServiceDesc is the grpc.ServiceDesc for MerchantService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var MerchantService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "sysclient.MerchantService",
+	HandlerType: (*MerchantServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "CreateMerchant",
+			Handler:    _MerchantService_CreateMerchant_Handler,
+		},
+		{
+			MethodName: "QueryMerchantDetail",
+			Handler:    _MerchantService_QueryMerchantDetail_Handler,
+		},
+		{
+			MethodName: "QueryMerchantList",
+			Handler:    _MerchantService_QueryMerchantList_Handler,
+		},
+		{
+			MethodName: "ApproveMerchant",
+			Handler:    _MerchantService_ApproveMerchant_Handler,
+		},
+		{
+			MethodName: "RejectMerchant",
+			Handler:    _MerchantService_RejectMerchant_Handler,
+		},
+		{
+			MethodName: "RequestMerchantMaterial",
+			Handler:    _MerchantService_RequestMerchantMaterial_Handler,
+		},
+		{
+			MethodName: "EnableMerchant",
+			Handler:    _MerchantService_EnableMerchant_Handler,
+		},
+		{
+			MethodName: "DisableMerchant",
+			Handler:    _MerchantService_DisableMerchant_Handler,
+		},
+		{
+			MethodName: "ArchiveMerchant",
+			Handler:    _MerchantService_ArchiveMerchant_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "rpc/sys/sys.proto",
+}
+
+const (
 	NoticeService_AddNotice_FullMethodName          = "/sysclient.NoticeService/AddNotice"
 	NoticeService_DeleteNotice_FullMethodName       = "/sysclient.NoticeService/DeleteNotice"
 	NoticeService_UpdateNotice_FullMethodName       = "/sysclient.NoticeService/UpdateNotice"

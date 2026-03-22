@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package main;
+
+option go_package = "./proto";
+
+message GovernanceScope {
+  string scope_type = 1; // 主体范围(platform/tenant/merchant)
+  int64 platform_id = 2; // 平台ID
+  int64 tenant_id = 3; // 租户ID
+  int64 merchant_id = 4; // 商户ID
+  string scope_label = 5; // 主体范围标签
+}

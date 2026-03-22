@@ -6,8 +6,11 @@ import (
 	"time"
 
 	"github.com/feihua/zero-admin/pkg/pointerprocess"
+	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/pkg/time_util"
+	"github.com/feihua/zero-admin/rpc/sms/gen/model"
 	"github.com/feihua/zero-admin/rpc/sms/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/sms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/sms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/sms/smsclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -36,7 +39,18 @@ func NewQueryCouponDetailLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 
 // QueryCouponDetail 查询优惠券详情
 func (l *QueryCouponDetailLogic) QueryCouponDetail(in *smsclient.QueryCouponDetailReq) (*smsclient.QueryCouponDetailResp, error) {
-	item, err := query.SmsCoupon.WithContext(l.ctx).Where(query.SmsCoupon.ID.Eq(in.Id)).First()
+	current, err := logiccommon.NormalizeProtoScope(in.Scope)
+	if err != nil {
+		logc.Errorf(l.ctx, "优惠券详情scope非法, 请求参数：%+v, 异常信息: %s", in, err.Error())
+		return nil, errors.New("查询优惠券异常")
+	}
+
+	var item model.SmsCoupon
+	err = pkgscope.ApplyGovernanceScope(
+		l.svcCtx.DB.WithContext(l.ctx).Model(&model.SmsCoupon{}),
+		current,
+		"",
+	).Where("id = ?", in.Id).Take(&item).Error
 
 	switch {
 	case errors.Is(err, gorm.ErrRecordNotFound):

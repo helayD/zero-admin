@@ -3,6 +3,9 @@ create table cms_subject
 (
     id               bigint auto_increment
         primary key comment '专题id',
+    platform_id      bigint       default 1                 not null comment '平台ID',
+    tenant_id        bigint       default 0                 not null comment '租户ID',
+    merchant_id      bigint       default 0                 not null comment '商户ID',
     category_id      bigint                                not null comment '专题分类id',
     title            varchar(100)                          not null comment '专题标题',
     pic              varchar(500)                          not null comment '专题主图',
@@ -24,6 +27,9 @@ create table cms_subject
     update_time      datetime                              null on update CURRENT_TIMESTAMP comment '更新时间'
 )
     comment '专题表' charset = utf8;
+
+create index idx_subject_scope_status
+    on cms_subject (platform_id, tenant_id, merchant_id, show_status, recommend_status, id);
 
 INSERT INTO cms_subject (id, category_id, title, pic, product_count, recommend_status, create_time, collect_count,
                          read_count, comment_count, album_pics, description, show_status, content, forward_count,

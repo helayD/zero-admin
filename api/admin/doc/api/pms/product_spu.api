@@ -77,7 +77,11 @@ type (
 	}
 	// 查询商品SPU详情请求参数
 	QueryProductSpuDetailReq {
-		Id int64 `form:"id"`
+		Id         int64  `form:"id"`
+		ScopeType  string `form:"scopeType,optional"` //治理范围(platform/tenant/merchant)
+		PlatformId int64  `form:"platformId,optional"` //平台ID
+		TenantId   int64  `form:"tenantId,optional"` //租户ID
+		MerchantId int64  `form:"merchantId,optional"` //商户ID
 	}
 	ProductSpuDetailData {
 		ProductData        QueryProductSpuListData                `json:"productData"` //商品基本信息
@@ -111,6 +115,10 @@ type (
 		VerifyStatus    int32  `form:"verifyStatus,default=2"` //审核状态：0->未审核；1->审核通过
 		PreviewStatus   int32  `form:"previewStatus,default=2"` //是否为预告商品：0->不是；1->是
 		PromotionType   int32  `form:"promotionType,default=6"` //促销类型：0->没有促销使用原价;1->使用促销价；2->使用会员价；3->使用阶梯价格；4->使用满减价格；5->秒杀
+		ScopeType       string `form:"scopeType,optional"` //治理范围(platform/tenant/merchant)
+		PlatformId      int64  `form:"platformId,optional"` //平台ID
+		TenantId        int64  `form:"tenantId,optional"` //租户ID
+		MerchantId      int64  `form:"merchantId,optional"` //商户ID
 	}
 	QueryProductSpuListData {
 		Id                  int64   `json:"id"` //商品SpuId

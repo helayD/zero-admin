@@ -2,6 +2,7 @@ package product_sku
 
 import (
 	"context"
+	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
 	"github.com/feihua/zero-admin/api/admin/internal/types"
@@ -33,9 +34,19 @@ func NewQueryProductSkuDetailLogic(ctx context.Context, svcCtx *svc.ServiceConte
 
 // QueryProductSkuDetail 查询商品SKU详情
 func (l *QueryProductSkuDetailLogic) QueryProductSkuDetail(req *types.QueryProductSkuDetailReq) (resp *types.QueryProductSkuDetailResp, err error) {
+	queryScope, err := admincommon.ResolveQueryGovernanceScope(l.ctx, admincommon.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
 
 	detail, err := l.svcCtx.ProductSkuService.QueryProductSkuDetail(l.ctx, &pmsclient.QueryProductSkuDetailReq{
-		Id: req.Id,
+		Id:    req.Id,
+		Scope: admincommon.PMSGovernanceScope(queryScope),
 	})
 
 	if err != nil {
