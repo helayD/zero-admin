@@ -54,7 +54,22 @@ func ApplyProductScope(ctx context.Context, db *gorm.DB, productID int64, curren
 		return err
 	}
 
-	return tx.Table("pms_product_sku").Where("spu_id = ?", productID).Updates(scopeValues).Error
+	for _, update := range []struct {
+		table  string
+		column string
+	}{
+		{table: "pms_product_sku", column: "spu_id"},
+		{table: "pms_product_attribute_value", column: "spu_id"},
+		{table: "pms_member_price", column: "product_id"},
+		{table: "pms_product_ladder", column: "product_id"},
+		{table: "pms_product_full_reduction", column: "product_id"},
+	} {
+		if err := tx.Table(update.table).Where(update.column+" = ?", productID).Updates(scopeValues).Error; err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func ApplySkuScope(ctx context.Context, db *gorm.DB, skuID int64, current pkgscope.GovernanceScope) error {

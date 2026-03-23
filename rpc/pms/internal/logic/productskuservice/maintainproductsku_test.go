@@ -33,6 +33,10 @@ func newProductSkuMaintainTestSvc(t *testing.T) (*svc.ServiceContext, pkgscope.G
 		`ALTER TABLE pms_product_sku ADD COLUMN platform_id INTEGER NOT NULL DEFAULT 1`,
 		`ALTER TABLE pms_product_sku ADD COLUMN tenant_id INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE pms_product_sku ADD COLUMN merchant_id INTEGER NOT NULL DEFAULT 0`,
+		`CREATE TABLE pms_product_attribute_value (id INTEGER PRIMARY KEY, spu_id INTEGER NOT NULL, platform_id INTEGER NOT NULL DEFAULT 1, tenant_id INTEGER NOT NULL DEFAULT 0, merchant_id INTEGER NOT NULL DEFAULT 0)`,
+		`CREATE TABLE pms_member_price (id INTEGER PRIMARY KEY, product_id INTEGER NOT NULL, platform_id INTEGER NOT NULL DEFAULT 1, tenant_id INTEGER NOT NULL DEFAULT 0, merchant_id INTEGER NOT NULL DEFAULT 0)`,
+		`CREATE TABLE pms_product_ladder (id INTEGER PRIMARY KEY, product_id INTEGER NOT NULL, platform_id INTEGER NOT NULL DEFAULT 1, tenant_id INTEGER NOT NULL DEFAULT 0, merchant_id INTEGER NOT NULL DEFAULT 0)`,
+		`CREATE TABLE pms_product_full_reduction (id INTEGER PRIMARY KEY, product_id INTEGER NOT NULL, platform_id INTEGER NOT NULL DEFAULT 1, tenant_id INTEGER NOT NULL DEFAULT 0, merchant_id INTEGER NOT NULL DEFAULT 0)`,
 	} {
 		if err := db.Exec(stmt).Error; err != nil {
 			t.Fatalf("alter scope columns failed: %v", err)

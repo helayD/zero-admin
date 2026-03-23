@@ -33,6 +33,34 @@ func newPMSWriteScopeDB(t *testing.T) *gorm.DB {
 			tenant_id INTEGER NOT NULL,
 			merchant_id INTEGER NOT NULL
 		)`,
+		`CREATE TABLE pms_product_attribute_value (
+			id INTEGER PRIMARY KEY,
+			spu_id INTEGER NOT NULL,
+			platform_id INTEGER NOT NULL,
+			tenant_id INTEGER NOT NULL,
+			merchant_id INTEGER NOT NULL
+		)`,
+		`CREATE TABLE pms_member_price (
+			id INTEGER PRIMARY KEY,
+			product_id INTEGER NOT NULL,
+			platform_id INTEGER NOT NULL,
+			tenant_id INTEGER NOT NULL,
+			merchant_id INTEGER NOT NULL
+		)`,
+		`CREATE TABLE pms_product_ladder (
+			id INTEGER PRIMARY KEY,
+			product_id INTEGER NOT NULL,
+			platform_id INTEGER NOT NULL,
+			tenant_id INTEGER NOT NULL,
+			merchant_id INTEGER NOT NULL
+		)`,
+		`CREATE TABLE pms_product_full_reduction (
+			id INTEGER PRIMARY KEY,
+			product_id INTEGER NOT NULL,
+			platform_id INTEGER NOT NULL,
+			tenant_id INTEGER NOT NULL,
+			merchant_id INTEGER NOT NULL
+		)`,
 		`CREATE TABLE sys_security_event (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			trace_id TEXT,
@@ -101,6 +129,18 @@ func TestApplyProductScopePropagatesToSkuRows(t *testing.T) {
 	if err := db.Exec(`INSERT INTO pms_product_sku (id, spu_id, platform_id, tenant_id, merchant_id) VALUES (11,1,1,0,0)`).Error; err != nil {
 		t.Fatalf("seed sku failed: %v", err)
 	}
+	if err := db.Exec(`INSERT INTO pms_product_attribute_value (id, spu_id, platform_id, tenant_id, merchant_id) VALUES (21,1,1,0,0)`).Error; err != nil {
+		t.Fatalf("seed attribute value failed: %v", err)
+	}
+	if err := db.Exec(`INSERT INTO pms_member_price (id, product_id, platform_id, tenant_id, merchant_id) VALUES (31,1,1,0,0)`).Error; err != nil {
+		t.Fatalf("seed member price failed: %v", err)
+	}
+	if err := db.Exec(`INSERT INTO pms_product_ladder (id, product_id, platform_id, tenant_id, merchant_id) VALUES (41,1,1,0,0)`).Error; err != nil {
+		t.Fatalf("seed ladder failed: %v", err)
+	}
+	if err := db.Exec(`INSERT INTO pms_product_full_reduction (id, product_id, platform_id, tenant_id, merchant_id) VALUES (51,1,1,0,0)`).Error; err != nil {
+		t.Fatalf("seed full reduction failed: %v", err)
+	}
 
 	if err := ApplyProductScope(ctx, db, 1, current); err != nil {
 		t.Fatalf("apply product scope failed: %v", err)
@@ -126,5 +166,27 @@ func TestApplyProductScopePropagatesToSkuRows(t *testing.T) {
 	}
 	if skuRow.TenantID != 10 || skuRow.MerchantID != 3001 {
 		t.Fatalf("unexpected sku scope: %+v", skuRow)
+	}
+
+	for _, target := range []struct {
+		table string
+		id    int64
+		label string
+	}{
+		{table: "pms_product_attribute_value", id: 21, label: "attribute value"},
+		{table: "pms_member_price", id: 31, label: "member price"},
+		{table: "pms_product_ladder", id: 41, label: "product ladder"},
+		{table: "pms_product_full_reduction", id: 51, label: "full reduction"},
+	} {
+		var row struct {
+			TenantID   int64 `gorm:"column:tenant_id"`
+			MerchantID int64 `gorm:"column:merchant_id"`
+		}
+		if err := db.Table(target.table).Select("tenant_id, merchant_id").Where("id = ?", target.id).Take(&row).Error; err != nil {
+			t.Fatalf("query updated %s failed: %v", target.label, err)
+		}
+		if row.TenantID != 10 || row.MerchantID != 3001 {
+			t.Fatalf("unexpected %s scope: %+v", target.label, row)
+		}
 	}
 }
