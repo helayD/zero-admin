@@ -30,6 +30,7 @@ import {
   type GovernanceScopeValue,
   toGovernancePayload,
 } from '@/pages/system/components/governance';
+import { readErrorMessage } from '@/pages/system/components/requestError';
 
 const { confirm } = Modal;
 
@@ -46,6 +47,7 @@ const handleAdd = async (fields: ProductCategoryListItem, scope: GovernanceScope
     return true;
   } catch (error) {
     hide();
+    message.error(readErrorMessage(error, '添加分类失败，请检查当前主体范围与分类字段'));
     return false;
   }
 };
@@ -64,6 +66,7 @@ const handleUpdate = async (fields: ProductCategoryListItem, scope: GovernanceSc
     return true;
   } catch (error) {
     hide();
+    message.error(readErrorMessage(error, '更新分类失败，请检查当前分类层级与绑定关系'));
     return false;
   }
 };
@@ -82,6 +85,7 @@ const handleRemove = async (ids: number[], scope: GovernanceScopeValue) => {
     return true;
   } catch (error) {
     hide();
+    message.error(readErrorMessage(error, '删除分类失败，请先解除下游引用后重试'));
     return false;
   }
 };
@@ -109,6 +113,7 @@ const handleStatus = async (ids: number[], status: number, t: number, scope: Gov
     return true;
   } catch (error) {
     hide();
+    message.error(readErrorMessage(error, '更新分类状态失败，请核对当前节点状态后重试'));
     return false;
   }
 };

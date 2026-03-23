@@ -48,6 +48,9 @@ func (l *UpdateProductCategoryLogic) UpdateProductCategory(in *pmsclient.UpdateP
 		return replaceCategoryRelations(tx, in.Id, in.ProductAttributeIdList, currentScope)
 	})
 	if err != nil {
+		if isCategoryBindingValidationError(err) {
+			return nil, err
+		}
 		logc.Errorf(l.ctx, "更新产品分类失败,参数:%+v,异常:%s", in, err.Error())
 		return nil, errors.New("更新产品分类失败")
 	}
