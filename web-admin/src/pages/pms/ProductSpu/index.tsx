@@ -11,6 +11,7 @@ import UpdateModal from './components/UpdateModal';
 import type { ProductSpuListItem} from './data.d';
 import {addProductSpu, queryProductSpuList, removeProductSpu, updateProductSpu, updateProductSpuStatus} from './service';
 import SkuModal from '@/pages/pms/ProductSpu/components/SkuModal';
+import { buildCatalogActionError, type CatalogActionError } from '@/pages/pms/errorFeedback';
 import GovernanceScopeBar from '@/pages/system/components/GovernanceScopeBar';
 import {
   buildGovernanceScopeLabel,
@@ -35,7 +36,11 @@ const productSpuActionLabel: Record<ProductSpuStatusAction, string> = {
  * 添加商品SPU
  * @param fields
  */
-const handleAdd = async (fields: ProductSpuListItem, scope: GovernanceScopeValue) => {
+const handleAdd = async (
+  fields: ProductSpuListItem,
+  scope: GovernanceScopeValue,
+  onError?: (error: CatalogActionError) => void,
+) => {
   const hide = message.loading('正在添加');
   try {
     await addProductSpu({...fields, ...toGovernancePayload(scope)});
@@ -44,6 +49,9 @@ const handleAdd = async (fields: ProductSpuListItem, scope: GovernanceScopeValue
     return true;
   } catch (error) {
     hide();
+    const catalogError = buildCatalogActionError(error, '商品 SPU 建档失败');
+    onError?.(catalogError);
+    message.error(catalogError.description);
     return false;
   }
 };
@@ -52,7 +60,10 @@ const handleAdd = async (fields: ProductSpuListItem, scope: GovernanceScopeValue
  * 更新商品SPU
  * @param fields
  */
-const handleUpdate = async (fields: ProductSpuListItem & GovernanceScopeValue) => {
+const handleUpdate = async (
+  fields: ProductSpuListItem & GovernanceScopeValue,
+  onError?: (error: CatalogActionError) => void,
+) => {
   const hide = message.loading('正在更新');
   try {
     await updateProductSpu(fields);
@@ -62,6 +73,9 @@ const handleUpdate = async (fields: ProductSpuListItem & GovernanceScopeValue) =
     return true;
   } catch (error) {
     hide();
+    const catalogError = buildCatalogActionError(error, '商品 SPU 更新失败');
+    onError?.(catalogError);
+    message.error(catalogError.description);
     return false;
   }
 };
@@ -124,6 +138,7 @@ const ProductSpuList: React.FC = () => {
   const [currentRow, setCurrentRow] = useState<ProductSpuListItem>();
   const [skuVisible, handleSkuVisible] = useState<boolean>(false);
   const [scope, setScope] = useState<GovernanceScopeValue>(defaultGovernanceScope);
+  const [submitError, setSubmitError] = useState<CatalogActionError>();
 
   const showDeleteConfirm = (ids: number[]) => {
     confirm({
@@ -591,6 +606,17 @@ return (
         message={`当前查询范围：${buildGovernanceScopeLabel(scope)}`}
         description="平台管理员可切换到租户/商户视角查看商品；租户和商户账号只会看到自己的主体数据。"
       />
+      {submitError && (
+        <Alert
+          showIcon
+          closable
+          type="error"
+          style={{ marginBottom: 16 }}
+          message={submitError.title}
+          description={submitError.description}
+          onClose={() => setSubmitError(undefined)}
+        />
+      )}
       <ProTable<ProductSpuListItem>
         headerTitle="商品SPU管理"
         actionRef={actionRef}
@@ -646,7 +672,8 @@ return (
       <AddModal
         key={'AddModal'}
         onSubmit={async (value) => {
-          const success = await handleAdd(value, scope);
+          setSubmitError(undefined);
+          const success = await handleAdd(value, scope, setSubmitError);
           if (success) {
             handleAddVisible(false);
             setCurrentRow(undefined);
@@ -667,7 +694,8 @@ return (
       <UpdateModal
         key={'UpdateModal'}
         onSubmit={async (value) => {
-          const success = await handleUpdate({...value, ...toGovernancePayload(scope)});
+          setSubmitError(undefined);
+          const success = await handleUpdate({...value, ...toGovernancePayload(scope)}, setSubmitError);
           if (success) {
             handleUpdateVisible(false);
             setCurrentRow(undefined);

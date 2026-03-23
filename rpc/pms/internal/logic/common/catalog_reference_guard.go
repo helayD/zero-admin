@@ -174,11 +174,11 @@ func EnsureCategoryAttributeBindings(ctx context.Context, db *gorm.DB, current p
 		}
 
 		if !current.SameScope(pkgscope.DefaultScope(row.PlatformID, row.TenantID, row.MerchantID)) {
-			return fmt.Errorf("绑定的商品属性与当前主体作用域不一致: %d", attrID)
+			return fmt.Errorf("绑定的商品属性与当前主体 scope 不一致: %d", attrID)
 		}
 
 		if row.Status != 1 {
-			return fmt.Errorf("只能绑定启用状态的商品属性: %d", attrID)
+			return fmt.Errorf("绑定的商品属性当前状态不可绑定: %d", attrID)
 		}
 	}
 

@@ -183,6 +183,7 @@ func buildSkuStockList(req *types.AddProductSpuReq) []*pmsclient.SkuStockList {
 	for _, item := range req.SkuList {
 		skuStockLists = append(skuStockLists, &pmsclient.SkuStockList{
 			Name:               item.Name,               // SKU名称
+			SkuCode:            item.SkuCode,            // SKU编码
 			MainPic:            item.MainPic,            // 主图
 			AlbumPics:          item.AlbumPics,          // 图片集
 			Price:              item.Price,              // 价格

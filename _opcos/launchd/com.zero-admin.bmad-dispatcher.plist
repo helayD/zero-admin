@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.zero-admin.bmad-dispatcher</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/helay/Documents/GitHub/zero-admin/_opcos/scripts/zero-admin-bmad-dispatch.sh</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>StartInterval</key>
+    <integer>900</integer>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/helay/Documents/GitHub/zero-admin</string>
+
+    <key>StandardOutPath</key>
+    <string>/Users/helay/Documents/GitHub/zero-admin/_opcos/automation-state/dispatcher.stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/helay/Documents/GitHub/zero-admin/_opcos/automation-state/dispatcher.stderr.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>HOME</key>
+        <string>/Users/helay</string>
+    </dict>
+</dict>
+</plist>
