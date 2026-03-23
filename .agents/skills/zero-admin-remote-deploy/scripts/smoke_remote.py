@@ -114,7 +114,7 @@ def run_front_smoke(base_url: str) -> Tuple[Dict[str, Any], Dict[str, Any]]:
 
     checks = {
         "home_index": "/api/home/index",
-        "product_list": "/api/product/queryProductList?current=1&pageSize=10",
+        "product_list": "/api/product/queryProductList?productCategoryId=1&current=1&pageSize=10",
     }
 
     for name, path in checks.items():
