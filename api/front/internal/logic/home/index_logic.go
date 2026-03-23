@@ -63,8 +63,8 @@ func querySubjectList(l *IndexLogic, req *types.HomeReq, currentScope pkgscope.G
 		Scope:           frontcommon.CMSGovernanceScope(currentScope),
 	})
 
-	// 没有推荐专题的时候返回空数据
-	if err != nil {
+	if err != nil || res == nil {
+		l.Errorf("querySubjectList failed: err=%v", err)
 		return list
 	}
 
@@ -93,7 +93,7 @@ func querySubjectList(l *IndexLogic, req *types.HomeReq, currentScope pkgscope.G
 
 // 人气推荐
 func queryHotProductList(l *IndexLogic, req *types.HomeReq, currentScope pkgscope.GovernanceScope) []types.IndexProductData {
-	var resp, _ = l.svcCtx.ProductSpuService.QueryProductSpuList(l.ctx, &pmsclient.QueryProductSpuListReq{
+	resp, err := l.svcCtx.ProductSpuService.QueryProductSpuList(l.ctx, &pmsclient.QueryProductSpuListReq{
 		PageNum:         1,
 		PageSize:        req.HotProductNumber,
 		Name:            "",
@@ -109,6 +109,10 @@ func queryHotProductList(l *IndexLogic, req *types.HomeReq, currentScope pkgscop
 	})
 
 	var list []types.IndexProductData
+	if err != nil || resp == nil {
+		l.Errorf("queryHotProductList failed: err=%v", err)
+		return list
+	}
 
 	for _, detail := range resp.List {
 		price := strings.Split(detail.PriceRange, "-")[0]
@@ -150,7 +154,7 @@ func queryHotProductList(l *IndexLogic, req *types.HomeReq, currentScope pkgscop
 
 // 新品推荐
 func queryNewProductList(l *IndexLogic, req *types.HomeReq, currentScope pkgscope.GovernanceScope) []types.IndexProductData {
-	var resp, _ = l.svcCtx.ProductSpuService.QueryProductSpuList(l.ctx, &pmsclient.QueryProductSpuListReq{
+	resp, err := l.svcCtx.ProductSpuService.QueryProductSpuList(l.ctx, &pmsclient.QueryProductSpuListReq{
 		PageNum:         1,
 		PageSize:        req.NewProductNumber,
 		CategoryId:      0, // 商品分类ID
@@ -165,6 +169,10 @@ func queryNewProductList(l *IndexLogic, req *types.HomeReq, currentScope pkgscop
 	})
 
 	var list []types.IndexProductData
+	if err != nil || resp == nil {
+		l.Errorf("queryNewProductList failed: err=%v", err)
+		return list
+	}
 
 	for _, detail := range resp.List {
 		price := strings.Split(detail.PriceRange, "-")[0]
@@ -270,7 +278,7 @@ func queryHomeFlashPromotion(l *IndexLogic, req *types.HomeReq) types.HomeFlashP
 
 // 推荐品牌
 func queryBrandList(l *IndexLogic, req *types.HomeReq) []types.IndexBrandData {
-	result, _ := l.svcCtx.ProductBrandService.QueryProductBrandList(l.ctx, &pmsclient.QueryProductBrandListReq{
+	result, err := l.svcCtx.ProductBrandService.QueryProductBrandList(l.ctx, &pmsclient.QueryProductBrandListReq{
 		PageNum:         1,
 		PageSize:        req.BrandNumber,
 		Name:            "", // 品牌名称
@@ -279,6 +287,10 @@ func queryBrandList(l *IndexLogic, req *types.HomeReq) []types.IndexBrandData {
 	})
 
 	var list []types.IndexBrandData
+	if err != nil || result == nil {
+		l.Errorf("queryBrandList failed: err=%v", err)
+		return list
+	}
 
 	for _, detail := range result.List {
 		list = append(list, types.IndexBrandData{
@@ -300,7 +312,7 @@ func queryBrandList(l *IndexLogic, req *types.HomeReq) []types.IndexBrandData {
 
 // 获取轮播广告
 func queryAdvertiseList(l *IndexLogic) []types.AdvertiseList {
-	result, _ := l.svcCtx.HomeAdvertiseService.QueryHomeAdvertiseList(l.ctx, &smsclient.QueryHomeAdvertiseListReq{
+	result, err := l.svcCtx.HomeAdvertiseService.QueryHomeAdvertiseList(l.ctx, &smsclient.QueryHomeAdvertiseListReq{
 		PageNum:  1,
 		PageSize: 100,
 		Type:     1, // 轮播位置：0->PC首页轮播；1->app首页轮播
@@ -308,6 +320,10 @@ func queryAdvertiseList(l *IndexLogic) []types.AdvertiseList {
 	})
 
 	var list []types.AdvertiseList
+	if err != nil || result == nil {
+		l.Errorf("queryAdvertiseList failed: err=%v", err)
+		return list
+	}
 
 	for _, detail := range result.List {
 		list = append(list, types.AdvertiseList{
