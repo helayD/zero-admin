@@ -131,6 +131,12 @@
         path: '/log/sysLog/list',
         component: './log/OperateLog',
       },
+      {
+        name: '治理审计中心',
+        icon: 'table',
+        path: '/log/auditCenter/list',
+        component: './log/AuditCenter',
+      },
     ],
   },
   {

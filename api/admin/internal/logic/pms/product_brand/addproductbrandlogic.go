@@ -9,16 +9,10 @@ import (
 	"github.com/feihua/zero-admin/api/admin/internal/types"
 	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
 	"github.com/zeromicro/go-zero/core/logc"
-	"google.golang.org/grpc/status"
-
 	"github.com/zeromicro/go-zero/core/logx"
+	"google.golang.org/grpc/status"
 )
 
-// AddProductBrandLogic 添加商品品牌
-/*
-Author: LiuFeiHua
-Date: 2025/05/26 10:33:54
-*/
 type AddProductBrandLogic struct {
 	logx.Logger
 	ctx    context.Context
@@ -26,36 +20,22 @@ type AddProductBrandLogic struct {
 }
 
 func NewAddProductBrandLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AddProductBrandLogic {
-	return &AddProductBrandLogic{
-		Logger: logx.WithContext(ctx),
-		ctx:    ctx,
-		svcCtx: svcCtx,
-	}
+	return &AddProductBrandLogic{Logger: logx.WithContext(ctx), ctx: ctx, svcCtx: svcCtx}
 }
-
-// AddProductBrand 添加商品品牌
-func (l *AddProductBrandLogic) AddProductBrand(req *types.AddProductBrandReq) (resp *types.BaseResp, err error) {
+func (l *AddProductBrandLogic) AddProductBrand(req *types.AddProductBrandReq) (*types.BaseResp, error) {
 	userId, err := common.GetUserId(l.ctx)
 	if err != nil {
 		return nil, err
 	}
-	_, err = l.svcCtx.ProductBrandService.AddProductBrand(l.ctx, &pmsclient.AddProductBrandReq{
-		Name:            req.Name,            // 品牌名称
-		Logo:            req.Logo,            // 品牌logo
-		BigPic:          req.BigPic,          // 专区大图
-		Description:     req.Description,     // 描述
-		FirstLetter:     req.FirstLetter,     // 首字母
-		Sort:            req.Sort,            // 排序
-		RecommendStatus: req.RecommendStatus, // 推荐状态
-		IsEnabled:       req.IsEnabled,       // 是否启用
-		CreateBy:        userId,              // 创建人ID
-	})
-
+	writeScope, err := common.ResolveWriteGovernanceScope(l.ctx, common.RequestedGovernanceScope{ScopeType: req.ScopeType, PlatformID: req.PlatformId, TenantID: req.TenantId, MerchantID: req.MerchantId})
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
+	_, err = l.svcCtx.ProductBrandService.AddProductBrand(l.ctx, &pmsclient.AddProductBrandReq{Name: req.Name, Logo: req.Logo, BigPic: req.BigPic, Description: req.Description, FirstLetter: req.FirstLetter, Sort: req.Sort, RecommendStatus: req.RecommendStatus, IsEnabled: req.IsEnabled, CreateBy: userId, Scope: common.PMSGovernanceScope(writeScope)})
 	if err != nil {
 		logc.Errorf(l.ctx, "添加商品品牌失败,参数：%+v,响应：%s", req, err.Error())
 		s, _ := status.FromError(err)
 		return nil, errorx.NewDefaultError(s.Message())
 	}
-
 	return res.Success()
 }

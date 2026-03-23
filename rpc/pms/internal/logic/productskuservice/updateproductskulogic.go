@@ -4,13 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/feihua/zero-admin/rpc/pms/gen/model"
-	"github.com/feihua/zero-admin/rpc/pms/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/pms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/pms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
-	"time"
+	"gorm.io/gorm"
 )
 
 // UpdateProductSkuLogic 更新商品SKU
@@ -34,49 +36,122 @@ func NewUpdateProductSkuLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 
 // UpdateProductSku 更新商品SKU
 func (l *UpdateProductSkuLogic) UpdateProductSku(in *pmsclient.UpdateProductSkuReq) (*pmsclient.UpdateProductSkuResp, error) {
-	q := query.PmsProductSku
+	if len(in.Data) == 0 {
+		return nil, errors.New("缺少待更新的商品SKU")
+	}
+
+	currentScope, err := logiccommon.ResolveWriteScope(l.ctx, l.svcCtx.DB, in.Scope, in.Data[0].UpdateBy)
+	if err != nil {
+		return nil, err
+	}
 
 	var skuIds []int64
-	var skuStockList []*model.PmsProductSku
+	var spuIDs []int64
+	validationList := make([]logiccommon.ProductDraftSku, 0, len(in.Data))
+	updates := make([]*model.PmsProductSku, 0, len(in.Data))
 	for _, item := range in.Data {
 		skuIds = append(skuIds, item.Id)
-		elems := &model.PmsProductSku{
-			ID:             item.Id,                      // 商品SpuId
-			SpuID:          item.SpuId,                   // 商品SpuId
-			Name:           item.Name,                    // SKU名称
-			SkuCode:        item.SkuCode,                 // SKU编码
-			MainPic:        item.MainPic,                 // 主图
-			AlbumPics:      item.AlbumPics,               // 图片集
-			Price:          float64(item.Price),          // 价格
-			PromotionPrice: float64(item.PromotionPrice), // 单品促销价格
-			Stock:          item.Stock,                   // 库存
-			LowStock:       item.LowStock,                // 预警库存
-			SpecData:       item.SpecData,                // 规格数据
-			Weight:         float64(item.Weight),         // 重量(kg)
-			PublishStatus:  item.PublishStatus,           // 上架状态：0-下架，1-上架
-			VerifyStatus:   item.VerifyStatus,            // 审核状态：0-未审核，1-审核通过，2-审核不通过
-			Sort:           item.Sort,                    // 排序
-			UpdateBy:       &item.UpdateBy,               // 更新人ID
+		spuIDs = append(spuIDs, item.SpuId)
+		updateItem := &model.PmsProductSku{
+			ID:             item.Id,
+			SpuID:          item.SpuId,
+			Name:           item.Name,
+			SkuCode:        item.SkuCode,
+			MainPic:        item.MainPic,
+			AlbumPics:      item.AlbumPics,
+			Price:          float64(item.Price),
+			PromotionPrice: float64(item.PromotionPrice),
+			Stock:          item.Stock,
+			LowStock:       item.LowStock,
+			SpecData:       item.SpecData,
+			Weight:         float64(item.Weight),
+			PublishStatus:  item.PublishStatus,
+			VerifyStatus:   item.VerifyStatus,
+			Sort:           item.Sort,
 		}
-
 		if len(item.PromotionStartTime) > 0 {
 			startTime, _ := time.Parse("2006-01-02 15:04:05", item.PromotionStartTime)
 			endTime, _ := time.Parse("2006-01-02 15:04:05", item.PromotionEndTime)
-			elems.PromotionStartTime = &startTime // 促销开始时间
-			elems.PromotionEndTime = &endTime     // 促销结束时间
+			updateItem.PromotionStartTime = &startTime
+			updateItem.PromotionEndTime = &endTime
 		}
-		skuStockList = append(skuStockList, elems)
+		updates = append(updates, updateItem)
+		validationList = append(validationList, logiccommon.ProductDraftSku{
+			ID:             item.Id,
+			SpuID:          item.SpuId,
+			Name:           item.Name,
+			SkuCode:        item.SkuCode,
+			Price:          item.Price,
+			PromotionPrice: item.PromotionPrice,
+			Stock:          item.Stock,
+			LowStock:       item.LowStock,
+			SpecData:       item.SpecData,
+		})
 	}
-	// 1.先删除
-	_, err := q.WithContext(l.ctx).Where(q.ID.In(skuIds...)).Delete()
-	if err != nil {
-		logc.Errorf(l.ctx, "更新sku的库存失败,参数:%+v,异常:%s", in, err.Error())
-		return nil, errors.New("更新sku的库存失败")
+	if _, err := logiccommon.EnsureSkuScope(l.ctx, l.svcCtx.DB, currentScope, skuIds, "pms.product_sku.update", in.Data[0].UpdateBy, "", "update sku"); err != nil {
+		return nil, err
+	}
+	if _, err := logiccommon.EnsureProductScope(l.ctx, l.svcCtx.DB, currentScope, spuIDs, "pms.product_sku.update_parent", in.Data[0].UpdateBy, "", "update sku parent"); err != nil {
+		return nil, errors.New("当前主体无权把SKU绑定到所选商品SPU")
 	}
 
-	// 2.后添加
-	err = q.WithContext(l.ctx).CreateInBatches(skuStockList, len(skuStockList))
+	err = l.svcCtx.DB.WithContext(l.ctx).Transaction(func(tx *gorm.DB) error {
+		spuTouched := make(map[int64]struct{})
+		for idx, draft := range validationList {
+			validatedSet, err := logiccommon.ComposeSkuValidationSet(l.ctx, tx, draft.SpuID, []logiccommon.ProductDraftSku{draft}, skuIds)
+			if err != nil {
+				return err
+			}
+			ignoreIDs := map[int64]struct{}{draft.ID: struct{}{}}
+			generatedCode, err := logiccommon.EnsureSkuCode(l.ctx, tx, currentScope, draft.SpuID, draft.SkuCode, draft.SpecData, draft.Name, ignoreIDs)
+			if err != nil {
+				return fmt.Errorf("SKU编码冲突: %w", err)
+			}
+			validatedSet[len(validatedSet)-1].SkuCode = generatedCode
+			if _, err := logiccommon.ValidateSkuDrafts(l.ctx, tx, currentScope, validatedSet, 0); err != nil {
+				return err
+			}
+			updates[idx].SkuCode = generatedCode
+			spuTouched[draft.SpuID] = struct{}{}
+		}
 
+		now := time.Now()
+		for _, item := range updates {
+			changes := map[string]interface{}{
+				"spu_id":          item.SpuID,
+				"name":            item.Name,
+				"sku_code":        item.SkuCode,
+				"main_pic":        item.MainPic,
+				"album_pics":      item.AlbumPics,
+				"price":           item.Price,
+				"promotion_price": item.PromotionPrice,
+				"promotion_start_time": item.PromotionStartTime,
+				"promotion_end_time":   item.PromotionEndTime,
+				"stock":                item.Stock,
+				"low_stock":            item.LowStock,
+				"spec_data":            item.SpecData,
+				"weight":               item.Weight,
+				"publish_status":       item.PublishStatus,
+				"verify_status":        item.VerifyStatus,
+				"sort":                 item.Sort,
+				"update_by":            in.Data[0].UpdateBy,
+				"update_time":          now,
+			}
+			if err := tx.WithContext(l.ctx).Table("pms_product_sku").Where("id = ?", item.ID).Updates(changes).Error; err != nil {
+				return err
+			}
+			if err := logiccommon.ApplySkuScope(l.ctx, tx, item.ID, currentScope); err != nil {
+				return err
+			}
+		}
+
+		for spuID := range spuTouched {
+			if err := logiccommon.RefreshSpuDraftSummary(l.ctx, tx, currentScope, spuID); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 	if err != nil {
 		logc.Errorf(l.ctx, "更新sku的库存失败,参数:%+v,异常:%s", in, err.Error())
 		return nil, errors.New(fmt.Sprintf("更新sku的库存失败,错误信息:%s", err.Error()))

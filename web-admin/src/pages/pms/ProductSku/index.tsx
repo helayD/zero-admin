@@ -1,5 +1,5 @@
 import {DeleteOutlined, EditOutlined, ExclamationCircleOutlined, PlusOutlined} from '@ant-design/icons';
-import {Button, Divider, Drawer, message, Modal, Select, Space, Switch} from 'antd';
+import {Alert, Button, Divider, Drawer, message, Modal, Select, Space, Switch} from 'antd';
 import React, {useRef, useState} from 'react';
 import type {ActionType, ProColumns} from '@ant-design/pro-table';
 import ProTable from '@ant-design/pro-table';
@@ -8,7 +8,8 @@ import ProDescriptions from '@ant-design/pro-descriptions';
 import AddModal from './components/AddModal';
 import UpdateModal from './components/UpdateModal';
 import type { ProductSkuListItem} from './data.d';
-import {addProductSku, queryProductSkuList, removeProductSku, updateProductSku, updateProductSkuStatus} from './service';
+import {addProductSku, queryProductSkuList, removeProductSku, updateProductSku} from './service';
+import { buildCatalogActionError, type CatalogActionError } from '@/pages/pms/errorFeedback';
 import { defaultGovernanceScope, type GovernanceScopeValue, toGovernancePayload } from '@/pages/system/components/governance';
 
 const {confirm} = Modal;
@@ -17,15 +18,23 @@ const {confirm} = Modal;
  * 添加商品SKU
  * @param fields
  */
-const handleAdd = async (fields: ProductSkuListItem) => {
+const handleAdd = async (
+  fields: ProductSkuListItem,
+  scope: GovernanceScopeValue,
+  spuId: number,
+  onError?: (error: CatalogActionError) => void,
+) => {
   const hide = message.loading('正在添加');
   try {
-    await addProductSku({...fields});
+    await addProductSku({...fields, spuId, ...toGovernancePayload(scope)});
     hide();
     message.success('添加成功');
     return true;
   } catch (error) {
     hide();
+    const catalogError = buildCatalogActionError(error, '商品 SKU 建档失败');
+    onError?.(catalogError);
+    message.error(catalogError.description);
     return false;
   }
 };
@@ -34,16 +43,26 @@ const handleAdd = async (fields: ProductSkuListItem) => {
  * 更新商品SKU
  * @param fields
  */
-const handleUpdate = async (fields: ProductSkuListItem) => {
+const handleUpdate = async (
+  fields: ProductSkuListItem,
+  scope: GovernanceScopeValue,
+  onError?: (error: CatalogActionError) => void,
+) => {
   const hide = message.loading('正在更新');
   try {
-    await updateProductSku(fields);
+    await updateProductSku({
+      data: [fields],
+      ...toGovernancePayload(scope),
+    });
     hide();
 
     message.success('更新成功');
     return true;
   } catch (error) {
     hide();
+    const catalogError = buildCatalogActionError(error, '商品 SKU 更新失败');
+    onError?.(catalogError);
+    message.error(catalogError.description);
     return false;
   }
 };
@@ -52,11 +71,11 @@ const handleUpdate = async (fields: ProductSkuListItem) => {
  *  删除商品SKU
  * @param ids
  */
-const handleRemove = async (ids: number[]) => {
+const handleRemove = async (ids: number[], scope: GovernanceScopeValue) => {
   const hide = message.loading('正在删除');
   if (ids.length === 0) return true;
   try {
-    await removeProductSku(ids);
+    await removeProductSku(ids, toGovernancePayload(scope));
     hide();
     message.success('删除成功，即将刷新');
     return true;
@@ -68,17 +87,29 @@ const handleRemove = async (ids: number[]) => {
 
 /**
  * 更新商品SKU状态
- * @param ids
+ * @param rows
+ * @param field
  * @param status
  */
-const handleStatus = async (ids: number[], status: number) => {
+const handleStatus = async (
+  rows: ProductSkuListItem[],
+  field: 'publishStatus' | 'verifyStatus',
+  status: number,
+  scope: GovernanceScopeValue,
+) => {
   const hide = message.loading('正在更新状态');
-  if (ids.length == 0) {
+  if (rows.length == 0) {
     hide();
     return true;
   }
   try {
-    await updateProductSkuStatus({ productSkuIds: ids, productSkuStatus: status});
+    await updateProductSku({
+      data: rows.map((row) => ({
+        ...row,
+        [field]: status,
+      })),
+      ...toGovernancePayload(scope),
+    });
     hide();
     message.success('更新状态成功');
     return true;
@@ -98,15 +129,16 @@ const ProductSkuList: React.FC<SignProps> = (props) => {
   const [showDetail, setShowDetail] = useState<boolean>(false);
   const actionRef = useRef<ActionType>();
   const [currentRow, setCurrentRow] = useState<ProductSkuListItem>();
+  const [submitError, setSubmitError] = useState<CatalogActionError>();
   const effectiveScope = props.scope || defaultGovernanceScope;
 
   const showDeleteConfirm = (ids: number[]) => {
     confirm({
       title: '是否删除记录?',
       icon: <ExclamationCircleOutlined/>,
-      content: '删除的记录不能恢复,请确认!',
+      content: `当前主体：${effectiveScope.scopeLabel || '默认范围'}。删除后不可恢复，请确认。`,
       onOk() {
-        handleRemove(ids).then(() => {
+        handleRemove(ids, effectiveScope).then(() => {
           actionRef.current?.reloadAndRest?.();
         });
       },
@@ -115,12 +147,17 @@ const ProductSkuList: React.FC<SignProps> = (props) => {
     });
   };
 
-  const showStatusConfirm = (ids: number[], status: number) => {
+  const showStatusConfirm = (
+    rows: ProductSkuListItem[],
+    field: 'publishStatus' | 'verifyStatus',
+    status: number,
+  ) => {
     confirm({
-      title: `确定${status == 1 ? "启用" : "禁用"}吗？`,
+      title: `确定${status == 1 ? '启用' : '停用'}${field === 'publishStatus' ? '上架' : '审核'}状态吗？`,
       icon: <ExclamationCircleOutlined/>,
+      content: `当前主体：${effectiveScope.scopeLabel || '默认范围'}。将影响 ${rows.length} 个 SKU。`,
       async onOk() {
-        await handleStatus(ids, status)
+        await handleStatus(rows, field, status, effectiveScope)
         actionRef.current?.clearSelected?.();
         actionRef.current?.reload?.();
       },
@@ -233,7 +270,7 @@ const ProductSkuList: React.FC<SignProps> = (props) => {
           <Switch
             checked={entity.publishStatus == 1}
             onChange={(flag) => {
-              showStatusConfirm([entity.id], flag ? 1 : 0);
+              showStatusConfirm([entity], 'publishStatus', flag ? 1 : 0);
             }}
           />
         );
@@ -259,7 +296,7 @@ const ProductSkuList: React.FC<SignProps> = (props) => {
           <Switch
             checked={entity.verifyStatus == 1}
             onChange={(flag) => {
-              showStatusConfirm([entity.id], flag ? 1 : 0);
+              showStatusConfirm([entity], 'verifyStatus', flag ? 1 : 0);
             }}
           />
         );
@@ -321,7 +358,7 @@ const ProductSkuList: React.FC<SignProps> = (props) => {
             key="delete"
             style={{ color: '#ff4d4f' }}
             onClick={() => {
-              showDeleteConfirm([record.id]);
+              showDeleteConfirm([record.id as number]);
             }}
           >
             <DeleteOutlined /> 删除
@@ -333,6 +370,17 @@ const ProductSkuList: React.FC<SignProps> = (props) => {
 
 return (
     <>
+      {submitError && (
+        <Alert
+          showIcon
+          closable
+          type="error"
+          style={{ marginBottom: 16 }}
+          message={submitError.title}
+          description={submitError.description}
+          onClose={() => setSubmitError(undefined)}
+        />
+      )}
       <ProTable<ProductSkuListItem>
         headerTitle="商品SKU管理"
         actionRef={actionRef}
@@ -370,7 +418,7 @@ return (
                              selectedRowKeys,
                              selectedRows,
                            }) => {
-          const ids = selectedRows.map((row) => row.id);
+          const ids = selectedRows.map((row) => row.id as number);
           return (
             <Space size={16}>
               <span>已选 {selectedRowKeys.length} 项</span>
@@ -378,16 +426,16 @@ return (
                 icon={<EditOutlined/>}
                 style={ {borderRadius: '5px'}}
                 onClick={async () => {
-                  showStatusConfirm(ids, 1)
+                  showStatusConfirm(selectedRows, 'publishStatus', 1)
                 }}
-              >批量启用</Button>
+              >批量上架</Button>
               <Button
                 icon={<EditOutlined/>}
                 style={ {borderRadius: '5px'} }
                 onClick={async () => {
-                  showStatusConfirm(ids, 0)
+                  showStatusConfirm(selectedRows, 'publishStatus', 0)
                 }}
-              >批量禁用</Button>
+              >批量下架</Button>
               <Button
                 icon={<DeleteOutlined/>}
                 danger
@@ -405,7 +453,8 @@ return (
       <AddModal
         key={'AddModal'}
         onSubmit={async (value) => {
-          const success = await handleAdd(value);
+          setSubmitError(undefined);
+          const success = await handleAdd(value, effectiveScope, props.spuId, setSubmitError);
           if (success) {
             handleAddVisible(false);
             setCurrentRow(undefined);
@@ -426,7 +475,12 @@ return (
       <UpdateModal
         key={'UpdateModal'}
         onSubmit={async (value) => {
-          const success = await handleUpdate(value);
+          setSubmitError(undefined);
+          const success = await handleUpdate({
+            ...currentRow,
+            ...value,
+            spuId: value.spuId || currentRow?.spuId || props.spuId,
+          }, effectiveScope, setSubmitError);
           if (success) {
             handleUpdateVisible(false);
             setCurrentRow(undefined);

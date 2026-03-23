@@ -3240,6 +3240,7 @@ type DeleteOrderReq struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Ids           []int64                `protobuf:"varint,1,rep,packed,name=ids,proto3" json:"ids,omitempty"`
 	MemberId      int64                  `protobuf:"varint,2,opt,name=MemberId,proto3" json:"MemberId,omitempty"`
+	Scope         *GovernanceScope       `protobuf:"bytes,3,opt,name=scope,proto3" json:"scope,omitempty"` //治理范围(platform/tenant/merchant)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3286,6 +3287,13 @@ func (x *DeleteOrderReq) GetMemberId() int64 {
 		return x.MemberId
 	}
 	return 0
+}
+
+func (x *DeleteOrderReq) GetScope() *GovernanceScope {
+	if x != nil {
+		return x.Scope
+	}
+	return nil
 }
 
 type DeleteOrderResp struct {
@@ -3341,6 +3349,8 @@ type UpdateOrderReq struct {
 	Remark             string                 `protobuf:"bytes,4,opt,name=remark,proto3" json:"remark,omitempty"`                                                     //订单备注
 	FreightAmount      float32                `protobuf:"fixed32,5,opt,name=freight_amount,json=freightAmount,proto3" json:"freight_amount,omitempty"`                //运费金额
 	OrderNo            string                 `protobuf:"bytes,6,opt,name=order_no,json=orderNo,proto3" json:"order_no,omitempty"`                                    //订单编号
+	DiscountAmount     float32                `protobuf:"fixed32,7,opt,name=discount_amount,json=discountAmount,proto3" json:"discount_amount,omitempty"`             //优惠金额
+	Scope              *GovernanceScope       `protobuf:"bytes,8,opt,name=scope,proto3" json:"scope,omitempty"`                                                       //治理范围(platform/tenant/merchant)
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -3415,6 +3425,20 @@ func (x *UpdateOrderReq) GetOrderNo() string {
 		return x.OrderNo
 	}
 	return ""
+}
+
+func (x *UpdateOrderReq) GetDiscountAmount() float32 {
+	if x != nil {
+		return x.DiscountAmount
+	}
+	return 0
+}
+
+func (x *UpdateOrderReq) GetScope() *GovernanceScope {
+	if x != nil {
+		return x.Scope
+	}
+	return nil
 }
 
 type UpdateOrderResp struct {
@@ -4570,6 +4594,7 @@ type DeliveryReq struct {
 	DeliverySn    string                 `protobuf:"bytes,2,opt,name=delivery_sn,json=deliverySn,proto3" json:"delivery_sn,omitempty"` //物流单号
 	OperatorId    int64                  `protobuf:"varint,3,opt,name=OperatorId,proto3" json:"OperatorId,omitempty"`
 	OrderNo       string                 `protobuf:"bytes,4,opt,name=OrderNo,proto3" json:"OrderNo,omitempty"`
+	Scope         *GovernanceScope       `protobuf:"bytes,5,opt,name=scope,proto3" json:"scope,omitempty"` //治理范围(platform/tenant/merchant)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4632,6 +4657,13 @@ func (x *DeliveryReq) GetOrderNo() string {
 	return ""
 }
 
+func (x *DeliveryReq) GetScope() *GovernanceScope {
+	if x != nil {
+		return x.Scope
+	}
+	return nil
+}
+
 type DeliveryResp struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Pong          string                 `protobuf:"bytes,1,opt,name=pong,proto3" json:"pong,omitempty"`
@@ -4682,6 +4714,7 @@ type CloseOrderReq struct {
 	Note          string                 `protobuf:"bytes,2,opt,name=Note,proto3" json:"Note,omitempty"`
 	OperatorId    int64                  `protobuf:"varint,3,opt,name=OperatorId,proto3" json:"OperatorId,omitempty"`
 	OrderNo       string                 `protobuf:"bytes,4,opt,name=OrderNo,proto3" json:"OrderNo,omitempty"`
+	Scope         *GovernanceScope       `protobuf:"bytes,5,opt,name=scope,proto3" json:"scope,omitempty"` //治理范围(platform/tenant/merchant)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4742,6 +4775,13 @@ func (x *CloseOrderReq) GetOrderNo() string {
 		return x.OrderNo
 	}
 	return ""
+}
+
+func (x *CloseOrderReq) GetScope() *GovernanceScope {
+	if x != nil {
+		return x.Scope
+	}
+	return nil
 }
 
 type CloseOrderResp struct {
@@ -9802,19 +9842,22 @@ const file_rpc_oms_oms_proto_rawDesc = "" +
 	"\x06remark\x18\x0e \x01(\tR\x06remark\x12@\n" +
 	"\x0forder_item_data\x18\x0f \x03(\v2\x18.omsclient.OrderItemDataR\rorderItemData\"\x1e\n" +
 	"\fAddOrderResp\x12\x0e\n" +
-	"\x02Id\x18\x01 \x01(\x03R\x02Id\">\n" +
+	"\x02Id\x18\x01 \x01(\x03R\x02Id\"p\n" +
 	"\x0eDeleteOrderReq\x12\x10\n" +
 	"\x03ids\x18\x01 \x03(\x03R\x03ids\x12\x1a\n" +
-	"\bMemberId\x18\x02 \x01(\x03R\bMemberId\"%\n" +
+	"\bMemberId\x18\x02 \x01(\x03R\bMemberId\x120\n" +
+	"\x05scope\x18\x03 \x01(\v2\x1a.omsclient.GovernanceScopeR\x05scope\"%\n" +
 	"\x0fDeleteOrderResp\x12\x12\n" +
-	"\x04pong\x18\x01 \x01(\tR\x04pong\"\xcf\x01\n" +
+	"\x04pong\x18\x01 \x01(\tR\x04pong\"\xaa\x02\n" +
 	"\x0eUpdateOrderReq\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12!\n" +
 	"\forder_status\x18\x02 \x01(\x05R\vorderStatus\x120\n" +
 	"\x14express_order_number\x18\x03 \x01(\tR\x12expressOrderNumber\x12\x16\n" +
 	"\x06remark\x18\x04 \x01(\tR\x06remark\x12%\n" +
 	"\x0efreight_amount\x18\x05 \x01(\x02R\rfreightAmount\x12\x19\n" +
-	"\border_no\x18\x06 \x01(\tR\aorderNo\"%\n" +
+	"\border_no\x18\x06 \x01(\tR\aorderNo\x12'\n" +
+	"\x0fdiscount_amount\x18\a \x01(\x02R\x0ediscountAmount\x120\n" +
+	"\x05scope\x18\b \x01(\v2\x1a.omsclient.GovernanceScopeR\x05scope\"%\n" +
 	"\x0fUpdateOrderResp\x12\x12\n" +
 	"\x04pong\x18\x01 \x01(\tR\x04pong\"r\n" +
 	"\x14UpdateOrderStatusReq\x12\x10\n" +
@@ -9936,7 +9979,7 @@ const file_rpc_oms_oms_proto_rawDesc = "" +
 	"\rdelivery_data\x18\x1c \x01(\v2\x17.omsclient.DeliveryDataR\fdeliveryData\"X\n" +
 	"\x12QueryOrderListResp\x12\x14\n" +
 	"\x05total\x18\x01 \x01(\x03R\x05total\x12,\n" +
-	"\x04list\x18\x02 \x03(\v2\x18.omsclient.OrderListDataR\x04list\"\x83\x01\n" +
+	"\x04list\x18\x02 \x03(\v2\x18.omsclient.OrderListDataR\x04list\"\xb5\x01\n" +
 	"\vDeliveryReq\x12\x19\n" +
 	"\border_id\x18\x01 \x01(\x03R\aorderId\x12\x1f\n" +
 	"\vdelivery_sn\x18\x02 \x01(\tR\n" +
@@ -9944,16 +9987,18 @@ const file_rpc_oms_oms_proto_rawDesc = "" +
 	"\n" +
 	"OperatorId\x18\x03 \x01(\x03R\n" +
 	"OperatorId\x12\x18\n" +
-	"\aOrderNo\x18\x04 \x01(\tR\aOrderNo\"\"\n" +
+	"\aOrderNo\x18\x04 \x01(\tR\aOrderNo\x120\n" +
+	"\x05scope\x18\x05 \x01(\v2\x1a.omsclient.GovernanceScopeR\x05scope\"\"\n" +
 	"\fDeliveryResp\x12\x12\n" +
-	"\x04pong\x18\x01 \x01(\tR\x04pong\"o\n" +
+	"\x04pong\x18\x01 \x01(\tR\x04pong\"\xa1\x01\n" +
 	"\rCloseOrderReq\x12\x10\n" +
 	"\x03Ids\x18\x01 \x03(\x03R\x03Ids\x12\x12\n" +
 	"\x04Note\x18\x02 \x01(\tR\x04Note\x12\x1e\n" +
 	"\n" +
 	"OperatorId\x18\x03 \x01(\x03R\n" +
 	"OperatorId\x12\x18\n" +
-	"\aOrderNo\x18\x04 \x01(\tR\aOrderNo\"$\n" +
+	"\aOrderNo\x18\x04 \x01(\tR\aOrderNo\x120\n" +
+	"\x05scope\x18\x05 \x01(\v2\x1a.omsclient.GovernanceScopeR\x05scope\"$\n" +
 	"\x0eCloseOrderResp\x12\x12\n" +
 	"\x04pong\x18\x01 \x01(\tR\x04pong\",\n" +
 	"\x16UpdateReceiverInfoResp\x12\x12\n" +
@@ -10581,149 +10626,153 @@ var file_rpc_oms_oms_proto_depIdxs = []int32{
 	20,  // 1: omsclient.QueryCompanyAddressListResp.list:type_name -> omsclient.CompanyAddressListData
 	32,  // 2: omsclient.QueryOrderDeliveryListResp.list:type_name -> omsclient.OrderDeliveryListData
 	34,  // 3: omsclient.AddOrderReq.order_item_data:type_name -> omsclient.OrderItemData
-	22,  // 4: omsclient.QueryOrderDetailReq.scope:type_name -> omsclient.GovernanceScope
-	50,  // 5: omsclient.QueryOrderDetailResp.data:type_name -> omsclient.OrderListData
-	22,  // 6: omsclient.QueryOrderListReq.scope:type_name -> omsclient.GovernanceScope
-	34,  // 7: omsclient.OrderListData.order_item_data:type_name -> omsclient.OrderItemData
-	46,  // 8: omsclient.OrderListData.opt_log_data:type_name -> omsclient.OrderOptLogData
-	47,  // 9: omsclient.OrderListData.promotion_data:type_name -> omsclient.PromotionListData
-	49,  // 10: omsclient.OrderListData.payment_data:type_name -> omsclient.PaymentData
-	48,  // 11: omsclient.OrderListData.delivery_data:type_name -> omsclient.DeliveryData
-	50,  // 12: omsclient.QueryOrderListResp.list:type_name -> omsclient.OrderListData
-	58,  // 13: omsclient.CancelOrderResp.data:type_name -> omsclient.ReleaseSkuStockLockData
-	67,  // 14: omsclient.QueryOrderOperationLogListResp.list:type_name -> omsclient.OrderOperationLogData
-	74,  // 15: omsclient.QueryOrderPaymentListResp.list:type_name -> omsclient.OrderPaymentData
-	83,  // 16: omsclient.QueryOrderPromotionListResp.list:type_name -> omsclient.OrderPromotionListData
-	86,  // 17: omsclient.OrderReturnReq.order_return_item:type_name -> omsclient.OrderReturnItemData
-	86,  // 18: omsclient.OrderReturnData.order_return_item:type_name -> omsclient.OrderReturnItemData
-	92,  // 19: omsclient.QueryOrderReturnListResp.list:type_name -> omsclient.OrderReturnData
-	105, // 20: omsclient.QueryOrderReturnReasonListResp.list:type_name -> omsclient.OrderReturnReasonListData
-	118, // 21: omsclient.QueryOrderSettingListResp.list:type_name -> omsclient.OrderSettingListData
-	0,   // 22: omsclient.CartItemService.AddCartItem:input_type -> omsclient.AddCartItemReq
-	2,   // 23: omsclient.CartItemService.DeleteCartItem:input_type -> omsclient.DeleteCartItemReq
-	3,   // 24: omsclient.CartItemService.UpdateCartItem:input_type -> omsclient.UpdateCartItemReq
-	4,   // 25: omsclient.CartItemService.UpdateCartItemQuantity:input_type -> omsclient.UpdateCartItemQuantityReq
-	5,   // 26: omsclient.CartItemService.QueryCartItemDetail:input_type -> omsclient.QueryCartItemDetailReq
-	7,   // 27: omsclient.CartItemService.QueryCartItemList:input_type -> omsclient.QueryCartItemListReq
-	9,   // 28: omsclient.CompanyAddressService.AddCompanyAddress:input_type -> omsclient.AddCompanyAddressReq
-	11,  // 29: omsclient.CompanyAddressService.DeleteCompanyAddress:input_type -> omsclient.DeleteCompanyAddressReq
-	13,  // 30: omsclient.CompanyAddressService.UpdateCompanyAddress:input_type -> omsclient.UpdateCompanyAddressReq
-	17,  // 31: omsclient.CompanyAddressService.QueryCompanyAddressDetail:input_type -> omsclient.QueryCompanyAddressDetailReq
-	19,  // 32: omsclient.CompanyAddressService.QueryCompanyAddressList:input_type -> omsclient.QueryCompanyAddressListReq
-	15,  // 33: omsclient.CompanyAddressService.UpdateCompanyAddressSendStatus:input_type -> omsclient.UpdateCompanyAddressStatusReq
-	15,  // 34: omsclient.CompanyAddressService.UpdateCompanyAddressReceiveStatus:input_type -> omsclient.UpdateCompanyAddressStatusReq
-	23,  // 35: omsclient.OrderDeliveryService.AddOrderDelivery:input_type -> omsclient.AddOrderDeliveryReq
-	25,  // 36: omsclient.OrderDeliveryService.DeleteOrderDelivery:input_type -> omsclient.DeleteOrderDeliveryReq
-	27,  // 37: omsclient.OrderDeliveryService.UpdateOrderDelivery:input_type -> omsclient.UpdateOrderDeliveryReq
-	29,  // 38: omsclient.OrderDeliveryService.QueryOrderDeliveryDetail:input_type -> omsclient.QueryOrderDeliveryDetailReq
-	31,  // 39: omsclient.OrderDeliveryService.QueryOrderDeliveryList:input_type -> omsclient.QueryOrderDeliveryListReq
-	35,  // 40: omsclient.OrderService.AddOrder:input_type -> omsclient.AddOrderReq
-	37,  // 41: omsclient.OrderService.DeleteOrder:input_type -> omsclient.DeleteOrderReq
-	39,  // 42: omsclient.OrderService.UpdateOrder:input_type -> omsclient.UpdateOrderReq
-	41,  // 43: omsclient.OrderService.UpdateOrderStatus:input_type -> omsclient.UpdateOrderStatusReq
-	43,  // 44: omsclient.OrderService.QueryOrderDetail:input_type -> omsclient.QueryOrderDetailReq
-	45,  // 45: omsclient.OrderService.QueryOrderList:input_type -> omsclient.QueryOrderListReq
-	52,  // 46: omsclient.OrderService.Delivery:input_type -> omsclient.DeliveryReq
-	54,  // 47: omsclient.OrderService.CloseOrder:input_type -> omsclient.CloseOrderReq
-	57,  // 48: omsclient.OrderService.CancelOrder:input_type -> omsclient.CancelOrderReq
-	60,  // 49: omsclient.OrderService.ConfirmOrder:input_type -> omsclient.ConfirmOrderReq
-	62,  // 50: omsclient.OrderService.QueryTimeOutOrderList:input_type -> omsclient.QueryTimeOutOrderListReq
-	63,  // 51: omsclient.OrderOperationLogService.AddOrderOperationLog:input_type -> omsclient.AddOrderOperationLogReq
-	65,  // 52: omsclient.OrderOperationLogService.QueryOrderOperationLogDetail:input_type -> omsclient.QueryOrderOperationLogDetailReq
-	66,  // 53: omsclient.OrderOperationLogService.QueryOrderOperationLogList:input_type -> omsclient.QueryOrderOperationLogListReq
-	69,  // 54: omsclient.OrderPaymentService.AddOrderPayment:input_type -> omsclient.OrderPaymentReq
-	71,  // 55: omsclient.OrderPaymentService.UpdateOrderPaymentStatus:input_type -> omsclient.UpdateOrderPaymentStatusReq
-	72,  // 56: omsclient.OrderPaymentService.QueryOrderPaymentDetail:input_type -> omsclient.QueryOrderPaymentDetailReq
-	73,  // 57: omsclient.OrderPaymentService.QueryOrderPaymentList:input_type -> omsclient.QueryOrderPaymentListReq
-	76,  // 58: omsclient.OrderPromotionService.AddOrderPromotion:input_type -> omsclient.AddOrderPromotionReq
-	78,  // 59: omsclient.OrderPromotionService.DeleteOrderPromotion:input_type -> omsclient.DeleteOrderPromotionReq
-	80,  // 60: omsclient.OrderPromotionService.QueryOrderPromotionDetail:input_type -> omsclient.QueryOrderPromotionDetailReq
-	82,  // 61: omsclient.OrderPromotionService.QueryOrderPromotionList:input_type -> omsclient.QueryOrderPromotionListReq
-	85,  // 62: omsclient.OrderReturnService.AddOrderReturn:input_type -> omsclient.OrderReturnReq
-	88,  // 63: omsclient.OrderReturnService.DeleteOrderReturn:input_type -> omsclient.DeleteOrderReturnReq
-	85,  // 64: omsclient.OrderReturnService.UpdateOrderReturn:input_type -> omsclient.OrderReturnReq
-	89,  // 65: omsclient.OrderReturnService.UpdateOrderReturnStatus:input_type -> omsclient.UpdateOrderReturnStatusReq
-	90,  // 66: omsclient.OrderReturnService.QueryOrderReturnDetail:input_type -> omsclient.QueryOrderReturnDetailReq
-	91,  // 67: omsclient.OrderReturnService.QueryOrderReturnList:input_type -> omsclient.QueryOrderReturnListReq
-	94,  // 68: omsclient.OrderReturnReasonService.AddOrderReturnReason:input_type -> omsclient.AddOrderReturnReasonReq
-	96,  // 69: omsclient.OrderReturnReasonService.DeleteOrderReturnReason:input_type -> omsclient.DeleteOrderReturnReasonReq
-	98,  // 70: omsclient.OrderReturnReasonService.UpdateOrderReturnReason:input_type -> omsclient.UpdateOrderReturnReasonReq
-	100, // 71: omsclient.OrderReturnReasonService.UpdateOrderReturnReasonStatus:input_type -> omsclient.UpdateOrderReturnReasonStatusReq
-	102, // 72: omsclient.OrderReturnReasonService.QueryOrderReturnReasonDetail:input_type -> omsclient.QueryOrderReturnReasonDetailReq
-	104, // 73: omsclient.OrderReturnReasonService.QueryOrderReturnReasonList:input_type -> omsclient.QueryOrderReturnReasonListReq
-	107, // 74: omsclient.OrderSettingService.AddOrderSetting:input_type -> omsclient.AddOrderSettingReq
-	109, // 75: omsclient.OrderSettingService.DeleteOrderSetting:input_type -> omsclient.DeleteOrderSettingReq
-	111, // 76: omsclient.OrderSettingService.UpdateOrderSetting:input_type -> omsclient.UpdateOrderSettingReq
-	113, // 77: omsclient.OrderSettingService.UpdateOrderSettingStatus:input_type -> omsclient.UpdateOrderSettingStatusReq
-	115, // 78: omsclient.OrderSettingService.QueryOrderSettingDetail:input_type -> omsclient.QueryOrderSettingDetailReq
-	117, // 79: omsclient.OrderSettingService.QueryOrderSettingList:input_type -> omsclient.QueryOrderSettingListReq
-	113, // 80: omsclient.OrderSettingService.UpdateOrderSettingDefaultStatus:input_type -> omsclient.UpdateOrderSettingStatusReq
-	120, // 81: omsclient.OrderSettingService.QueryDefaultSetting:input_type -> omsclient.QueryDefaultSettingReq
-	1,   // 82: omsclient.CartItemService.AddCartItem:output_type -> omsclient.CartItemResp
-	1,   // 83: omsclient.CartItemService.DeleteCartItem:output_type -> omsclient.CartItemResp
-	1,   // 84: omsclient.CartItemService.UpdateCartItem:output_type -> omsclient.CartItemResp
-	1,   // 85: omsclient.CartItemService.UpdateCartItemQuantity:output_type -> omsclient.CartItemResp
-	6,   // 86: omsclient.CartItemService.QueryCartItemDetail:output_type -> omsclient.CartItemData
-	8,   // 87: omsclient.CartItemService.QueryCartItemList:output_type -> omsclient.QueryCartItemListResp
-	10,  // 88: omsclient.CompanyAddressService.AddCompanyAddress:output_type -> omsclient.AddCompanyAddressResp
-	12,  // 89: omsclient.CompanyAddressService.DeleteCompanyAddress:output_type -> omsclient.DeleteCompanyAddressResp
-	14,  // 90: omsclient.CompanyAddressService.UpdateCompanyAddress:output_type -> omsclient.UpdateCompanyAddressResp
-	18,  // 91: omsclient.CompanyAddressService.QueryCompanyAddressDetail:output_type -> omsclient.QueryCompanyAddressDetailResp
-	21,  // 92: omsclient.CompanyAddressService.QueryCompanyAddressList:output_type -> omsclient.QueryCompanyAddressListResp
-	16,  // 93: omsclient.CompanyAddressService.UpdateCompanyAddressSendStatus:output_type -> omsclient.UpdateCompanyAddressStatusResp
-	16,  // 94: omsclient.CompanyAddressService.UpdateCompanyAddressReceiveStatus:output_type -> omsclient.UpdateCompanyAddressStatusResp
-	24,  // 95: omsclient.OrderDeliveryService.AddOrderDelivery:output_type -> omsclient.AddOrderDeliveryResp
-	26,  // 96: omsclient.OrderDeliveryService.DeleteOrderDelivery:output_type -> omsclient.DeleteOrderDeliveryResp
-	28,  // 97: omsclient.OrderDeliveryService.UpdateOrderDelivery:output_type -> omsclient.UpdateOrderDeliveryResp
-	30,  // 98: omsclient.OrderDeliveryService.QueryOrderDeliveryDetail:output_type -> omsclient.QueryOrderDeliveryDetailResp
-	33,  // 99: omsclient.OrderDeliveryService.QueryOrderDeliveryList:output_type -> omsclient.QueryOrderDeliveryListResp
-	36,  // 100: omsclient.OrderService.AddOrder:output_type -> omsclient.AddOrderResp
-	38,  // 101: omsclient.OrderService.DeleteOrder:output_type -> omsclient.DeleteOrderResp
-	40,  // 102: omsclient.OrderService.UpdateOrder:output_type -> omsclient.UpdateOrderResp
-	42,  // 103: omsclient.OrderService.UpdateOrderStatus:output_type -> omsclient.UpdateOrderStatusResp
-	44,  // 104: omsclient.OrderService.QueryOrderDetail:output_type -> omsclient.QueryOrderDetailResp
-	51,  // 105: omsclient.OrderService.QueryOrderList:output_type -> omsclient.QueryOrderListResp
-	53,  // 106: omsclient.OrderService.Delivery:output_type -> omsclient.DeliveryResp
-	55,  // 107: omsclient.OrderService.CloseOrder:output_type -> omsclient.CloseOrderResp
-	59,  // 108: omsclient.OrderService.CancelOrder:output_type -> omsclient.CancelOrderResp
-	61,  // 109: omsclient.OrderService.ConfirmOrder:output_type -> omsclient.ConfirmOrderResp
-	51,  // 110: omsclient.OrderService.QueryTimeOutOrderList:output_type -> omsclient.QueryOrderListResp
-	64,  // 111: omsclient.OrderOperationLogService.AddOrderOperationLog:output_type -> omsclient.AddOrderOperationLogResp
-	67,  // 112: omsclient.OrderOperationLogService.QueryOrderOperationLogDetail:output_type -> omsclient.OrderOperationLogData
-	68,  // 113: omsclient.OrderOperationLogService.QueryOrderOperationLogList:output_type -> omsclient.QueryOrderOperationLogListResp
-	70,  // 114: omsclient.OrderPaymentService.AddOrderPayment:output_type -> omsclient.OrderPaymentResp
-	70,  // 115: omsclient.OrderPaymentService.UpdateOrderPaymentStatus:output_type -> omsclient.OrderPaymentResp
-	74,  // 116: omsclient.OrderPaymentService.QueryOrderPaymentDetail:output_type -> omsclient.OrderPaymentData
-	75,  // 117: omsclient.OrderPaymentService.QueryOrderPaymentList:output_type -> omsclient.QueryOrderPaymentListResp
-	77,  // 118: omsclient.OrderPromotionService.AddOrderPromotion:output_type -> omsclient.AddOrderPromotionResp
-	79,  // 119: omsclient.OrderPromotionService.DeleteOrderPromotion:output_type -> omsclient.DeleteOrderPromotionResp
-	81,  // 120: omsclient.OrderPromotionService.QueryOrderPromotionDetail:output_type -> omsclient.QueryOrderPromotionDetailResp
-	84,  // 121: omsclient.OrderPromotionService.QueryOrderPromotionList:output_type -> omsclient.QueryOrderPromotionListResp
-	87,  // 122: omsclient.OrderReturnService.AddOrderReturn:output_type -> omsclient.OrderReturnResp
-	87,  // 123: omsclient.OrderReturnService.DeleteOrderReturn:output_type -> omsclient.OrderReturnResp
-	87,  // 124: omsclient.OrderReturnService.UpdateOrderReturn:output_type -> omsclient.OrderReturnResp
-	87,  // 125: omsclient.OrderReturnService.UpdateOrderReturnStatus:output_type -> omsclient.OrderReturnResp
-	92,  // 126: omsclient.OrderReturnService.QueryOrderReturnDetail:output_type -> omsclient.OrderReturnData
-	93,  // 127: omsclient.OrderReturnService.QueryOrderReturnList:output_type -> omsclient.QueryOrderReturnListResp
-	95,  // 128: omsclient.OrderReturnReasonService.AddOrderReturnReason:output_type -> omsclient.AddOrderReturnReasonResp
-	97,  // 129: omsclient.OrderReturnReasonService.DeleteOrderReturnReason:output_type -> omsclient.DeleteOrderReturnReasonResp
-	99,  // 130: omsclient.OrderReturnReasonService.UpdateOrderReturnReason:output_type -> omsclient.UpdateOrderReturnReasonResp
-	101, // 131: omsclient.OrderReturnReasonService.UpdateOrderReturnReasonStatus:output_type -> omsclient.UpdateOrderReturnReasonStatusResp
-	103, // 132: omsclient.OrderReturnReasonService.QueryOrderReturnReasonDetail:output_type -> omsclient.QueryOrderReturnReasonDetailResp
-	106, // 133: omsclient.OrderReturnReasonService.QueryOrderReturnReasonList:output_type -> omsclient.QueryOrderReturnReasonListResp
-	108, // 134: omsclient.OrderSettingService.AddOrderSetting:output_type -> omsclient.AddOrderSettingResp
-	110, // 135: omsclient.OrderSettingService.DeleteOrderSetting:output_type -> omsclient.DeleteOrderSettingResp
-	112, // 136: omsclient.OrderSettingService.UpdateOrderSetting:output_type -> omsclient.UpdateOrderSettingResp
-	114, // 137: omsclient.OrderSettingService.UpdateOrderSettingStatus:output_type -> omsclient.UpdateOrderSettingStatusResp
-	116, // 138: omsclient.OrderSettingService.QueryOrderSettingDetail:output_type -> omsclient.QueryOrderSettingDetailResp
-	119, // 139: omsclient.OrderSettingService.QueryOrderSettingList:output_type -> omsclient.QueryOrderSettingListResp
-	114, // 140: omsclient.OrderSettingService.UpdateOrderSettingDefaultStatus:output_type -> omsclient.UpdateOrderSettingStatusResp
-	116, // 141: omsclient.OrderSettingService.QueryDefaultSetting:output_type -> omsclient.QueryOrderSettingDetailResp
-	82,  // [82:142] is the sub-list for method output_type
-	22,  // [22:82] is the sub-list for method input_type
-	22,  // [22:22] is the sub-list for extension type_name
-	22,  // [22:22] is the sub-list for extension extendee
-	0,   // [0:22] is the sub-list for field type_name
+	22,  // 4: omsclient.DeleteOrderReq.scope:type_name -> omsclient.GovernanceScope
+	22,  // 5: omsclient.UpdateOrderReq.scope:type_name -> omsclient.GovernanceScope
+	22,  // 6: omsclient.QueryOrderDetailReq.scope:type_name -> omsclient.GovernanceScope
+	50,  // 7: omsclient.QueryOrderDetailResp.data:type_name -> omsclient.OrderListData
+	22,  // 8: omsclient.QueryOrderListReq.scope:type_name -> omsclient.GovernanceScope
+	34,  // 9: omsclient.OrderListData.order_item_data:type_name -> omsclient.OrderItemData
+	46,  // 10: omsclient.OrderListData.opt_log_data:type_name -> omsclient.OrderOptLogData
+	47,  // 11: omsclient.OrderListData.promotion_data:type_name -> omsclient.PromotionListData
+	49,  // 12: omsclient.OrderListData.payment_data:type_name -> omsclient.PaymentData
+	48,  // 13: omsclient.OrderListData.delivery_data:type_name -> omsclient.DeliveryData
+	50,  // 14: omsclient.QueryOrderListResp.list:type_name -> omsclient.OrderListData
+	22,  // 15: omsclient.DeliveryReq.scope:type_name -> omsclient.GovernanceScope
+	22,  // 16: omsclient.CloseOrderReq.scope:type_name -> omsclient.GovernanceScope
+	58,  // 17: omsclient.CancelOrderResp.data:type_name -> omsclient.ReleaseSkuStockLockData
+	67,  // 18: omsclient.QueryOrderOperationLogListResp.list:type_name -> omsclient.OrderOperationLogData
+	74,  // 19: omsclient.QueryOrderPaymentListResp.list:type_name -> omsclient.OrderPaymentData
+	83,  // 20: omsclient.QueryOrderPromotionListResp.list:type_name -> omsclient.OrderPromotionListData
+	86,  // 21: omsclient.OrderReturnReq.order_return_item:type_name -> omsclient.OrderReturnItemData
+	86,  // 22: omsclient.OrderReturnData.order_return_item:type_name -> omsclient.OrderReturnItemData
+	92,  // 23: omsclient.QueryOrderReturnListResp.list:type_name -> omsclient.OrderReturnData
+	105, // 24: omsclient.QueryOrderReturnReasonListResp.list:type_name -> omsclient.OrderReturnReasonListData
+	118, // 25: omsclient.QueryOrderSettingListResp.list:type_name -> omsclient.OrderSettingListData
+	0,   // 26: omsclient.CartItemService.AddCartItem:input_type -> omsclient.AddCartItemReq
+	2,   // 27: omsclient.CartItemService.DeleteCartItem:input_type -> omsclient.DeleteCartItemReq
+	3,   // 28: omsclient.CartItemService.UpdateCartItem:input_type -> omsclient.UpdateCartItemReq
+	4,   // 29: omsclient.CartItemService.UpdateCartItemQuantity:input_type -> omsclient.UpdateCartItemQuantityReq
+	5,   // 30: omsclient.CartItemService.QueryCartItemDetail:input_type -> omsclient.QueryCartItemDetailReq
+	7,   // 31: omsclient.CartItemService.QueryCartItemList:input_type -> omsclient.QueryCartItemListReq
+	9,   // 32: omsclient.CompanyAddressService.AddCompanyAddress:input_type -> omsclient.AddCompanyAddressReq
+	11,  // 33: omsclient.CompanyAddressService.DeleteCompanyAddress:input_type -> omsclient.DeleteCompanyAddressReq
+	13,  // 34: omsclient.CompanyAddressService.UpdateCompanyAddress:input_type -> omsclient.UpdateCompanyAddressReq
+	17,  // 35: omsclient.CompanyAddressService.QueryCompanyAddressDetail:input_type -> omsclient.QueryCompanyAddressDetailReq
+	19,  // 36: omsclient.CompanyAddressService.QueryCompanyAddressList:input_type -> omsclient.QueryCompanyAddressListReq
+	15,  // 37: omsclient.CompanyAddressService.UpdateCompanyAddressSendStatus:input_type -> omsclient.UpdateCompanyAddressStatusReq
+	15,  // 38: omsclient.CompanyAddressService.UpdateCompanyAddressReceiveStatus:input_type -> omsclient.UpdateCompanyAddressStatusReq
+	23,  // 39: omsclient.OrderDeliveryService.AddOrderDelivery:input_type -> omsclient.AddOrderDeliveryReq
+	25,  // 40: omsclient.OrderDeliveryService.DeleteOrderDelivery:input_type -> omsclient.DeleteOrderDeliveryReq
+	27,  // 41: omsclient.OrderDeliveryService.UpdateOrderDelivery:input_type -> omsclient.UpdateOrderDeliveryReq
+	29,  // 42: omsclient.OrderDeliveryService.QueryOrderDeliveryDetail:input_type -> omsclient.QueryOrderDeliveryDetailReq
+	31,  // 43: omsclient.OrderDeliveryService.QueryOrderDeliveryList:input_type -> omsclient.QueryOrderDeliveryListReq
+	35,  // 44: omsclient.OrderService.AddOrder:input_type -> omsclient.AddOrderReq
+	37,  // 45: omsclient.OrderService.DeleteOrder:input_type -> omsclient.DeleteOrderReq
+	39,  // 46: omsclient.OrderService.UpdateOrder:input_type -> omsclient.UpdateOrderReq
+	41,  // 47: omsclient.OrderService.UpdateOrderStatus:input_type -> omsclient.UpdateOrderStatusReq
+	43,  // 48: omsclient.OrderService.QueryOrderDetail:input_type -> omsclient.QueryOrderDetailReq
+	45,  // 49: omsclient.OrderService.QueryOrderList:input_type -> omsclient.QueryOrderListReq
+	52,  // 50: omsclient.OrderService.Delivery:input_type -> omsclient.DeliveryReq
+	54,  // 51: omsclient.OrderService.CloseOrder:input_type -> omsclient.CloseOrderReq
+	57,  // 52: omsclient.OrderService.CancelOrder:input_type -> omsclient.CancelOrderReq
+	60,  // 53: omsclient.OrderService.ConfirmOrder:input_type -> omsclient.ConfirmOrderReq
+	62,  // 54: omsclient.OrderService.QueryTimeOutOrderList:input_type -> omsclient.QueryTimeOutOrderListReq
+	63,  // 55: omsclient.OrderOperationLogService.AddOrderOperationLog:input_type -> omsclient.AddOrderOperationLogReq
+	65,  // 56: omsclient.OrderOperationLogService.QueryOrderOperationLogDetail:input_type -> omsclient.QueryOrderOperationLogDetailReq
+	66,  // 57: omsclient.OrderOperationLogService.QueryOrderOperationLogList:input_type -> omsclient.QueryOrderOperationLogListReq
+	69,  // 58: omsclient.OrderPaymentService.AddOrderPayment:input_type -> omsclient.OrderPaymentReq
+	71,  // 59: omsclient.OrderPaymentService.UpdateOrderPaymentStatus:input_type -> omsclient.UpdateOrderPaymentStatusReq
+	72,  // 60: omsclient.OrderPaymentService.QueryOrderPaymentDetail:input_type -> omsclient.QueryOrderPaymentDetailReq
+	73,  // 61: omsclient.OrderPaymentService.QueryOrderPaymentList:input_type -> omsclient.QueryOrderPaymentListReq
+	76,  // 62: omsclient.OrderPromotionService.AddOrderPromotion:input_type -> omsclient.AddOrderPromotionReq
+	78,  // 63: omsclient.OrderPromotionService.DeleteOrderPromotion:input_type -> omsclient.DeleteOrderPromotionReq
+	80,  // 64: omsclient.OrderPromotionService.QueryOrderPromotionDetail:input_type -> omsclient.QueryOrderPromotionDetailReq
+	82,  // 65: omsclient.OrderPromotionService.QueryOrderPromotionList:input_type -> omsclient.QueryOrderPromotionListReq
+	85,  // 66: omsclient.OrderReturnService.AddOrderReturn:input_type -> omsclient.OrderReturnReq
+	88,  // 67: omsclient.OrderReturnService.DeleteOrderReturn:input_type -> omsclient.DeleteOrderReturnReq
+	85,  // 68: omsclient.OrderReturnService.UpdateOrderReturn:input_type -> omsclient.OrderReturnReq
+	89,  // 69: omsclient.OrderReturnService.UpdateOrderReturnStatus:input_type -> omsclient.UpdateOrderReturnStatusReq
+	90,  // 70: omsclient.OrderReturnService.QueryOrderReturnDetail:input_type -> omsclient.QueryOrderReturnDetailReq
+	91,  // 71: omsclient.OrderReturnService.QueryOrderReturnList:input_type -> omsclient.QueryOrderReturnListReq
+	94,  // 72: omsclient.OrderReturnReasonService.AddOrderReturnReason:input_type -> omsclient.AddOrderReturnReasonReq
+	96,  // 73: omsclient.OrderReturnReasonService.DeleteOrderReturnReason:input_type -> omsclient.DeleteOrderReturnReasonReq
+	98,  // 74: omsclient.OrderReturnReasonService.UpdateOrderReturnReason:input_type -> omsclient.UpdateOrderReturnReasonReq
+	100, // 75: omsclient.OrderReturnReasonService.UpdateOrderReturnReasonStatus:input_type -> omsclient.UpdateOrderReturnReasonStatusReq
+	102, // 76: omsclient.OrderReturnReasonService.QueryOrderReturnReasonDetail:input_type -> omsclient.QueryOrderReturnReasonDetailReq
+	104, // 77: omsclient.OrderReturnReasonService.QueryOrderReturnReasonList:input_type -> omsclient.QueryOrderReturnReasonListReq
+	107, // 78: omsclient.OrderSettingService.AddOrderSetting:input_type -> omsclient.AddOrderSettingReq
+	109, // 79: omsclient.OrderSettingService.DeleteOrderSetting:input_type -> omsclient.DeleteOrderSettingReq
+	111, // 80: omsclient.OrderSettingService.UpdateOrderSetting:input_type -> omsclient.UpdateOrderSettingReq
+	113, // 81: omsclient.OrderSettingService.UpdateOrderSettingStatus:input_type -> omsclient.UpdateOrderSettingStatusReq
+	115, // 82: omsclient.OrderSettingService.QueryOrderSettingDetail:input_type -> omsclient.QueryOrderSettingDetailReq
+	117, // 83: omsclient.OrderSettingService.QueryOrderSettingList:input_type -> omsclient.QueryOrderSettingListReq
+	113, // 84: omsclient.OrderSettingService.UpdateOrderSettingDefaultStatus:input_type -> omsclient.UpdateOrderSettingStatusReq
+	120, // 85: omsclient.OrderSettingService.QueryDefaultSetting:input_type -> omsclient.QueryDefaultSettingReq
+	1,   // 86: omsclient.CartItemService.AddCartItem:output_type -> omsclient.CartItemResp
+	1,   // 87: omsclient.CartItemService.DeleteCartItem:output_type -> omsclient.CartItemResp
+	1,   // 88: omsclient.CartItemService.UpdateCartItem:output_type -> omsclient.CartItemResp
+	1,   // 89: omsclient.CartItemService.UpdateCartItemQuantity:output_type -> omsclient.CartItemResp
+	6,   // 90: omsclient.CartItemService.QueryCartItemDetail:output_type -> omsclient.CartItemData
+	8,   // 91: omsclient.CartItemService.QueryCartItemList:output_type -> omsclient.QueryCartItemListResp
+	10,  // 92: omsclient.CompanyAddressService.AddCompanyAddress:output_type -> omsclient.AddCompanyAddressResp
+	12,  // 93: omsclient.CompanyAddressService.DeleteCompanyAddress:output_type -> omsclient.DeleteCompanyAddressResp
+	14,  // 94: omsclient.CompanyAddressService.UpdateCompanyAddress:output_type -> omsclient.UpdateCompanyAddressResp
+	18,  // 95: omsclient.CompanyAddressService.QueryCompanyAddressDetail:output_type -> omsclient.QueryCompanyAddressDetailResp
+	21,  // 96: omsclient.CompanyAddressService.QueryCompanyAddressList:output_type -> omsclient.QueryCompanyAddressListResp
+	16,  // 97: omsclient.CompanyAddressService.UpdateCompanyAddressSendStatus:output_type -> omsclient.UpdateCompanyAddressStatusResp
+	16,  // 98: omsclient.CompanyAddressService.UpdateCompanyAddressReceiveStatus:output_type -> omsclient.UpdateCompanyAddressStatusResp
+	24,  // 99: omsclient.OrderDeliveryService.AddOrderDelivery:output_type -> omsclient.AddOrderDeliveryResp
+	26,  // 100: omsclient.OrderDeliveryService.DeleteOrderDelivery:output_type -> omsclient.DeleteOrderDeliveryResp
+	28,  // 101: omsclient.OrderDeliveryService.UpdateOrderDelivery:output_type -> omsclient.UpdateOrderDeliveryResp
+	30,  // 102: omsclient.OrderDeliveryService.QueryOrderDeliveryDetail:output_type -> omsclient.QueryOrderDeliveryDetailResp
+	33,  // 103: omsclient.OrderDeliveryService.QueryOrderDeliveryList:output_type -> omsclient.QueryOrderDeliveryListResp
+	36,  // 104: omsclient.OrderService.AddOrder:output_type -> omsclient.AddOrderResp
+	38,  // 105: omsclient.OrderService.DeleteOrder:output_type -> omsclient.DeleteOrderResp
+	40,  // 106: omsclient.OrderService.UpdateOrder:output_type -> omsclient.UpdateOrderResp
+	42,  // 107: omsclient.OrderService.UpdateOrderStatus:output_type -> omsclient.UpdateOrderStatusResp
+	44,  // 108: omsclient.OrderService.QueryOrderDetail:output_type -> omsclient.QueryOrderDetailResp
+	51,  // 109: omsclient.OrderService.QueryOrderList:output_type -> omsclient.QueryOrderListResp
+	53,  // 110: omsclient.OrderService.Delivery:output_type -> omsclient.DeliveryResp
+	55,  // 111: omsclient.OrderService.CloseOrder:output_type -> omsclient.CloseOrderResp
+	59,  // 112: omsclient.OrderService.CancelOrder:output_type -> omsclient.CancelOrderResp
+	61,  // 113: omsclient.OrderService.ConfirmOrder:output_type -> omsclient.ConfirmOrderResp
+	51,  // 114: omsclient.OrderService.QueryTimeOutOrderList:output_type -> omsclient.QueryOrderListResp
+	64,  // 115: omsclient.OrderOperationLogService.AddOrderOperationLog:output_type -> omsclient.AddOrderOperationLogResp
+	67,  // 116: omsclient.OrderOperationLogService.QueryOrderOperationLogDetail:output_type -> omsclient.OrderOperationLogData
+	68,  // 117: omsclient.OrderOperationLogService.QueryOrderOperationLogList:output_type -> omsclient.QueryOrderOperationLogListResp
+	70,  // 118: omsclient.OrderPaymentService.AddOrderPayment:output_type -> omsclient.OrderPaymentResp
+	70,  // 119: omsclient.OrderPaymentService.UpdateOrderPaymentStatus:output_type -> omsclient.OrderPaymentResp
+	74,  // 120: omsclient.OrderPaymentService.QueryOrderPaymentDetail:output_type -> omsclient.OrderPaymentData
+	75,  // 121: omsclient.OrderPaymentService.QueryOrderPaymentList:output_type -> omsclient.QueryOrderPaymentListResp
+	77,  // 122: omsclient.OrderPromotionService.AddOrderPromotion:output_type -> omsclient.AddOrderPromotionResp
+	79,  // 123: omsclient.OrderPromotionService.DeleteOrderPromotion:output_type -> omsclient.DeleteOrderPromotionResp
+	81,  // 124: omsclient.OrderPromotionService.QueryOrderPromotionDetail:output_type -> omsclient.QueryOrderPromotionDetailResp
+	84,  // 125: omsclient.OrderPromotionService.QueryOrderPromotionList:output_type -> omsclient.QueryOrderPromotionListResp
+	87,  // 126: omsclient.OrderReturnService.AddOrderReturn:output_type -> omsclient.OrderReturnResp
+	87,  // 127: omsclient.OrderReturnService.DeleteOrderReturn:output_type -> omsclient.OrderReturnResp
+	87,  // 128: omsclient.OrderReturnService.UpdateOrderReturn:output_type -> omsclient.OrderReturnResp
+	87,  // 129: omsclient.OrderReturnService.UpdateOrderReturnStatus:output_type -> omsclient.OrderReturnResp
+	92,  // 130: omsclient.OrderReturnService.QueryOrderReturnDetail:output_type -> omsclient.OrderReturnData
+	93,  // 131: omsclient.OrderReturnService.QueryOrderReturnList:output_type -> omsclient.QueryOrderReturnListResp
+	95,  // 132: omsclient.OrderReturnReasonService.AddOrderReturnReason:output_type -> omsclient.AddOrderReturnReasonResp
+	97,  // 133: omsclient.OrderReturnReasonService.DeleteOrderReturnReason:output_type -> omsclient.DeleteOrderReturnReasonResp
+	99,  // 134: omsclient.OrderReturnReasonService.UpdateOrderReturnReason:output_type -> omsclient.UpdateOrderReturnReasonResp
+	101, // 135: omsclient.OrderReturnReasonService.UpdateOrderReturnReasonStatus:output_type -> omsclient.UpdateOrderReturnReasonStatusResp
+	103, // 136: omsclient.OrderReturnReasonService.QueryOrderReturnReasonDetail:output_type -> omsclient.QueryOrderReturnReasonDetailResp
+	106, // 137: omsclient.OrderReturnReasonService.QueryOrderReturnReasonList:output_type -> omsclient.QueryOrderReturnReasonListResp
+	108, // 138: omsclient.OrderSettingService.AddOrderSetting:output_type -> omsclient.AddOrderSettingResp
+	110, // 139: omsclient.OrderSettingService.DeleteOrderSetting:output_type -> omsclient.DeleteOrderSettingResp
+	112, // 140: omsclient.OrderSettingService.UpdateOrderSetting:output_type -> omsclient.UpdateOrderSettingResp
+	114, // 141: omsclient.OrderSettingService.UpdateOrderSettingStatus:output_type -> omsclient.UpdateOrderSettingStatusResp
+	116, // 142: omsclient.OrderSettingService.QueryOrderSettingDetail:output_type -> omsclient.QueryOrderSettingDetailResp
+	119, // 143: omsclient.OrderSettingService.QueryOrderSettingList:output_type -> omsclient.QueryOrderSettingListResp
+	114, // 144: omsclient.OrderSettingService.UpdateOrderSettingDefaultStatus:output_type -> omsclient.UpdateOrderSettingStatusResp
+	116, // 145: omsclient.OrderSettingService.QueryDefaultSetting:output_type -> omsclient.QueryOrderSettingDetailResp
+	86,  // [86:146] is the sub-list for method output_type
+	26,  // [26:86] is the sub-list for method input_type
+	26,  // [26:26] is the sub-list for extension type_name
+	26,  // [26:26] is the sub-list for extension extendee
+	0,   // [0:26] is the sub-list for field type_name
 }
 
 func init() { file_rpc_oms_oms_proto_init() }

@@ -3,11 +3,13 @@ import {Col, DatePicker, Form, Input, InputNumber, Modal, Radio, RadioChangeEven
 import type {CouponListItem} from '../data.d';
 import CategoryForm from "@/pages/sms/Coupon/components/CategoryForm";
 import ProductForm from "@/pages/sms/Coupon/components/ProductForm";
+import type { GovernanceScopeValue } from '@/pages/system/components/governance';
 
 export interface CreateFormProps {
   onCancel: () => void;
   onSubmit: (values: CouponListItem) => void;
   createModalVisible: boolean;
+  scope: GovernanceScopeValue;
 }
 
 const FormItem = Form.Item;
@@ -28,6 +30,7 @@ const CreateCouponForm: React.FC<CreateFormProps> = (props) => {
     onSubmit,
     onCancel,
     createModalVisible,
+    scope,
   } = props;
 
   useEffect(() => {
@@ -147,13 +150,6 @@ const CreateCouponForm: React.FC<CreateFormProps> = (props) => {
           </Col>
         </Row>
         <FormItem
-          name="enableTime"
-          label="领取的日期"
-          rules={[{required: true, message: '请输入可以领取的日期!'}]}
-        >
-          <DatePicker showTime/>
-        </FormItem>
-        <FormItem
           name="startTime"
           label="有效期"
           rules={[{required: true, message: '请输入开始时间!'}]}
@@ -172,10 +168,10 @@ const CreateCouponForm: React.FC<CreateFormProps> = (props) => {
             <Radio value={2}>指定商品</Radio>
           </Radio.Group>
         </FormItem>
-        {value === 1 && <CategoryForm selectIds={[]} onSubmit={(list: any[]) => {
+        {value === 1 && <CategoryForm scope={scope} selectIds={[]} onSubmit={(list: any[]) => {
           setCategoryList(list)
         }}/>}
-        {value === 2 && <ProductForm selectIds={[]} onSubmit={(list: any[]) => {
+        {value === 2 && <ProductForm scope={scope} selectIds={[]} onSubmit={(list: any[]) => {
           setProductList(list)
         }}/>}
 

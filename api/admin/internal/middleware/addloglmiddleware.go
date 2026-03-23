@@ -3,6 +3,7 @@ package middleware
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/feihua/zero-admin/rpc/sys/client/operatelogservice"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
 	"github.com/ua-parser/uap-go/uaparser"
@@ -10,8 +11,13 @@ import (
 	"github.com/zeromicro/go-zero/rest/httpx"
 	"io/ioutil"
 	"net/http"
+	"path"
+	"sort"
+	"strconv"
+	"strings"
 	"time"
 
+	"github.com/feihua/zero-admin/pkg/audit"
 	"github.com/feihua/zero-admin/pkg/scope"
 )
 
@@ -81,7 +87,8 @@ func (m *AddLogMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 
 		browser := ua.UserAgent.Family + " " + ua.UserAgent.Major
 		os := ua.Os.Family + " " + ua.Os.Major
-		currentScope, scopeExtra := readGovernanceScopeContext(r)
+		currentScope := readGovernanceScopeContext(r)
+		extra := buildGovernanceOperateExtra(r, body, recorder.body, currentScope)
 		// 打印请求和响应耗时
 		duration := time.Since(startTime)
 		opLog := &sysclient.AddOperateLogReq{
@@ -104,7 +111,7 @@ func (m *AddLogMiddleware) Handle(next http.HandlerFunc) http.HandlerFunc {
 			Arch:            "",
 			Engine:          "",
 			EngineDetails:   "",
-			Extra:           scopeExtra,
+			Extra:           extra,
 			Status:          0,
 			ErrorMsg:        "",
 			OperateTime:     "",
@@ -133,7 +140,7 @@ func (r *responseRecorder) Write(body []byte) (int, error) {
 	return r.ResponseWriter.Write(body)
 }
 
-func readGovernanceScopeContext(r *http.Request) (scope.GovernanceScope, string) {
+func readGovernanceScopeContext(r *http.Request) scope.GovernanceScope {
 	scopeType, _ := r.Context().Value("scopeType").(string)
 	platformID := readContextInt64(r, "platformId")
 	tenantID := readContextInt64(r, "tenantId")
@@ -147,15 +154,7 @@ func readGovernanceScopeContext(r *http.Request) (scope.GovernanceScope, string)
 		}
 	}
 
-	extra, _ := json.Marshal(map[string]interface{}{
-		"scopeType":  currentScope.ScopeType,
-		"scopeLabel": currentScope.Label(),
-		"platformId": currentScope.PlatformID,
-		"tenantId":   currentScope.TenantID,
-		"merchantId": currentScope.MerchantID,
-	})
-
-	return currentScope, string(extra)
+	return currentScope
 }
 
 func readContextInt64(r *http.Request, key string) int64 {
@@ -177,4 +176,279 @@ func readContextInt64(r *http.Request, key string) int64 {
 	default:
 		return 0
 	}
+}
+
+func buildGovernanceOperateExtra(
+	r *http.Request,
+	body []byte,
+	responseBody []byte,
+	currentScope scope.GovernanceScope,
+) string {
+	action, resourceType := deriveOperateActionAndResource(r.RequestURI)
+	resourceIDs, payload := extractOperateResourceIDs(r, body)
+	resourceID := int64(0)
+	if len(resourceIDs) > 0 {
+		resourceID = resourceIDs[0]
+	}
+
+	requestSummary := buildOperateRequestSummary(r.Method, action, resourceIDs, payload)
+	result := operateResultFromResponse(responseBody)
+	traceID := audit.NewTraceID(action, resourceID)
+
+	extra := map[string]interface{}{
+		"traceId":        traceID,
+		"action":         action,
+		"resourceType":   resourceType,
+		"resourceId":     resourceID,
+		"resourceIds":    resourceIDs,
+		"scopeType":      currentScope.ScopeType,
+		"scopeLabel":     currentScope.Label(),
+		"platformId":     currentScope.PlatformID,
+		"tenantId":       currentScope.TenantID,
+		"merchantId":     currentScope.MerchantID,
+		"result":         result,
+		"requestSummary": requestSummary,
+	}
+
+	raw, err := json.Marshal(extra)
+	if err != nil {
+		fallback, _ := audit.EncodeGovernancePayload(audit.GovernancePayload{
+			TraceID:        traceID,
+			Action:         action,
+			ResourceType:   resourceType,
+			ResourceID:     resourceID,
+			ScopeType:      currentScope.ScopeType,
+			PlatformID:     currentScope.PlatformID,
+			TenantID:       currentScope.TenantID,
+			MerchantID:     currentScope.MerchantID,
+			ScopeLabel:     currentScope.Label(),
+			Result:         result,
+			RequestSummary: requestSummary,
+		})
+		return fallback
+	}
+
+	if len(raw) <= 1000 {
+		return string(raw)
+	}
+
+	extra["requestSummary"] = trimString(requestSummary, 180)
+	raw, err = json.Marshal(extra)
+	if err != nil {
+		fallback, _ := audit.EncodeGovernancePayload(audit.GovernancePayload{
+			TraceID:        traceID,
+			Action:         action,
+			ResourceType:   resourceType,
+			ResourceID:     resourceID,
+			ScopeType:      currentScope.ScopeType,
+			PlatformID:     currentScope.PlatformID,
+			TenantID:       currentScope.TenantID,
+			MerchantID:     currentScope.MerchantID,
+			ScopeLabel:     currentScope.Label(),
+			Result:         result,
+			RequestSummary: trimString(requestSummary, 180),
+		})
+		return fallback
+	}
+	if len(raw) <= 1000 {
+		return string(raw)
+	}
+
+	minimal, _ := audit.EncodeGovernancePayload(audit.GovernancePayload{
+		TraceID:        traceID,
+		Action:         action,
+		ResourceType:   resourceType,
+		ResourceID:     resourceID,
+		ScopeType:      currentScope.ScopeType,
+		PlatformID:     currentScope.PlatformID,
+		TenantID:       currentScope.TenantID,
+		MerchantID:     currentScope.MerchantID,
+		ScopeLabel:     currentScope.Label(),
+		Result:         result,
+		RequestSummary: trimString(requestSummary, 120),
+	})
+
+	return minimal
+}
+
+func deriveOperateActionAndResource(uri string) (string, string) {
+	cleanURI := strings.TrimSpace(strings.Split(uri, "?")[0])
+	action := strings.TrimSpace(path.Base(cleanURI))
+	if action == "" || action == "." || action == "/" {
+		action = "unknown"
+	}
+
+	resourceType := "unknown"
+	switch {
+	case strings.Contains(cleanURI, "/api/pms/product/"):
+		if strings.Contains(strings.ToLower(cleanURI), "sku") {
+			resourceType = "product_sku"
+		} else {
+			resourceType = "product_spu"
+		}
+	case strings.Contains(cleanURI, "/api/oms/order/"):
+		resourceType = "order"
+	case strings.Contains(cleanURI, "/api/sms/coupon"):
+		resourceType = "coupon"
+	case strings.Contains(cleanURI, "/api/cms/subject"):
+		resourceType = "subject"
+	}
+
+	return action, resourceType
+}
+
+func extractOperateResourceIDs(r *http.Request, body []byte) ([]int64, map[string]interface{}) {
+	ids := make([]int64, 0)
+	if len(body) > 0 {
+		var payload map[string]interface{}
+		if err := json.Unmarshal(body, &payload); err == nil {
+			collectOperateResourceIDs(payload, &ids)
+			return normalizeOperateIDs(ids), payload
+		}
+	}
+
+	payload := make(map[string]interface{})
+	for key, values := range r.URL.Query() {
+		if len(values) == 0 {
+			continue
+		}
+		payload[key] = values[0]
+	}
+	collectQueryIDs(r.URL.Query(), &ids)
+	return normalizeOperateIDs(ids), payload
+}
+
+func collectOperateResourceIDs(input interface{}, ids *[]int64) {
+	switch typed := input.(type) {
+	case map[string]interface{}:
+		for key, value := range typed {
+			lowerKey := strings.ToLower(strings.TrimSpace(key))
+			if lowerKey == "id" || lowerKey == "ids" || lowerKey == "orderid" {
+				collectIDValue(value, ids)
+			}
+			collectOperateResourceIDs(value, ids)
+		}
+	case []interface{}:
+		for _, value := range typed {
+			collectOperateResourceIDs(value, ids)
+		}
+	}
+}
+
+func collectIDValue(value interface{}, ids *[]int64) {
+	switch typed := value.(type) {
+	case float64:
+		*ids = append(*ids, int64(typed))
+	case int64:
+		*ids = append(*ids, typed)
+	case string:
+		for _, item := range strings.Split(typed, ",") {
+			item = strings.TrimSpace(item)
+			if item == "" {
+				continue
+			}
+			number, err := strconv.ParseInt(item, 10, 64)
+			if err == nil {
+				*ids = append(*ids, number)
+			}
+		}
+	case []interface{}:
+		for _, item := range typed {
+			collectIDValue(item, ids)
+		}
+	}
+}
+
+func collectQueryIDs(values map[string][]string, ids *[]int64) {
+	for key, value := range values {
+		lowerKey := strings.ToLower(strings.TrimSpace(key))
+		if lowerKey != "id" && lowerKey != "ids" && lowerKey != "orderid" {
+			continue
+		}
+		for _, item := range value {
+			collectIDValue(item, ids)
+		}
+	}
+}
+
+func normalizeOperateIDs(ids []int64) []int64 {
+	if len(ids) == 0 {
+		return []int64{}
+	}
+
+	seen := make(map[int64]struct{})
+	result := make([]int64, 0, len(ids))
+	for _, id := range ids {
+		if id <= 0 {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		result = append(result, id)
+	}
+	sort.Slice(result, func(i, j int) bool { return result[i] < result[j] })
+
+	return result
+}
+
+func operateResultFromResponse(responseBody []byte) string {
+	type response struct {
+		Code string `json:"code"`
+	}
+
+	var resp response
+	if len(responseBody) > 0 && json.Unmarshal(responseBody, &resp) == nil && resp.Code == "000000" {
+		return "success"
+	}
+
+	return "failed"
+}
+
+func buildOperateRequestSummary(
+	method string,
+	action string,
+	resourceIDs []int64,
+	payload map[string]interface{},
+) string {
+	parts := []string{strings.ToUpper(strings.TrimSpace(method)), action}
+	if len(resourceIDs) > 0 {
+		parts = append(parts, fmt.Sprintf("ids=%v", resourceIDs))
+	}
+
+	appendPayloadSummary(&parts, payload, "status")
+	appendPayloadSummary(&parts, payload, "showStatus")
+	appendPayloadSummary(&parts, payload, "recommendStatus")
+	appendPayloadSummary(&parts, payload, "note")
+	appendPayloadSummary(&parts, payload, "deliveryCompany")
+	appendPayloadSummary(&parts, payload, "deliverySn")
+
+	return trimString(strings.Join(parts, " "), 500)
+}
+
+func appendPayloadSummary(parts *[]string, payload map[string]interface{}, key string) {
+	if payload == nil {
+		return
+	}
+	value, ok := payload[key]
+	if !ok {
+		return
+	}
+	text := trimString(strings.TrimSpace(fmt.Sprint(value)), 80)
+	if text == "" {
+		return
+	}
+	*parts = append(*parts, fmt.Sprintf("%s=%s", key, text))
+}
+
+func trimString(value string, limit int) string {
+	if limit <= 0 || value == "" {
+		return ""
+	}
+	runes := []rune(value)
+	if len(runes) <= limit {
+		return value
+	}
+	return string(runes[:limit])
 }

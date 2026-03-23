@@ -653,7 +653,7 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			}...,
 		),
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
-		rest.WithPrefix("/api/pms/productSpec"),
+		rest.WithPrefix("/api/pms/spec"),
 	)
 
 	server.AddRoutes(
@@ -693,7 +693,7 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			}...,
 		),
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
-		rest.WithPrefix("/api/pms/productSpecValue"),
+		rest.WithPrefix("/api/pms/specValue"),
 	)
 
 	server.AddRoutes(
@@ -1329,6 +1329,26 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Method:  http.MethodGet,
 					Path:    "/queryLoginLogList",
 					Handler: syslog.QueryLoginLogListHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/sys/log"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.CheckUrl},
+			[]rest.Route{
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryAuditCenterDetail",
+					Handler: syslog.QueryAuditCenterDetailHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryAuditCenterList",
+					Handler: syslog.QueryAuditCenterListHandler(serverCtx),
 				},
 			}...,
 		),

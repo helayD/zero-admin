@@ -2,7 +2,6 @@ package couponservicelogic
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -37,6 +36,11 @@ func NewAddCouponLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AddCoup
 
 // AddCoupon 添加优惠券
 func (l *AddCouponLogic) AddCoupon(in *smsclient.AddCouponReq) (*smsclient.AddCouponResp, error) {
+	currentScope, err := logiccommon.ResolveWriteScope(l.ctx, l.svcCtx.DB, in.Scope, in.CreateBy)
+	if err != nil {
+		return nil, err
+	}
+
 	startTime, _ := time.Parse("2006-01-02 15:04:05", in.StartTime)
 	endTime, _ := time.Parse("2006-01-02 15:04:05", in.EndTime)
 	item := &model.SmsCoupon{
@@ -73,7 +77,7 @@ func (l *AddCouponLogic) AddCoupon(in *smsclient.AddCouponReq) (*smsclient.AddCo
 		}
 	}
 
-	err := l.svcCtx.DB.WithContext(l.ctx).Transaction(func(tx *gorm.DB) error {
+	err = l.svcCtx.DB.WithContext(l.ctx).Transaction(func(tx *gorm.DB) error {
 		qtx := query.Use(tx)
 		count, err := qtx.SmsCoupon.WithContext(l.ctx).Where(qtx.SmsCoupon.Name.Eq(in.Name)).Count()
 		if err != nil {
@@ -90,11 +94,7 @@ func (l *AddCouponLogic) AddCoupon(in *smsclient.AddCouponReq) (*smsclient.AddCo
 			row.CouponID = item.ID
 		}
 
-		current, err := logiccommon.ResolveActorScope(l.ctx, tx, in.CreateBy)
-		if err != nil {
-			return err
-		}
-		if err := logiccommon.ApplyCouponScope(l.ctx, tx, item.ID, current); err != nil {
+		if err := logiccommon.ApplyCouponScope(l.ctx, tx, item.ID, currentScope); err != nil {
 			return err
 		}
 
@@ -102,7 +102,7 @@ func (l *AddCouponLogic) AddCoupon(in *smsclient.AddCouponReq) (*smsclient.AddCo
 	})
 	if err != nil {
 		logc.Errorf(l.ctx, "添加优惠券失败,参数:%+v,异常:%s", in, err.Error())
-		return nil, errors.New(err.Error())
+		return nil, err
 	}
 	return &smsclient.AddCouponResp{}, nil
 }

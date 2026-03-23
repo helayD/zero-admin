@@ -3,9 +3,9 @@ package orderservicelogic
 import (
 	"context"
 	"errors"
-	"github.com/bytedance/sonic"
 	"github.com/feihua/zero-admin/rpc/oms/gen/model"
 	"github.com/feihua/zero-admin/rpc/oms/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/oms/internal/logic/common"
 	"github.com/zeromicro/go-zero/core/logc"
 
 	"github.com/feihua/zero-admin/rpc/oms/internal/svc"
@@ -31,8 +31,15 @@ func NewCloseOrderLogic(ctx context.Context, svcCtx *svc.ServiceContext) *CloseO
 // CloseOrder 关闭订单
 func (l *CloseOrderLogic) CloseOrder(in *omsclient.CloseOrderReq) (*omsclient.CloseOrderResp, error) {
 	q := query.OmsOrderMain
+	currentScope, err := logiccommon.ResolveWriteScope(l.ctx, l.svcCtx.DB, in.Scope, in.OperatorId)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := logiccommon.EnsureOrderScope(l.ctx, l.svcCtx.DB, currentScope, in.Ids, "oms.order.close", in.OperatorId, "", "close order"); err != nil {
+		return nil, err
+	}
 
-	_, err := q.WithContext(l.ctx).Where(q.ID.In(in.Ids...)).Update(q.OrderStatus, 5)
+	_, err = q.WithContext(l.ctx).Where(q.ID.In(in.Ids...)).Update(q.OrderStatus, 5)
 
 	if err != nil {
 		logc.Errorf(l.ctx, "更新订单状态失败,参数:%+v,异常:%s", in, err.Error())
@@ -57,11 +64,8 @@ func (l *CloseOrderLogic) CloseOrder(in *omsclient.CloseOrderReq) (*omsclient.Cl
 		return nil, errors.New("添加订单操作记录失败")
 	}
 
-	for id := range in.Ids {
-		message := map[string]any{"id": id}
-		body, _ := sonic.Marshal(message)
-		err = l.svcCtx.RabbitMQ.SendMessage("order.event.exchange", "order.close.queue", "order.close.key", body)
-
+	for _, id := range in.Ids {
+		sendOrderEvent(l.ctx, l.svcCtx, "order.close.queue", "order.close.key", "oms.order.close", id, currentScope)
 	}
 
 	return &omsclient.CloseOrderResp{}, nil

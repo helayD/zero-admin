@@ -7,7 +7,10 @@ info (
 type (
 	// 添加商品SKU请求参数
 	AddProductSkuReq {
+		Id                 int64   `json:"id,optional"` //SKU明细ID，更新时可回传
+		SpuId              int64   `json:"spuId,optional"` //商品SpuId
 		Name               string  `json:"name"` //SKU名称
+		SkuCode            string  `json:"skuCode,optional"` //SKU编码
 		MainPic            string  `json:"mainPic"` //主图
 		AlbumPics          string  `json:"albumPics"` //图片集
 		Price              float32 `json:"price"` //价格
@@ -21,10 +24,18 @@ type (
 		PublishStatus      int32   `json:"publishStatus"` //上架状态：0-下架，1-上架
 		VerifyStatus       int32   `json:"verifyStatus"` //审核状态：0-未审核，1-审核通过，2-审核不通过
 		Sort               int32   `json:"sort"` //排序
+		ScopeType          string  `json:"scopeType,optional"` //治理范围(platform/tenant/merchant)
+		PlatformId         int64   `json:"platformId,optional"` //平台ID
+		TenantId           int64   `json:"tenantId,optional"` //租户ID
+		MerchantId         int64   `json:"merchantId,optional"` //商户ID
 	}
 	// 删除商品SKU请求参数
 	DeleteProductSkuReq {
-		Ids []int64 `form:"ids"`
+		Ids        []int64 `form:"ids"`
+		ScopeType  string  `form:"scopeType,optional"` //治理范围(platform/tenant/merchant)
+		PlatformId int64   `form:"platformId,optional"` //平台ID
+		TenantId   int64   `form:"tenantId,optional"` //租户ID
+		MerchantId int64   `form:"merchantId,optional"` //商户ID
 	}
 	UpdateProductSkuData {
 		Id                 int64   `json:"id"` //商品SpuId
@@ -47,7 +58,11 @@ type (
 	}
 	// 更新商品SKU请求参数
 	UpdateProductSkuReq {
-		Data []UpdateProductSkuData `json:"data"`
+		Data       []UpdateProductSkuData `json:"data"`
+		ScopeType  string                 `json:"scopeType,optional"` //治理范围(platform/tenant/merchant)
+		PlatformId int64                  `json:"platformId,optional"` //平台ID
+		TenantId   int64                  `json:"tenantId,optional"` //租户ID
+		MerchantId int64                  `json:"merchantId,optional"` //商户ID
 	}
 	// 查询商品SKU详情请求参数
 	QueryProductSkuDetailReq {
@@ -166,4 +181,3 @@ service admin-api {
 	@handler QueryProductSkuList
 	get /queryProductSkuList (QueryProductSkuListReq) returns (QueryProductSkuListResp)
 }
-

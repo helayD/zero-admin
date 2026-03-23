@@ -9,13 +9,12 @@ description: Deploy the zero-admin repository to the private test server at 47.1
 
 Use this skill when the user wants the current `zero-admin` workspace deployed to the private remote environment on `47.107.224.56`.
 
-The deployment flow is now **push-first and git-backed by default**:
+The deployment flow has exactly **one** publish path: push code to GitHub first, then let the server deploy from that git ref.
 
-- `auto` mode commits the current branch if needed, rebases it onto the remote branch, pushes it to GitHub, and only then lets the server deploy from that git ref.
-- `git` mode is the strict variant: the worktree must already be clean, but the script still deploys from GitHub instead of local files.
-- `rsync` is still available as a legacy escape hatch, but it is no longer the recommended path for this project.
+- The default path publishes the current branch if needed, rebases it onto the push target, pushes it to GitHub, and only then lets the server deploy that ref.
+- `--git-ref` is the strict variant when you intentionally want to deploy an already-pushed ref from a clean local worktree.
 
-This keeps every meaningful deploy traceable to GitHub and ensures the server is syncing the same code that was just pushed.
+This keeps every deploy traceable to GitHub and ensures the server is syncing the same code that was just published.
 
 ## When To Use
 
@@ -33,8 +32,8 @@ This keeps every meaningful deploy traceable to GitHub and ensures the server is
 - Admin smoke account: `admin / 123456`
 - MySQL backup/apply host on the remote server: `127.0.0.1`
 - Default deploy services: `all`
-- Default sync mode: `auto`
-- Default git ref: current branch after the script publishes it to GitHub
+- Default deploy source: current branch published to GitHub, then remote git checkout of that ref
+- Optional explicit git ref: `--git-ref <ref>`
 
 ## Service Matrix
 
@@ -58,10 +57,10 @@ The default deploy scope is the full project. Use `--services <csv>` when you in
 ## Workflow
 
 1. Inspect changed files and choose a safe deploy scope.
-2. Let the default `auto` flow publish the current branch to GitHub first, unless there is a specific reason to use strict `git` mode.
-3. Run `deploy_remote.sh` with the right `--services` and optional `--migration`.
+2. Let the script publish the current branch to GitHub first, unless you are intentionally deploying an already-pushed ref with `--git-ref`.
+3. Run `deploy_remote.sh` with the right `--services`, optional `--migration`, and optional `--git-ref`.
 4. Read the script output for:
-   - sync mode used
+   - deploy source
    - pushed branch/commit
    - git source/ref used on the server
    - backup path
@@ -77,25 +76,11 @@ Default deploy:
 bash .agents/skills/zero-admin-remote-deploy/scripts/deploy_remote.sh
 ```
 
-Deploy the current branch with automatic commit/push, then let the server sync GitHub:
+Deploy an already-pushed branch, tag, or commit via remote git sync:
 
 ```bash
 bash .agents/skills/zero-admin-remote-deploy/scripts/deploy_remote.sh \
-  --sync-mode auto
-```
-
-Deploy the current branch via strict git mode:
-
-```bash
-bash .agents/skills/zero-admin-remote-deploy/scripts/deploy_remote.sh \
-  --sync-mode git
-```
-
-Deploy local workspace changes explicitly via rsync:
-
-```bash
-bash .agents/skills/zero-admin-remote-deploy/scripts/deploy_remote.sh \
-  --sync-mode rsync
+  --git-ref <branch|tag|commit>
 ```
 
 Deploy a narrowed service slice:
@@ -129,11 +114,10 @@ python3 .agents/skills/zero-admin-remote-deploy/scripts/smoke_remote.py \
 
 ## Guardrails
 
-- `auto` is the default and the recommended path. The script publishes the current branch to GitHub before the server deploy starts.
-- `git` mode is strict and refuses to run if the local workspace is dirty, but it still deploys from GitHub rather than local files.
-- If you want to deploy the current work, do not skip the push step. The whole point of the skill is that the server syncs the code that was just published.
-- `--git-ref` is for strict git mode when you intentionally want to deploy an already-pushed ref instead of the current branch.
-- Use `--sync-mode rsync` only when you intentionally want a local-only emergency path and understand that it breaks the normal GitHub-backed deployment trace.
+- There is only one deploy path: GitHub-backed git sync. Do not use or introduce local file-copy deployment variants for this skill.
+- The default path publishes the current branch to GitHub before the server deploy starts.
+- If you want to deploy the current work, do not skip the publish step. The whole point of the skill is that the server syncs the code that was just published.
+- `--git-ref` is only for intentionally deploying an already-pushed ref, and it should be used from a clean local workspace.
 - The script preserves remote source YAMLs for runtime configs during git sync and does not overwrite target runtime YAMLs if they already exist.
 - The script always creates a timestamped backup under `/root/zero-admin/deploy-backup/<timestamp>`.
 - The script can fetch from a configurable git remote URL. This matters because the remote test machine may not point at the same `origin` as the local workspace.

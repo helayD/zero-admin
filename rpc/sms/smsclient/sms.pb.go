@@ -91,6 +91,7 @@ type AddCouponReq struct {
 	Description   string                 `protobuf:"bytes,13,opt,name=description,proto3" json:"description,omitempty"`                 //使用说明
 	CreateBy      int64                  `protobuf:"varint,14,opt,name=create_by,json=createBy,proto3" json:"create_by,omitempty"`      //创建人ID
 	Scopes        []*CouponScopeData     `protobuf:"bytes,15,rep,name=scopes,proto3" json:"scopes,omitempty"`                           //使用范围
+	Scope         *GovernanceScope       `protobuf:"bytes,16,opt,name=scope,proto3" json:"scope,omitempty"`                             //治理范围(platform/tenant/merchant)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -230,6 +231,13 @@ func (x *AddCouponReq) GetScopes() []*CouponScopeData {
 	return nil
 }
 
+func (x *AddCouponReq) GetScope() *GovernanceScope {
+	if x != nil {
+		return x.Scope
+	}
+	return nil
+}
+
 type AddCouponResp struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Pong          string                 `protobuf:"bytes,1,opt,name=pong,proto3" json:"pong,omitempty"`
@@ -278,6 +286,7 @@ func (x *AddCouponResp) GetPong() string {
 type DeleteCouponReq struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Ids           []int64                `protobuf:"varint,1,rep,packed,name=ids,proto3" json:"ids,omitempty"`
+	Scope         *GovernanceScope       `protobuf:"bytes,2,opt,name=scope,proto3" json:"scope,omitempty"` //治理范围(platform/tenant/merchant)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -315,6 +324,13 @@ func (*DeleteCouponReq) Descriptor() ([]byte, []int) {
 func (x *DeleteCouponReq) GetIds() []int64 {
 	if x != nil {
 		return x.Ids
+	}
+	return nil
+}
+
+func (x *DeleteCouponReq) GetScope() *GovernanceScope {
+	if x != nil {
+		return x.Scope
 	}
 	return nil
 }
@@ -383,6 +399,7 @@ type UpdateCouponReq struct {
 	Description   string                 `protobuf:"bytes,15,opt,name=description,proto3" json:"description,omitempty"`                           //使用说明
 	UpdateBy      int64                  `protobuf:"varint,18,opt,name=update_by,json=updateBy,proto3" json:"update_by,omitempty"`                //更新人ID
 	Scopes        []*CouponScopeData     `protobuf:"bytes,19,rep,name=scopes,proto3" json:"scopes,omitempty"`                                     //使用范围
+	Scope         *GovernanceScope       `protobuf:"bytes,20,opt,name=scope,proto3" json:"scope,omitempty"`                                       //治理范围(platform/tenant/merchant)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -536,6 +553,13 @@ func (x *UpdateCouponReq) GetScopes() []*CouponScopeData {
 	return nil
 }
 
+func (x *UpdateCouponReq) GetScope() *GovernanceScope {
+	if x != nil {
+		return x.Scope
+	}
+	return nil
+}
+
 type UpdateCouponResp struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Pong          string                 `protobuf:"bytes,1,opt,name=pong,proto3" json:"pong,omitempty"`
@@ -586,6 +610,7 @@ type UpdateCouponStatusReq struct {
 	Ids           []int64                `protobuf:"varint,1,rep,packed,name=ids,proto3" json:"ids,omitempty"`                     //优惠券ID
 	Status        int32                  `protobuf:"varint,13,opt,name=status,proto3" json:"status,omitempty"`                     //状态：0-未开始，1-进行中，2-已结束，3-已取消
 	UpdateBy      int64                  `protobuf:"varint,18,opt,name=update_by,json=updateBy,proto3" json:"update_by,omitempty"` //更新人ID
+	Scope         *GovernanceScope       `protobuf:"bytes,19,opt,name=scope,proto3" json:"scope,omitempty"`                        //治理范围(platform/tenant/merchant)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -639,6 +664,13 @@ func (x *UpdateCouponStatusReq) GetUpdateBy() int64 {
 		return x.UpdateBy
 	}
 	return 0
+}
+
+func (x *UpdateCouponStatusReq) GetScope() *GovernanceScope {
+	if x != nil {
+		return x.Scope
+	}
+	return nil
 }
 
 type UpdateCouponStatusResp struct {
@@ -9182,7 +9214,7 @@ const file_rpc_sms_sms_proto_rawDesc = "" +
 	"\x0fcouponScopeData\x12\x1d\n" +
 	"\n" +
 	"scope_type\x18\x01 \x01(\x05R\tscopeType\x12\x19\n" +
-	"\bscope_id\x18\x02 \x01(\x03R\ascopeId\"\xb8\x03\n" +
+	"\bscope_id\x18\x02 \x01(\x03R\ascopeId\"\xea\x03\n" +
 	"\fAddCouponReq\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x17\n" +
 	"\atype_id\x18\x02 \x01(\x03R\x06typeId\x12\x12\n" +
@@ -9203,13 +9235,15 @@ const file_rpc_sms_sms_proto_rawDesc = "" +
 	"is_enabled\x18\f \x01(\x05R\tisEnabled\x12 \n" +
 	"\vdescription\x18\r \x01(\tR\vdescription\x12\x1b\n" +
 	"\tcreate_by\x18\x0e \x01(\x03R\bcreateBy\x122\n" +
-	"\x06scopes\x18\x0f \x03(\v2\x1a.smsclient.couponScopeDataR\x06scopes\"#\n" +
+	"\x06scopes\x18\x0f \x03(\v2\x1a.smsclient.couponScopeDataR\x06scopes\x120\n" +
+	"\x05scope\x18\x10 \x01(\v2\x1a.smsclient.GovernanceScopeR\x05scope\"#\n" +
 	"\rAddCouponResp\x12\x12\n" +
-	"\x04pong\x18\x01 \x01(\tR\x04pong\"#\n" +
+	"\x04pong\x18\x01 \x01(\tR\x04pong\"U\n" +
 	"\x0fDeleteCouponReq\x12\x10\n" +
-	"\x03ids\x18\x01 \x03(\x03R\x03ids\"&\n" +
+	"\x03ids\x18\x01 \x03(\x03R\x03ids\x120\n" +
+	"\x05scope\x18\x02 \x01(\v2\x1a.smsclient.GovernanceScopeR\x05scope\"&\n" +
 	"\x10DeleteCouponResp\x12\x12\n" +
-	"\x04pong\x18\x01 \x01(\tR\x04pong\"\x81\x04\n" +
+	"\x04pong\x18\x01 \x01(\tR\x04pong\"\xb3\x04\n" +
 	"\x0fUpdateCouponReq\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x17\n" +
 	"\atype_id\x18\x02 \x01(\x03R\x06typeId\x12\x12\n" +
@@ -9233,13 +9267,15 @@ const file_rpc_sms_sms_proto_rawDesc = "" +
 	"is_enabled\x18\x0e \x01(\x05R\tisEnabled\x12 \n" +
 	"\vdescription\x18\x0f \x01(\tR\vdescription\x12\x1b\n" +
 	"\tupdate_by\x18\x12 \x01(\x03R\bupdateBy\x122\n" +
-	"\x06scopes\x18\x13 \x03(\v2\x1a.smsclient.couponScopeDataR\x06scopes\"&\n" +
+	"\x06scopes\x18\x13 \x03(\v2\x1a.smsclient.couponScopeDataR\x06scopes\x120\n" +
+	"\x05scope\x18\x14 \x01(\v2\x1a.smsclient.GovernanceScopeR\x05scope\"&\n" +
 	"\x10UpdateCouponResp\x12\x12\n" +
-	"\x04pong\x18\x01 \x01(\tR\x04pong\"^\n" +
+	"\x04pong\x18\x01 \x01(\tR\x04pong\"\x90\x01\n" +
 	"\x15UpdateCouponStatusReq\x12\x10\n" +
 	"\x03ids\x18\x01 \x03(\x03R\x03ids\x12\x16\n" +
 	"\x06status\x18\r \x01(\x05R\x06status\x12\x1b\n" +
-	"\tupdate_by\x18\x12 \x01(\x03R\bupdateBy\",\n" +
+	"\tupdate_by\x18\x12 \x01(\x03R\bupdateBy\x120\n" +
+	"\x05scope\x18\x13 \x01(\v2\x1a.smsclient.GovernanceScopeR\x05scope\",\n" +
 	"\x16UpdateCouponStatusResp\x12\x12\n" +
 	"\x04pong\x18\x01 \x01(\tR\x04pong\"X\n" +
 	"\x14QueryCouponDetailReq\x12\x0e\n" +
@@ -10215,150 +10251,154 @@ var file_rpc_sms_sms_proto_goTypes = []any{
 }
 var file_rpc_sms_sms_proto_depIdxs = []int32{
 	0,   // 0: smsclient.AddCouponReq.scopes:type_name -> smsclient.couponScopeData
-	0,   // 1: smsclient.UpdateCouponReq.scopes:type_name -> smsclient.couponScopeData
-	59,  // 2: smsclient.QueryCouponDetailReq.scope:type_name -> smsclient.GovernanceScope
-	59,  // 3: smsclient.QueryCouponListReq.scope:type_name -> smsclient.GovernanceScope
-	12,  // 4: smsclient.QueryCouponListResp.list:type_name -> smsclient.CouponListData
-	59,  // 5: smsclient.QueryCouponByScopeIdReq.scope:type_name -> smsclient.GovernanceScope
-	12,  // 6: smsclient.QueryCouponByScopeIdResp.list:type_name -> smsclient.CouponListData
-	59,  // 7: smsclient.QueryCouponByCodeReq.scope:type_name -> smsclient.GovernanceScope
-	12,  // 8: smsclient.QueryCouponByCodeResp.list:type_name -> smsclient.CouponListData
-	29,  // 9: smsclient.QueryCouponRecordListResp.list:type_name -> smsclient.CouponRecordListData
-	32,  // 10: smsclient.QueryMemberCouponListResp.list:type_name -> smsclient.QueryCouponData
-	35,  // 11: smsclient.AddCouponScopeReq.data:type_name -> smsclient.AddCouponScopeData
-	44,  // 12: smsclient.QueryCouponScopeListResp.list:type_name -> smsclient.CouponScopeListData
-	57,  // 13: smsclient.QueryCouponTypeListResp.list:type_name -> smsclient.CouponTypeListData
-	71,  // 14: smsclient.QueryHomeAdvertiseListResp.list:type_name -> smsclient.HomeAdvertiseListData
-	84,  // 15: smsclient.QuerySeckillActivityListResp.list:type_name -> smsclient.SeckillActivityListData
-	84,  // 16: smsclient.QueryFlashPromotionListByDateResp.list:type_name -> smsclient.SeckillActivityListData
-	89,  // 17: smsclient.AddSeckillProductReq.data:type_name -> smsclient.AddSeckillProductData
-	100, // 18: smsclient.QuerySeckillProductListResp.list:type_name -> smsclient.SeckillProductListData
-	114, // 19: smsclient.QuerySeckillReservationListResp.list:type_name -> smsclient.SeckillReservationListData
-	127, // 20: smsclient.QuerySeckillSessionListResp.list:type_name -> smsclient.SeckillSessionListData
-	127, // 21: smsclient.QuerySeckillSessionListByTimeResp.list:type_name -> smsclient.SeckillSessionListData
-	1,   // 22: smsclient.CouponService.AddCoupon:input_type -> smsclient.AddCouponReq
-	3,   // 23: smsclient.CouponService.DeleteCoupon:input_type -> smsclient.DeleteCouponReq
-	5,   // 24: smsclient.CouponService.UpdateCoupon:input_type -> smsclient.UpdateCouponReq
-	7,   // 25: smsclient.CouponService.UpdateCouponStatus:input_type -> smsclient.UpdateCouponStatusReq
-	9,   // 26: smsclient.CouponService.QueryCouponDetail:input_type -> smsclient.QueryCouponDetailReq
-	11,  // 27: smsclient.CouponService.QueryCouponList:input_type -> smsclient.QueryCouponListReq
-	14,  // 28: smsclient.CouponService.QueryCouponByScopeId:input_type -> smsclient.QueryCouponByScopeIdReq
-	16,  // 29: smsclient.CouponService.QueryCouponByCode:input_type -> smsclient.QueryCouponByCodeReq
-	18,  // 30: smsclient.CouponService.HandleExpirationCoupon:input_type -> smsclient.HandleExpirationCouponReq
-	20,  // 31: smsclient.CouponRecordService.AddCouponRecord:input_type -> smsclient.AddCouponRecordReq
-	22,  // 32: smsclient.CouponRecordService.DeleteCouponRecord:input_type -> smsclient.DeleteCouponRecordReq
-	24,  // 33: smsclient.CouponRecordService.UpdateCouponRecord:input_type -> smsclient.UpdateCouponRecordReq
-	26,  // 34: smsclient.CouponRecordService.QueryCouponRecordDetail:input_type -> smsclient.QueryCouponRecordDetailReq
-	28,  // 35: smsclient.CouponRecordService.QueryCouponRecordList:input_type -> smsclient.QueryCouponRecordListReq
-	31,  // 36: smsclient.CouponRecordService.QueryMemberCouponList:input_type -> smsclient.QueryMemberCouponListReq
-	34,  // 37: smsclient.CouponScopeService.AddCouponScope:input_type -> smsclient.AddCouponScopeReq
-	37,  // 38: smsclient.CouponScopeService.DeleteCouponScope:input_type -> smsclient.DeleteCouponScopeReq
-	39,  // 39: smsclient.CouponScopeService.UpdateCouponScope:input_type -> smsclient.UpdateCouponScopeReq
-	41,  // 40: smsclient.CouponScopeService.QueryCouponScopeDetail:input_type -> smsclient.QueryCouponScopeDetailReq
-	43,  // 41: smsclient.CouponScopeService.QueryCouponScopeList:input_type -> smsclient.QueryCouponScopeListReq
-	46,  // 42: smsclient.CouponTypeService.AddCouponType:input_type -> smsclient.AddCouponTypeReq
-	48,  // 43: smsclient.CouponTypeService.DeleteCouponType:input_type -> smsclient.DeleteCouponTypeReq
-	50,  // 44: smsclient.CouponTypeService.UpdateCouponType:input_type -> smsclient.UpdateCouponTypeReq
-	52,  // 45: smsclient.CouponTypeService.UpdateCouponTypeStatus:input_type -> smsclient.UpdateCouponTypeStatusReq
-	54,  // 46: smsclient.CouponTypeService.QueryCouponTypeDetail:input_type -> smsclient.QueryCouponTypeDetailReq
-	56,  // 47: smsclient.CouponTypeService.QueryCouponTypeList:input_type -> smsclient.QueryCouponTypeListReq
-	60,  // 48: smsclient.HomeAdvertiseService.AddHomeAdvertise:input_type -> smsclient.AddHomeAdvertiseReq
-	62,  // 49: smsclient.HomeAdvertiseService.DeleteHomeAdvertise:input_type -> smsclient.DeleteHomeAdvertiseReq
-	64,  // 50: smsclient.HomeAdvertiseService.UpdateHomeAdvertise:input_type -> smsclient.UpdateHomeAdvertiseReq
-	66,  // 51: smsclient.HomeAdvertiseService.UpdateHomeAdvertiseStatus:input_type -> smsclient.UpdateHomeAdvertiseStatusReq
-	68,  // 52: smsclient.HomeAdvertiseService.QueryHomeAdvertiseDetail:input_type -> smsclient.QueryHomeAdvertiseDetailReq
-	70,  // 53: smsclient.HomeAdvertiseService.QueryHomeAdvertiseList:input_type -> smsclient.QueryHomeAdvertiseListReq
-	73,  // 54: smsclient.SeckillActivityService.AddSeckillActivity:input_type -> smsclient.AddSeckillActivityReq
-	75,  // 55: smsclient.SeckillActivityService.DeleteSeckillActivity:input_type -> smsclient.DeleteSeckillActivityReq
-	77,  // 56: smsclient.SeckillActivityService.UpdateSeckillActivity:input_type -> smsclient.UpdateSeckillActivityReq
-	79,  // 57: smsclient.SeckillActivityService.UpdateSeckillActivityStatus:input_type -> smsclient.UpdateSeckillActivityStatusReq
-	81,  // 58: smsclient.SeckillActivityService.QuerySeckillActivityDetail:input_type -> smsclient.QuerySeckillActivityDetailReq
-	83,  // 59: smsclient.SeckillActivityService.QuerySeckillActivityList:input_type -> smsclient.QuerySeckillActivityListReq
-	86,  // 60: smsclient.SeckillActivityService.QuerySeckillActivityListByDate:input_type -> smsclient.QuerySeckillActivityListByDateReq
-	88,  // 61: smsclient.SeckillProductService.AddSeckillProduct:input_type -> smsclient.AddSeckillProductReq
-	91,  // 62: smsclient.SeckillProductService.DeleteSeckillProduct:input_type -> smsclient.DeleteSeckillProductReq
-	93,  // 63: smsclient.SeckillProductService.UpdateSeckillProduct:input_type -> smsclient.UpdateSeckillProductReq
-	95,  // 64: smsclient.SeckillProductService.UpdateSeckillProductStatus:input_type -> smsclient.UpdateSeckillProductStatusReq
-	97,  // 65: smsclient.SeckillProductService.QuerySeckillProductDetail:input_type -> smsclient.QuerySeckillProductDetailReq
-	99,  // 66: smsclient.SeckillProductService.QuerySeckillProductList:input_type -> smsclient.QuerySeckillProductListReq
-	102, // 67: smsclient.SeckillProductService.QuerySeckillProductBySkuId:input_type -> smsclient.QuerySeckillProductBySkuIdReq
-	103, // 68: smsclient.SeckillReservationService.AddSeckillReservation:input_type -> smsclient.AddSeckillReservationReq
-	105, // 69: smsclient.SeckillReservationService.DeleteSeckillReservation:input_type -> smsclient.DeleteSeckillReservationReq
-	107, // 70: smsclient.SeckillReservationService.UpdateSeckillReservation:input_type -> smsclient.UpdateSeckillReservationReq
-	109, // 71: smsclient.SeckillReservationService.UpdateSeckillReservationStatus:input_type -> smsclient.UpdateSeckillReservationStatusReq
-	111, // 72: smsclient.SeckillReservationService.QuerySeckillReservationDetail:input_type -> smsclient.QuerySeckillReservationDetailReq
-	113, // 73: smsclient.SeckillReservationService.QuerySeckillReservationList:input_type -> smsclient.QuerySeckillReservationListReq
-	116, // 74: smsclient.SeckillSessionService.AddSeckillSession:input_type -> smsclient.AddSeckillSessionReq
-	118, // 75: smsclient.SeckillSessionService.DeleteSeckillSession:input_type -> smsclient.DeleteSeckillSessionReq
-	120, // 76: smsclient.SeckillSessionService.UpdateSeckillSession:input_type -> smsclient.UpdateSeckillSessionReq
-	122, // 77: smsclient.SeckillSessionService.UpdateSeckillSessionStatus:input_type -> smsclient.UpdateSeckillSessionStatusReq
-	124, // 78: smsclient.SeckillSessionService.QuerySeckillSessionDetail:input_type -> smsclient.QuerySeckillSessionDetailReq
-	126, // 79: smsclient.SeckillSessionService.QuerySeckillSessionList:input_type -> smsclient.QuerySeckillSessionListReq
-	129, // 80: smsclient.SeckillSessionService.QuerySeckillSessionListByTime:input_type -> smsclient.QuerySeckillSessionListByTimeReq
-	2,   // 81: smsclient.CouponService.AddCoupon:output_type -> smsclient.AddCouponResp
-	4,   // 82: smsclient.CouponService.DeleteCoupon:output_type -> smsclient.DeleteCouponResp
-	6,   // 83: smsclient.CouponService.UpdateCoupon:output_type -> smsclient.UpdateCouponResp
-	8,   // 84: smsclient.CouponService.UpdateCouponStatus:output_type -> smsclient.UpdateCouponStatusResp
-	10,  // 85: smsclient.CouponService.QueryCouponDetail:output_type -> smsclient.QueryCouponDetailResp
-	13,  // 86: smsclient.CouponService.QueryCouponList:output_type -> smsclient.QueryCouponListResp
-	15,  // 87: smsclient.CouponService.QueryCouponByScopeId:output_type -> smsclient.QueryCouponByScopeIdResp
-	17,  // 88: smsclient.CouponService.QueryCouponByCode:output_type -> smsclient.QueryCouponByCodeResp
-	19,  // 89: smsclient.CouponService.HandleExpirationCoupon:output_type -> smsclient.HandleExpirationCouponResp
-	21,  // 90: smsclient.CouponRecordService.AddCouponRecord:output_type -> smsclient.AddCouponRecordResp
-	23,  // 91: smsclient.CouponRecordService.DeleteCouponRecord:output_type -> smsclient.DeleteCouponRecordResp
-	25,  // 92: smsclient.CouponRecordService.UpdateCouponRecord:output_type -> smsclient.UpdateCouponRecordResp
-	27,  // 93: smsclient.CouponRecordService.QueryCouponRecordDetail:output_type -> smsclient.QueryCouponRecordDetailResp
-	30,  // 94: smsclient.CouponRecordService.QueryCouponRecordList:output_type -> smsclient.QueryCouponRecordListResp
-	33,  // 95: smsclient.CouponRecordService.QueryMemberCouponList:output_type -> smsclient.QueryMemberCouponListResp
-	36,  // 96: smsclient.CouponScopeService.AddCouponScope:output_type -> smsclient.AddCouponScopeResp
-	38,  // 97: smsclient.CouponScopeService.DeleteCouponScope:output_type -> smsclient.DeleteCouponScopeResp
-	40,  // 98: smsclient.CouponScopeService.UpdateCouponScope:output_type -> smsclient.UpdateCouponScopeResp
-	42,  // 99: smsclient.CouponScopeService.QueryCouponScopeDetail:output_type -> smsclient.QueryCouponScopeDetailResp
-	45,  // 100: smsclient.CouponScopeService.QueryCouponScopeList:output_type -> smsclient.QueryCouponScopeListResp
-	47,  // 101: smsclient.CouponTypeService.AddCouponType:output_type -> smsclient.AddCouponTypeResp
-	49,  // 102: smsclient.CouponTypeService.DeleteCouponType:output_type -> smsclient.DeleteCouponTypeResp
-	51,  // 103: smsclient.CouponTypeService.UpdateCouponType:output_type -> smsclient.UpdateCouponTypeResp
-	53,  // 104: smsclient.CouponTypeService.UpdateCouponTypeStatus:output_type -> smsclient.UpdateCouponTypeStatusResp
-	55,  // 105: smsclient.CouponTypeService.QueryCouponTypeDetail:output_type -> smsclient.QueryCouponTypeDetailResp
-	58,  // 106: smsclient.CouponTypeService.QueryCouponTypeList:output_type -> smsclient.QueryCouponTypeListResp
-	61,  // 107: smsclient.HomeAdvertiseService.AddHomeAdvertise:output_type -> smsclient.AddHomeAdvertiseResp
-	63,  // 108: smsclient.HomeAdvertiseService.DeleteHomeAdvertise:output_type -> smsclient.DeleteHomeAdvertiseResp
-	65,  // 109: smsclient.HomeAdvertiseService.UpdateHomeAdvertise:output_type -> smsclient.UpdateHomeAdvertiseResp
-	67,  // 110: smsclient.HomeAdvertiseService.UpdateHomeAdvertiseStatus:output_type -> smsclient.UpdateHomeAdvertiseStatusResp
-	69,  // 111: smsclient.HomeAdvertiseService.QueryHomeAdvertiseDetail:output_type -> smsclient.QueryHomeAdvertiseDetailResp
-	72,  // 112: smsclient.HomeAdvertiseService.QueryHomeAdvertiseList:output_type -> smsclient.QueryHomeAdvertiseListResp
-	74,  // 113: smsclient.SeckillActivityService.AddSeckillActivity:output_type -> smsclient.AddSeckillActivityResp
-	76,  // 114: smsclient.SeckillActivityService.DeleteSeckillActivity:output_type -> smsclient.DeleteSeckillActivityResp
-	78,  // 115: smsclient.SeckillActivityService.UpdateSeckillActivity:output_type -> smsclient.UpdateSeckillActivityResp
-	80,  // 116: smsclient.SeckillActivityService.UpdateSeckillActivityStatus:output_type -> smsclient.UpdateSeckillActivityStatusResp
-	82,  // 117: smsclient.SeckillActivityService.QuerySeckillActivityDetail:output_type -> smsclient.QuerySeckillActivityDetailResp
-	85,  // 118: smsclient.SeckillActivityService.QuerySeckillActivityList:output_type -> smsclient.QuerySeckillActivityListResp
-	87,  // 119: smsclient.SeckillActivityService.QuerySeckillActivityListByDate:output_type -> smsclient.QueryFlashPromotionListByDateResp
-	90,  // 120: smsclient.SeckillProductService.AddSeckillProduct:output_type -> smsclient.AddSeckillProductResp
-	92,  // 121: smsclient.SeckillProductService.DeleteSeckillProduct:output_type -> smsclient.DeleteSeckillProductResp
-	94,  // 122: smsclient.SeckillProductService.UpdateSeckillProduct:output_type -> smsclient.UpdateSeckillProductResp
-	96,  // 123: smsclient.SeckillProductService.UpdateSeckillProductStatus:output_type -> smsclient.UpdateSeckillProductStatusResp
-	98,  // 124: smsclient.SeckillProductService.QuerySeckillProductDetail:output_type -> smsclient.QuerySeckillProductDetailResp
-	101, // 125: smsclient.SeckillProductService.QuerySeckillProductList:output_type -> smsclient.QuerySeckillProductListResp
-	98,  // 126: smsclient.SeckillProductService.QuerySeckillProductBySkuId:output_type -> smsclient.QuerySeckillProductDetailResp
-	104, // 127: smsclient.SeckillReservationService.AddSeckillReservation:output_type -> smsclient.AddSeckillReservationResp
-	106, // 128: smsclient.SeckillReservationService.DeleteSeckillReservation:output_type -> smsclient.DeleteSeckillReservationResp
-	108, // 129: smsclient.SeckillReservationService.UpdateSeckillReservation:output_type -> smsclient.UpdateSeckillReservationResp
-	110, // 130: smsclient.SeckillReservationService.UpdateSeckillReservationStatus:output_type -> smsclient.UpdateSeckillReservationStatusResp
-	112, // 131: smsclient.SeckillReservationService.QuerySeckillReservationDetail:output_type -> smsclient.QuerySeckillReservationDetailResp
-	115, // 132: smsclient.SeckillReservationService.QuerySeckillReservationList:output_type -> smsclient.QuerySeckillReservationListResp
-	117, // 133: smsclient.SeckillSessionService.AddSeckillSession:output_type -> smsclient.AddSeckillSessionResp
-	119, // 134: smsclient.SeckillSessionService.DeleteSeckillSession:output_type -> smsclient.DeleteSeckillSessionResp
-	121, // 135: smsclient.SeckillSessionService.UpdateSeckillSession:output_type -> smsclient.UpdateSeckillSessionResp
-	123, // 136: smsclient.SeckillSessionService.UpdateSeckillSessionStatus:output_type -> smsclient.UpdateSeckillSessionStatusResp
-	125, // 137: smsclient.SeckillSessionService.QuerySeckillSessionDetail:output_type -> smsclient.QuerySeckillSessionDetailResp
-	128, // 138: smsclient.SeckillSessionService.QuerySeckillSessionList:output_type -> smsclient.QuerySeckillSessionListResp
-	130, // 139: smsclient.SeckillSessionService.QuerySeckillSessionListByTime:output_type -> smsclient.QuerySeckillSessionListByTimeResp
-	81,  // [81:140] is the sub-list for method output_type
-	22,  // [22:81] is the sub-list for method input_type
-	22,  // [22:22] is the sub-list for extension type_name
-	22,  // [22:22] is the sub-list for extension extendee
-	0,   // [0:22] is the sub-list for field type_name
+	59,  // 1: smsclient.AddCouponReq.scope:type_name -> smsclient.GovernanceScope
+	59,  // 2: smsclient.DeleteCouponReq.scope:type_name -> smsclient.GovernanceScope
+	0,   // 3: smsclient.UpdateCouponReq.scopes:type_name -> smsclient.couponScopeData
+	59,  // 4: smsclient.UpdateCouponReq.scope:type_name -> smsclient.GovernanceScope
+	59,  // 5: smsclient.UpdateCouponStatusReq.scope:type_name -> smsclient.GovernanceScope
+	59,  // 6: smsclient.QueryCouponDetailReq.scope:type_name -> smsclient.GovernanceScope
+	59,  // 7: smsclient.QueryCouponListReq.scope:type_name -> smsclient.GovernanceScope
+	12,  // 8: smsclient.QueryCouponListResp.list:type_name -> smsclient.CouponListData
+	59,  // 9: smsclient.QueryCouponByScopeIdReq.scope:type_name -> smsclient.GovernanceScope
+	12,  // 10: smsclient.QueryCouponByScopeIdResp.list:type_name -> smsclient.CouponListData
+	59,  // 11: smsclient.QueryCouponByCodeReq.scope:type_name -> smsclient.GovernanceScope
+	12,  // 12: smsclient.QueryCouponByCodeResp.list:type_name -> smsclient.CouponListData
+	29,  // 13: smsclient.QueryCouponRecordListResp.list:type_name -> smsclient.CouponRecordListData
+	32,  // 14: smsclient.QueryMemberCouponListResp.list:type_name -> smsclient.QueryCouponData
+	35,  // 15: smsclient.AddCouponScopeReq.data:type_name -> smsclient.AddCouponScopeData
+	44,  // 16: smsclient.QueryCouponScopeListResp.list:type_name -> smsclient.CouponScopeListData
+	57,  // 17: smsclient.QueryCouponTypeListResp.list:type_name -> smsclient.CouponTypeListData
+	71,  // 18: smsclient.QueryHomeAdvertiseListResp.list:type_name -> smsclient.HomeAdvertiseListData
+	84,  // 19: smsclient.QuerySeckillActivityListResp.list:type_name -> smsclient.SeckillActivityListData
+	84,  // 20: smsclient.QueryFlashPromotionListByDateResp.list:type_name -> smsclient.SeckillActivityListData
+	89,  // 21: smsclient.AddSeckillProductReq.data:type_name -> smsclient.AddSeckillProductData
+	100, // 22: smsclient.QuerySeckillProductListResp.list:type_name -> smsclient.SeckillProductListData
+	114, // 23: smsclient.QuerySeckillReservationListResp.list:type_name -> smsclient.SeckillReservationListData
+	127, // 24: smsclient.QuerySeckillSessionListResp.list:type_name -> smsclient.SeckillSessionListData
+	127, // 25: smsclient.QuerySeckillSessionListByTimeResp.list:type_name -> smsclient.SeckillSessionListData
+	1,   // 26: smsclient.CouponService.AddCoupon:input_type -> smsclient.AddCouponReq
+	3,   // 27: smsclient.CouponService.DeleteCoupon:input_type -> smsclient.DeleteCouponReq
+	5,   // 28: smsclient.CouponService.UpdateCoupon:input_type -> smsclient.UpdateCouponReq
+	7,   // 29: smsclient.CouponService.UpdateCouponStatus:input_type -> smsclient.UpdateCouponStatusReq
+	9,   // 30: smsclient.CouponService.QueryCouponDetail:input_type -> smsclient.QueryCouponDetailReq
+	11,  // 31: smsclient.CouponService.QueryCouponList:input_type -> smsclient.QueryCouponListReq
+	14,  // 32: smsclient.CouponService.QueryCouponByScopeId:input_type -> smsclient.QueryCouponByScopeIdReq
+	16,  // 33: smsclient.CouponService.QueryCouponByCode:input_type -> smsclient.QueryCouponByCodeReq
+	18,  // 34: smsclient.CouponService.HandleExpirationCoupon:input_type -> smsclient.HandleExpirationCouponReq
+	20,  // 35: smsclient.CouponRecordService.AddCouponRecord:input_type -> smsclient.AddCouponRecordReq
+	22,  // 36: smsclient.CouponRecordService.DeleteCouponRecord:input_type -> smsclient.DeleteCouponRecordReq
+	24,  // 37: smsclient.CouponRecordService.UpdateCouponRecord:input_type -> smsclient.UpdateCouponRecordReq
+	26,  // 38: smsclient.CouponRecordService.QueryCouponRecordDetail:input_type -> smsclient.QueryCouponRecordDetailReq
+	28,  // 39: smsclient.CouponRecordService.QueryCouponRecordList:input_type -> smsclient.QueryCouponRecordListReq
+	31,  // 40: smsclient.CouponRecordService.QueryMemberCouponList:input_type -> smsclient.QueryMemberCouponListReq
+	34,  // 41: smsclient.CouponScopeService.AddCouponScope:input_type -> smsclient.AddCouponScopeReq
+	37,  // 42: smsclient.CouponScopeService.DeleteCouponScope:input_type -> smsclient.DeleteCouponScopeReq
+	39,  // 43: smsclient.CouponScopeService.UpdateCouponScope:input_type -> smsclient.UpdateCouponScopeReq
+	41,  // 44: smsclient.CouponScopeService.QueryCouponScopeDetail:input_type -> smsclient.QueryCouponScopeDetailReq
+	43,  // 45: smsclient.CouponScopeService.QueryCouponScopeList:input_type -> smsclient.QueryCouponScopeListReq
+	46,  // 46: smsclient.CouponTypeService.AddCouponType:input_type -> smsclient.AddCouponTypeReq
+	48,  // 47: smsclient.CouponTypeService.DeleteCouponType:input_type -> smsclient.DeleteCouponTypeReq
+	50,  // 48: smsclient.CouponTypeService.UpdateCouponType:input_type -> smsclient.UpdateCouponTypeReq
+	52,  // 49: smsclient.CouponTypeService.UpdateCouponTypeStatus:input_type -> smsclient.UpdateCouponTypeStatusReq
+	54,  // 50: smsclient.CouponTypeService.QueryCouponTypeDetail:input_type -> smsclient.QueryCouponTypeDetailReq
+	56,  // 51: smsclient.CouponTypeService.QueryCouponTypeList:input_type -> smsclient.QueryCouponTypeListReq
+	60,  // 52: smsclient.HomeAdvertiseService.AddHomeAdvertise:input_type -> smsclient.AddHomeAdvertiseReq
+	62,  // 53: smsclient.HomeAdvertiseService.DeleteHomeAdvertise:input_type -> smsclient.DeleteHomeAdvertiseReq
+	64,  // 54: smsclient.HomeAdvertiseService.UpdateHomeAdvertise:input_type -> smsclient.UpdateHomeAdvertiseReq
+	66,  // 55: smsclient.HomeAdvertiseService.UpdateHomeAdvertiseStatus:input_type -> smsclient.UpdateHomeAdvertiseStatusReq
+	68,  // 56: smsclient.HomeAdvertiseService.QueryHomeAdvertiseDetail:input_type -> smsclient.QueryHomeAdvertiseDetailReq
+	70,  // 57: smsclient.HomeAdvertiseService.QueryHomeAdvertiseList:input_type -> smsclient.QueryHomeAdvertiseListReq
+	73,  // 58: smsclient.SeckillActivityService.AddSeckillActivity:input_type -> smsclient.AddSeckillActivityReq
+	75,  // 59: smsclient.SeckillActivityService.DeleteSeckillActivity:input_type -> smsclient.DeleteSeckillActivityReq
+	77,  // 60: smsclient.SeckillActivityService.UpdateSeckillActivity:input_type -> smsclient.UpdateSeckillActivityReq
+	79,  // 61: smsclient.SeckillActivityService.UpdateSeckillActivityStatus:input_type -> smsclient.UpdateSeckillActivityStatusReq
+	81,  // 62: smsclient.SeckillActivityService.QuerySeckillActivityDetail:input_type -> smsclient.QuerySeckillActivityDetailReq
+	83,  // 63: smsclient.SeckillActivityService.QuerySeckillActivityList:input_type -> smsclient.QuerySeckillActivityListReq
+	86,  // 64: smsclient.SeckillActivityService.QuerySeckillActivityListByDate:input_type -> smsclient.QuerySeckillActivityListByDateReq
+	88,  // 65: smsclient.SeckillProductService.AddSeckillProduct:input_type -> smsclient.AddSeckillProductReq
+	91,  // 66: smsclient.SeckillProductService.DeleteSeckillProduct:input_type -> smsclient.DeleteSeckillProductReq
+	93,  // 67: smsclient.SeckillProductService.UpdateSeckillProduct:input_type -> smsclient.UpdateSeckillProductReq
+	95,  // 68: smsclient.SeckillProductService.UpdateSeckillProductStatus:input_type -> smsclient.UpdateSeckillProductStatusReq
+	97,  // 69: smsclient.SeckillProductService.QuerySeckillProductDetail:input_type -> smsclient.QuerySeckillProductDetailReq
+	99,  // 70: smsclient.SeckillProductService.QuerySeckillProductList:input_type -> smsclient.QuerySeckillProductListReq
+	102, // 71: smsclient.SeckillProductService.QuerySeckillProductBySkuId:input_type -> smsclient.QuerySeckillProductBySkuIdReq
+	103, // 72: smsclient.SeckillReservationService.AddSeckillReservation:input_type -> smsclient.AddSeckillReservationReq
+	105, // 73: smsclient.SeckillReservationService.DeleteSeckillReservation:input_type -> smsclient.DeleteSeckillReservationReq
+	107, // 74: smsclient.SeckillReservationService.UpdateSeckillReservation:input_type -> smsclient.UpdateSeckillReservationReq
+	109, // 75: smsclient.SeckillReservationService.UpdateSeckillReservationStatus:input_type -> smsclient.UpdateSeckillReservationStatusReq
+	111, // 76: smsclient.SeckillReservationService.QuerySeckillReservationDetail:input_type -> smsclient.QuerySeckillReservationDetailReq
+	113, // 77: smsclient.SeckillReservationService.QuerySeckillReservationList:input_type -> smsclient.QuerySeckillReservationListReq
+	116, // 78: smsclient.SeckillSessionService.AddSeckillSession:input_type -> smsclient.AddSeckillSessionReq
+	118, // 79: smsclient.SeckillSessionService.DeleteSeckillSession:input_type -> smsclient.DeleteSeckillSessionReq
+	120, // 80: smsclient.SeckillSessionService.UpdateSeckillSession:input_type -> smsclient.UpdateSeckillSessionReq
+	122, // 81: smsclient.SeckillSessionService.UpdateSeckillSessionStatus:input_type -> smsclient.UpdateSeckillSessionStatusReq
+	124, // 82: smsclient.SeckillSessionService.QuerySeckillSessionDetail:input_type -> smsclient.QuerySeckillSessionDetailReq
+	126, // 83: smsclient.SeckillSessionService.QuerySeckillSessionList:input_type -> smsclient.QuerySeckillSessionListReq
+	129, // 84: smsclient.SeckillSessionService.QuerySeckillSessionListByTime:input_type -> smsclient.QuerySeckillSessionListByTimeReq
+	2,   // 85: smsclient.CouponService.AddCoupon:output_type -> smsclient.AddCouponResp
+	4,   // 86: smsclient.CouponService.DeleteCoupon:output_type -> smsclient.DeleteCouponResp
+	6,   // 87: smsclient.CouponService.UpdateCoupon:output_type -> smsclient.UpdateCouponResp
+	8,   // 88: smsclient.CouponService.UpdateCouponStatus:output_type -> smsclient.UpdateCouponStatusResp
+	10,  // 89: smsclient.CouponService.QueryCouponDetail:output_type -> smsclient.QueryCouponDetailResp
+	13,  // 90: smsclient.CouponService.QueryCouponList:output_type -> smsclient.QueryCouponListResp
+	15,  // 91: smsclient.CouponService.QueryCouponByScopeId:output_type -> smsclient.QueryCouponByScopeIdResp
+	17,  // 92: smsclient.CouponService.QueryCouponByCode:output_type -> smsclient.QueryCouponByCodeResp
+	19,  // 93: smsclient.CouponService.HandleExpirationCoupon:output_type -> smsclient.HandleExpirationCouponResp
+	21,  // 94: smsclient.CouponRecordService.AddCouponRecord:output_type -> smsclient.AddCouponRecordResp
+	23,  // 95: smsclient.CouponRecordService.DeleteCouponRecord:output_type -> smsclient.DeleteCouponRecordResp
+	25,  // 96: smsclient.CouponRecordService.UpdateCouponRecord:output_type -> smsclient.UpdateCouponRecordResp
+	27,  // 97: smsclient.CouponRecordService.QueryCouponRecordDetail:output_type -> smsclient.QueryCouponRecordDetailResp
+	30,  // 98: smsclient.CouponRecordService.QueryCouponRecordList:output_type -> smsclient.QueryCouponRecordListResp
+	33,  // 99: smsclient.CouponRecordService.QueryMemberCouponList:output_type -> smsclient.QueryMemberCouponListResp
+	36,  // 100: smsclient.CouponScopeService.AddCouponScope:output_type -> smsclient.AddCouponScopeResp
+	38,  // 101: smsclient.CouponScopeService.DeleteCouponScope:output_type -> smsclient.DeleteCouponScopeResp
+	40,  // 102: smsclient.CouponScopeService.UpdateCouponScope:output_type -> smsclient.UpdateCouponScopeResp
+	42,  // 103: smsclient.CouponScopeService.QueryCouponScopeDetail:output_type -> smsclient.QueryCouponScopeDetailResp
+	45,  // 104: smsclient.CouponScopeService.QueryCouponScopeList:output_type -> smsclient.QueryCouponScopeListResp
+	47,  // 105: smsclient.CouponTypeService.AddCouponType:output_type -> smsclient.AddCouponTypeResp
+	49,  // 106: smsclient.CouponTypeService.DeleteCouponType:output_type -> smsclient.DeleteCouponTypeResp
+	51,  // 107: smsclient.CouponTypeService.UpdateCouponType:output_type -> smsclient.UpdateCouponTypeResp
+	53,  // 108: smsclient.CouponTypeService.UpdateCouponTypeStatus:output_type -> smsclient.UpdateCouponTypeStatusResp
+	55,  // 109: smsclient.CouponTypeService.QueryCouponTypeDetail:output_type -> smsclient.QueryCouponTypeDetailResp
+	58,  // 110: smsclient.CouponTypeService.QueryCouponTypeList:output_type -> smsclient.QueryCouponTypeListResp
+	61,  // 111: smsclient.HomeAdvertiseService.AddHomeAdvertise:output_type -> smsclient.AddHomeAdvertiseResp
+	63,  // 112: smsclient.HomeAdvertiseService.DeleteHomeAdvertise:output_type -> smsclient.DeleteHomeAdvertiseResp
+	65,  // 113: smsclient.HomeAdvertiseService.UpdateHomeAdvertise:output_type -> smsclient.UpdateHomeAdvertiseResp
+	67,  // 114: smsclient.HomeAdvertiseService.UpdateHomeAdvertiseStatus:output_type -> smsclient.UpdateHomeAdvertiseStatusResp
+	69,  // 115: smsclient.HomeAdvertiseService.QueryHomeAdvertiseDetail:output_type -> smsclient.QueryHomeAdvertiseDetailResp
+	72,  // 116: smsclient.HomeAdvertiseService.QueryHomeAdvertiseList:output_type -> smsclient.QueryHomeAdvertiseListResp
+	74,  // 117: smsclient.SeckillActivityService.AddSeckillActivity:output_type -> smsclient.AddSeckillActivityResp
+	76,  // 118: smsclient.SeckillActivityService.DeleteSeckillActivity:output_type -> smsclient.DeleteSeckillActivityResp
+	78,  // 119: smsclient.SeckillActivityService.UpdateSeckillActivity:output_type -> smsclient.UpdateSeckillActivityResp
+	80,  // 120: smsclient.SeckillActivityService.UpdateSeckillActivityStatus:output_type -> smsclient.UpdateSeckillActivityStatusResp
+	82,  // 121: smsclient.SeckillActivityService.QuerySeckillActivityDetail:output_type -> smsclient.QuerySeckillActivityDetailResp
+	85,  // 122: smsclient.SeckillActivityService.QuerySeckillActivityList:output_type -> smsclient.QuerySeckillActivityListResp
+	87,  // 123: smsclient.SeckillActivityService.QuerySeckillActivityListByDate:output_type -> smsclient.QueryFlashPromotionListByDateResp
+	90,  // 124: smsclient.SeckillProductService.AddSeckillProduct:output_type -> smsclient.AddSeckillProductResp
+	92,  // 125: smsclient.SeckillProductService.DeleteSeckillProduct:output_type -> smsclient.DeleteSeckillProductResp
+	94,  // 126: smsclient.SeckillProductService.UpdateSeckillProduct:output_type -> smsclient.UpdateSeckillProductResp
+	96,  // 127: smsclient.SeckillProductService.UpdateSeckillProductStatus:output_type -> smsclient.UpdateSeckillProductStatusResp
+	98,  // 128: smsclient.SeckillProductService.QuerySeckillProductDetail:output_type -> smsclient.QuerySeckillProductDetailResp
+	101, // 129: smsclient.SeckillProductService.QuerySeckillProductList:output_type -> smsclient.QuerySeckillProductListResp
+	98,  // 130: smsclient.SeckillProductService.QuerySeckillProductBySkuId:output_type -> smsclient.QuerySeckillProductDetailResp
+	104, // 131: smsclient.SeckillReservationService.AddSeckillReservation:output_type -> smsclient.AddSeckillReservationResp
+	106, // 132: smsclient.SeckillReservationService.DeleteSeckillReservation:output_type -> smsclient.DeleteSeckillReservationResp
+	108, // 133: smsclient.SeckillReservationService.UpdateSeckillReservation:output_type -> smsclient.UpdateSeckillReservationResp
+	110, // 134: smsclient.SeckillReservationService.UpdateSeckillReservationStatus:output_type -> smsclient.UpdateSeckillReservationStatusResp
+	112, // 135: smsclient.SeckillReservationService.QuerySeckillReservationDetail:output_type -> smsclient.QuerySeckillReservationDetailResp
+	115, // 136: smsclient.SeckillReservationService.QuerySeckillReservationList:output_type -> smsclient.QuerySeckillReservationListResp
+	117, // 137: smsclient.SeckillSessionService.AddSeckillSession:output_type -> smsclient.AddSeckillSessionResp
+	119, // 138: smsclient.SeckillSessionService.DeleteSeckillSession:output_type -> smsclient.DeleteSeckillSessionResp
+	121, // 139: smsclient.SeckillSessionService.UpdateSeckillSession:output_type -> smsclient.UpdateSeckillSessionResp
+	123, // 140: smsclient.SeckillSessionService.UpdateSeckillSessionStatus:output_type -> smsclient.UpdateSeckillSessionStatusResp
+	125, // 141: smsclient.SeckillSessionService.QuerySeckillSessionDetail:output_type -> smsclient.QuerySeckillSessionDetailResp
+	128, // 142: smsclient.SeckillSessionService.QuerySeckillSessionList:output_type -> smsclient.QuerySeckillSessionListResp
+	130, // 143: smsclient.SeckillSessionService.QuerySeckillSessionListByTime:output_type -> smsclient.QuerySeckillSessionListByTimeResp
+	85,  // [85:144] is the sub-list for method output_type
+	26,  // [26:85] is the sub-list for method input_type
+	26,  // [26:26] is the sub-list for extension type_name
+	26,  // [26:26] is the sub-list for extension extendee
+	0,   // [0:26] is the sub-list for field type_name
 }
 
 func init() { file_rpc_sms_sms_proto_init() }

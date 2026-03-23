@@ -59,16 +59,33 @@ func (l *AddProductSpuLogic) AddProductSpu(req *types.AddProductSpuReq) (resp *t
 	// 商品id
 	spuId := result.SpuId
 	// 7.关联专题
-	addSubjectProductRelation(req, l, spuId)
+	if err := addSubjectProductRelation(req, l, spuId); err != nil {
+		logc.Errorf(l.ctx, "添加商品专题关联失败,spuId:%d,参数：%+v,响应：%s", spuId, req, err.Error())
+		s, _ := status.FromError(err)
+		return nil, errorx.NewDefaultError(s.Message())
+	}
 
 	// 8.关联优选
-	addPreferredAreaProductRelation(req, l, spuId)
+	if err := addPreferredAreaProductRelation(req, l, spuId); err != nil {
+		logc.Errorf(l.ctx, "添加商品优选专区关联失败,spuId:%d,参数：%+v,响应：%s", spuId, req, err.Error())
+		s, _ := status.FromError(err)
+		return nil, errorx.NewDefaultError(s.Message())
+	}
 
 	return res.Success()
 }
 
 func (l *AddProductSpuLogic) addProductSpuInfo(req *types.AddProductSpuReq) (*productspuservice.ProductSpuResp, error) {
 	userId, err := common.GetUserId(l.ctx)
+	if err != nil {
+		return nil, err
+	}
+	writeScope, err := common.ResolveWriteGovernanceScope(l.ctx, common.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -106,6 +123,7 @@ func (l *AddProductSpuLogic) addProductSpuInfo(req *types.AddProductSpuReq) (*pr
 		ProductFullReductionList:  buildProductFullReductionList(req),  // 满减价格
 		ProductLadderList:         buildProductLadderList(req),         // 阶梯价格
 		SkuStockList:              buildSkuStockList(req),              // sku库存信息
+		Scope:                     common.PMSGovernanceScope(writeScope),
 	})
 }
 
@@ -114,6 +132,7 @@ func buildMemberPriceList(req *types.AddProductSpuReq) []*pmsclient.MemberPriceL
 	var memberPriceLists []*pmsclient.MemberPriceList
 	for _, item := range req.MemberPriceList {
 		memberPriceLists = append(memberPriceLists, &pmsclient.MemberPriceList{
+			Id:        item.Id,            // 明细ID
 			LevelId:   item.MemberLevelId,   // 会员等级id
 			Price:     item.MemberPrice,     // 会员价格
 			LevelName: item.MemberLevelName, // 会员等级名称
@@ -127,6 +146,7 @@ func buildProductAttributeValueList(req *types.AddProductSpuReq) []*pmsclient.Pr
 	var attributeValueLists []*pmsclient.ProductAttributeValueList
 	for _, item := range req.AttributeValueList {
 		attributeValueLists = append(attributeValueLists, &pmsclient.ProductAttributeValueList{
+			Id:                 item.Id,          // 属性值明细ID
 			ProductAttributeId: item.AttributeId, // 商品属性id
 			AttributeValues:    item.Value,       // 参数值
 		})
@@ -139,6 +159,7 @@ func buildProductFullReductionList(req *types.AddProductSpuReq) []*pmsclient.Pro
 	var fullReductionLists []*pmsclient.ProductFullReductionList
 	for _, item := range req.FullList {
 		fullReductionLists = append(fullReductionLists, &pmsclient.ProductFullReductionList{
+			Id:          item.Id,          // 满减明细ID
 			FullPrice:   item.FullPrice,   // 商品满多少
 			ReducePrice: item.ReducePrice, // 商品减多少
 		})
@@ -151,6 +172,7 @@ func buildProductLadderList(req *types.AddProductSpuReq) []*pmsclient.ProductLad
 	var ladderLists []*pmsclient.ProductLadderList
 	for _, item := range req.LadderList {
 		ladderLists = append(ladderLists, &pmsclient.ProductLadderList{
+			Id:       item.Id,       // 阶梯价明细ID
 			Count:    item.Count,    // 满足的商品数量
 			Discount: item.Discount, // 折扣
 			Price:    item.Price,    // 折后价格
@@ -164,7 +186,10 @@ func buildSkuStockList(req *types.AddProductSpuReq) []*pmsclient.SkuStockList {
 	var skuStockLists []*pmsclient.SkuStockList
 	for _, item := range req.SkuList {
 		skuStockLists = append(skuStockLists, &pmsclient.SkuStockList{
+			Id:                 item.Id,                 // SKU明细ID
+			SpuId:              item.SpuId,              // 商品SpuId
 			Name:               item.Name,               // SKU名称
+			SkuCode:            item.SkuCode,            // SKU编码
 			MainPic:            item.MainPic,            // 主图
 			AlbumPics:          item.AlbumPics,          // 图片集
 			Price:              item.Price,              // 价格
@@ -184,18 +209,27 @@ func buildSkuStockList(req *types.AddProductSpuReq) []*pmsclient.SkuStockList {
 }
 
 // 添加专题关联
-func addSubjectProductRelation(req *types.AddProductSpuReq, l *AddProductSpuLogic, productId int64) {
-	_, _ = l.svcCtx.SubjectProductRelationService.AddSubjectProductRelation(l.ctx, &cmsclient.AddSubjectProductRelationReq{
+func addSubjectProductRelation(req *types.AddProductSpuReq, l *AddProductSpuLogic, productId int64) error {
+	if req.SubjectIds == nil {
+		return nil
+	}
+
+	_, err := l.svcCtx.SubjectProductRelationService.AddSubjectProductRelation(l.ctx, &cmsclient.AddSubjectProductRelationReq{
 		SubjectId: req.SubjectIds, // 专题ID
 		ProductId: productId,      // 商品ID
 	})
+	return err
 }
 
 // 添加优选商品关联
-func addPreferredAreaProductRelation(req *types.AddProductSpuReq, l *AddProductSpuLogic, productId int64) {
-	_, _ = l.svcCtx.PreferredAreaProductRelationService.AddPreferredAreaProductRelation(l.ctx, &cmsclient.AddPreferredAreaProductRelationReq{
+func addPreferredAreaProductRelation(req *types.AddProductSpuReq, l *AddProductSpuLogic, productId int64) error {
+	if req.PrefrenceAreaIds == nil {
+		return nil
+	}
+
+	_, err := l.svcCtx.PreferredAreaProductRelationService.AddPreferredAreaProductRelation(l.ctx, &cmsclient.AddPreferredAreaProductRelationReq{
 		PreferredAreaId: req.PrefrenceAreaIds, // 优选专区ID
 		ProductId:       productId,            // 商品ID
 	})
-
+	return err
 }

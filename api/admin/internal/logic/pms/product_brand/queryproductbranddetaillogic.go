@@ -2,6 +2,8 @@ package product_brand
 
 import (
 	"context"
+
+	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
 	"github.com/feihua/zero-admin/api/admin/internal/types"
@@ -12,11 +14,6 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-// QueryProductBrandDetailLogic 查询商品品牌详情
-/*
-Author: LiuFeiHua
-Date: 2025/05/26 10:33:54
-*/
 type QueryProductBrandDetailLogic struct {
 	logx.Logger
 	ctx    context.Context
@@ -24,47 +21,18 @@ type QueryProductBrandDetailLogic struct {
 }
 
 func NewQueryProductBrandDetailLogic(ctx context.Context, svcCtx *svc.ServiceContext) *QueryProductBrandDetailLogic {
-	return &QueryProductBrandDetailLogic{
-		Logger: logx.WithContext(ctx),
-		ctx:    ctx,
-		svcCtx: svcCtx,
-	}
+	return &QueryProductBrandDetailLogic{Logger: logx.WithContext(ctx), ctx: ctx, svcCtx: svcCtx}
 }
-
-// QueryProductBrandDetail 查询商品品牌详情
-func (l *QueryProductBrandDetailLogic) QueryProductBrandDetail(req *types.QueryProductBrandDetailReq) (resp *types.QueryProductBrandDetailResp, err error) {
-
-	detail, err := l.svcCtx.ProductBrandService.QueryProductBrandDetail(l.ctx, &pmsclient.QueryProductBrandDetailReq{
-		Id: req.Id,
-	})
-
+func (l *QueryProductBrandDetailLogic) QueryProductBrandDetail(req *types.QueryProductBrandDetailReq) (*types.QueryProductBrandDetailResp, error) {
+	queryScope, err := admincommon.ResolveQueryGovernanceScope(l.ctx, admincommon.RequestedGovernanceScope{ScopeType: req.ScopeType, PlatformID: req.PlatformId, TenantID: req.TenantId, MerchantID: req.MerchantId})
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
+	result, err := l.svcCtx.ProductBrandService.QueryProductBrandDetail(l.ctx, &pmsclient.QueryProductBrandDetailReq{Id: req.Id, Scope: admincommon.PMSGovernanceScope(queryScope)})
 	if err != nil {
 		logc.Errorf(l.ctx, "查询商品品牌详情失败,参数：%+v,响应：%s", req, err.Error())
 		s, _ := status.FromError(err)
 		return nil, errorx.NewDefaultError(s.Message())
 	}
-
-	data := types.QueryProductBrandDetailData{
-		Id:                  detail.Id,                  //
-		Name:                detail.Name,                // 品牌名称
-		Logo:                detail.Logo,                // 品牌logo
-		BigPic:              detail.BigPic,              // 专区大图
-		Description:         detail.Description,         // 描述
-		FirstLetter:         detail.FirstLetter,         // 首字母
-		Sort:                detail.Sort,                // 排序
-		RecommendStatus:     detail.RecommendStatus,     // 推荐状态
-		ProductCount:        detail.ProductCount,        // 产品数量
-		ProductCommentCount: detail.ProductCommentCount, // 产品评论数量
-		IsEnabled:           detail.IsEnabled,           // 是否启用
-		CreateBy:            detail.CreateBy,            // 创建人ID
-		CreateTime:          detail.CreateTime,          // 创建时间
-		UpdateBy:            detail.UpdateBy,            // 更新人ID
-		UpdateTime:          detail.UpdateTime,          // 更新时间
-
-	}
-	return &types.QueryProductBrandDetailResp{
-		Code:    "000000",
-		Message: "查询商品品牌成功",
-		Data:    data,
-	}, nil
+	return &types.QueryProductBrandDetailResp{Code: "000000", Message: "查询商品品牌详情成功", Data: types.QueryProductBrandDetailData{Id: result.Id, Name: result.Name, Logo: result.Logo, BigPic: result.BigPic, Description: result.Description, FirstLetter: result.FirstLetter, Sort: result.Sort, RecommendStatus: result.RecommendStatus, ProductCount: result.ProductCount, ProductCommentCount: result.ProductCommentCount, IsEnabled: result.IsEnabled, CreateBy: result.CreateBy, CreateTime: result.CreateTime, UpdateBy: result.UpdateBy, UpdateTime: result.UpdateTime, ScopeType: result.ScopeType, PlatformId: result.PlatformId, TenantId: result.TenantId, MerchantId: result.MerchantId}}, nil
 }

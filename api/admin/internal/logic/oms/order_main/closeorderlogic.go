@@ -33,10 +33,20 @@ func (l *CloseOrderLogic) CloseOrder(req *types.CloseOrderReq) (resp *types.Base
 	if err != nil {
 		return nil, err
 	}
+	writeScope, err := common.ResolveWriteGovernanceScope(l.ctx, common.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, err
+	}
 	_, err = l.svcCtx.OrderService.CloseOrder(l.ctx, &omsclient.CloseOrderReq{
 		Ids:        req.Ids,
 		Note:       req.Note,
 		OperatorId: userId,
+		Scope:      common.OMSGovernanceScope(writeScope),
 	})
 
 	if err != nil {

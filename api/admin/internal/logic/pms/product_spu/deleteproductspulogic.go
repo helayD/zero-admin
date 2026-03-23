@@ -38,10 +38,20 @@ func (l *DeleteProductSpuLogic) DeleteProductSpu(req *types.DeleteProductSpuReq)
 	if err != nil {
 		return nil, err
 	}
+	writeScope, err := common.ResolveWriteGovernanceScope(l.ctx, common.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, err
+	}
 	_, err = l.svcCtx.ProductSpuService.UpdateDeleteStatus(l.ctx, &pmsclient.UpdateProductSpuStatusReq{
 		Ids:      req.Ids,
 		Status:   1,
 		UpdateBy: userId,
+		Scope:    common.PMSGovernanceScope(writeScope),
 	})
 
 	if err != nil {

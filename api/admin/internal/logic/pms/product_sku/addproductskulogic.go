@@ -38,8 +38,19 @@ func (l *AddProductSkuLogic) AddProductSku(req *types.AddProductSkuReq) (resp *t
 	if err != nil {
 		return nil, err
 	}
+	writeScope, err := common.ResolveWriteGovernanceScope(l.ctx, common.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, err
+	}
 	_, err = l.svcCtx.ProductSkuService.AddProductSku(l.ctx, &pmsclient.AddProductSkuReq{
+		SpuId:              req.SpuId,              // 商品SpuId
 		Name:               req.Name,               // SKU名称
+		SkuCode:            req.SkuCode,            // SKU编码
 		MainPic:            req.MainPic,            // 主图
 		AlbumPics:          req.AlbumPics,          // 图片集
 		Price:              req.Price,              // 价格
@@ -54,6 +65,7 @@ func (l *AddProductSkuLogic) AddProductSku(req *types.AddProductSkuReq) (resp *t
 		VerifyStatus:       req.VerifyStatus,       // 审核状态：0-未审核，1-审核通过，2-审核不通过
 		Sort:               req.Sort,               // 排序
 		CreateBy:           userId,                 // 创建人ID
+		Scope:              common.PMSGovernanceScope(writeScope),
 	})
 
 	if err != nil {

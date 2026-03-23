@@ -37,6 +37,15 @@ func (l *UpdateProductSkuLogic) UpdateProductSku(req *types.UpdateProductSkuReq)
 	if err != nil {
 		return nil, err
 	}
+	writeScope, err := common.ResolveWriteGovernanceScope(l.ctx, common.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, err
+	}
 
 	var data []*pmsclient.UpdateProductSkuData
 	for _, s := range req.Data {
@@ -63,7 +72,8 @@ func (l *UpdateProductSkuLogic) UpdateProductSku(req *types.UpdateProductSkuReq)
 	}
 
 	_, err = l.svcCtx.ProductSkuService.UpdateProductSku(l.ctx, &pmsclient.UpdateProductSkuReq{
-		Data: data,
+		Data:  data,
+		Scope: common.PMSGovernanceScope(writeScope),
 	})
 
 	if err != nil {

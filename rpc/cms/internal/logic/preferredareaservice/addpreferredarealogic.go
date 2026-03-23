@@ -7,9 +7,11 @@ import (
 	"github.com/feihua/zero-admin/rpc/cms/cmsclient"
 	"github.com/feihua/zero-admin/rpc/cms/gen/model"
 	"github.com/feihua/zero-admin/rpc/cms/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/cms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/cms/internal/svc"
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
 )
 
 // AddPreferredAreaLogic 添加优选专区
@@ -44,6 +46,11 @@ func (l *AddPreferredAreaLogic) AddPreferredArea(in *cmsclient.AddPreferredAreaR
 		return nil, errors.New(fmt.Sprintf("优选专区名称：%s,已存在", in.Name))
 	}
 
+	currentScope, err := logiccommon.ResolveWriteScope(l.ctx, l.svcCtx.DB, nil, in.CreateBy)
+	if err != nil {
+		return nil, err
+	}
+
 	area := &model.CmsPreferredArea{
 		Name:       in.Name,       // 专区名称
 		SubTitle:   in.SubTitle,   // 子标题
@@ -53,7 +60,12 @@ func (l *AddPreferredAreaLogic) AddPreferredArea(in *cmsclient.AddPreferredAreaR
 		CreateBy:   in.CreateBy,   // 创建者
 	}
 
-	err = q.WithContext(l.ctx).Create(area)
+	err = l.svcCtx.DB.WithContext(l.ctx).Transaction(func(tx *gorm.DB) error {
+		if err := query.Use(tx).CmsPreferredArea.WithContext(l.ctx).Create(area); err != nil {
+			return err
+		}
+		return logiccommon.ApplyPreferredAreaScope(l.ctx, tx, area.ID, currentScope)
+	})
 	if err != nil {
 		logc.Errorf(l.ctx, "添加优选专区失败,参数:%+v,异常:%s", area, err.Error())
 		return nil, errors.New("添加优选专区失败")

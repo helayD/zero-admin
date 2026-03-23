@@ -3863,6 +3863,7 @@ type AddSubjectReq struct {
 	CategoryName    string                 `protobuf:"bytes,15,opt,name=category_name,json=categoryName,proto3" json:"category_name,omitempty"`          //专题分类名称
 	CreateBy        string                 `protobuf:"bytes,16,opt,name=create_by,json=createBy,proto3" json:"create_by,omitempty"`                      //创建者
 	Sort            int32                  `protobuf:"varint,17,opt,name=sort,proto3" json:"sort,omitempty"`                                             //排序
+	Scope           *GovernanceScope       `protobuf:"bytes,18,opt,name=scope,proto3" json:"scope,omitempty"`                                            //治理范围(platform/tenant/merchant)
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -4016,6 +4017,13 @@ func (x *AddSubjectReq) GetSort() int32 {
 	return 0
 }
 
+func (x *AddSubjectReq) GetScope() *GovernanceScope {
+	if x != nil {
+		return x.Scope
+	}
+	return nil
+}
+
 type AddSubjectResp struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Pong          string                 `protobuf:"bytes,1,opt,name=pong,proto3" json:"pong,omitempty"`
@@ -4064,6 +4072,7 @@ func (x *AddSubjectResp) GetPong() string {
 type DeleteSubjectReq struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Ids           []int64                `protobuf:"varint,1,rep,packed,name=ids,proto3" json:"ids,omitempty"`
+	Scope         *GovernanceScope       `protobuf:"bytes,2,opt,name=scope,proto3" json:"scope,omitempty"` //治理范围(platform/tenant/merchant)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4101,6 +4110,13 @@ func (*DeleteSubjectReq) Descriptor() ([]byte, []int) {
 func (x *DeleteSubjectReq) GetIds() []int64 {
 	if x != nil {
 		return x.Ids
+	}
+	return nil
+}
+
+func (x *DeleteSubjectReq) GetScope() *GovernanceScope {
+	if x != nil {
+		return x.Scope
 	}
 	return nil
 }
@@ -4169,6 +4185,7 @@ type UpdateSubjectReq struct {
 	CategoryName    string                 `protobuf:"bytes,15,opt,name=category_name,json=categoryName,proto3" json:"category_name,omitempty"`          //专题分类名称
 	UpdateBy        string                 `protobuf:"bytes,18,opt,name=update_by,json=updateBy,proto3" json:"update_by,omitempty"`                      //更新者
 	Sort            int32                  `protobuf:"varint,19,opt,name=sort,proto3" json:"sort,omitempty"`                                             //排序
+	Scope           *GovernanceScope       `protobuf:"bytes,20,opt,name=scope,proto3" json:"scope,omitempty"`                                            //治理范围(platform/tenant/merchant)
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -4322,6 +4339,13 @@ func (x *UpdateSubjectReq) GetSort() int32 {
 	return 0
 }
 
+func (x *UpdateSubjectReq) GetScope() *GovernanceScope {
+	if x != nil {
+		return x.Scope
+	}
+	return nil
+}
+
 type UpdateSubjectResp struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Pong          string                 `protobuf:"bytes,1,opt,name=pong,proto3" json:"pong,omitempty"`
@@ -4373,6 +4397,7 @@ type UpdateSubjectStatusReq struct {
 	RecommendStatus int32                  `protobuf:"varint,6,opt,name=recommend_status,json=recommendStatus,proto3" json:"recommend_status,omitempty"` //推荐状态：0->不推荐；1->推荐
 	ShowStatus      int32                  `protobuf:"varint,12,opt,name=show_status,json=showStatus,proto3" json:"show_status,omitempty"`               //显示状态：0->不显示；1->显示
 	UpdateBy        string                 `protobuf:"bytes,18,opt,name=update_by,json=updateBy,proto3" json:"update_by,omitempty"`                      //更新者
+	Scope           *GovernanceScope       `protobuf:"bytes,19,opt,name=scope,proto3" json:"scope,omitempty"`                                            //治理范围(platform/tenant/merchant)
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -4433,6 +4458,13 @@ func (x *UpdateSubjectStatusReq) GetUpdateBy() string {
 		return x.UpdateBy
 	}
 	return ""
+}
+
+func (x *UpdateSubjectStatusReq) GetScope() *GovernanceScope {
+	if x != nil {
+		return x.Scope
+	}
+	return nil
 }
 
 type UpdateSubjectStatusResp struct {
@@ -10299,7 +10331,7 @@ const file_rpc_cms_cms_proto_rawDesc = "" +
 	"\n" +
 	"product_id\x18\x01 \x01(\x03R\tproductId\"Y\n" +
 	")QueryPreferredAreaProductRelationListResp\x12,\n" +
-	"\x12preferred_area_ids\x18\x02 \x03(\x03R\x10preferredAreaIds\"\x98\x04\n" +
+	"\x12preferred_area_ids\x18\x02 \x03(\x03R\x10preferredAreaIds\"\xca\x04\n" +
 	"\rAddSubjectReq\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x1f\n" +
 	"\vcategory_id\x18\x02 \x01(\x03R\n" +
@@ -10322,13 +10354,15 @@ const file_rpc_cms_cms_proto_rawDesc = "" +
 	"\rforward_count\x18\x0e \x01(\x05R\fforwardCount\x12#\n" +
 	"\rcategory_name\x18\x0f \x01(\tR\fcategoryName\x12\x1b\n" +
 	"\tcreate_by\x18\x10 \x01(\tR\bcreateBy\x12\x12\n" +
-	"\x04sort\x18\x11 \x01(\x05R\x04sort\"$\n" +
+	"\x04sort\x18\x11 \x01(\x05R\x04sort\x120\n" +
+	"\x05scope\x18\x12 \x01(\v2\x1a.cmsclient.GovernanceScopeR\x05scope\"$\n" +
 	"\x0eAddSubjectResp\x12\x12\n" +
-	"\x04pong\x18\x01 \x01(\tR\x04pong\"$\n" +
+	"\x04pong\x18\x01 \x01(\tR\x04pong\"V\n" +
 	"\x10DeleteSubjectReq\x12\x10\n" +
-	"\x03ids\x18\x01 \x03(\x03R\x03ids\"'\n" +
+	"\x03ids\x18\x01 \x03(\x03R\x03ids\x120\n" +
+	"\x05scope\x18\x02 \x01(\v2\x1a.cmsclient.GovernanceScopeR\x05scope\"'\n" +
 	"\x11DeleteSubjectResp\x12\x12\n" +
-	"\x04pong\x18\x01 \x01(\tR\x04pong\"\x9b\x04\n" +
+	"\x04pong\x18\x01 \x01(\tR\x04pong\"\xcd\x04\n" +
 	"\x10UpdateSubjectReq\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x1f\n" +
 	"\vcategory_id\x18\x02 \x01(\x03R\n" +
@@ -10351,15 +10385,17 @@ const file_rpc_cms_cms_proto_rawDesc = "" +
 	"\rforward_count\x18\x0e \x01(\x05R\fforwardCount\x12#\n" +
 	"\rcategory_name\x18\x0f \x01(\tR\fcategoryName\x12\x1b\n" +
 	"\tupdate_by\x18\x12 \x01(\tR\bupdateBy\x12\x12\n" +
-	"\x04sort\x18\x13 \x01(\x05R\x04sort\"'\n" +
+	"\x04sort\x18\x13 \x01(\x05R\x04sort\x120\n" +
+	"\x05scope\x18\x14 \x01(\v2\x1a.cmsclient.GovernanceScopeR\x05scope\"'\n" +
 	"\x11UpdateSubjectResp\x12\x12\n" +
-	"\x04pong\x18\x01 \x01(\tR\x04pong\"\x93\x01\n" +
+	"\x04pong\x18\x01 \x01(\tR\x04pong\"\xc5\x01\n" +
 	"\x16UpdateSubjectStatusReq\x12\x10\n" +
 	"\x03ids\x18\x01 \x03(\x03R\x03ids\x12)\n" +
 	"\x10recommend_status\x18\x06 \x01(\x05R\x0frecommendStatus\x12\x1f\n" +
 	"\vshow_status\x18\f \x01(\x05R\n" +
 	"showStatus\x12\x1b\n" +
-	"\tupdate_by\x18\x12 \x01(\tR\bupdateBy\"-\n" +
+	"\tupdate_by\x18\x12 \x01(\tR\bupdateBy\x120\n" +
+	"\x05scope\x18\x13 \x01(\v2\x1a.cmsclient.GovernanceScopeR\x05scope\"-\n" +
 	"\x17UpdateSubjectStatusResp\x12\x12\n" +
 	"\x04pong\x18\x01 \x01(\tR\x04pong\"Y\n" +
 	"\x15QuerySubjectDetailReq\x12\x0e\n" +
@@ -11124,155 +11160,159 @@ var file_rpc_cms_cms_proto_depIdxs = []int32{
 	25,  // 1: cmsclient.QueryHelpCategoryListResp.list:type_name -> cmsclient.HelpCategoryListData
 	38,  // 2: cmsclient.QueryMemberReportListResp.list:type_name -> cmsclient.MemberReportListData
 	51,  // 3: cmsclient.QueryPreferredAreaListResp.list:type_name -> cmsclient.PreferredAreaListData
-	0,   // 4: cmsclient.QuerySubjectDetailReq.scope:type_name -> cmsclient.GovernanceScope
-	0,   // 5: cmsclient.QuerySubjectListReq.scope:type_name -> cmsclient.GovernanceScope
-	68,  // 6: cmsclient.QuerySubjectListResp.list:type_name -> cmsclient.SubjectListData
-	0,   // 7: cmsclient.SubjectListByIdsReq.scope:type_name -> cmsclient.GovernanceScope
-	85,  // 8: cmsclient.QuerySubjectCategoryListResp.list:type_name -> cmsclient.SubjectCategoryListData
-	98,  // 9: cmsclient.QuerySubjectCommentListResp.list:type_name -> cmsclient.SubjectCommentListData
-	0,   // 10: cmsclient.QuerySubjectProductRelationListReq.scope:type_name -> cmsclient.GovernanceScope
-	115, // 11: cmsclient.QueryTopicListResp.list:type_name -> cmsclient.TopicListData
-	128, // 12: cmsclient.QueryTopicCategoryListResp.list:type_name -> cmsclient.TopicCategoryListData
-	141, // 13: cmsclient.QueryTopicCommentListResp.list:type_name -> cmsclient.TopicCommentListData
-	1,   // 14: cmsclient.HelpService.AddHelp:input_type -> cmsclient.AddHelpReq
-	3,   // 15: cmsclient.HelpService.DeleteHelp:input_type -> cmsclient.DeleteHelpReq
-	5,   // 16: cmsclient.HelpService.UpdateHelp:input_type -> cmsclient.UpdateHelpReq
-	7,   // 17: cmsclient.HelpService.UpdateHelpStatus:input_type -> cmsclient.UpdateHelpStatusReq
-	9,   // 18: cmsclient.HelpService.QueryHelpDetail:input_type -> cmsclient.QueryHelpDetailReq
-	11,  // 19: cmsclient.HelpService.QueryHelpList:input_type -> cmsclient.QueryHelpListReq
-	14,  // 20: cmsclient.HelpCategoryService.AddHelpCategory:input_type -> cmsclient.AddHelpCategoryReq
-	16,  // 21: cmsclient.HelpCategoryService.DeleteHelpCategory:input_type -> cmsclient.DeleteHelpCategoryReq
-	18,  // 22: cmsclient.HelpCategoryService.UpdateHelpCategory:input_type -> cmsclient.UpdateHelpCategoryReq
-	20,  // 23: cmsclient.HelpCategoryService.UpdateHelpCategoryStatus:input_type -> cmsclient.UpdateHelpCategoryStatusReq
-	22,  // 24: cmsclient.HelpCategoryService.QueryHelpCategoryDetail:input_type -> cmsclient.QueryHelpCategoryDetailReq
-	24,  // 25: cmsclient.HelpCategoryService.QueryHelpCategoryList:input_type -> cmsclient.QueryHelpCategoryListReq
-	27,  // 26: cmsclient.MemberReportService.AddMemberReport:input_type -> cmsclient.AddMemberReportReq
-	29,  // 27: cmsclient.MemberReportService.DeleteMemberReport:input_type -> cmsclient.DeleteMemberReportReq
-	31,  // 28: cmsclient.MemberReportService.UpdateMemberReport:input_type -> cmsclient.UpdateMemberReportReq
-	33,  // 29: cmsclient.MemberReportService.UpdateMemberReportStatus:input_type -> cmsclient.UpdateMemberReportStatusReq
-	35,  // 30: cmsclient.MemberReportService.QueryMemberReportDetail:input_type -> cmsclient.QueryMemberReportDetailReq
-	37,  // 31: cmsclient.MemberReportService.QueryMemberReportList:input_type -> cmsclient.QueryMemberReportListReq
-	40,  // 32: cmsclient.PreferredAreaService.AddPreferredArea:input_type -> cmsclient.AddPreferredAreaReq
-	42,  // 33: cmsclient.PreferredAreaService.DeletePreferredArea:input_type -> cmsclient.DeletePreferredAreaReq
-	44,  // 34: cmsclient.PreferredAreaService.UpdatePreferredArea:input_type -> cmsclient.UpdatePreferredAreaReq
-	46,  // 35: cmsclient.PreferredAreaService.UpdatePreferredAreaStatus:input_type -> cmsclient.UpdatePreferredAreaStatusReq
-	48,  // 36: cmsclient.PreferredAreaService.QueryPreferredAreaDetail:input_type -> cmsclient.QueryPreferredAreaDetailReq
-	50,  // 37: cmsclient.PreferredAreaService.QueryPreferredAreaList:input_type -> cmsclient.QueryPreferredAreaListReq
-	53,  // 38: cmsclient.PreferredAreaProductRelationService.AddPreferredAreaProductRelation:input_type -> cmsclient.AddPreferredAreaProductRelationReq
-	55,  // 39: cmsclient.PreferredAreaProductRelationService.QueryPreferredAreaProductRelationList:input_type -> cmsclient.QueryPreferredAreaProductRelationListReq
-	57,  // 40: cmsclient.SubjectService.AddSubject:input_type -> cmsclient.AddSubjectReq
-	59,  // 41: cmsclient.SubjectService.DeleteSubject:input_type -> cmsclient.DeleteSubjectReq
-	61,  // 42: cmsclient.SubjectService.UpdateSubject:input_type -> cmsclient.UpdateSubjectReq
-	63,  // 43: cmsclient.SubjectService.UpdateSubjectStatus:input_type -> cmsclient.UpdateSubjectStatusReq
-	65,  // 44: cmsclient.SubjectService.QuerySubjectDetail:input_type -> cmsclient.QuerySubjectDetailReq
-	67,  // 45: cmsclient.SubjectService.QuerySubjectList:input_type -> cmsclient.QuerySubjectListReq
-	72,  // 46: cmsclient.SubjectService.SubjectListByIds:input_type -> cmsclient.SubjectListByIdsReq
-	70,  // 47: cmsclient.SubjectService.UpdateSubjectRecommendStatus:input_type -> cmsclient.UpdateSubjectRecommendStatusReq
-	73,  // 48: cmsclient.SubjectService.UpdateSubjectSort:input_type -> cmsclient.UpdateSubjectSortReq
-	74,  // 49: cmsclient.SubjectCategoryService.AddSubjectCategory:input_type -> cmsclient.AddSubjectCategoryReq
-	76,  // 50: cmsclient.SubjectCategoryService.DeleteSubjectCategory:input_type -> cmsclient.DeleteSubjectCategoryReq
-	78,  // 51: cmsclient.SubjectCategoryService.UpdateSubjectCategory:input_type -> cmsclient.UpdateSubjectCategoryReq
-	80,  // 52: cmsclient.SubjectCategoryService.UpdateSubjectCategoryStatus:input_type -> cmsclient.UpdateSubjectCategoryStatusReq
-	82,  // 53: cmsclient.SubjectCategoryService.QuerySubjectCategoryDetail:input_type -> cmsclient.QuerySubjectCategoryDetailReq
-	84,  // 54: cmsclient.SubjectCategoryService.QuerySubjectCategoryList:input_type -> cmsclient.QuerySubjectCategoryListReq
-	87,  // 55: cmsclient.SubjectCommentService.AddSubjectComment:input_type -> cmsclient.AddSubjectCommentReq
-	89,  // 56: cmsclient.SubjectCommentService.DeleteSubjectComment:input_type -> cmsclient.DeleteSubjectCommentReq
-	91,  // 57: cmsclient.SubjectCommentService.UpdateSubjectComment:input_type -> cmsclient.UpdateSubjectCommentReq
-	93,  // 58: cmsclient.SubjectCommentService.UpdateSubjectCommentStatus:input_type -> cmsclient.UpdateSubjectCommentStatusReq
-	95,  // 59: cmsclient.SubjectCommentService.QuerySubjectCommentDetail:input_type -> cmsclient.QuerySubjectCommentDetailReq
-	97,  // 60: cmsclient.SubjectCommentService.QuerySubjectCommentList:input_type -> cmsclient.QuerySubjectCommentListReq
-	100, // 61: cmsclient.SubjectProductRelationService.AddSubjectProductRelation:input_type -> cmsclient.AddSubjectProductRelationReq
-	102, // 62: cmsclient.SubjectProductRelationService.QuerySubjectProductRelationList:input_type -> cmsclient.QuerySubjectProductRelationListReq
-	104, // 63: cmsclient.TopicService.AddTopic:input_type -> cmsclient.AddTopicReq
-	106, // 64: cmsclient.TopicService.DeleteTopic:input_type -> cmsclient.DeleteTopicReq
-	108, // 65: cmsclient.TopicService.UpdateTopic:input_type -> cmsclient.UpdateTopicReq
-	110, // 66: cmsclient.TopicService.UpdateTopicStatus:input_type -> cmsclient.UpdateTopicStatusReq
-	112, // 67: cmsclient.TopicService.QueryTopicDetail:input_type -> cmsclient.QueryTopicDetailReq
-	114, // 68: cmsclient.TopicService.QueryTopicList:input_type -> cmsclient.QueryTopicListReq
-	117, // 69: cmsclient.TopicCategoryService.AddTopicCategory:input_type -> cmsclient.AddTopicCategoryReq
-	119, // 70: cmsclient.TopicCategoryService.DeleteTopicCategory:input_type -> cmsclient.DeleteTopicCategoryReq
-	121, // 71: cmsclient.TopicCategoryService.UpdateTopicCategory:input_type -> cmsclient.UpdateTopicCategoryReq
-	123, // 72: cmsclient.TopicCategoryService.UpdateTopicCategoryStatus:input_type -> cmsclient.UpdateTopicCategoryStatusReq
-	125, // 73: cmsclient.TopicCategoryService.QueryTopicCategoryDetail:input_type -> cmsclient.QueryTopicCategoryDetailReq
-	127, // 74: cmsclient.TopicCategoryService.QueryTopicCategoryList:input_type -> cmsclient.QueryTopicCategoryListReq
-	130, // 75: cmsclient.TopicCommentService.AddTopicComment:input_type -> cmsclient.AddTopicCommentReq
-	132, // 76: cmsclient.TopicCommentService.DeleteTopicComment:input_type -> cmsclient.DeleteTopicCommentReq
-	134, // 77: cmsclient.TopicCommentService.UpdateTopicComment:input_type -> cmsclient.UpdateTopicCommentReq
-	136, // 78: cmsclient.TopicCommentService.UpdateTopicCommentStatus:input_type -> cmsclient.UpdateTopicCommentStatusReq
-	138, // 79: cmsclient.TopicCommentService.QueryTopicCommentDetail:input_type -> cmsclient.QueryTopicCommentDetailReq
-	140, // 80: cmsclient.TopicCommentService.QueryTopicCommentList:input_type -> cmsclient.QueryTopicCommentListReq
-	2,   // 81: cmsclient.HelpService.AddHelp:output_type -> cmsclient.AddHelpResp
-	4,   // 82: cmsclient.HelpService.DeleteHelp:output_type -> cmsclient.DeleteHelpResp
-	6,   // 83: cmsclient.HelpService.UpdateHelp:output_type -> cmsclient.UpdateHelpResp
-	8,   // 84: cmsclient.HelpService.UpdateHelpStatus:output_type -> cmsclient.UpdateHelpStatusResp
-	10,  // 85: cmsclient.HelpService.QueryHelpDetail:output_type -> cmsclient.QueryHelpDetailResp
-	13,  // 86: cmsclient.HelpService.QueryHelpList:output_type -> cmsclient.QueryHelpListResp
-	15,  // 87: cmsclient.HelpCategoryService.AddHelpCategory:output_type -> cmsclient.AddHelpCategoryResp
-	17,  // 88: cmsclient.HelpCategoryService.DeleteHelpCategory:output_type -> cmsclient.DeleteHelpCategoryResp
-	19,  // 89: cmsclient.HelpCategoryService.UpdateHelpCategory:output_type -> cmsclient.UpdateHelpCategoryResp
-	21,  // 90: cmsclient.HelpCategoryService.UpdateHelpCategoryStatus:output_type -> cmsclient.UpdateHelpCategoryStatusResp
-	23,  // 91: cmsclient.HelpCategoryService.QueryHelpCategoryDetail:output_type -> cmsclient.QueryHelpCategoryDetailResp
-	26,  // 92: cmsclient.HelpCategoryService.QueryHelpCategoryList:output_type -> cmsclient.QueryHelpCategoryListResp
-	28,  // 93: cmsclient.MemberReportService.AddMemberReport:output_type -> cmsclient.AddMemberReportResp
-	30,  // 94: cmsclient.MemberReportService.DeleteMemberReport:output_type -> cmsclient.DeleteMemberReportResp
-	32,  // 95: cmsclient.MemberReportService.UpdateMemberReport:output_type -> cmsclient.UpdateMemberReportResp
-	34,  // 96: cmsclient.MemberReportService.UpdateMemberReportStatus:output_type -> cmsclient.UpdateMemberReportStatusResp
-	36,  // 97: cmsclient.MemberReportService.QueryMemberReportDetail:output_type -> cmsclient.QueryMemberReportDetailResp
-	39,  // 98: cmsclient.MemberReportService.QueryMemberReportList:output_type -> cmsclient.QueryMemberReportListResp
-	41,  // 99: cmsclient.PreferredAreaService.AddPreferredArea:output_type -> cmsclient.AddPreferredAreaResp
-	43,  // 100: cmsclient.PreferredAreaService.DeletePreferredArea:output_type -> cmsclient.DeletePreferredAreaResp
-	45,  // 101: cmsclient.PreferredAreaService.UpdatePreferredArea:output_type -> cmsclient.UpdatePreferredAreaResp
-	47,  // 102: cmsclient.PreferredAreaService.UpdatePreferredAreaStatus:output_type -> cmsclient.UpdatePreferredAreaStatusResp
-	49,  // 103: cmsclient.PreferredAreaService.QueryPreferredAreaDetail:output_type -> cmsclient.QueryPreferredAreaDetailResp
-	52,  // 104: cmsclient.PreferredAreaService.QueryPreferredAreaList:output_type -> cmsclient.QueryPreferredAreaListResp
-	54,  // 105: cmsclient.PreferredAreaProductRelationService.AddPreferredAreaProductRelation:output_type -> cmsclient.AddPreferredAreaProductRelationResp
-	56,  // 106: cmsclient.PreferredAreaProductRelationService.QueryPreferredAreaProductRelationList:output_type -> cmsclient.QueryPreferredAreaProductRelationListResp
-	58,  // 107: cmsclient.SubjectService.AddSubject:output_type -> cmsclient.AddSubjectResp
-	60,  // 108: cmsclient.SubjectService.DeleteSubject:output_type -> cmsclient.DeleteSubjectResp
-	62,  // 109: cmsclient.SubjectService.UpdateSubject:output_type -> cmsclient.UpdateSubjectResp
-	64,  // 110: cmsclient.SubjectService.UpdateSubjectStatus:output_type -> cmsclient.UpdateSubjectStatusResp
-	66,  // 111: cmsclient.SubjectService.QuerySubjectDetail:output_type -> cmsclient.QuerySubjectDetailResp
-	69,  // 112: cmsclient.SubjectService.QuerySubjectList:output_type -> cmsclient.QuerySubjectListResp
-	69,  // 113: cmsclient.SubjectService.SubjectListByIds:output_type -> cmsclient.QuerySubjectListResp
-	71,  // 114: cmsclient.SubjectService.UpdateSubjectRecommendStatus:output_type -> cmsclient.UpdateSubjectRecommendStatusResp
-	62,  // 115: cmsclient.SubjectService.UpdateSubjectSort:output_type -> cmsclient.UpdateSubjectResp
-	75,  // 116: cmsclient.SubjectCategoryService.AddSubjectCategory:output_type -> cmsclient.AddSubjectCategoryResp
-	77,  // 117: cmsclient.SubjectCategoryService.DeleteSubjectCategory:output_type -> cmsclient.DeleteSubjectCategoryResp
-	79,  // 118: cmsclient.SubjectCategoryService.UpdateSubjectCategory:output_type -> cmsclient.UpdateSubjectCategoryResp
-	81,  // 119: cmsclient.SubjectCategoryService.UpdateSubjectCategoryStatus:output_type -> cmsclient.UpdateSubjectCategoryStatusResp
-	83,  // 120: cmsclient.SubjectCategoryService.QuerySubjectCategoryDetail:output_type -> cmsclient.QuerySubjectCategoryDetailResp
-	86,  // 121: cmsclient.SubjectCategoryService.QuerySubjectCategoryList:output_type -> cmsclient.QuerySubjectCategoryListResp
-	88,  // 122: cmsclient.SubjectCommentService.AddSubjectComment:output_type -> cmsclient.AddSubjectCommentResp
-	90,  // 123: cmsclient.SubjectCommentService.DeleteSubjectComment:output_type -> cmsclient.DeleteSubjectCommentResp
-	92,  // 124: cmsclient.SubjectCommentService.UpdateSubjectComment:output_type -> cmsclient.UpdateSubjectCommentResp
-	94,  // 125: cmsclient.SubjectCommentService.UpdateSubjectCommentStatus:output_type -> cmsclient.UpdateSubjectCommentStatusResp
-	96,  // 126: cmsclient.SubjectCommentService.QuerySubjectCommentDetail:output_type -> cmsclient.QuerySubjectCommentDetailResp
-	99,  // 127: cmsclient.SubjectCommentService.QuerySubjectCommentList:output_type -> cmsclient.QuerySubjectCommentListResp
-	101, // 128: cmsclient.SubjectProductRelationService.AddSubjectProductRelation:output_type -> cmsclient.AddSubjectProductRelationResp
-	103, // 129: cmsclient.SubjectProductRelationService.QuerySubjectProductRelationList:output_type -> cmsclient.QuerySubjectProductRelationListResp
-	105, // 130: cmsclient.TopicService.AddTopic:output_type -> cmsclient.AddTopicResp
-	107, // 131: cmsclient.TopicService.DeleteTopic:output_type -> cmsclient.DeleteTopicResp
-	109, // 132: cmsclient.TopicService.UpdateTopic:output_type -> cmsclient.UpdateTopicResp
-	111, // 133: cmsclient.TopicService.UpdateTopicStatus:output_type -> cmsclient.UpdateTopicStatusResp
-	113, // 134: cmsclient.TopicService.QueryTopicDetail:output_type -> cmsclient.QueryTopicDetailResp
-	116, // 135: cmsclient.TopicService.QueryTopicList:output_type -> cmsclient.QueryTopicListResp
-	118, // 136: cmsclient.TopicCategoryService.AddTopicCategory:output_type -> cmsclient.AddTopicCategoryResp
-	120, // 137: cmsclient.TopicCategoryService.DeleteTopicCategory:output_type -> cmsclient.DeleteTopicCategoryResp
-	122, // 138: cmsclient.TopicCategoryService.UpdateTopicCategory:output_type -> cmsclient.UpdateTopicCategoryResp
-	124, // 139: cmsclient.TopicCategoryService.UpdateTopicCategoryStatus:output_type -> cmsclient.UpdateTopicCategoryStatusResp
-	126, // 140: cmsclient.TopicCategoryService.QueryTopicCategoryDetail:output_type -> cmsclient.QueryTopicCategoryDetailResp
-	129, // 141: cmsclient.TopicCategoryService.QueryTopicCategoryList:output_type -> cmsclient.QueryTopicCategoryListResp
-	131, // 142: cmsclient.TopicCommentService.AddTopicComment:output_type -> cmsclient.AddTopicCommentResp
-	133, // 143: cmsclient.TopicCommentService.DeleteTopicComment:output_type -> cmsclient.DeleteTopicCommentResp
-	135, // 144: cmsclient.TopicCommentService.UpdateTopicComment:output_type -> cmsclient.UpdateTopicCommentResp
-	137, // 145: cmsclient.TopicCommentService.UpdateTopicCommentStatus:output_type -> cmsclient.UpdateTopicCommentStatusResp
-	139, // 146: cmsclient.TopicCommentService.QueryTopicCommentDetail:output_type -> cmsclient.QueryTopicCommentDetailResp
-	142, // 147: cmsclient.TopicCommentService.QueryTopicCommentList:output_type -> cmsclient.QueryTopicCommentListResp
-	81,  // [81:148] is the sub-list for method output_type
-	14,  // [14:81] is the sub-list for method input_type
-	14,  // [14:14] is the sub-list for extension type_name
-	14,  // [14:14] is the sub-list for extension extendee
-	0,   // [0:14] is the sub-list for field type_name
+	0,   // 4: cmsclient.AddSubjectReq.scope:type_name -> cmsclient.GovernanceScope
+	0,   // 5: cmsclient.DeleteSubjectReq.scope:type_name -> cmsclient.GovernanceScope
+	0,   // 6: cmsclient.UpdateSubjectReq.scope:type_name -> cmsclient.GovernanceScope
+	0,   // 7: cmsclient.UpdateSubjectStatusReq.scope:type_name -> cmsclient.GovernanceScope
+	0,   // 8: cmsclient.QuerySubjectDetailReq.scope:type_name -> cmsclient.GovernanceScope
+	0,   // 9: cmsclient.QuerySubjectListReq.scope:type_name -> cmsclient.GovernanceScope
+	68,  // 10: cmsclient.QuerySubjectListResp.list:type_name -> cmsclient.SubjectListData
+	0,   // 11: cmsclient.SubjectListByIdsReq.scope:type_name -> cmsclient.GovernanceScope
+	85,  // 12: cmsclient.QuerySubjectCategoryListResp.list:type_name -> cmsclient.SubjectCategoryListData
+	98,  // 13: cmsclient.QuerySubjectCommentListResp.list:type_name -> cmsclient.SubjectCommentListData
+	0,   // 14: cmsclient.QuerySubjectProductRelationListReq.scope:type_name -> cmsclient.GovernanceScope
+	115, // 15: cmsclient.QueryTopicListResp.list:type_name -> cmsclient.TopicListData
+	128, // 16: cmsclient.QueryTopicCategoryListResp.list:type_name -> cmsclient.TopicCategoryListData
+	141, // 17: cmsclient.QueryTopicCommentListResp.list:type_name -> cmsclient.TopicCommentListData
+	1,   // 18: cmsclient.HelpService.AddHelp:input_type -> cmsclient.AddHelpReq
+	3,   // 19: cmsclient.HelpService.DeleteHelp:input_type -> cmsclient.DeleteHelpReq
+	5,   // 20: cmsclient.HelpService.UpdateHelp:input_type -> cmsclient.UpdateHelpReq
+	7,   // 21: cmsclient.HelpService.UpdateHelpStatus:input_type -> cmsclient.UpdateHelpStatusReq
+	9,   // 22: cmsclient.HelpService.QueryHelpDetail:input_type -> cmsclient.QueryHelpDetailReq
+	11,  // 23: cmsclient.HelpService.QueryHelpList:input_type -> cmsclient.QueryHelpListReq
+	14,  // 24: cmsclient.HelpCategoryService.AddHelpCategory:input_type -> cmsclient.AddHelpCategoryReq
+	16,  // 25: cmsclient.HelpCategoryService.DeleteHelpCategory:input_type -> cmsclient.DeleteHelpCategoryReq
+	18,  // 26: cmsclient.HelpCategoryService.UpdateHelpCategory:input_type -> cmsclient.UpdateHelpCategoryReq
+	20,  // 27: cmsclient.HelpCategoryService.UpdateHelpCategoryStatus:input_type -> cmsclient.UpdateHelpCategoryStatusReq
+	22,  // 28: cmsclient.HelpCategoryService.QueryHelpCategoryDetail:input_type -> cmsclient.QueryHelpCategoryDetailReq
+	24,  // 29: cmsclient.HelpCategoryService.QueryHelpCategoryList:input_type -> cmsclient.QueryHelpCategoryListReq
+	27,  // 30: cmsclient.MemberReportService.AddMemberReport:input_type -> cmsclient.AddMemberReportReq
+	29,  // 31: cmsclient.MemberReportService.DeleteMemberReport:input_type -> cmsclient.DeleteMemberReportReq
+	31,  // 32: cmsclient.MemberReportService.UpdateMemberReport:input_type -> cmsclient.UpdateMemberReportReq
+	33,  // 33: cmsclient.MemberReportService.UpdateMemberReportStatus:input_type -> cmsclient.UpdateMemberReportStatusReq
+	35,  // 34: cmsclient.MemberReportService.QueryMemberReportDetail:input_type -> cmsclient.QueryMemberReportDetailReq
+	37,  // 35: cmsclient.MemberReportService.QueryMemberReportList:input_type -> cmsclient.QueryMemberReportListReq
+	40,  // 36: cmsclient.PreferredAreaService.AddPreferredArea:input_type -> cmsclient.AddPreferredAreaReq
+	42,  // 37: cmsclient.PreferredAreaService.DeletePreferredArea:input_type -> cmsclient.DeletePreferredAreaReq
+	44,  // 38: cmsclient.PreferredAreaService.UpdatePreferredArea:input_type -> cmsclient.UpdatePreferredAreaReq
+	46,  // 39: cmsclient.PreferredAreaService.UpdatePreferredAreaStatus:input_type -> cmsclient.UpdatePreferredAreaStatusReq
+	48,  // 40: cmsclient.PreferredAreaService.QueryPreferredAreaDetail:input_type -> cmsclient.QueryPreferredAreaDetailReq
+	50,  // 41: cmsclient.PreferredAreaService.QueryPreferredAreaList:input_type -> cmsclient.QueryPreferredAreaListReq
+	53,  // 42: cmsclient.PreferredAreaProductRelationService.AddPreferredAreaProductRelation:input_type -> cmsclient.AddPreferredAreaProductRelationReq
+	55,  // 43: cmsclient.PreferredAreaProductRelationService.QueryPreferredAreaProductRelationList:input_type -> cmsclient.QueryPreferredAreaProductRelationListReq
+	57,  // 44: cmsclient.SubjectService.AddSubject:input_type -> cmsclient.AddSubjectReq
+	59,  // 45: cmsclient.SubjectService.DeleteSubject:input_type -> cmsclient.DeleteSubjectReq
+	61,  // 46: cmsclient.SubjectService.UpdateSubject:input_type -> cmsclient.UpdateSubjectReq
+	63,  // 47: cmsclient.SubjectService.UpdateSubjectStatus:input_type -> cmsclient.UpdateSubjectStatusReq
+	65,  // 48: cmsclient.SubjectService.QuerySubjectDetail:input_type -> cmsclient.QuerySubjectDetailReq
+	67,  // 49: cmsclient.SubjectService.QuerySubjectList:input_type -> cmsclient.QuerySubjectListReq
+	72,  // 50: cmsclient.SubjectService.SubjectListByIds:input_type -> cmsclient.SubjectListByIdsReq
+	70,  // 51: cmsclient.SubjectService.UpdateSubjectRecommendStatus:input_type -> cmsclient.UpdateSubjectRecommendStatusReq
+	73,  // 52: cmsclient.SubjectService.UpdateSubjectSort:input_type -> cmsclient.UpdateSubjectSortReq
+	74,  // 53: cmsclient.SubjectCategoryService.AddSubjectCategory:input_type -> cmsclient.AddSubjectCategoryReq
+	76,  // 54: cmsclient.SubjectCategoryService.DeleteSubjectCategory:input_type -> cmsclient.DeleteSubjectCategoryReq
+	78,  // 55: cmsclient.SubjectCategoryService.UpdateSubjectCategory:input_type -> cmsclient.UpdateSubjectCategoryReq
+	80,  // 56: cmsclient.SubjectCategoryService.UpdateSubjectCategoryStatus:input_type -> cmsclient.UpdateSubjectCategoryStatusReq
+	82,  // 57: cmsclient.SubjectCategoryService.QuerySubjectCategoryDetail:input_type -> cmsclient.QuerySubjectCategoryDetailReq
+	84,  // 58: cmsclient.SubjectCategoryService.QuerySubjectCategoryList:input_type -> cmsclient.QuerySubjectCategoryListReq
+	87,  // 59: cmsclient.SubjectCommentService.AddSubjectComment:input_type -> cmsclient.AddSubjectCommentReq
+	89,  // 60: cmsclient.SubjectCommentService.DeleteSubjectComment:input_type -> cmsclient.DeleteSubjectCommentReq
+	91,  // 61: cmsclient.SubjectCommentService.UpdateSubjectComment:input_type -> cmsclient.UpdateSubjectCommentReq
+	93,  // 62: cmsclient.SubjectCommentService.UpdateSubjectCommentStatus:input_type -> cmsclient.UpdateSubjectCommentStatusReq
+	95,  // 63: cmsclient.SubjectCommentService.QuerySubjectCommentDetail:input_type -> cmsclient.QuerySubjectCommentDetailReq
+	97,  // 64: cmsclient.SubjectCommentService.QuerySubjectCommentList:input_type -> cmsclient.QuerySubjectCommentListReq
+	100, // 65: cmsclient.SubjectProductRelationService.AddSubjectProductRelation:input_type -> cmsclient.AddSubjectProductRelationReq
+	102, // 66: cmsclient.SubjectProductRelationService.QuerySubjectProductRelationList:input_type -> cmsclient.QuerySubjectProductRelationListReq
+	104, // 67: cmsclient.TopicService.AddTopic:input_type -> cmsclient.AddTopicReq
+	106, // 68: cmsclient.TopicService.DeleteTopic:input_type -> cmsclient.DeleteTopicReq
+	108, // 69: cmsclient.TopicService.UpdateTopic:input_type -> cmsclient.UpdateTopicReq
+	110, // 70: cmsclient.TopicService.UpdateTopicStatus:input_type -> cmsclient.UpdateTopicStatusReq
+	112, // 71: cmsclient.TopicService.QueryTopicDetail:input_type -> cmsclient.QueryTopicDetailReq
+	114, // 72: cmsclient.TopicService.QueryTopicList:input_type -> cmsclient.QueryTopicListReq
+	117, // 73: cmsclient.TopicCategoryService.AddTopicCategory:input_type -> cmsclient.AddTopicCategoryReq
+	119, // 74: cmsclient.TopicCategoryService.DeleteTopicCategory:input_type -> cmsclient.DeleteTopicCategoryReq
+	121, // 75: cmsclient.TopicCategoryService.UpdateTopicCategory:input_type -> cmsclient.UpdateTopicCategoryReq
+	123, // 76: cmsclient.TopicCategoryService.UpdateTopicCategoryStatus:input_type -> cmsclient.UpdateTopicCategoryStatusReq
+	125, // 77: cmsclient.TopicCategoryService.QueryTopicCategoryDetail:input_type -> cmsclient.QueryTopicCategoryDetailReq
+	127, // 78: cmsclient.TopicCategoryService.QueryTopicCategoryList:input_type -> cmsclient.QueryTopicCategoryListReq
+	130, // 79: cmsclient.TopicCommentService.AddTopicComment:input_type -> cmsclient.AddTopicCommentReq
+	132, // 80: cmsclient.TopicCommentService.DeleteTopicComment:input_type -> cmsclient.DeleteTopicCommentReq
+	134, // 81: cmsclient.TopicCommentService.UpdateTopicComment:input_type -> cmsclient.UpdateTopicCommentReq
+	136, // 82: cmsclient.TopicCommentService.UpdateTopicCommentStatus:input_type -> cmsclient.UpdateTopicCommentStatusReq
+	138, // 83: cmsclient.TopicCommentService.QueryTopicCommentDetail:input_type -> cmsclient.QueryTopicCommentDetailReq
+	140, // 84: cmsclient.TopicCommentService.QueryTopicCommentList:input_type -> cmsclient.QueryTopicCommentListReq
+	2,   // 85: cmsclient.HelpService.AddHelp:output_type -> cmsclient.AddHelpResp
+	4,   // 86: cmsclient.HelpService.DeleteHelp:output_type -> cmsclient.DeleteHelpResp
+	6,   // 87: cmsclient.HelpService.UpdateHelp:output_type -> cmsclient.UpdateHelpResp
+	8,   // 88: cmsclient.HelpService.UpdateHelpStatus:output_type -> cmsclient.UpdateHelpStatusResp
+	10,  // 89: cmsclient.HelpService.QueryHelpDetail:output_type -> cmsclient.QueryHelpDetailResp
+	13,  // 90: cmsclient.HelpService.QueryHelpList:output_type -> cmsclient.QueryHelpListResp
+	15,  // 91: cmsclient.HelpCategoryService.AddHelpCategory:output_type -> cmsclient.AddHelpCategoryResp
+	17,  // 92: cmsclient.HelpCategoryService.DeleteHelpCategory:output_type -> cmsclient.DeleteHelpCategoryResp
+	19,  // 93: cmsclient.HelpCategoryService.UpdateHelpCategory:output_type -> cmsclient.UpdateHelpCategoryResp
+	21,  // 94: cmsclient.HelpCategoryService.UpdateHelpCategoryStatus:output_type -> cmsclient.UpdateHelpCategoryStatusResp
+	23,  // 95: cmsclient.HelpCategoryService.QueryHelpCategoryDetail:output_type -> cmsclient.QueryHelpCategoryDetailResp
+	26,  // 96: cmsclient.HelpCategoryService.QueryHelpCategoryList:output_type -> cmsclient.QueryHelpCategoryListResp
+	28,  // 97: cmsclient.MemberReportService.AddMemberReport:output_type -> cmsclient.AddMemberReportResp
+	30,  // 98: cmsclient.MemberReportService.DeleteMemberReport:output_type -> cmsclient.DeleteMemberReportResp
+	32,  // 99: cmsclient.MemberReportService.UpdateMemberReport:output_type -> cmsclient.UpdateMemberReportResp
+	34,  // 100: cmsclient.MemberReportService.UpdateMemberReportStatus:output_type -> cmsclient.UpdateMemberReportStatusResp
+	36,  // 101: cmsclient.MemberReportService.QueryMemberReportDetail:output_type -> cmsclient.QueryMemberReportDetailResp
+	39,  // 102: cmsclient.MemberReportService.QueryMemberReportList:output_type -> cmsclient.QueryMemberReportListResp
+	41,  // 103: cmsclient.PreferredAreaService.AddPreferredArea:output_type -> cmsclient.AddPreferredAreaResp
+	43,  // 104: cmsclient.PreferredAreaService.DeletePreferredArea:output_type -> cmsclient.DeletePreferredAreaResp
+	45,  // 105: cmsclient.PreferredAreaService.UpdatePreferredArea:output_type -> cmsclient.UpdatePreferredAreaResp
+	47,  // 106: cmsclient.PreferredAreaService.UpdatePreferredAreaStatus:output_type -> cmsclient.UpdatePreferredAreaStatusResp
+	49,  // 107: cmsclient.PreferredAreaService.QueryPreferredAreaDetail:output_type -> cmsclient.QueryPreferredAreaDetailResp
+	52,  // 108: cmsclient.PreferredAreaService.QueryPreferredAreaList:output_type -> cmsclient.QueryPreferredAreaListResp
+	54,  // 109: cmsclient.PreferredAreaProductRelationService.AddPreferredAreaProductRelation:output_type -> cmsclient.AddPreferredAreaProductRelationResp
+	56,  // 110: cmsclient.PreferredAreaProductRelationService.QueryPreferredAreaProductRelationList:output_type -> cmsclient.QueryPreferredAreaProductRelationListResp
+	58,  // 111: cmsclient.SubjectService.AddSubject:output_type -> cmsclient.AddSubjectResp
+	60,  // 112: cmsclient.SubjectService.DeleteSubject:output_type -> cmsclient.DeleteSubjectResp
+	62,  // 113: cmsclient.SubjectService.UpdateSubject:output_type -> cmsclient.UpdateSubjectResp
+	64,  // 114: cmsclient.SubjectService.UpdateSubjectStatus:output_type -> cmsclient.UpdateSubjectStatusResp
+	66,  // 115: cmsclient.SubjectService.QuerySubjectDetail:output_type -> cmsclient.QuerySubjectDetailResp
+	69,  // 116: cmsclient.SubjectService.QuerySubjectList:output_type -> cmsclient.QuerySubjectListResp
+	69,  // 117: cmsclient.SubjectService.SubjectListByIds:output_type -> cmsclient.QuerySubjectListResp
+	71,  // 118: cmsclient.SubjectService.UpdateSubjectRecommendStatus:output_type -> cmsclient.UpdateSubjectRecommendStatusResp
+	62,  // 119: cmsclient.SubjectService.UpdateSubjectSort:output_type -> cmsclient.UpdateSubjectResp
+	75,  // 120: cmsclient.SubjectCategoryService.AddSubjectCategory:output_type -> cmsclient.AddSubjectCategoryResp
+	77,  // 121: cmsclient.SubjectCategoryService.DeleteSubjectCategory:output_type -> cmsclient.DeleteSubjectCategoryResp
+	79,  // 122: cmsclient.SubjectCategoryService.UpdateSubjectCategory:output_type -> cmsclient.UpdateSubjectCategoryResp
+	81,  // 123: cmsclient.SubjectCategoryService.UpdateSubjectCategoryStatus:output_type -> cmsclient.UpdateSubjectCategoryStatusResp
+	83,  // 124: cmsclient.SubjectCategoryService.QuerySubjectCategoryDetail:output_type -> cmsclient.QuerySubjectCategoryDetailResp
+	86,  // 125: cmsclient.SubjectCategoryService.QuerySubjectCategoryList:output_type -> cmsclient.QuerySubjectCategoryListResp
+	88,  // 126: cmsclient.SubjectCommentService.AddSubjectComment:output_type -> cmsclient.AddSubjectCommentResp
+	90,  // 127: cmsclient.SubjectCommentService.DeleteSubjectComment:output_type -> cmsclient.DeleteSubjectCommentResp
+	92,  // 128: cmsclient.SubjectCommentService.UpdateSubjectComment:output_type -> cmsclient.UpdateSubjectCommentResp
+	94,  // 129: cmsclient.SubjectCommentService.UpdateSubjectCommentStatus:output_type -> cmsclient.UpdateSubjectCommentStatusResp
+	96,  // 130: cmsclient.SubjectCommentService.QuerySubjectCommentDetail:output_type -> cmsclient.QuerySubjectCommentDetailResp
+	99,  // 131: cmsclient.SubjectCommentService.QuerySubjectCommentList:output_type -> cmsclient.QuerySubjectCommentListResp
+	101, // 132: cmsclient.SubjectProductRelationService.AddSubjectProductRelation:output_type -> cmsclient.AddSubjectProductRelationResp
+	103, // 133: cmsclient.SubjectProductRelationService.QuerySubjectProductRelationList:output_type -> cmsclient.QuerySubjectProductRelationListResp
+	105, // 134: cmsclient.TopicService.AddTopic:output_type -> cmsclient.AddTopicResp
+	107, // 135: cmsclient.TopicService.DeleteTopic:output_type -> cmsclient.DeleteTopicResp
+	109, // 136: cmsclient.TopicService.UpdateTopic:output_type -> cmsclient.UpdateTopicResp
+	111, // 137: cmsclient.TopicService.UpdateTopicStatus:output_type -> cmsclient.UpdateTopicStatusResp
+	113, // 138: cmsclient.TopicService.QueryTopicDetail:output_type -> cmsclient.QueryTopicDetailResp
+	116, // 139: cmsclient.TopicService.QueryTopicList:output_type -> cmsclient.QueryTopicListResp
+	118, // 140: cmsclient.TopicCategoryService.AddTopicCategory:output_type -> cmsclient.AddTopicCategoryResp
+	120, // 141: cmsclient.TopicCategoryService.DeleteTopicCategory:output_type -> cmsclient.DeleteTopicCategoryResp
+	122, // 142: cmsclient.TopicCategoryService.UpdateTopicCategory:output_type -> cmsclient.UpdateTopicCategoryResp
+	124, // 143: cmsclient.TopicCategoryService.UpdateTopicCategoryStatus:output_type -> cmsclient.UpdateTopicCategoryStatusResp
+	126, // 144: cmsclient.TopicCategoryService.QueryTopicCategoryDetail:output_type -> cmsclient.QueryTopicCategoryDetailResp
+	129, // 145: cmsclient.TopicCategoryService.QueryTopicCategoryList:output_type -> cmsclient.QueryTopicCategoryListResp
+	131, // 146: cmsclient.TopicCommentService.AddTopicComment:output_type -> cmsclient.AddTopicCommentResp
+	133, // 147: cmsclient.TopicCommentService.DeleteTopicComment:output_type -> cmsclient.DeleteTopicCommentResp
+	135, // 148: cmsclient.TopicCommentService.UpdateTopicComment:output_type -> cmsclient.UpdateTopicCommentResp
+	137, // 149: cmsclient.TopicCommentService.UpdateTopicCommentStatus:output_type -> cmsclient.UpdateTopicCommentStatusResp
+	139, // 150: cmsclient.TopicCommentService.QueryTopicCommentDetail:output_type -> cmsclient.QueryTopicCommentDetailResp
+	142, // 151: cmsclient.TopicCommentService.QueryTopicCommentList:output_type -> cmsclient.QueryTopicCommentListResp
+	85,  // [85:152] is the sub-list for method output_type
+	18,  // [18:85] is the sub-list for method input_type
+	18,  // [18:18] is the sub-list for extension type_name
+	18,  // [18:18] is the sub-list for extension extendee
+	0,   // [0:18] is the sub-list for field type_name
 }
 
 func init() { file_rpc_cms_cms_proto_init() }

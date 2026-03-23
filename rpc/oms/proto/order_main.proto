@@ -51,6 +51,7 @@ message AddOrderResp {
 message DeleteOrderReq {
   repeated int64 ids = 1;
   int64 MemberId = 2;
+  GovernanceScope scope = 3; //治理范围(platform/tenant/merchant)
 }
 
 message DeleteOrderResp {
@@ -65,6 +66,8 @@ message UpdateOrderReq {
   string remark = 4; //订单备注
   float freight_amount = 5; //运费金额
   string order_no = 6; //订单编号
+  float discount_amount = 7; //优惠金额
+  GovernanceScope scope = 8; //治理范围(platform/tenant/merchant)
 }
 
 message UpdateOrderResp {
@@ -202,6 +205,7 @@ message DeliveryReq {
   string delivery_sn = 2;//物流单号
   int64 OperatorId = 3;
   string OrderNo = 4;
+  GovernanceScope scope = 5; //治理范围(platform/tenant/merchant)
 }
 
 message DeliveryResp {
@@ -212,6 +216,7 @@ message CloseOrderReq {
   string Note = 2;
   int64 OperatorId = 3;
   string OrderNo = 4;
+  GovernanceScope scope = 5; //治理范围(platform/tenant/merchant)
 }
 
 message CloseOrderResp {

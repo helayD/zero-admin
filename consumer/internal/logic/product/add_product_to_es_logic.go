@@ -8,6 +8,7 @@ import (
 
 	"github.com/feihua/zero-admin/consumer/internal/svc"
 	"github.com/feihua/zero-admin/consumer/internal/types"
+	"github.com/feihua/zero-admin/pkg/audit"
 	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -35,7 +36,8 @@ func (l *AddProductToEsLogic) AddProductToEs(req *types.ProductEsReq) (resp *typ
 	}
 
 	for _, id := range req.Ids {
-		message := pkgscope.NewProductESSyncPayload(id, current)
+		traceID := audit.NewTraceID("consumer.product_es.sync", id)
+		message := pkgscope.NewProductESSyncPayload(id, current, traceID)
 		body, _ := sonic.Marshal(message)
 		err = l.svcCtx.RabbitMQ.SendMessage("product.event.exchange", "syn.product.to.es.queue", "syn.product.key", body)
 		if err != nil {

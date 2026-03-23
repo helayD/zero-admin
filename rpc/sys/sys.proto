@@ -1148,6 +1148,101 @@ service OperateLogService {
 
 }
 
+message QueryAuditCenterListReq {
+  GovernanceScope scope = 1;
+  int64 page_num = 2;
+  int64 page_size = 3;
+  int64 operator_id = 4;
+  string operator_name = 5;
+  string trace_id = 6;
+  string resource_type = 7;
+  int64 resource_id = 8;
+  string event_type = 9;
+  string result = 10;
+  string keyword = 11;
+  string start_time = 12;
+  string end_time = 13;
+}
+
+message AuditCenterListItem {
+  string source_type = 1;
+  int64 source_id = 2;
+  string trace_id = 3;
+  string event_type = 4;
+  string action = 5;
+  string result = 6;
+  string scope_type = 7;
+  string scope_label = 8;
+  int64 platform_id = 9;
+  int64 tenant_id = 10;
+  int64 merchant_id = 11;
+  int64 operator_id = 12;
+  string operator_name = 13;
+  string resource_type = 14;
+  int64 resource_id = 15;
+  string resource_name = 16;
+  string subject_info = 17;
+  string request_summary = 18;
+  bool sensitive_masked = 19;
+  string happened_at = 20;
+}
+
+message QueryAuditCenterListResp {
+  int64 total = 1;
+  repeated AuditCenterListItem list = 2;
+}
+
+message QueryAuditCenterDetailReq {
+  GovernanceScope scope = 1;
+  string source_type = 2;
+  int64 source_id = 3;
+}
+
+message AuditTimelineItem {
+  string source_type = 1;
+  int64 source_id = 2;
+  string trace_id = 3;
+  string event_type = 4;
+  string action = 5;
+  string result = 6;
+  string operator_name = 7;
+  string resource_type = 8;
+  int64 resource_id = 9;
+  string resource_name = 10;
+  string request_summary = 11;
+  string happened_at = 12;
+}
+
+message QueryAuditCenterDetailResp {
+  string source_type = 1;
+  int64 source_id = 2;
+  string trace_id = 3;
+  string event_type = 4;
+  string action = 5;
+  string result = 6;
+  string scope_type = 7;
+  string scope_label = 8;
+  int64 platform_id = 9;
+  int64 tenant_id = 10;
+  int64 merchant_id = 11;
+  int64 operator_id = 12;
+  string operator_name = 13;
+  string resource_type = 14;
+  int64 resource_id = 15;
+  string resource_name = 16;
+  string subject_info = 17;
+  string request_summary = 18;
+  string detail_payload = 19;
+  bool sensitive_masked = 20;
+  string happened_at = 21;
+  repeated AuditTimelineItem timeline = 22;
+}
+
+service AuditCenterService {
+  rpc QueryAuditCenterList(QueryAuditCenterListReq) returns (QueryAuditCenterListResp){}
+  rpc QueryAuditCenterDetail(QueryAuditCenterDetailReq) returns (QueryAuditCenterDetailResp){}
+}
+
 // 添加岗位信息
 message AddPostReq {
   int64 id = 1; //岗位id

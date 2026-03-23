@@ -2,6 +2,8 @@ package product_brand
 
 import (
 	"context"
+
+	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
 	"github.com/feihua/zero-admin/api/admin/internal/types"
@@ -12,11 +14,6 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-// QueryProductBrandListLogic 查询商品品牌列表
-/*
-Author: LiuFeiHua
-Date: 2025/05/26 10:33:54
-*/
 type QueryProductBrandListLogic struct {
 	logx.Logger
 	ctx    context.Context
@@ -24,59 +21,22 @@ type QueryProductBrandListLogic struct {
 }
 
 func NewQueryProductBrandListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *QueryProductBrandListLogic {
-	return &QueryProductBrandListLogic{
-		Logger: logx.WithContext(ctx),
-		ctx:    ctx,
-		svcCtx: svcCtx,
-	}
+	return &QueryProductBrandListLogic{Logger: logx.WithContext(ctx), ctx: ctx, svcCtx: svcCtx}
 }
-
-// QueryProductBrandList 查询商品品牌列表
-func (l *QueryProductBrandListLogic) QueryProductBrandList(req *types.QueryProductBrandListReq) (resp *types.QueryProductBrandListResp, err error) {
-	result, err := l.svcCtx.ProductBrandService.QueryProductBrandList(l.ctx, &pmsclient.QueryProductBrandListReq{
-		PageNum:         req.Current,
-		PageSize:        req.PageSize,
-		Name:            req.Name,            // 品牌名称
-		RecommendStatus: req.RecommendStatus, // 推荐状态
-		IsEnabled:       req.IsEnabled,       // 是否启用
-	})
-
+func (l *QueryProductBrandListLogic) QueryProductBrandList(req *types.QueryProductBrandListReq) (*types.QueryProductBrandListResp, error) {
+	queryScope, err := admincommon.ResolveQueryGovernanceScope(l.ctx, admincommon.RequestedGovernanceScope{ScopeType: req.ScopeType, PlatformID: req.PlatformId, TenantID: req.TenantId, MerchantID: req.MerchantId})
 	if err != nil {
-		logc.Errorf(l.ctx, "查询字商品品牌列表失败,参数：%+v,响应：%s", req, err.Error())
+		return nil, errorx.NewDefaultError(err.Error())
+	}
+	result, err := l.svcCtx.ProductBrandService.QueryProductBrandList(l.ctx, &pmsclient.QueryProductBrandListReq{PageNum: req.Current, PageSize: req.PageSize, Name: req.Name, RecommendStatus: req.RecommendStatus, IsEnabled: req.IsEnabled, Scope: admincommon.PMSGovernanceScope(queryScope)})
+	if err != nil {
+		logc.Errorf(l.ctx, "查询商品品牌列表失败,参数：%+v,响应：%s", req, err.Error())
 		s, _ := status.FromError(err)
 		return nil, errorx.NewDefaultError(s.Message())
 	}
-
-	var list []*types.QueryProductBrandListData
-
+	list := make([]*types.QueryProductBrandListData, 0, len(result.List))
 	for _, detail := range result.List {
-		list = append(list, &types.QueryProductBrandListData{
-			Id:                  detail.Id,                  //
-			Name:                detail.Name,                // 品牌名称
-			Logo:                detail.Logo,                // 品牌logo
-			BigPic:              detail.BigPic,              // 专区大图
-			Description:         detail.Description,         // 描述
-			FirstLetter:         detail.FirstLetter,         // 首字母
-			Sort:                detail.Sort,                // 排序
-			RecommendStatus:     detail.RecommendStatus,     // 推荐状态
-			ProductCount:        detail.ProductCount,        // 产品数量
-			ProductCommentCount: detail.ProductCommentCount, // 产品评论数量
-			IsEnabled:           detail.IsEnabled,           // 是否启用
-			CreateBy:            detail.CreateBy,            // 创建人ID
-			CreateTime:          detail.CreateTime,          // 创建时间
-			UpdateBy:            detail.UpdateBy,            // 更新人ID
-			UpdateTime:          detail.UpdateTime,          // 更新时间
-
-		})
+		list = append(list, &types.QueryProductBrandListData{Id: detail.Id, Name: detail.Name, Logo: detail.Logo, BigPic: detail.BigPic, Description: detail.Description, FirstLetter: detail.FirstLetter, Sort: detail.Sort, RecommendStatus: detail.RecommendStatus, ProductCount: detail.ProductCount, ProductCommentCount: detail.ProductCommentCount, IsEnabled: detail.IsEnabled, CreateBy: detail.CreateBy, CreateTime: detail.CreateTime, UpdateBy: detail.UpdateBy, UpdateTime: detail.UpdateTime, ScopeType: detail.ScopeType, PlatformId: detail.PlatformId, TenantId: detail.TenantId, MerchantId: detail.MerchantId})
 	}
-
-	return &types.QueryProductBrandListResp{
-		Code:     "000000",
-		Message:  "查询商品品牌列表成功",
-		Current:  req.Current,
-		Data:     list,
-		PageSize: req.PageSize,
-		Success:  true,
-		Total:    result.Total,
-	}, nil
+	return &types.QueryProductBrandListResp{Code: "000000", Message: "查询商品品牌列表成功", Current: req.Current, Data: list, PageSize: req.PageSize, Success: true, Total: result.Total}, nil
 }

@@ -8,16 +8,10 @@ import (
 	"github.com/feihua/zero-admin/api/admin/internal/types"
 	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
 	"github.com/zeromicro/go-zero/core/logc"
-	"google.golang.org/grpc/status"
-
 	"github.com/zeromicro/go-zero/core/logx"
+	"google.golang.org/grpc/status"
 )
 
-// AddProductCategoryLogic 添加产品分类
-/*
-Author: LiuFeiHua
-Date: 2025/05/26 13:56:03
-*/
 type AddProductCategoryLogic struct {
 	logx.Logger
 	ctx    context.Context
@@ -25,41 +19,22 @@ type AddProductCategoryLogic struct {
 }
 
 func NewAddProductCategoryLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AddProductCategoryLogic {
-	return &AddProductCategoryLogic{
-		Logger: logx.WithContext(ctx),
-		ctx:    ctx,
-		svcCtx: svcCtx,
-	}
+	return &AddProductCategoryLogic{Logger: logx.WithContext(ctx), ctx: ctx, svcCtx: svcCtx}
 }
-
-// AddProductCategory 添加产品分类
-func (l *AddProductCategoryLogic) AddProductCategory(req *types.AddProductCategoryReq) (resp *types.BaseResp, err error) {
+func (l *AddProductCategoryLogic) AddProductCategory(req *types.AddProductCategoryReq) (*types.BaseResp, error) {
 	userId, err := common.GetUserId(l.ctx)
 	if err != nil {
 		return nil, err
 	}
-	_, err = l.svcCtx.ProductCategoryService.AddProductCategory(l.ctx, &pmsclient.AddProductCategoryReq{
-		ParentId:    req.ParentId,    // 上级分类的编号：0表示一级分类
-		Name:        req.Name,        // 商品分类名称
-		Level:       req.Level,       // 分类级别：0->1级；1->2级
-		ProductUnit: req.ProductUnit, // 商品单位
-		NavStatus:   req.NavStatus,   // 是否显示在导航栏：0->不显示；1->显示
-		Sort:        req.Sort,        // 排序
-		Icon:        req.Icon,        // 图标
-		Keywords:    req.Keywords,    // 关键字
-		Description: req.Description, // 描述
-		IsEnabled:   req.IsEnabled,   // 是否启用
-		CreateBy:    userId,          // 创建人ID
-	})
-
+	writeScope, err := common.ResolveWriteGovernanceScope(l.ctx, common.RequestedGovernanceScope{ScopeType: req.ScopeType, PlatformID: req.PlatformId, TenantID: req.TenantId, MerchantID: req.MerchantId})
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
+	_, err = l.svcCtx.ProductCategoryService.AddProductCategory(l.ctx, &pmsclient.AddProductCategoryReq{ParentId: req.ParentId, Name: req.Name, Level: req.Level, ProductUnit: req.ProductUnit, NavStatus: req.NavStatus, Sort: req.Sort, Icon: req.Icon, Keywords: req.Keywords, Description: req.Description, IsEnabled: req.IsEnabled, ProductAttributeIdList: req.ProductAttributeIdList, CreateBy: userId, Scope: common.PMSGovernanceScope(writeScope)})
 	if err != nil {
 		logc.Errorf(l.ctx, "添加产品分类失败,参数：%+v,响应：%s", req, err.Error())
 		s, _ := status.FromError(err)
 		return nil, errorx.NewDefaultError(s.Message())
 	}
-
-	return &types.BaseResp{
-		Code:    "000000",
-		Message: "添加产品分类成功",
-	}, nil
+	return &types.BaseResp{Code: "000000", Message: "添加产品分类成功"}, nil
 }

@@ -3,8 +3,8 @@ package productspuservicelogic
 import (
 	"context"
 	"errors"
-	"github.com/bytedance/sonic"
 	"github.com/feihua/zero-admin/rpc/pms/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/pms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/pms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -33,17 +33,22 @@ func NewDeleteProductSpuLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 // DeleteProductSpu 删除商品SPU
 func (l *DeleteProductSpuLogic) DeleteProductSpu(in *pmsclient.DeleteProductSpuReq) (*pmsclient.DeleteProductSpuResp, error) {
 	q := query.PmsProductSpu
+	currentScope, err := logiccommon.ResolveWriteScope(l.ctx, l.svcCtx.DB, in.Scope, 0)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := logiccommon.EnsureProductScope(l.ctx, l.svcCtx.DB, currentScope, in.Ids, "pms.product_spu.delete", 0, "", "delete product spu"); err != nil {
+		return nil, err
+	}
 
-	_, err := q.WithContext(l.ctx).Where(q.ID.In(in.Ids...)).Delete()
+	_, err = q.WithContext(l.ctx).Where(q.ID.In(in.Ids...)).Delete()
 
 	if err != nil {
 		logc.Errorf(l.ctx, "删除商品SPU失败,参数:%+v,异常:%s", in, err.Error())
 		return nil, errors.New("删除商品SPU失败")
 	}
 
-	message := map[string]any{"ids": in.Ids}
-	body, _ := sonic.Marshal(message)
-	err = l.svcCtx.RabbitMQ.SendMessage("product.event.exchange", "delete.product.from.es.queue", "delete.product.key", body)
+	sendProductESDelete(l.ctx, l.svcCtx, in.Ids, currentScope)
 
 	return &pmsclient.DeleteProductSpuResp{}, nil
 }

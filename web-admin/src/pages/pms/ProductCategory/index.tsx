@@ -4,7 +4,7 @@ import {
   ExclamationCircleOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
-import { Button, Divider, Drawer, message, Modal, Select, Switch } from 'antd';
+import { Alert, Button, Divider, Drawer, message, Modal, Select, Space, Switch } from 'antd';
 import React, { useRef, useState } from 'react';
 import { PageContainer } from '@ant-design/pro-layout';
 import type { ActionType, ProColumns } from '@ant-design/pro-table';
@@ -16,6 +16,7 @@ import UpdateModal from './components/UpdateModal';
 import type { ProductCategoryListItem } from './data.d';
 import {
   addProductCategory,
+  queryProductCategoryDetail,
   queryProductCategoryList,
   removeProductCategory,
   updateProductCategory,
@@ -23,6 +24,13 @@ import {
   updateProductCategoryStatus,
 } from './service';
 import { tree } from '@/utils/utils';
+import GovernanceScopeBar from '@/pages/system/components/GovernanceScopeBar';
+import {
+  defaultGovernanceScope,
+  type GovernanceScopeValue,
+  toGovernancePayload,
+} from '@/pages/system/components/governance';
+import { readErrorMessage } from '@/pages/system/components/requestError';
 
 const { confirm } = Modal;
 
@@ -30,15 +38,16 @@ const { confirm } = Modal;
  * 添加产品分类
  * @param fields
  */
-const handleAdd = async (fields: ProductCategoryListItem) => {
+const handleAdd = async (fields: ProductCategoryListItem, scope: GovernanceScopeValue) => {
   const hide = message.loading('正在添加');
   try {
-    await addProductCategory({ ...fields });
+    await addProductCategory({ ...fields, ...toGovernancePayload(scope) });
     hide();
     message.success('添加成功');
     return true;
   } catch (error) {
     hide();
+    message.error(readErrorMessage(error, '添加分类失败，请检查当前主体范围与分类字段'));
     return false;
   }
 };
@@ -47,16 +56,17 @@ const handleAdd = async (fields: ProductCategoryListItem) => {
  * 更新产品分类
  * @param fields
  */
-const handleUpdate = async (fields: ProductCategoryListItem) => {
+const handleUpdate = async (fields: ProductCategoryListItem, scope: GovernanceScopeValue) => {
   const hide = message.loading('正在更新');
   try {
-    await updateProductCategory(fields);
+    await updateProductCategory({ ...fields, ...toGovernancePayload(scope) });
     hide();
 
     message.success('更新成功');
     return true;
   } catch (error) {
     hide();
+    message.error(readErrorMessage(error, '更新分类失败，请检查当前分类层级与绑定关系'));
     return false;
   }
 };
@@ -65,16 +75,17 @@ const handleUpdate = async (fields: ProductCategoryListItem) => {
  *  删除产品分类
  * @param ids
  */
-const handleRemove = async (ids: number[]) => {
+const handleRemove = async (ids: number[], scope: GovernanceScopeValue) => {
   const hide = message.loading('正在删除');
   if (ids.length === 0) return true;
   try {
-    await removeProductCategory(ids);
+    await removeProductCategory(ids, toGovernancePayload(scope));
     hide();
     message.success('删除成功，即将刷新');
     return true;
   } catch (error) {
     hide();
+    message.error(readErrorMessage(error, '删除分类失败，请先解除下游引用后重试'));
     return false;
   }
 };
@@ -85,7 +96,7 @@ const handleRemove = async (ids: number[]) => {
  * @param status
  * @param t
  */
-const handleStatus = async (ids: number[], status: number, t: number) => {
+const handleStatus = async (ids: number[], status: number, t: number, scope: GovernanceScopeValue) => {
   const hide = message.loading('正在更新状态');
   if (ids.length == 0) {
     hide();
@@ -93,15 +104,16 @@ const handleStatus = async (ids: number[], status: number, t: number) => {
   }
   try {
     if (t == 1) {
-      await updateProductCategoryStatus({ ids: ids, status: status });
+      await updateProductCategoryStatus({ ids: ids, status: status, ...toGovernancePayload(scope) });
     } else {
-      await updateProductCategoryNavStatus({ ids: ids, status: status });
+      await updateProductCategoryNavStatus({ ids: ids, status: status, ...toGovernancePayload(scope) });
     }
     hide();
     message.success('更新状态成功');
     return true;
   } catch (error) {
     hide();
+    message.error(readErrorMessage(error, '更新分类状态失败，请核对当前节点状态后重试'));
     return false;
   }
 };
@@ -112,14 +124,15 @@ const ProductCategoryList: React.FC = () => {
   const [showDetail, setShowDetail] = useState<boolean>(false);
   const actionRef = useRef<ActionType>();
   const [currentRow, setCurrentRow] = useState<ProductCategoryListItem>();
+  const [scope, setScope] = useState<GovernanceScopeValue>(defaultGovernanceScope);
 
   const showDeleteConfirm = (ids: number[]) => {
     confirm({
       title: '是否删除记录?',
       icon: <ExclamationCircleOutlined />,
-      content: '删除的记录不能恢复,请确认!',
+      content: `当前主体：${scope.scopeLabel || '默认范围'}。删除后不可恢复，请确认。`,
       onOk() {
-        handleRemove(ids).then(() => {
+        handleRemove(ids, scope).then(() => {
           actionRef.current?.reloadAndRest?.();
         });
       },
@@ -131,8 +144,9 @@ const ProductCategoryList: React.FC = () => {
     confirm({
       title: `确定${status == 1 ? '启用' : '禁用'}吗？`,
       icon: <ExclamationCircleOutlined />,
+      content: `当前主体：${scope.scopeLabel || '默认范围'}。将影响 ${ids.length} 个分类节点及其下游商品建档候选。`,
       async onOk() {
-        await handleStatus(ids, status, t);
+        await handleStatus(ids, status, t, scope);
         actionRef.current?.clearSelected?.();
         actionRef.current?.reload?.();
       },
@@ -312,6 +326,14 @@ const ProductCategoryList: React.FC = () => {
 
   return (
     <PageContainer>
+      <Space direction="vertical" style={{ width: '100%' }} size={16}>
+        <GovernanceScopeBar value={scope} onChange={setScope} entityLabel="商品分类目录" />
+        <Alert
+          showIcon
+          type="warning"
+          message="Consequence Preview"
+          description={`当前正在维护 ${scope.scopeLabel || '默认范围'} 的商品分类树。分类启停、导航展示和删除会直接影响后续商品建档、筛选和前台导购入口。`}
+        />
       <ProTable<ProductCategoryListItem>
         headerTitle="产品分类管理"
         actionRef={actionRef}
@@ -324,18 +346,24 @@ const ProductCategoryList: React.FC = () => {
             <PlusOutlined /> 新增
           </Button>,
         ]}
-        request={queryProductCategoryList}
+        request={async (params) =>
+          queryProductCategoryList({
+            ...params,
+            ...toGovernancePayload(scope),
+          })
+        }
         columns={columns}
         rowSelection={{}}
         postData={(data) => tree(data, 0, 'parentId')}
         pagination={false}
         tableAlertRender={false}
       />
+      </Space>
 
       <AddModal
         key={'AddModal'}
         onSubmit={async (value) => {
-          const success = await handleAdd(value);
+          const success = await handleAdd(value, scope);
           if (success) {
             handleAddVisible(false);
             setCurrentRow(undefined);
@@ -356,7 +384,7 @@ const ProductCategoryList: React.FC = () => {
       <UpdateModal
         key={'UpdateModal'}
         onSubmit={async (value) => {
-          const success = await handleUpdate(value);
+          const success = await handleUpdate(value, scope);
           if (success) {
             handleUpdateVisible(false);
             setCurrentRow(undefined);
@@ -388,9 +416,15 @@ const ProductCategoryList: React.FC = () => {
           <ProDescriptions<ProductCategoryListItem>
             column={2}
             title={'产品分类详情'}
-            request={async () => ({
-              data: currentRow || {},
-            })}
+            request={async () => {
+              if (!currentRow?.id) {
+                return { data: currentRow || {} };
+              }
+              const detail = await queryProductCategoryDetail(currentRow.id, toGovernancePayload(scope));
+              return {
+                data: detail?.data || currentRow || {},
+              };
+            }}
             params={{
               id: currentRow?.id,
             }}

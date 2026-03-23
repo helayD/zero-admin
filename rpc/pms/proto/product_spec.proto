@@ -11,6 +11,7 @@ message AddProductSpecReq {
   int32 sort = 3; //排序
   int32 status = 4; //状态：0->禁用；1->启用
   int64 create_by = 5; //创建人ID
+  GovernanceScope scope = 6;
 }
 
 message AddProductSpecResp {
@@ -20,6 +21,8 @@ message AddProductSpecResp {
 // 删除商品规格
 message DeleteProductSpecReq {
   repeated int64 ids = 1;
+  int64 update_by = 2;
+  GovernanceScope scope = 3;
 }
 
 message DeleteProductSpecResp {
@@ -34,6 +37,7 @@ message UpdateProductSpecReq {
   int32 sort = 4; //排序
   int32 status = 5; //状态：0->禁用；1->启用
   int64 update_by = 8; //更新人ID
+  GovernanceScope scope = 9;
 }
 
 message UpdateProductSpecResp {
@@ -45,6 +49,7 @@ message UpdateProductSpecStatusReq {
   repeated int64 ids = 1; //
   int32 status = 5; //状态：0->禁用；1->启用
   int64 update_by = 8; //更新人ID
+  GovernanceScope scope = 9;
 }
 
 message UpdateProductSpecStatusResp {
@@ -54,6 +59,7 @@ message UpdateProductSpecStatusResp {
 // 查询商品规格详情
 message QueryProductSpecDetailReq {
     int64 id = 1;
+    GovernanceScope scope = 2;
 }
 
 message QueryProductSpecDetailResp {
@@ -66,6 +72,10 @@ message QueryProductSpecDetailResp {
   string create_time = 7; //创建时间
   int64 update_by = 8; //更新人ID
   string update_time = 9; //更新时间
+  string scope_type = 10;
+  int64 platform_id = 11;
+  int64 tenant_id = 12;
+  int64 merchant_id = 13;
 
 }
 
@@ -76,6 +86,7 @@ message QueryProductSpecListReq {
   int32 status = 3; //状态：0->禁用；1->启用
   int32 page_num = 4; //第几页
   int32 page_size = 5; //每页的数量
+  GovernanceScope scope = 6;
 }
 
 message ProductSpecListData {
@@ -89,6 +100,10 @@ message ProductSpecListData {
   int64 update_by = 8; //更新人ID
   string update_time = 9; //更新时间
   int32 is_deleted = 10; //是否删除
+  string scope_type = 11;
+  int64 platform_id = 12;
+  int64 tenant_id = 13;
+  int64 merchant_id = 14;
 
 }
 

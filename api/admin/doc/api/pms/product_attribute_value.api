@@ -9,6 +9,7 @@ info (
 type (
 	// 添加商品属性值请求参数
 	AddProductAttributeValueReq {
+		Id          int64  `json:"id,optional"` //属性值明细ID，更新时可回传
 		AttributeId int64  `json:"attributeId"` //属性ID
 		Value       string `json:"value"` //属性值
 		Status      int32  `json:"status"` //状态：0->禁用；1->启用
@@ -83,4 +84,3 @@ type (
 		Success  bool                                  `json:"success"`
 	}
 )
-

@@ -7,6 +7,7 @@ import (
 	"github.com/feihua/zero-admin/rpc/cms/cmsclient"
 	"github.com/feihua/zero-admin/rpc/cms/gen/model"
 	"github.com/feihua/zero-admin/rpc/cms/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/cms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/cms/internal/svc"
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -36,6 +37,13 @@ func NewUpdatePreferredAreaLogic(ctx context.Context, svcCtx *svc.ServiceContext
 // UpdatePreferredArea 更新优选专区
 func (l *UpdatePreferredAreaLogic) UpdatePreferredArea(in *cmsclient.UpdatePreferredAreaReq) (*cmsclient.UpdatePreferredAreaResp, error) {
 	q := query.CmsPreferredArea.WithContext(l.ctx)
+	currentScope, err := logiccommon.ResolveWriteScope(l.ctx, l.svcCtx.DB, nil, in.UpdateBy)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := logiccommon.EnsurePreferredAreaScope(l.ctx, l.svcCtx.DB, currentScope, []int64{in.Id}, "cms.preferred_area.update", in.UpdateBy, fmt.Sprintf("preferredAreaId=%d", in.Id)); err != nil {
+		return nil, err
+	}
 
 	area, err := q.Where(query.CmsPreferredArea.ID.Eq(in.Id)).First()
 	switch {

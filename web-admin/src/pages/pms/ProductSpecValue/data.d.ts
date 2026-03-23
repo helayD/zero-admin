@@ -9,6 +9,11 @@ export interface ProductSpecValueListItem {
     updateBy: number; //更新人ID
     updateTime: string; //更新时间
     isDeleted: number; //是否删除
+    scopeType?: 'platform' | 'tenant' | 'merchant';
+    scopeLabel?: string;
+    platformId?: number;
+    tenantId?: number;
+    merchantId?: number;
 
 }
 
@@ -34,6 +39,11 @@ export interface ProductSpecValueListParams {
     updateBy?: number; //更新人ID
     updateTime?: string; //更新时间
     isDeleted?: number; //是否删除
+    scopeType?: 'platform' | 'tenant' | 'merchant';
+    scopeLabel?: string;
+    platformId?: number;
+    tenantId?: number;
+    merchantId?: number;
 
     pageSize?: number;
     current?: number;

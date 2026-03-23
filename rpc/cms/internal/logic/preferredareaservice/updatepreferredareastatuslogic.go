@@ -5,9 +5,11 @@ import (
 	"errors"
 	"github.com/feihua/zero-admin/rpc/cms/cmsclient"
 	"github.com/feihua/zero-admin/rpc/cms/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/cms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/cms/internal/svc"
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
+	"strconv"
 )
 
 // UpdatePreferredAreaStatusLogic 更新优选专区
@@ -32,8 +34,15 @@ func NewUpdatePreferredAreaStatusLogic(ctx context.Context, svcCtx *svc.ServiceC
 // UpdatePreferredAreaStatus 更新优选专区状态
 func (l *UpdatePreferredAreaStatusLogic) UpdatePreferredAreaStatus(in *cmsclient.UpdatePreferredAreaStatusReq) (*cmsclient.UpdatePreferredAreaStatusResp, error) {
 	q := query.CmsPreferredArea
+	currentScope, err := logiccommon.ResolveWriteScope(l.ctx, l.svcCtx.DB, nil, in.UpdateBy)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := logiccommon.EnsurePreferredAreaScope(l.ctx, l.svcCtx.DB, currentScope, in.Ids, "cms.preferred_area.status", in.UpdateBy, "showStatus="+strconv.Itoa(int(in.ShowStatus))); err != nil {
+		return nil, err
+	}
 
-	_, err := q.WithContext(l.ctx).Where(q.ID.In(in.Ids...)).Update(q.ShowStatus, in.ShowStatus)
+	_, err = q.WithContext(l.ctx).Where(q.ID.In(in.Ids...)).Update(q.ShowStatus, in.ShowStatus)
 
 	if err != nil {
 		logc.Errorf(l.ctx, "更新优选专区状态失败,参数:%+v,异常:%s", in, err.Error())

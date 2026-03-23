@@ -47,14 +47,14 @@ development_status:
   1-4-作用域角色-菜单模板与数据授权: review
   1-5-商户入驻审核与主体启停: review
   1-6a-核心业务对象查询范围过滤与主体透传: review
-  1-6b-核心业务对象关键写操作校验与越权审计: backlog
-  1-7-治理审计与安全事件检索: backlog
+  1-6b-核心业务对象关键写操作校验与越权审计: review
+  1-7-治理审计与安全事件检索: review
   epic-1-retrospective: optional
 
-  epic-2: backlog
-  2-1-商品分类-品牌与属性基础配置: backlog
-  2-2-商品规格-spu-sku-与库存建档: backlog
-  2-3-商品上架审核与作用域可见性控制: backlog
+  epic-2: in-progress
+  2-1-商品分类-品牌与属性基础配置: in-progress
+  2-2-商品规格-spu-sku-与库存建档: in-progress
+  2-3-商品上架审核与作用域可见性控制: ready-for-dev
   2-4-首页-分类与品牌导购浏览: backlog
   2-5-商品详情与规格库存优惠摘要: backlog
   2-6-专题与优选专区编排: backlog

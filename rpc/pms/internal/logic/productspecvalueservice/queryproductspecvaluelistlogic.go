@@ -1,72 +1,9 @@
 package productspecvalueservicelogic
-
 import (
-	"context"
-	"errors"
-	"github.com/feihua/zero-admin/pkg/pointerprocess"
-	"github.com/feihua/zero-admin/pkg/time_util"
-	"github.com/feihua/zero-admin/rpc/pms/gen/query"
-	"github.com/feihua/zero-admin/rpc/pms/internal/svc"
-	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
-	"github.com/zeromicro/go-zero/core/logc"
-	"github.com/zeromicro/go-zero/core/logx"
-)
+	"context"; "errors"
+	"github.com/feihua/zero-admin/pkg/pointerprocess"; pkgscope "github.com/feihua/zero-admin/pkg/scope"; "github.com/feihua/zero-admin/pkg/time_util"
+	logiccommon "github.com/feihua/zero-admin/rpc/pms/internal/logic/common"; "github.com/feihua/zero-admin/rpc/pms/internal/svc"; "github.com/feihua/zero-admin/rpc/pms/pmsclient"; "github.com/zeromicro/go-zero/core/logc"; "github.com/zeromicro/go-zero/core/logx")
 
-// QueryProductSpecValueListLogic 查询商品规格值列表
-/*
-Author: LiuFeiHua
-Date: 2025/06/16 14:37:37
-*/
-type QueryProductSpecValueListLogic struct {
-	ctx    context.Context
-	svcCtx *svc.ServiceContext
-	logx.Logger
-}
-
-func NewQueryProductSpecValueListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *QueryProductSpecValueListLogic {
-	return &QueryProductSpecValueListLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
-		Logger: logx.WithContext(ctx),
-	}
-}
-
-// QueryProductSpecValueList 查询商品规格值列表
-func (l *QueryProductSpecValueListLogic) QueryProductSpecValueList(in *pmsclient.QueryProductSpecValueListReq) (*pmsclient.QueryProductSpecValueListResp, error) {
-	productSpecValue := query.PmsProductSpecValue
-	q := productSpecValue.WithContext(l.ctx)
-	if in.SpecId != 0 {
-		q = q.Where(productSpecValue.SpecID.Eq(in.SpecId))
-	}
-	if in.Status != 2 {
-		q = q.Where(productSpecValue.Status.Eq(in.Status))
-	}
-	result, count, err := q.FindByPage(int((in.PageNum-1)*in.PageSize), int(in.PageSize))
-
-	if err != nil {
-		logc.Errorf(l.ctx, "查询商品规格值列表失败,参数:%+v,异常:%s", in, err.Error())
-		return nil, errors.New("查询商品规格值列表失败")
-	}
-
-	var list []*pmsclient.ProductSpecValueListData
-
-	for _, item := range result {
-		list = append(list, &pmsclient.ProductSpecValueListData{
-			Id:         item.ID,                                          //
-			SpecId:     item.SpecID,                                      // 规格ID
-			Value:      item.Value,                                       // 规格值
-			Sort:       item.Sort,                                        // 排序
-			Status:     item.Status,                                      // 状态：0->禁用；1->启用
-			CreateBy:   item.CreateBy,                                    // 创建人ID
-			CreateTime: time_util.TimeToStr(item.CreateTime),             // 创建时间
-			UpdateBy:   pointerprocess.DefaltData(item.UpdateBy).(int64), // 更新人ID
-			UpdateTime: time_util.TimeToString(item.UpdateTime),          // 更新时间
-
-		})
-	}
-
-	return &pmsclient.QueryProductSpecValueListResp{
-		Total: count,
-		List:  list,
-	}, nil
-}
+type QueryProductSpecValueListLogic struct { ctx context.Context; svcCtx *svc.ServiceContext; logx.Logger }
+func NewQueryProductSpecValueListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *QueryProductSpecValueListLogic { return &QueryProductSpecValueListLogic{ctx:ctx, svcCtx:svcCtx, Logger:logx.WithContext(ctx)} }
+func (l *QueryProductSpecValueListLogic) QueryProductSpecValueList(in *pmsclient.QueryProductSpecValueListReq) (*pmsclient.QueryProductSpecValueListResp, error) { current, err := logiccommon.NormalizeProtoScope(in.Scope); if err != nil { return nil, err }; db := pkgscope.ApplyGovernanceScope(l.svcCtx.DB.WithContext(l.ctx).Table("pms_product_spec_value").Where("is_deleted = 0"), current, ""); if in.SpecId != 0 { db = db.Where("spec_id = ?", in.SpecId) }; if in.Status != 2 { db = db.Where("status = ?", in.Status) }; var total int64; if err := db.Count(&total).Error; err != nil { logc.Errorf(l.ctx, "查询商品规格值总数失败,参数:%+v,异常:%s", in, err.Error()); return nil, errors.New("查询商品规格值列表失败") }; var rows []logiccommon.ProductSpecValueRow; if err := db.Order("sort asc, id desc").Offset(int((in.PageNum-1)*in.PageSize)).Limit(int(in.PageSize)).Scan(&rows).Error; err != nil { logc.Errorf(l.ctx, "查询商品规格值列表失败,参数:%+v,异常:%s", in, err.Error()); return nil, errors.New("查询商品规格值列表失败") }; list := make([]*pmsclient.ProductSpecValueListData,0,len(rows)); for _, item := range rows { list = append(list, &pmsclient.ProductSpecValueListData{Id:item.ID,SpecId:item.SpecID,Value:item.Value,Sort:item.Sort,Status:item.Status,CreateBy:item.CreateBy,CreateTime:time_util.TimeToStr(item.CreateTime),UpdateBy:pointerprocess.DefaltData(item.UpdateBy).(int64),UpdateTime:time_util.TimeToString(item.UpdateTime),ScopeType:current.ScopeType,PlatformId:item.PlatformID,TenantId:item.TenantID,MerchantId:item.MerchantID}) }; return &pmsclient.QueryProductSpecValueListResp{Total:total,List:list}, nil }

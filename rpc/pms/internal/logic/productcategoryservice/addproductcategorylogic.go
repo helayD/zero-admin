@@ -4,71 +4,91 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/feihua/zero-admin/rpc/pms/gen/model"
-	"github.com/feihua/zero-admin/rpc/pms/gen/query"
+	"strings"
+
+	logiccommon "github.com/feihua/zero-admin/rpc/pms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/pms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
 )
 
-// AddProductCategoryLogic 添加产品分类
-/*
-Author: LiuFeiHua
-Date: 2025/05/26 10:33:54
-*/
 type AddProductCategoryLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
 	logx.Logger
 }
 
-func NewAddProductCategoryLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AddProductCategoryLogic {
-	return &AddProductCategoryLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
-		Logger: logx.WithContext(ctx),
-	}
+type productCategoryCreateRow struct {
+	ID           int64  `gorm:"column:id"`
+	ParentID     int64  `gorm:"column:parent_id"`
+	Name         string `gorm:"column:name"`
+	Level        int32  `gorm:"column:level"`
+	ProductCount int32  `gorm:"column:product_count"`
+	ProductUnit  string `gorm:"column:product_unit"`
+	NavStatus    int32  `gorm:"column:nav_status"`
+	Sort         int32  `gorm:"column:sort"`
+	Icon         string `gorm:"column:icon"`
+	Keywords     string `gorm:"column:keywords"`
+	Description  string `gorm:"column:description"`
+	IsEnabled    int32  `gorm:"column:is_enabled"`
+	CreateBy     int64  `gorm:"column:create_by"`
+	PlatformID   int64  `gorm:"column:platform_id"`
+	TenantID     int64  `gorm:"column:tenant_id"`
+	MerchantID   int64  `gorm:"column:merchant_id"`
+	IsDeleted    int32  `gorm:"column:is_deleted"`
 }
 
-// AddProductCategory 添加产品分类
-func (l *AddProductCategoryLogic) AddProductCategory(in *pmsclient.AddProductCategoryReq) (*pmsclient.AddProductCategoryResp, error) {
-	q := query.PmsProductCategory
-	count, _ := q.WithContext(l.ctx).Where(q.Name.Eq(in.Name)).Count()
+func NewAddProductCategoryLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AddProductCategoryLogic {
+	return &AddProductCategoryLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
+}
 
+func (l *AddProductCategoryLogic) AddProductCategory(in *pmsclient.AddProductCategoryReq) (*pmsclient.AddProductCategoryResp, error) {
+	currentScope, err := logiccommon.ResolveWriteScope(l.ctx, l.svcCtx.DB, in.Scope, in.CreateBy)
+	if err != nil {
+		return nil, err
+	}
+	var count int64
+	if err := l.svcCtx.DB.WithContext(l.ctx).Table("pms_product_category").Where("is_deleted = 0 AND parent_id = ? AND name = ? AND platform_id = ? AND tenant_id = ? AND merchant_id = ?", in.ParentId, strings.TrimSpace(in.Name), currentScope.PlatformID, currentScope.TenantID, currentScope.MerchantID).Count(&count).Error; err != nil {
+		logc.Errorf(l.ctx, "校验商品分类重复失败,参数:%+v,异常:%s", in, err.Error())
+		return nil, errors.New("校验商品分类重复失败")
+	}
 	if count > 0 {
 		return nil, errors.New(fmt.Sprintf("商品分类名称：%s,已存在", in.Name))
 	}
-	item := &model.PmsProductCategory{
-		ParentID:     in.ParentId,    // 上级分类的编号：0表示一级分类
-		Name:         in.Name,        // 商品分类名称
-		Level:        in.Level,       // 分类级别：0->1级；1->2级
-		ProductCount: 0,              // 商品数量
-		ProductUnit:  in.ProductUnit, // 商品单位
-		NavStatus:    in.NavStatus,   // 是否显示在导航栏：0->不显示；1->显示
-		Sort:         in.Sort,        // 排序
-		Icon:         in.Icon,        // 图标
-		Keywords:     in.Keywords,    // 关键字
-		Description:  in.Description, // 描述
-		IsEnabled:    in.IsEnabled,   // 是否启用
-		CreateBy:     in.CreateBy,    // 创建人ID
+
+	item := &productCategoryCreateRow{
+		ParentID:     in.ParentId,
+		Name:         strings.TrimSpace(in.Name),
+		Level:        in.Level,
+		ProductCount: 0,
+		ProductUnit:  in.ProductUnit,
+		NavStatus:    in.NavStatus,
+		Sort:         in.Sort,
+		Icon:         in.Icon,
+		Keywords:     in.Keywords,
+		Description:  in.Description,
+		IsEnabled:    in.IsEnabled,
+		CreateBy:     in.CreateBy,
+		PlatformID:   currentScope.PlatformID,
+		TenantID:     currentScope.TenantID,
+		MerchantID:   currentScope.MerchantID,
+		IsDeleted:    0,
 	}
 
-	err := q.WithContext(l.ctx).Create(item)
+	err = l.svcCtx.DB.WithContext(l.ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Table("pms_product_category").Select("*").Create(item).Error; err != nil {
+			return err
+		}
+		return replaceCategoryRelations(tx, item.ID, in.ProductAttributeIdList, currentScope)
+	})
 	if err != nil {
+		if isCategoryBindingValidationError(err) {
+			return nil, err
+		}
 		logc.Errorf(l.ctx, "添加产品分类失败,参数:%+v,异常:%s", item, err.Error())
 		return nil, errors.New("添加产品分类失败")
 	}
-	if len(in.ProductAttributeIdList) > 0 {
-		var list []*model.PmsProductCategoryAttributeRelation
-		for _, productAttributeId := range in.ProductAttributeIdList {
-			list = append(list, &model.PmsProductCategoryAttributeRelation{
-				ProductCategoryID:  item.ID,
-				ProductAttributeID: productAttributeId,
-			})
-		}
-
-		_ = query.PmsProductCategoryAttributeRelation.WithContext(l.ctx).CreateInBatches(list, len(list))
-	}
-	return &pmsclient.AddProductCategoryResp{}, nil
+	return &pmsclient.AddProductCategoryResp{Pong: "ok"}, nil
 }

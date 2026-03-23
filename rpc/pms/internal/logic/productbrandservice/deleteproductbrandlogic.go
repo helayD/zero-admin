@@ -3,18 +3,15 @@ package productbrandservicelogic
 import (
 	"context"
 	"errors"
-	"github.com/feihua/zero-admin/rpc/pms/gen/query"
+	"time"
+
+	logiccommon "github.com/feihua/zero-admin/rpc/pms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/pms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-// DeleteProductBrandLogic 删除商品品牌
-/*
-Author: LiuFeiHua
-Date: 2025/05/26 10:33:54
-*/
 type DeleteProductBrandLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
@@ -22,23 +19,28 @@ type DeleteProductBrandLogic struct {
 }
 
 func NewDeleteProductBrandLogic(ctx context.Context, svcCtx *svc.ServiceContext) *DeleteProductBrandLogic {
-	return &DeleteProductBrandLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
-		Logger: logx.WithContext(ctx),
-	}
+	return &DeleteProductBrandLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-// DeleteProductBrand 删除商品品牌
 func (l *DeleteProductBrandLogic) DeleteProductBrand(in *pmsclient.DeleteProductBrandReq) (*pmsclient.DeleteProductBrandResp, error) {
-	q := query.PmsProductBrand
-
-	_, err := q.WithContext(l.ctx).Where(q.ID.In(in.Ids...)).Delete()
-
+	currentScope, err := logiccommon.ResolveWriteScope(l.ctx, l.svcCtx.DB, in.Scope, in.UpdateBy)
 	if err != nil {
+		return nil, err
+	}
+	if _, err := logiccommon.EnsureBrandScope(l.ctx, l.svcCtx.DB, currentScope, in.Ids, "pms.product_brand.delete", in.UpdateBy, "", "delete brand"); err != nil {
+		return nil, err
+	}
+	if err := logiccommon.EnsureCatalogDeleteAllowed(l.ctx, l.svcCtx.DB, currentScope, in.Ids, []logiccommon.CatalogReferenceCheck{{
+		Table:      "pms_product_spu",
+		Column:     "brand_id",
+		Message:    "商品品牌已被商品建档引用，无法删除",
+		ScopeAware: true,
+	}}); err != nil {
+		return nil, err
+	}
+	if err := l.svcCtx.DB.WithContext(l.ctx).Table("pms_product_brand").Where("id IN ?", in.Ids).Updates(map[string]interface{}{"is_deleted": 1, "update_by": in.UpdateBy, "update_time": time.Now()}).Error; err != nil {
 		logc.Errorf(l.ctx, "删除商品品牌失败,参数:%+v,异常:%s", in, err.Error())
 		return nil, errors.New("删除商品品牌失败")
 	}
-
 	return &pmsclient.DeleteProductBrandResp{}, nil
 }

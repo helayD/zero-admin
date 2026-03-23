@@ -1,5 +1,5 @@
 export interface SubjectListItem {
-  id: number;
+  id?: number;
   categoryId?: number;
   title?: string;
   pic?: string;
