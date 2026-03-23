@@ -283,6 +283,7 @@ type AddProductAttributeReq struct {
 }
 
 type AddProductAttributeValueReq struct {
+	Id          int64  `json:"id,optional"` //属性值明细ID，更新时可回传
 	AttributeId int64  `json:"attributeId"` //属性ID
 	Value       string `json:"value"`       //属性值
 	Status      int32  `json:"status"`      //状态：0->禁用；1->启用
@@ -322,6 +323,8 @@ type AddProductCategoryReq struct {
 }
 
 type AddProductSkuReq struct {
+	Id                 int64   `json:"id,optional"`                 //SKU明细ID，更新时可回传
+	SpuId              int64   `json:"spuId,optional"`              //商品SpuId
 	Name               string  `json:"name"`                        //SKU名称
 	SkuCode            string  `json:"skuCode,optional"`            //SKU编码
 	MainPic            string  `json:"mainPic"`                     //主图
@@ -1004,6 +1007,7 @@ type LoginResp struct {
 }
 
 type MemberPriceReq struct {
+	Id              int64  `json:"id,optional"`     //明细ID，更新时可回传
 	MemberLevelId   int64  `json:"memberLevelId"`   //会员等级id
 	MemberPrice     int64  `json:"memberPrice"`     //会员价格
 	MemberLevelName string `json:"memberLevelName"` //会员等级名称
@@ -1146,6 +1150,7 @@ type PostList struct {
 }
 
 type ProductFullReductionReq struct {
+	Id          int64 `json:"id,optional"` //满减明细ID，更新时可回传
 	FullPrice   int64 `json:"fullPrice"`   //商品满多少
 	ReducePrice int64 `json:"reducePrice"` //商品减多少
 }
@@ -1158,9 +1163,10 @@ type ProductFullReductionResp struct {
 }
 
 type ProductLadderReq struct {
-	Count    int32 `json:"count"`    //满足的商品数量
-	Discount int64 `json:"discount"` //折扣
-	Price    int64 `json:"price"`    //折后价格
+	Id       int64 `json:"id,optional"` //阶梯价明细ID，更新时可回传
+	Count    int32 `json:"count"`       //满足的商品数量
+	Discount int64 `json:"discount"`    //折扣
+	Price    int64 `json:"price"`       //折后价格
 }
 
 type ProductLadderResp struct {
@@ -5388,9 +5394,9 @@ type UpdateProductSpuReq struct {
 }
 
 type UpdateProductSpuStatusReq struct {
-	Ids        []int64 `json:"ids"`    //商品SpuId
-	Status     int32   `json:"status"` //状态
-	Detail     string  `form:"detail,optional"`
+	Ids        []int64 `json:"ids"`                 //商品SpuId
+	Status     int32   `json:"status"`              //状态
+	Detail     string  `json:"detail,optional"`     //审核备注/状态变更说明
 	ScopeType  string  `json:"scopeType,optional"`  //治理范围(platform/tenant/merchant)
 	PlatformId int64   `json:"platformId,optional"` //平台ID
 	TenantId   int64   `json:"tenantId,optional"`   //租户ID

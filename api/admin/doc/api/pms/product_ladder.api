@@ -7,6 +7,7 @@ info (
 type (
 	// 添加产品阶梯价格(只针对同商品)请求参数
 	ProductLadderReq {
+		Id       int64 `json:"id,optional"` //阶梯价明细ID，更新时可回传
 		Count    int32 `json:"count"` //满足的商品数量
 		Discount int64 `json:"discount"` //折扣
 		Price    int64 `json:"price"` //折后价格
@@ -19,4 +20,3 @@ type (
 		Price     int64 `json:"price"` //折后价格
 	}
 )
-

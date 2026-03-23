@@ -7,6 +7,7 @@ info (
 type (
 	// 添加或者更新产品满减(只针对同商品)请求参数
 	ProductFullReductionReq {
+		Id          int64 `json:"id,optional"` //满减明细ID，更新时可回传
 		FullPrice   int64 `json:"fullPrice"` //商品满多少
 		ReducePrice int64 `json:"reducePrice"` //商品减多少
 	}
@@ -18,4 +19,3 @@ type (
 		ReducePrice int64 `json:"reducePrice"` //商品减多少
 	}
 )
-

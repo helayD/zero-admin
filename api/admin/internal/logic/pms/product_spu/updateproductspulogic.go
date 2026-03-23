@@ -132,6 +132,7 @@ func buildUpdateMemberPriceList(req *types.UpdateProductSpuReq) []*pmsclient.Mem
 	var memberPriceLists []*pmsclient.MemberPriceList
 	for _, item := range req.MemberPriceList {
 		memberPriceLists = append(memberPriceLists, &pmsclient.MemberPriceList{
+			Id:        item.Id,            // 明细ID
 			LevelId:   item.MemberLevelId,   // 会员等级id
 			Price:     item.MemberPrice,     // 会员价格
 			LevelName: item.MemberLevelName, // 会员等级名称
@@ -145,6 +146,7 @@ func buildUpdateProductAttributeValueList(req *types.UpdateProductSpuReq) []*pms
 	var attributeValueLists []*pmsclient.ProductAttributeValueList
 	for _, item := range req.AttributeValueList {
 		attributeValueLists = append(attributeValueLists, &pmsclient.ProductAttributeValueList{
+			Id:                 item.Id,          // 属性值明细ID
 			ProductAttributeId: item.AttributeId, // 商品属性id
 			AttributeValues:    item.Value,       // 参数值
 		})
@@ -157,6 +159,7 @@ func buildUpdateProductFullReductionList(req *types.UpdateProductSpuReq) []*pmsc
 	var fullReductionLists []*pmsclient.ProductFullReductionList
 	for _, item := range req.FullList {
 		fullReductionLists = append(fullReductionLists, &pmsclient.ProductFullReductionList{
+			Id:          item.Id,          // 满减明细ID
 			FullPrice:   item.FullPrice,   // 商品满多少
 			ReducePrice: item.ReducePrice, // 商品减多少
 		})
@@ -169,6 +172,7 @@ func buildUpdateProductLadderList(req *types.UpdateProductSpuReq) []*pmsclient.P
 	var ladderLists []*pmsclient.ProductLadderList
 	for _, item := range req.LadderList {
 		ladderLists = append(ladderLists, &pmsclient.ProductLadderList{
+			Id:       item.Id,       // 阶梯价明细ID
 			Count:    item.Count,    // 满足的商品数量
 			Discount: item.Discount, // 折扣
 			Price:    item.Price,    // 折后价格
@@ -182,6 +186,8 @@ func buildUpdateSkuStockList(req *types.UpdateProductSpuReq) []*pmsclient.SkuSto
 	var skuStockLists []*pmsclient.SkuStockList
 	for _, item := range req.SkuList {
 		skuStockLists = append(skuStockLists, &pmsclient.SkuStockList{
+			Id:                 item.Id,                 // SKU明细ID
+			SpuId:              item.SpuId,              // 商品SpuId
 			Name:               item.Name,               // SKU名称
 			SkuCode:            item.SkuCode,            // SKU编码
 			MainPic:            item.MainPic,            // 主图

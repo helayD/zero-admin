@@ -12,9 +12,39 @@ import (
 	"github.com/feihua/zero-admin/rpc/pms/gen/query"
 	"github.com/feihua/zero-admin/rpc/pms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
+
+type mockProductVertifyRecordModel struct {
+	inserted []*model.ProductVertifyRecord
+}
+
+func (m *mockProductVertifyRecordModel) Insert(ctx context.Context, data *model.ProductVertifyRecord) error {
+	copied := *data
+	m.inserted = append(m.inserted, &copied)
+	return nil
+}
+
+func (m *mockProductVertifyRecordModel) FindOne(ctx context.Context, id string) (*model.ProductVertifyRecord, error) {
+	if len(m.inserted) == 0 {
+		return nil, model.ErrNotFound
+	}
+	return m.inserted[0], nil
+}
+
+func (m *mockProductVertifyRecordModel) Update(ctx context.Context, data *model.ProductVertifyRecord) (*mongo.UpdateResult, error) {
+	return &mongo.UpdateResult{}, nil
+}
+
+func (m *mockProductVertifyRecordModel) Delete(ctx context.Context, id string) (int64, error) {
+	return 0, nil
+}
+
+func (m *mockProductVertifyRecordModel) FindAll(ctx context.Context, productId int64) ([]*model.ProductVertifyRecord, error) {
+	return m.inserted, nil
+}
 
 func newProductSpuDraftTestSvc(t *testing.T) (*svc.ServiceContext, pkgscope.GovernanceScope) {
 	t.Helper()
@@ -299,5 +329,71 @@ func TestUpdateProductSpuRebuildsSkuSummaryWithDeterministicCodes(t *testing.T) 
 				t.Fatalf("unexpected %s scope: %+v", target.label, row)
 			}
 		}
+	}
+}
+
+func TestUpdateVerifyStatusCreatesReviewRecordForDraft(t *testing.T) {
+	svcCtx, scope := newProductSpuDraftTestSvc(t)
+	verifyModel := &mockProductVertifyRecordModel{}
+	svcCtx.ProductVertifyRecordModel = verifyModel
+
+	now := time.Now()
+	if err := svcCtx.DB.Create(&model.PmsProductSpu{
+		ID:           1201,
+		Name:         "待送审商品",
+		ProductSn:    "SPU-1201",
+		CategoryID:   11,
+		CategoryName: "测试分类",
+		BrandID:      21,
+		BrandName:    "测试品牌",
+		Unit:         "件",
+		MainPic:      "draft.png",
+		PriceRange:   "99.00",
+		Stock:        8,
+		LowStock:     2,
+		VerifyStatus: 0,
+		CreateBy:     1001,
+		CreateTime:   now,
+	}).Error; err != nil {
+		t.Fatalf("seed draft spu failed: %v", err)
+	}
+	if err := svcCtx.DB.Exec(`UPDATE pms_product_spu SET platform_id=?, tenant_id=?, merchant_id=? WHERE id=?`, scope.PlatformID, scope.TenantID, scope.MerchantID, 1201).Error; err != nil {
+		t.Fatalf("seed draft spu scope failed: %v", err)
+	}
+
+	logic := NewUpdateVerifyStatusLogic(context.Background(), svcCtx)
+	_, err := logic.UpdateVerifyStatus(&pmsclient.UpdateProductSpuStatusReq{
+		Ids:       []int64{1201},
+		Status:    1,
+		UpdateBy:  2001,
+		ReviewMan: "reviewer",
+		Detail:    "草稿满足最小送审条件，进入审核链路",
+		Scope: &pmsclient.GovernanceScope{
+			ScopeType:  scope.ScopeType,
+			PlatformId: scope.PlatformID,
+			TenantId:   scope.TenantID,
+			MerchantId: scope.MerchantID,
+		},
+	})
+	if err != nil {
+		t.Fatalf("UpdateVerifyStatus failed: %v", err)
+	}
+
+	var spu model.PmsProductSpu
+	if err := svcCtx.DB.First(&spu, 1201).Error; err != nil {
+		t.Fatalf("reload spu failed: %v", err)
+	}
+	if spu.VerifyStatus != 1 {
+		t.Fatalf("expected verify status 1, got %d", spu.VerifyStatus)
+	}
+	if len(verifyModel.inserted) != 1 {
+		t.Fatalf("expected 1 verify record, got %d", len(verifyModel.inserted))
+	}
+	record := verifyModel.inserted[0]
+	if record.ProductId != 1201 || record.Status != 1 || record.ReviewMan != "reviewer" {
+		t.Fatalf("unexpected verify record: %+v", record)
+	}
+	if record.Detail != "草稿满足最小送审条件，进入审核链路" {
+		t.Fatalf("expected review detail to persist, got %q", record.Detail)
 	}
 }

@@ -49,6 +49,7 @@ func (l *QueryProductSpuListLogic) QueryProductSpuList(req *types.QueryProductSp
 		PageNum:         req.Current,
 		PageSize:        req.PageSize,
 		Name:            req.Name,            // 商品名称
+		ProductSn:       req.ProductSn,       // 商品货号
 		CategoryId:      req.CategoryId,      // 商品分类ID
 		BrandId:         req.BrandId,         // 品牌ID
 		Keywords:        req.Keywords,        // 关键词

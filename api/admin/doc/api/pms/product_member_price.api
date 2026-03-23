@@ -7,6 +7,7 @@ info (
 type (
 	// 添加商品会员价格请求参数
 	MemberPriceReq {
+		Id              int64  `json:"id,optional"` //明细ID，更新时可回传
 		MemberLevelId   int64  `json:"memberLevelId"` //会员等级id
 		MemberPrice     int64  `json:"memberPrice"` //会员价格
 		MemberLevelName string `json:"memberLevelName"` //会员等级名称
@@ -19,4 +20,3 @@ type (
 		MemberLevelName string `json:"memberLevelName"` //会员等级名称
 	}
 )
-

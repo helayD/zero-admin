@@ -1,5 +1,10 @@
 import { request } from 'umi';
-import type { ProductSpuListItem, ProductSpuListParams } from './data.d';
+import type {
+  ProductSpuDetailResponse,
+  ProductSpuListParams,
+  ProductSpuNestedPayload,
+  ProductSpuSubmitPayload,
+} from './data.d';
 
 type GovernancePayload = {
   scopeType?: 'platform' | 'tenant' | 'merchant';
@@ -8,12 +13,44 @@ type GovernancePayload = {
   merchantId?: number;
 };
 
-const emptyNestedPayload = {
+const productDataFieldNames = [
+  'id',
+  'name',
+  'productSn',
+  'categoryId',
+  'categoryIds',
+  'categoryName',
+  'brandId',
+  'brandName',
+  'unit',
+  'weight',
+  'keywords',
+  'albumPics',
+  'mainPic',
+  'publishStatus',
+  'newStatus',
+  'recommendStatus',
+  'verifyStatus',
+  'previewStatus',
+  'sort',
+  'newStatusSort',
+  'recommendStatusSort',
+  'stock',
+  'lowStock',
+  'promotionType',
+  'subTitle',
+  'detailHtml',
+  'detailMobileHtml',
+] as const;
+
+const emptyNestedPayload: Required<ProductSpuNestedPayload> = {
   ladderList: [],
   fullList: [],
   memberPriceList: [],
   skuList: [],
   attributeValueList: [],
+  subjectIds: [],
+  prefrenceAreaIds: [],
 };
 
 type ProductSpuRelationPayload = {
@@ -34,21 +71,56 @@ function buildRelationPayload(params: ProductSpuRelationPayload) {
   return relationPayload;
 }
 
-export async function addProductSpu(
-  params: ProductSpuListItem & GovernancePayload & ProductSpuRelationPayload,
-) {
-  const { scopeType, platformId, tenantId, merchantId, ...productData } = params;
+function buildProductSpuPayload(params: ProductSpuSubmitPayload) {
+  const {
+    scopeType,
+    platformId,
+    tenantId,
+    merchantId,
+    ladderList,
+    fullList,
+    memberPriceList,
+    skuList,
+    attributeValueList,
+    subjectIds,
+    prefrenceAreaIds,
+    ...rawProductData
+  } = params;
+
+  const productData = productDataFieldNames.reduce<Record<string, any>>((acc, fieldName) => {
+    const value =
+      fieldName === 'subTitle'
+        ? rawProductData.subTitle ?? rawProductData.detailTitle
+        : rawProductData[fieldName];
+    if (value !== undefined) {
+      acc[fieldName] = value;
+    }
+    return acc;
+  }, {});
+
+  return {
+    productData,
+    ladderList: Array.isArray(ladderList) ? ladderList : emptyNestedPayload.ladderList,
+    fullList: Array.isArray(fullList) ? fullList : emptyNestedPayload.fullList,
+    memberPriceList: Array.isArray(memberPriceList)
+      ? memberPriceList
+      : emptyNestedPayload.memberPriceList,
+    skuList: Array.isArray(skuList) ? skuList : emptyNestedPayload.skuList,
+    attributeValueList: Array.isArray(attributeValueList)
+      ? attributeValueList
+      : emptyNestedPayload.attributeValueList,
+    ...buildRelationPayload({ subjectIds, prefrenceAreaIds }),
+    scopeType,
+    platformId,
+    tenantId,
+    merchantId,
+  };
+}
+
+export async function addProductSpu(params: ProductSpuSubmitPayload) {
   return request('/api/pms/product/addProductSpu', {
     method: 'POST',
-    data: {
-      productData,
-      ...emptyNestedPayload,
-      ...buildRelationPayload(params),
-      scopeType,
-      platformId,
-      tenantId,
-      merchantId,
-    },
+    data: buildProductSpuPayload(params),
   });
 }
 
@@ -62,21 +134,10 @@ export async function removeProductSpu(ids: number[], scope?: GovernancePayload)
   });
 }
 
-export async function updateProductSpu(
-  params: ProductSpuListItem & GovernancePayload & ProductSpuRelationPayload,
-) {
-  const { scopeType, platformId, tenantId, merchantId, ...productData } = params;
+export async function updateProductSpu(params: ProductSpuSubmitPayload) {
   return request('/api/pms/product/updateProductSpu', {
     method: 'POST',
-    data: {
-      productData,
-      ...emptyNestedPayload,
-      ...buildRelationPayload(params),
-      scopeType,
-      platformId,
-      tenantId,
-      merchantId,
-    },
+    data: buildProductSpuPayload(params),
   });
 }
 
@@ -101,7 +162,7 @@ export async function updateProductSpuStatus(
 }
 
 export async function queryProductSpuDetail(id: number, scope?: GovernancePayload) {
-  return request('/api/pms/product/queryProductSpuDetail', {
+  return request<ProductSpuDetailResponse>('/api/pms/product/queryProductSpuDetail', {
     method: 'GET',
     params: {
       id,

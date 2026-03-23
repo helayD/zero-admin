@@ -85,7 +85,7 @@ type (
 	UpdateProductSpuStatusReq {
 		Ids        []int64 `json:"ids"` //商品SpuId
 		status     int32   `json:"status"` //状态
-		Detail     string  `form:"detail,optional"`
+		Detail     string  `json:"detail,optional"` //审核备注/状态变更说明
 		ScopeType  string  `json:"scopeType,optional"` //治理范围(platform/tenant/merchant)
 		PlatformId int64   `json:"platformId,optional"` //平台ID
 		TenantId   int64   `json:"tenantId,optional"` //租户ID
@@ -231,4 +231,3 @@ service admin-api {
 	@handler QueryProductSpuList
 	get /queryProductSpuList (QueryProductSpuListReq) returns (QueryProductSpuListResp)
 }
-
