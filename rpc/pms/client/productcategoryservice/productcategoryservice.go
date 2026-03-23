@@ -234,21 +234,13 @@ type (
 	UpdateSkuStockReq                             = pmsclient.UpdateSkuStockReq
 
 	ProductCategoryService interface {
-		// 添加产品分类
 		AddProductCategory(ctx context.Context, in *AddProductCategoryReq, opts ...grpc.CallOption) (*AddProductCategoryResp, error)
-		// 删除产品分类
 		DeleteProductCategory(ctx context.Context, in *DeleteProductCategoryReq, opts ...grpc.CallOption) (*DeleteProductCategoryResp, error)
-		// 更新产品分类
 		UpdateProductCategory(ctx context.Context, in *UpdateProductCategoryReq, opts ...grpc.CallOption) (*UpdateProductCategoryResp, error)
-		// 更新商品分类导航显示状态
 		UpdateCategoryNavStatus(ctx context.Context, in *UpdateProductCategoryStatusReq, opts ...grpc.CallOption) (*UpdateProductCategoryStatusResp, error)
-		// 更新商品分类显示状态
 		UpdateProductCategoryStatus(ctx context.Context, in *UpdateProductCategoryStatusReq, opts ...grpc.CallOption) (*UpdateProductCategoryStatusResp, error)
-		// 查询产品分类详情
 		QueryProductCategoryDetail(ctx context.Context, in *QueryProductCategoryDetailReq, opts ...grpc.CallOption) (*QueryProductCategoryDetailResp, error)
-		// 查询产品分类列表
 		QueryProductCategoryList(ctx context.Context, in *QueryProductCategoryListReq, opts ...grpc.CallOption) (*QueryProductCategoryListResp, error)
-		// 查询商品分类（tree）
 		QueryProductCategoryTreeList(ctx context.Context, in *QueryProductCategoryTreeListReq, opts ...grpc.CallOption) (*QueryProductCategoryListTreeResp, error)
 	}
 
@@ -263,49 +255,41 @@ func NewProductCategoryService(cli zrpc.Client) ProductCategoryService {
 	}
 }
 
-// 添加产品分类
 func (m *defaultProductCategoryService) AddProductCategory(ctx context.Context, in *AddProductCategoryReq, opts ...grpc.CallOption) (*AddProductCategoryResp, error) {
 	client := pmsclient.NewProductCategoryServiceClient(m.cli.Conn())
 	return client.AddProductCategory(ctx, in, opts...)
 }
 
-// 删除产品分类
 func (m *defaultProductCategoryService) DeleteProductCategory(ctx context.Context, in *DeleteProductCategoryReq, opts ...grpc.CallOption) (*DeleteProductCategoryResp, error) {
 	client := pmsclient.NewProductCategoryServiceClient(m.cli.Conn())
 	return client.DeleteProductCategory(ctx, in, opts...)
 }
 
-// 更新产品分类
 func (m *defaultProductCategoryService) UpdateProductCategory(ctx context.Context, in *UpdateProductCategoryReq, opts ...grpc.CallOption) (*UpdateProductCategoryResp, error) {
 	client := pmsclient.NewProductCategoryServiceClient(m.cli.Conn())
 	return client.UpdateProductCategory(ctx, in, opts...)
 }
 
-// 更新商品分类导航显示状态
 func (m *defaultProductCategoryService) UpdateCategoryNavStatus(ctx context.Context, in *UpdateProductCategoryStatusReq, opts ...grpc.CallOption) (*UpdateProductCategoryStatusResp, error) {
 	client := pmsclient.NewProductCategoryServiceClient(m.cli.Conn())
 	return client.UpdateCategoryNavStatus(ctx, in, opts...)
 }
 
-// 更新商品分类显示状态
 func (m *defaultProductCategoryService) UpdateProductCategoryStatus(ctx context.Context, in *UpdateProductCategoryStatusReq, opts ...grpc.CallOption) (*UpdateProductCategoryStatusResp, error) {
 	client := pmsclient.NewProductCategoryServiceClient(m.cli.Conn())
 	return client.UpdateProductCategoryStatus(ctx, in, opts...)
 }
 
-// 查询产品分类详情
 func (m *defaultProductCategoryService) QueryProductCategoryDetail(ctx context.Context, in *QueryProductCategoryDetailReq, opts ...grpc.CallOption) (*QueryProductCategoryDetailResp, error) {
 	client := pmsclient.NewProductCategoryServiceClient(m.cli.Conn())
 	return client.QueryProductCategoryDetail(ctx, in, opts...)
 }
 
-// 查询产品分类列表
 func (m *defaultProductCategoryService) QueryProductCategoryList(ctx context.Context, in *QueryProductCategoryListReq, opts ...grpc.CallOption) (*QueryProductCategoryListResp, error) {
 	client := pmsclient.NewProductCategoryServiceClient(m.cli.Conn())
 	return client.QueryProductCategoryList(ctx, in, opts...)
 }
 
-// 查询商品分类（tree）
 func (m *defaultProductCategoryService) QueryProductCategoryTreeList(ctx context.Context, in *QueryProductCategoryTreeListReq, opts ...grpc.CallOption) (*QueryProductCategoryListTreeResp, error) {
 	client := pmsclient.NewProductCategoryServiceClient(m.cli.Conn())
 	return client.QueryProductCategoryTreeList(ctx, in, opts...)

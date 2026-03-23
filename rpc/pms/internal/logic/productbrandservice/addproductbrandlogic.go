@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/feihua/zero-admin/rpc/pms/gen/model"
-	"github.com/feihua/zero-admin/rpc/pms/gen/query"
+	"strings"
+
+	logiccommon "github.com/feihua/zero-admin/rpc/pms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/pms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -13,10 +14,6 @@ import (
 )
 
 // AddProductBrandLogic 添加商品品牌
-/*
-Author: LiuFeiHua
-Date: 2025/05/26 10:33:54
-*/
 type AddProductBrandLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
@@ -24,43 +21,48 @@ type AddProductBrandLogic struct {
 }
 
 func NewAddProductBrandLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AddProductBrandLogic {
-	return &AddProductBrandLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
-		Logger: logx.WithContext(ctx),
-	}
+	return &AddProductBrandLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-// AddProductBrand 添加商品品牌
 func (l *AddProductBrandLogic) AddProductBrand(in *pmsclient.AddProductBrandReq) (*pmsclient.AddProductBrandResp, error) {
-	q := query.PmsProductBrand
+	currentScope, err := logiccommon.ResolveWriteScope(l.ctx, l.svcCtx.DB, in.Scope, in.CreateBy)
+	if err != nil {
+		return nil, err
+	}
 
-	count, _ := q.WithContext(l.ctx).Where(q.Name.Eq(in.Name)).Count()
-
+	var count int64
+	if err := l.svcCtx.DB.WithContext(l.ctx).
+		Table("pms_product_brand").
+		Where("is_deleted = 0 AND name = ? AND platform_id = ? AND tenant_id = ? AND merchant_id = ?", strings.TrimSpace(in.Name), currentScope.PlatformID, currentScope.TenantID, currentScope.MerchantID).
+		Count(&count).Error; err != nil {
+		logc.Errorf(l.ctx, "校验商品品牌重复失败,参数:%+v,异常:%s", in, err.Error())
+		return nil, errors.New("校验商品品牌重复失败")
+	}
 	if count > 0 {
 		return nil, errors.New(fmt.Sprintf("品牌名称：%s,已存在", in.Name))
 	}
-	item := &model.PmsProductBrand{
-		Name:                in.Name,                // 品牌名称
-		Logo:                in.Logo,                // 品牌logo
-		BigPic:              in.BigPic,              // 专区大图
-		Description:         in.Description,         // 描述
-		FirstLetter:         in.FirstLetter,         // 首字母
-		Sort:                in.Sort,                // 排序
-		RecommendStatus:     in.RecommendStatus,     // 推荐状态
-		ProductCount:        in.ProductCount,        // 产品数量
-		ProductCommentCount: in.ProductCommentCount, // 产品评论数量
-		IsEnabled:           in.IsEnabled,           // 是否启用
-		CreateBy:            in.CreateBy,            // 创建人ID
+
+	item := &logiccommon.CatalogScopeRow{
+		Name:                strings.TrimSpace(in.Name),
+		Logo:                in.Logo,
+		BigPic:              in.BigPic,
+		Description:         in.Description,
+		FirstLetter:         strings.TrimSpace(in.FirstLetter),
+		Sort:                in.Sort,
+		RecommendStatus:     in.RecommendStatus,
+		ProductCount:        in.ProductCount,
+		ProductCommentCount: in.ProductCommentCount,
+		IsEnabled:           in.IsEnabled,
+		CreateBy:            in.CreateBy,
+		PlatformID:          currentScope.PlatformID,
+		TenantID:            currentScope.TenantID,
+		MerchantID:          currentScope.MerchantID,
 	}
 
-	err := q.WithContext(l.ctx).Create(item)
-	if err != nil {
+	if err := l.svcCtx.DB.WithContext(l.ctx).Table("pms_product_brand").Create(item).Error; err != nil {
 		logc.Errorf(l.ctx, "添加商品品牌失败,参数:%+v,异常:%s", item, err.Error())
 		return nil, errors.New("添加商品品牌失败")
 	}
 
-	return &pmsclient.AddProductBrandResp{
-		BrandId: item.ID,
-	}, nil
+	return &pmsclient.AddProductBrandResp{BrandId: item.ID}, nil
 }

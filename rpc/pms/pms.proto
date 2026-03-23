@@ -25,6 +25,7 @@ message AddProductAttributeReq {
   int32 sort = 11; //排序
   int32 status = 12; //状态：0->禁用；1->启用
   int64 create_by = 13; //创建人ID
+  GovernanceScope scope = 14;
 }
 
 message AddProductAttributeResp {
@@ -34,6 +35,8 @@ message AddProductAttributeResp {
 // 删除商品属性
 message DeleteProductAttributeReq {
   repeated int64 ids = 1;
+  int64 update_by = 2;
+  GovernanceScope scope = 3;
 }
 
 message DeleteProductAttributeResp {
@@ -55,6 +58,7 @@ message UpdateProductAttributeReq {
   int32 sort = 11; //排序
   int32 status = 12; //状态：0->禁用；1->启用
   int64 update_by = 13; //更新人ID
+  GovernanceScope scope = 14;
 }
 
 message UpdateProductAttributeResp {
@@ -66,6 +70,7 @@ message UpdateProductAttributeStatusReq {
   repeated int64 ids = 1; //主键id
   int32 status = 12; //状态：0->禁用；1->启用
   int64 update_by = 15; //更新人ID
+  GovernanceScope scope = 16;
 }
 
 message UpdateProductAttributeStatusResp {
@@ -75,6 +80,7 @@ message UpdateProductAttributeStatusResp {
 // 查询商品属性详情
 message QueryProductAttributeDetailReq {
     int64 id = 1;
+    GovernanceScope scope = 2;
 }
 
 message QueryProductAttributeDetailResp {
@@ -94,6 +100,10 @@ message QueryProductAttributeDetailResp {
   string create_time = 14; //创建时间
   int64 update_by = 15; //更新人ID
   string update_time = 16; //更新时间
+  string scope_type = 17;
+  int64 platform_id = 18;
+  int64 tenant_id = 19;
+  int64 merchant_id = 20;
 
 }
 
@@ -108,6 +118,7 @@ message QueryProductAttributeListReq {
   int32 page_num = 7; //第几页
   int32 page_size = 8; //每页的数量
   int32 status = 9; //状态：0->禁用；1->启用
+  GovernanceScope scope = 10;
 }
 
 message ProductAttributeListData {
@@ -127,6 +138,10 @@ message ProductAttributeListData {
   string create_time = 14; //创建时间
   int64 update_by = 15; //更新人ID
   string update_time = 16; //更新时间
+  string scope_type = 17;
+  int64 platform_id = 18;
+  int64 tenant_id = 19;
+  int64 merchant_id = 20;
 
 }
 
@@ -159,6 +174,7 @@ message AddProductAttributeGroupReq {
   int32 sort = 3; //排序
   int32 status = 4; //状态：0->禁用；1->启用
   int64 create_by = 5; //创建人ID
+  GovernanceScope scope = 6;
 }
 
 message AddProductAttributeGroupResp {
@@ -168,6 +184,8 @@ message AddProductAttributeGroupResp {
 // 删除商品属性分组
 message DeleteProductAttributeGroupReq {
   repeated int64 ids = 1;
+  int64 update_by = 2;
+  GovernanceScope scope = 3;
 }
 
 message DeleteProductAttributeGroupResp {
@@ -182,6 +200,7 @@ message UpdateProductAttributeGroupReq {
   int32 sort = 4; //排序
   int32 status = 5; //状态：0->禁用；1->启用
   int64 update_by = 6; //更新人ID
+  GovernanceScope scope = 7;
 }
 
 message UpdateProductAttributeGroupResp {
@@ -193,6 +212,7 @@ message UpdateProductAttributeGroupStatusReq {
   repeated int64 ids = 1; //主键id
   int32 status = 5; //状态：0->禁用；1->启用
   int64 update_by = 8; //更新人ID
+  GovernanceScope scope = 9;
 }
 
 message UpdateProductAttributeGroupStatusResp {
@@ -202,6 +222,7 @@ message UpdateProductAttributeGroupStatusResp {
 // 查询商品属性分组详情
 message QueryProductAttributeGroupDetailReq {
     int64 id = 1;
+    GovernanceScope scope = 2;
 }
 
 message QueryProductAttributeGroupDetailResp {
@@ -215,6 +236,10 @@ message QueryProductAttributeGroupDetailResp {
   int64 update_by = 8; //更新人ID
   string update_time = 9; //更新时间
   int32 is_deleted = 10; //是否删除
+  string scope_type = 11;
+  int64 platform_id = 12;
+  int64 tenant_id = 13;
+  int64 merchant_id = 14;
 
 }
 
@@ -225,6 +250,7 @@ message QueryProductAttributeGroupListReq {
   int32 status = 3; //状态：0->禁用；1->启用
   int32 page_num = 4; //第几页
   int32 page_size = 5; //每页的数量
+  GovernanceScope scope = 6;
 }
 
 message ProductAttributeGroupListData {
@@ -238,6 +264,10 @@ message ProductAttributeGroupListData {
   int64 update_by = 8; //更新人ID
   string update_time = 9; //更新时间
   int32 is_deleted = 10; //是否删除
+  string scope_type = 11;
+  int64 platform_id = 12;
+  int64 tenant_id = 13;
+  int64 merchant_id = 14;
 
 }
 
@@ -373,310 +403,197 @@ service ProductAttributeValueService {
 
 
 }
-// 添加商品品牌
 message AddProductBrandReq {
-  int64 id = 1; //
-  string name = 2; //品牌名称
-  string logo = 3; //品牌logo
-  string big_pic = 4; //专区大图
-  string description = 5; //描述
-  string first_letter = 6; //首字母
-  int32 sort = 7; //排序
-  int32 recommend_status = 8; //推荐状态
-  int32 product_count = 9; //产品数量
-  int32 product_comment_count = 10; //产品评论数量
-  int32 is_enabled = 11; //是否启用
-  int64 create_by = 12; //创建人ID
+  int64 id = 1;
+  string name = 2;
+  string logo = 3;
+  string big_pic = 4;
+  string description = 5;
+  string first_letter = 6;
+  int32 sort = 7;
+  int32 recommend_status = 8;
+  int32 product_count = 9;
+  int32 product_comment_count = 10;
+  int32 is_enabled = 11;
+  int64 create_by = 12;
+  GovernanceScope scope = 13;
 }
-
-message AddProductBrandResp {
-  int64 brand_id = 1;
-}
-
-// 删除商品品牌
-message DeleteProductBrandReq {
-  repeated int64 ids = 1;
-}
-
-message DeleteProductBrandResp {
-  string pong = 1;
-}
-
-// 更新商品品牌
+message AddProductBrandResp { int64 brand_id = 1; }
+message DeleteProductBrandReq { repeated int64 ids = 1; int64 update_by = 2; GovernanceScope scope = 3; }
+message DeleteProductBrandResp { string pong = 1; }
 message UpdateProductBrandReq {
-  int64 id = 1; //
-  string name = 2; //品牌名称
-  string logo = 3; //品牌logo
-  string big_pic = 4; //专区大图
-  string description = 5; //描述
-  string first_letter = 6; //首字母
-  int32 sort = 7; //排序
-  int32 recommend_status = 8; //推荐状态
-  int32 product_count = 9; //产品数量
-  int32 product_comment_count = 10; //产品评论数量
-  int32 is_enabled = 11; //是否启用
-  int64 update_by = 14; //更新人ID
+  int64 id = 1;
+  string name = 2;
+  string logo = 3;
+  string big_pic = 4;
+  string description = 5;
+  string first_letter = 6;
+  int32 sort = 7;
+  int32 recommend_status = 8;
+  int32 product_count = 9;
+  int32 product_comment_count = 10;
+  int32 is_enabled = 11;
+  int64 update_by = 14;
+  GovernanceScope scope = 15;
 }
-
-message UpdateProductBrandResp {
-  string pong = 1;
-}
-
-// 更新商品品牌状态
-message UpdateProductBrandStatusReq {
-  repeated int64 ids = 1; //
-  int32 status = 2; //推荐状态
-  int64 update_by = 3; //更新人ID
-}
-
-message UpdateProductBrandStatusResp {
-  string pong = 1;
-}
-
-// 查询商品品牌详情
-message QueryProductBrandDetailReq {
-    int64 id = 1;
-}
-
+message UpdateProductBrandResp { string pong = 1; }
+message UpdateProductBrandStatusReq { repeated int64 ids = 1; int32 status = 2; int64 update_by = 3; GovernanceScope scope = 4; }
+message UpdateProductBrandStatusResp { string pong = 1; }
+message QueryProductBrandDetailReq { int64 id = 1; GovernanceScope scope = 2; }
 message QueryProductBrandDetailResp {
-  int64 id = 1; //
-  string name = 2; //品牌名称
-  string logo = 3; //品牌logo
-  string big_pic = 4; //专区大图
-  string description = 5; //描述
-  string first_letter = 6; //首字母
-  int32 sort = 7; //排序
-  int32 recommend_status = 8; //推荐状态
-  int32 product_count = 9; //产品数量
-  int32 product_comment_count = 10; //产品评论数量
-  int32 is_enabled = 11; //是否启用
-  int64 create_by = 12; //创建人ID
-  string create_time = 13; //创建时间
-  int64 update_by = 14; //更新人ID
-  string update_time = 15; //更新时间
-
+  int64 id = 1;
+  string name = 2;
+  string logo = 3;
+  string big_pic = 4;
+  string description = 5;
+  string first_letter = 6;
+  int32 sort = 7;
+  int32 recommend_status = 8;
+  int32 product_count = 9;
+  int32 product_comment_count = 10;
+  int32 is_enabled = 11;
+  int64 create_by = 12;
+  string create_time = 13;
+  int64 update_by = 14;
+  string update_time = 15;
+  string scope_type = 16;
+  int64 platform_id = 17;
+  int64 tenant_id = 18;
+  int64 merchant_id = 19;
 }
-
-// 分页查询商品品牌列表
-message QueryProductBrandListReq {
-  string name = 1; //品牌名称
-  int32 recommend_status = 2; //推荐状态
-  int32 is_enabled = 3; //是否启用
-  int32 page_num = 4; //第几页
-  int32 page_size = 5; //每页的数量
-}
-
+message QueryProductBrandListReq { string name = 1; int32 recommend_status = 2; int32 is_enabled = 3; int32 page_num = 4; int32 page_size = 5; GovernanceScope scope = 6; }
 message ProductBrandListData {
-  int64 id = 1; //
-  string name = 2; //品牌名称
-  string logo = 3; //品牌logo
-  string big_pic = 4; //专区大图
-  string description = 5; //描述
-  string first_letter = 6; //首字母
-  int32 sort = 7; //排序
-  int32 recommend_status = 8; //推荐状态
-  int32 product_count = 9; //产品数量
-  int32 product_comment_count = 10; //产品评论数量
-  int32 is_enabled = 11; //是否启用
-  int64 create_by = 12; //创建人ID
-  string create_time = 13; //创建时间
-  int64 update_by = 14; //更新人ID
-  string update_time = 15; //更新时间
-
+  int64 id = 1;
+  string name = 2;
+  string logo = 3;
+  string big_pic = 4;
+  string description = 5;
+  string first_letter = 6;
+  int32 sort = 7;
+  int32 recommend_status = 8;
+  int32 product_count = 9;
+  int32 product_comment_count = 10;
+  int32 is_enabled = 11;
+  int64 create_by = 12;
+  string create_time = 13;
+  int64 update_by = 14;
+  string update_time = 15;
+  string scope_type = 16;
+  int64 platform_id = 17;
+  int64 tenant_id = 18;
+  int64 merchant_id = 19;
 }
-
-message QueryProductBrandListResp {
-  int64 total = 1;
-  repeated  ProductBrandListData list = 2;
-}
-
-message QueryBrandListByIdsReq {
-  repeated int64 ids = 1;
-}
-// 更新品牌的排序
-message UpdateProductBrandSortReq {
-  int64 id = 1; //
-  int32 sort  = 2; //排序
-  int64 update_by = 3; //更新人ID
-}
-// 商品品牌
+message QueryProductBrandListResp { int64 total = 1; repeated ProductBrandListData list = 2; }
+message QueryBrandListByIdsReq { repeated int64 ids = 1; GovernanceScope scope = 2; }
+message UpdateProductBrandSortReq { int64 id = 1; int32 sort  = 2; int64 update_by = 3; GovernanceScope scope = 4; }
 service ProductBrandService {
-  // 添加商品品牌
   rpc AddProductBrand(AddProductBrandReq) returns (AddProductBrandResp){}
-  // 删除商品品牌
   rpc DeleteProductBrand(DeleteProductBrandReq) returns (DeleteProductBrandResp){}
-  // 更新商品品牌
   rpc UpdateProductBrand(UpdateProductBrandReq) returns (UpdateProductBrandResp ){}
-  // 更新商品品牌状态
   rpc UpdateProductBrandStatus(UpdateProductBrandStatusReq) returns (UpdateProductBrandStatusResp ){}
-  // 查询商品品牌详情
-   rpc QueryProductBrandDetail(QueryProductBrandDetailReq) returns (QueryProductBrandDetailResp){}
-  // 查询商品品牌列表
+  rpc QueryProductBrandDetail(QueryProductBrandDetailReq) returns (QueryProductBrandDetailResp){}
   rpc QueryProductBrandList(QueryProductBrandListReq) returns (QueryProductBrandListResp){}
-
   rpc QueryBrandListByIds(QueryBrandListByIdsReq) returns(QueryProductBrandListResp);
-  //更新品牌的推荐状态
   rpc UpdateBrandRecommendStatus(UpdateProductBrandStatusReq) returns(UpdateProductBrandStatusResp);
-  //更新品牌的排序
   rpc UpdateBrandSort(UpdateProductBrandSortReq) returns(UpdateProductBrandStatusResp);
-
 }
-// 添加产品分类
 message AddProductCategoryReq {
-  int64 id = 1; //
-  int64 parent_id = 2; //上级分类的编号：0表示一级分类
-  string name = 3; //商品分类名称
-  int32 level = 4; //分类级别：0->1级；1->2级
-  string product_unit = 6; //商品单位
-  int32 nav_status = 7; //是否显示在导航栏：0->不显示；1->显示
-  int32 sort = 8; //排序
-  string icon = 9; //图标
-  string keywords = 10; //关键字
-  string description = 11; //描述
-  int32 is_enabled = 12; //是否启用
-  int64 create_by = 13; //创建人ID
-  repeated int64 ProductAttributeIdList = 14;
+  int64 id = 1;
+  int64 parent_id = 2;
+  string name = 3;
+  int32 level = 4;
+  string product_unit = 6;
+  int32 nav_status = 7;
+  int32 sort = 8;
+  string icon = 9;
+  string keywords = 10;
+  string description = 11;
+  int32 is_enabled = 12;
+  int64 create_by = 13;
+  repeated int64 product_attribute_id_list = 14;
+  GovernanceScope scope = 15;
 }
-
-message AddProductCategoryResp {
-  string pong = 1;
-}
-
-// 删除产品分类
-message DeleteProductCategoryReq {
-  repeated int64 ids = 1;
-}
-
-message DeleteProductCategoryResp {
-  string pong = 1;
-}
-
-// 更新产品分类
+message AddProductCategoryResp { string pong = 1; }
+message DeleteProductCategoryReq { repeated int64 ids = 1; int64 update_by = 2; GovernanceScope scope = 3; }
+message DeleteProductCategoryResp { string pong = 1; }
 message UpdateProductCategoryReq {
-  int64 id = 1; //
-  int64 parent_id = 2; //上级分类的编号：0表示一级分类
-  string name = 3; //商品分类名称
-  int32 level = 4; //分类级别：0->1级；1->2级
-  string product_unit = 6; //商品单位
-  int32 nav_status = 7; //是否显示在导航栏：0->不显示；1->显示
-  int32 sort = 8; //排序
-  string icon = 9; //图标
-  string keywords = 10; //关键字
-  string description = 11; //描述
-  int32 is_enabled = 12; //是否启用
-  int64 update_by = 13; //更新人ID
-  repeated int64 ProductAttributeIdList = 14;
+  int64 id = 1;
+  int64 parent_id = 2;
+  string name = 3;
+  int32 level = 4;
+  string product_unit = 6;
+  int32 nav_status = 7;
+  int32 sort = 8;
+  string icon = 9;
+  string keywords = 10;
+  string description = 11;
+  int32 is_enabled = 12;
+  int64 update_by = 13;
+  repeated int64 product_attribute_id_list = 14;
+  GovernanceScope scope = 15;
 }
-
-message UpdateProductCategoryResp {
-  string pong = 1;
-}
-
-// 更新产品分类状态
-message UpdateProductCategoryStatusReq {
-  repeated int64 ids = 1; //
-  int32 status = 2; //是否显示在导航栏：0->不显示；1->显示
-  int64 update_by = 3; //更新人ID
-}
-
-message UpdateProductCategoryStatusResp {
-  string pong = 1;
-}
-
-// 查询产品分类详情
-message QueryProductCategoryDetailReq {
-    int64 id = 1;
-}
-
+message UpdateProductCategoryResp { string pong = 1; }
+message UpdateProductCategoryStatusReq { repeated int64 ids = 1; int32 status = 2; int64 update_by = 3; GovernanceScope scope = 4; }
+message UpdateProductCategoryStatusResp { string pong = 1; }
+message QueryProductCategoryDetailReq { int64 id = 1; GovernanceScope scope = 2; }
 message QueryProductCategoryDetailResp {
-  int64 id = 1; //
-  int64 parent_id = 2; //上级分类的编号：0表示一级分类
-  string name = 3; //商品分类名称
-  int32 level = 4; //分类级别：0->1级；1->2级
-  int32 product_count = 5; //商品数量
-  string product_unit = 6; //商品单位
-  int32 nav_status = 7; //是否显示在导航栏：0->不显示；1->显示
-  int32 sort = 8; //排序
-  string icon = 9; //图标
-  string keywords = 10; //关键字
-  string description = 11; //描述
-  int32 is_enabled = 12; //是否启用
-  int64 create_by = 13; //创建人ID
-  string create_time = 14; //创建时间
-  int64 update_by = 15; //更新人ID
-  string update_time = 16; //更新时间
-
+  int64 id = 1;
+  int64 parent_id = 2;
+  string name = 3;
+  int32 level = 4;
+  int32 product_count = 5;
+  string product_unit = 6;
+  int32 nav_status = 7;
+  int32 sort = 8;
+  string icon = 9;
+  string keywords = 10;
+  string description = 11;
+  int32 is_enabled = 12;
+  int64 create_by = 13;
+  string create_time = 14;
+  int64 update_by = 15;
+  string update_time = 16;
+  string scope_type = 17;
+  int64 platform_id = 18;
+  int64 tenant_id = 19;
+  int64 merchant_id = 20;
 }
-
-// 分页查询产品分类列表
-message QueryProductCategoryListReq {
-  string name = 1; //商品分类名称
-  int32 nav_status = 2; //是否显示在导航栏：0->不显示；1->显示
-  string keywords = 3; //关键字
-  int32 is_enabled = 4; //是否启用
-  int32 page_num = 5; //第几页
-  int32 page_size = 6; //每页的数量
-  int64 parent_id = 7; //上级分类的编号：0表示一级分类
-}
-
+message QueryProductCategoryListReq { string name = 1; int32 nav_status = 2; string keywords = 3; int32 is_enabled = 4; int32 page_num = 5; int32 page_size = 6; int64 parent_id = 7; GovernanceScope scope = 8; }
 message ProductCategoryListData {
-  int64 id = 1; //
-  int64 parent_id = 2; //上级分类的编号：0表示一级分类
-  string name = 3; //商品分类名称
-  int32 level = 4; //分类级别：0->1级；1->2级
-  int32 product_count = 5; //商品数量
-  string product_unit = 6; //商品单位
-  int32 nav_status = 7; //是否显示在导航栏：0->不显示；1->显示
-  int32 sort = 8; //排序
-  string icon = 9; //图标
-  string keywords = 10; //关键字
-  string description = 11; //描述
-  int32 is_enabled = 12; //是否启用
-  int64 create_by = 13; //创建人ID
-  string create_time = 14; //创建时间
-  int64 update_by = 15; //更新人ID
-  string update_time = 16; //更新时间
-
+  int64 id = 1;
+  int64 parent_id = 2;
+  string name = 3;
+  int32 level = 4;
+  int32 product_count = 5;
+  string product_unit = 6;
+  int32 nav_status = 7;
+  int32 sort = 8;
+  string icon = 9;
+  string keywords = 10;
+  string description = 11;
+  int32 is_enabled = 12;
+  int64 create_by = 13;
+  string create_time = 14;
+  int64 update_by = 15;
+  string update_time = 16;
+  string scope_type = 17;
+  int64 platform_id = 18;
+  int64 tenant_id = 19;
+  int64 merchant_id = 20;
 }
-
-message QueryProductCategoryListResp {
-  int64 total = 1;
-  repeated  ProductCategoryListData list = 2;
-}
-
-message QueryProductCategoryTreeListReq {
-
-}
-message QueryProductCategoryListTreeData{
-  int64    Id = 1;
-  string  Name = 2;
-  string  ImageUrl = 3;
-  repeated QueryProductCategoryListTreeData  Children = 4;
-}
-message QueryProductCategoryListTreeResp {
-  repeated  QueryProductCategoryListTreeData list = 1;
-}
-
-// 产品分类
+message QueryProductCategoryListResp { int64 total = 1; repeated ProductCategoryListData list = 2; }
+message QueryProductCategoryTreeListReq { GovernanceScope scope = 1; }
+message QueryProductCategoryListTreeData{ int64 id = 1; string name = 2; string image_url = 3; repeated QueryProductCategoryListTreeData children = 4; }
+message QueryProductCategoryListTreeResp { repeated QueryProductCategoryListTreeData list = 1; }
 service ProductCategoryService {
-  // 添加产品分类
   rpc AddProductCategory(AddProductCategoryReq) returns (AddProductCategoryResp){}
-  // 删除产品分类
   rpc DeleteProductCategory(DeleteProductCategoryReq) returns (DeleteProductCategoryResp){}
-  // 更新产品分类
   rpc UpdateProductCategory(UpdateProductCategoryReq) returns (UpdateProductCategoryResp ){}
-  //更新商品分类导航显示状态
   rpc UpdateCategoryNavStatus(UpdateProductCategoryStatusReq) returns(UpdateProductCategoryStatusResp);
-  //更新商品分类显示状态
   rpc UpdateProductCategoryStatus(UpdateProductCategoryStatusReq) returns(UpdateProductCategoryStatusResp);
-  // 查询产品分类详情
-   rpc QueryProductCategoryDetail(QueryProductCategoryDetailReq) returns (QueryProductCategoryDetailResp){}
-  // 查询产品分类列表
+  rpc QueryProductCategoryDetail(QueryProductCategoryDetailReq) returns (QueryProductCategoryDetailResp){}
   rpc QueryProductCategoryList(QueryProductCategoryListReq) returns (QueryProductCategoryListResp){}
-
-  //查询商品分类（tree）
   rpc QueryProductCategoryTreeList(QueryProductCategoryTreeListReq) returns(QueryProductCategoryListTreeResp);
-
 }
 // 添加产品的分类和属性的关系表，用于设置分类筛选条件（只支持一级分类）
 message AddProductCategoryAttributeRelationReq {
@@ -1515,6 +1432,7 @@ message AddProductSpecReq {
   int32 sort = 3; //排序
   int32 status = 4; //状态：0->禁用；1->启用
   int64 create_by = 5; //创建人ID
+  GovernanceScope scope = 6;
 }
 
 message AddProductSpecResp {
@@ -1524,6 +1442,8 @@ message AddProductSpecResp {
 // 删除商品规格
 message DeleteProductSpecReq {
   repeated int64 ids = 1;
+  int64 update_by = 2;
+  GovernanceScope scope = 3;
 }
 
 message DeleteProductSpecResp {
@@ -1538,6 +1458,7 @@ message UpdateProductSpecReq {
   int32 sort = 4; //排序
   int32 status = 5; //状态：0->禁用；1->启用
   int64 update_by = 8; //更新人ID
+  GovernanceScope scope = 9;
 }
 
 message UpdateProductSpecResp {
@@ -1549,6 +1470,7 @@ message UpdateProductSpecStatusReq {
   repeated int64 ids = 1; //
   int32 status = 5; //状态：0->禁用；1->启用
   int64 update_by = 8; //更新人ID
+  GovernanceScope scope = 9;
 }
 
 message UpdateProductSpecStatusResp {
@@ -1558,6 +1480,7 @@ message UpdateProductSpecStatusResp {
 // 查询商品规格详情
 message QueryProductSpecDetailReq {
     int64 id = 1;
+    GovernanceScope scope = 2;
 }
 
 message QueryProductSpecDetailResp {
@@ -1570,6 +1493,10 @@ message QueryProductSpecDetailResp {
   string create_time = 7; //创建时间
   int64 update_by = 8; //更新人ID
   string update_time = 9; //更新时间
+  string scope_type = 10;
+  int64 platform_id = 11;
+  int64 tenant_id = 12;
+  int64 merchant_id = 13;
 
 }
 
@@ -1580,6 +1507,7 @@ message QueryProductSpecListReq {
   int32 status = 3; //状态：0->禁用；1->启用
   int32 page_num = 4; //第几页
   int32 page_size = 5; //每页的数量
+  GovernanceScope scope = 6;
 }
 
 message ProductSpecListData {
@@ -1593,6 +1521,10 @@ message ProductSpecListData {
   int64 update_by = 8; //更新人ID
   string update_time = 9; //更新时间
   int32 is_deleted = 10; //是否删除
+  string scope_type = 11;
+  int64 platform_id = 12;
+  int64 tenant_id = 13;
+  int64 merchant_id = 14;
 
 }
 
@@ -1625,6 +1557,7 @@ message AddProductSpecValueReq {
   int32 sort = 3; //排序
   int32 status = 4; //状态：0->禁用；1->启用
   int64 create_by = 5; //创建人ID
+  GovernanceScope scope = 6;
 }
 
 message AddProductSpecValueResp {
@@ -1634,6 +1567,8 @@ message AddProductSpecValueResp {
 // 删除商品规格值
 message DeleteProductSpecValueReq {
   repeated int64 ids = 1;
+  int64 update_by = 2;
+  GovernanceScope scope = 3;
 }
 
 message DeleteProductSpecValueResp {
@@ -1648,6 +1583,7 @@ message UpdateProductSpecValueReq {
   int32 sort = 4; //排序
   int32 status = 5; //状态：0->禁用；1->启用
   int64 update_by = 8; //更新人ID
+  GovernanceScope scope = 9;
 }
 
 message UpdateProductSpecValueResp {
@@ -1659,6 +1595,7 @@ message UpdateProductSpecValueStatusReq {
   repeated int64 ids = 1; //
   int32 status = 5; //状态：0->禁用；1->启用
   int64 update_by = 8; //更新人ID
+  GovernanceScope scope = 9;
 }
 
 message UpdateProductSpecValueStatusResp {
@@ -1668,6 +1605,7 @@ message UpdateProductSpecValueStatusResp {
 // 查询商品规格值详情
 message QueryProductSpecValueDetailReq {
     int64 id = 1;
+    GovernanceScope scope = 2;
 }
 
 message QueryProductSpecValueDetailResp {
@@ -1680,6 +1618,10 @@ message QueryProductSpecValueDetailResp {
   string create_time = 7; //创建时间
   int64 update_by = 8; //更新人ID
   string update_time = 9; //更新时间
+  string scope_type = 10;
+  int64 platform_id = 11;
+  int64 tenant_id = 12;
+  int64 merchant_id = 13;
 
 }
 
@@ -1689,6 +1631,7 @@ message QueryProductSpecValueListReq {
   int32 status = 2; //状态：0->禁用；1->启用
   int32 page_num = 3; //第几页
   int32 page_size = 4; //每页的数量
+  GovernanceScope scope = 5;
 }
 
 message ProductSpecValueListData {
@@ -1701,6 +1644,10 @@ message ProductSpecValueListData {
   string create_time = 7; //创建时间
   int64 update_by = 8; //更新人ID
   string update_time = 9; //更新时间
+  string scope_type = 10;
+  int64 platform_id = 11;
+  int64 tenant_id = 12;
+  int64 merchant_id = 13;
 
 }
 

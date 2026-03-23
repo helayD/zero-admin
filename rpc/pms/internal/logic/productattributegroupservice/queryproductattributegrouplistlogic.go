@@ -1,74 +1,9 @@
 package productattributegroupservicelogic
-
 import (
-	"context"
-	"errors"
-	"github.com/feihua/zero-admin/pkg/pointerprocess"
-	"github.com/feihua/zero-admin/pkg/time_util"
-	"github.com/feihua/zero-admin/rpc/pms/gen/query"
-	"github.com/feihua/zero-admin/rpc/pms/internal/svc"
-	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
-	"github.com/zeromicro/go-zero/core/logc"
-	"github.com/zeromicro/go-zero/core/logx"
-)
+	"context"; "errors"
+	"github.com/feihua/zero-admin/pkg/pointerprocess"; pkgscope "github.com/feihua/zero-admin/pkg/scope"; "github.com/feihua/zero-admin/pkg/time_util"
+	logiccommon "github.com/feihua/zero-admin/rpc/pms/internal/logic/common"; "github.com/feihua/zero-admin/rpc/pms/internal/svc"; "github.com/feihua/zero-admin/rpc/pms/pmsclient"; "github.com/zeromicro/go-zero/core/logc"; "github.com/zeromicro/go-zero/core/logx")
 
-// QueryProductAttributeGroupListLogic 查询商品属性分组列表
-/*
-Author: LiuFeiHua
-Date: 2025/06/16 14:37:37
-*/
-type QueryProductAttributeGroupListLogic struct {
-	ctx    context.Context
-	svcCtx *svc.ServiceContext
-	logx.Logger
-}
-
-func NewQueryProductAttributeGroupListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *QueryProductAttributeGroupListLogic {
-	return &QueryProductAttributeGroupListLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
-		Logger: logx.WithContext(ctx),
-	}
-}
-
-// QueryProductAttributeGroupList 查询商品属性分组列表
-func (l *QueryProductAttributeGroupListLogic) QueryProductAttributeGroupList(in *pmsclient.QueryProductAttributeGroupListReq) (*pmsclient.QueryProductAttributeGroupListResp, error) {
-	productAttributeGroup := query.PmsProductAttributeGroup
-	q := productAttributeGroup.WithContext(l.ctx)
-	if in.CategoryId != 0 {
-		q = q.Where(productAttributeGroup.CategoryID.Eq(in.CategoryId))
-	}
-	if len(in.Name) > 0 {
-		q = q.Where(productAttributeGroup.Name.Like("%" + in.Name + "%"))
-	}
-	if in.Status != 2 {
-		q = q.Where(productAttributeGroup.Status.Eq(in.Status))
-	}
-	result, count, err := q.FindByPage(int((in.PageNum-1)*in.PageSize), int(in.PageSize))
-
-	if err != nil {
-		logc.Errorf(l.ctx, "查询商品属性分组列表失败,参数:%+v,异常:%s", in, err.Error())
-		return nil, errors.New("查询商品属性分组列表失败")
-	}
-
-	var list []*pmsclient.ProductAttributeGroupListData
-
-	for _, item := range result {
-		list = append(list, &pmsclient.ProductAttributeGroupListData{
-			Id:         item.ID,                                          // 主键id
-			CategoryId: item.CategoryID,                                  // 分类ID
-			Name:       item.Name,                                        // 分组名称
-			Sort:       item.Sort,                                        // 排序
-			Status:     item.Status,                                      // 状态：0->禁用；1->启用
-			CreateBy:   item.CreateBy,                                    // 创建人ID
-			CreateTime: time_util.TimeToStr(item.CreateTime),             // 创建时间
-			UpdateBy:   pointerprocess.DefaltData(item.UpdateBy).(int64), // 更新人ID
-			UpdateTime: time_util.TimeToString(item.UpdateTime),          // 更新时间
-		})
-	}
-
-	return &pmsclient.QueryProductAttributeGroupListResp{
-		Total: count,
-		List:  list,
-	}, nil
-}
+type QueryProductAttributeGroupListLogic struct { ctx context.Context; svcCtx *svc.ServiceContext; logx.Logger }
+func NewQueryProductAttributeGroupListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *QueryProductAttributeGroupListLogic { return &QueryProductAttributeGroupListLogic{ctx:ctx, svcCtx:svcCtx, Logger:logx.WithContext(ctx)} }
+func (l *QueryProductAttributeGroupListLogic) QueryProductAttributeGroupList(in *pmsclient.QueryProductAttributeGroupListReq) (*pmsclient.QueryProductAttributeGroupListResp, error) { current, err := logiccommon.NormalizeProtoScope(in.Scope); if err != nil { return nil, err }; db := pkgscope.ApplyGovernanceScope(l.svcCtx.DB.WithContext(l.ctx).Table("pms_product_attribute_group").Where("is_deleted = 0"), current, ""); if in.CategoryId != 0 { db = db.Where("category_id = ?", in.CategoryId) }; if in.Name != "" { db = db.Where("name LIKE ?", "%"+in.Name+"%") }; if in.Status != 2 { db = db.Where("status = ?", in.Status) }; var total int64; if err := db.Count(&total).Error; err != nil { logc.Errorf(l.ctx, "查询商品属性分组总数失败,参数:%+v,异常:%s", in, err.Error()); return nil, errors.New("查询商品属性分组列表失败") }; var rows []logiccommon.ProductAttributeGroupRow; if err := db.Order("sort asc, id desc").Offset(int((in.PageNum-1)*in.PageSize)).Limit(int(in.PageSize)).Scan(&rows).Error; err != nil { logc.Errorf(l.ctx, "查询商品属性分组列表失败,参数:%+v,异常:%s", in, err.Error()); return nil, errors.New("查询商品属性分组列表失败") }; list := make([]*pmsclient.ProductAttributeGroupListData,0,len(rows)); for _, item := range rows { list = append(list, &pmsclient.ProductAttributeGroupListData{Id:item.ID,CategoryId:item.CategoryID,Name:item.Name,Sort:item.Sort,Status:item.Status,CreateBy:item.CreateBy,CreateTime:time_util.TimeToStr(item.CreateTime),UpdateBy:pointerprocess.DefaltData(item.UpdateBy).(int64),UpdateTime:time_util.TimeToString(item.UpdateTime),IsDeleted:item.IsDeleted,ScopeType:current.ScopeType,PlatformId:item.PlatformID,TenantId:item.TenantID,MerchantId:item.MerchantID}) }; return &pmsclient.QueryProductAttributeGroupListResp{Total:total,List:list}, nil }

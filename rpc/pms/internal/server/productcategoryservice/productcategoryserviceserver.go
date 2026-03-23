@@ -23,49 +23,41 @@ func NewProductCategoryServiceServer(svcCtx *svc.ServiceContext) *ProductCategor
 	}
 }
 
-// 添加产品分类
 func (s *ProductCategoryServiceServer) AddProductCategory(ctx context.Context, in *pmsclient.AddProductCategoryReq) (*pmsclient.AddProductCategoryResp, error) {
 	l := productcategoryservicelogic.NewAddProductCategoryLogic(ctx, s.svcCtx)
 	return l.AddProductCategory(in)
 }
 
-// 删除产品分类
 func (s *ProductCategoryServiceServer) DeleteProductCategory(ctx context.Context, in *pmsclient.DeleteProductCategoryReq) (*pmsclient.DeleteProductCategoryResp, error) {
 	l := productcategoryservicelogic.NewDeleteProductCategoryLogic(ctx, s.svcCtx)
 	return l.DeleteProductCategory(in)
 }
 
-// 更新产品分类
 func (s *ProductCategoryServiceServer) UpdateProductCategory(ctx context.Context, in *pmsclient.UpdateProductCategoryReq) (*pmsclient.UpdateProductCategoryResp, error) {
 	l := productcategoryservicelogic.NewUpdateProductCategoryLogic(ctx, s.svcCtx)
 	return l.UpdateProductCategory(in)
 }
 
-// 更新商品分类导航显示状态
 func (s *ProductCategoryServiceServer) UpdateCategoryNavStatus(ctx context.Context, in *pmsclient.UpdateProductCategoryStatusReq) (*pmsclient.UpdateProductCategoryStatusResp, error) {
 	l := productcategoryservicelogic.NewUpdateCategoryNavStatusLogic(ctx, s.svcCtx)
 	return l.UpdateCategoryNavStatus(in)
 }
 
-// 更新商品分类显示状态
 func (s *ProductCategoryServiceServer) UpdateProductCategoryStatus(ctx context.Context, in *pmsclient.UpdateProductCategoryStatusReq) (*pmsclient.UpdateProductCategoryStatusResp, error) {
 	l := productcategoryservicelogic.NewUpdateProductCategoryStatusLogic(ctx, s.svcCtx)
 	return l.UpdateProductCategoryStatus(in)
 }
 
-// 查询产品分类详情
 func (s *ProductCategoryServiceServer) QueryProductCategoryDetail(ctx context.Context, in *pmsclient.QueryProductCategoryDetailReq) (*pmsclient.QueryProductCategoryDetailResp, error) {
 	l := productcategoryservicelogic.NewQueryProductCategoryDetailLogic(ctx, s.svcCtx)
 	return l.QueryProductCategoryDetail(in)
 }
 
-// 查询产品分类列表
 func (s *ProductCategoryServiceServer) QueryProductCategoryList(ctx context.Context, in *pmsclient.QueryProductCategoryListReq) (*pmsclient.QueryProductCategoryListResp, error) {
 	l := productcategoryservicelogic.NewQueryProductCategoryListLogic(ctx, s.svcCtx)
 	return l.QueryProductCategoryList(in)
 }
 
-// 查询商品分类（tree）
 func (s *ProductCategoryServiceServer) QueryProductCategoryTreeList(ctx context.Context, in *pmsclient.QueryProductCategoryTreeListReq) (*pmsclient.QueryProductCategoryListTreeResp, error) {
 	l := productcategoryservicelogic.NewQueryProductCategoryTreeListLogic(ctx, s.svcCtx)
 	return l.QueryProductCategoryTreeList(in)

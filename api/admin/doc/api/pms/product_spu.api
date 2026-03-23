@@ -231,3 +231,4 @@ service admin-api {
 	@handler QueryProductSpuList
 	get /queryProductSpuList (QueryProductSpuListReq) returns (QueryProductSpuListResp)
 }
+

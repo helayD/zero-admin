@@ -3,9 +3,10 @@ package productbrandservicelogic
 import (
 	"context"
 	"errors"
-	"github.com/feihua/zero-admin/pkg/pointerprocess"
+
+	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/pkg/time_util"
-	"github.com/feihua/zero-admin/rpc/pms/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/pms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/pms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -13,10 +14,6 @@ import (
 )
 
 // QueryProductBrandListLogic 查询商品品牌列表
-/*
-Author: LiuFeiHua
-Date: 2025/05/26 10:33:54
-*/
 type QueryProductBrandListLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
@@ -24,60 +21,71 @@ type QueryProductBrandListLogic struct {
 }
 
 func NewQueryProductBrandListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *QueryProductBrandListLogic {
-	return &QueryProductBrandListLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
-		Logger: logx.WithContext(ctx),
-	}
+	return &QueryProductBrandListLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-// QueryProductBrandList 查询商品品牌列表
 func (l *QueryProductBrandListLogic) QueryProductBrandList(in *pmsclient.QueryProductBrandListReq) (*pmsclient.QueryProductBrandListResp, error) {
-	productBrand := query.PmsProductBrand
-	q := productBrand.WithContext(l.ctx)
-	if len(in.Name) > 0 {
-		q = q.Where(productBrand.Name.Like("%" + in.Name + "%"))
+	current, err := logiccommon.NormalizeProtoScope(in.Scope)
+	if err != nil {
+		return nil, err
 	}
 
+	db := l.svcCtx.DB.WithContext(l.ctx).Table("pms_product_brand").Where("is_deleted = 0")
+	if in.Name != "" {
+		db = db.Where("name LIKE ?", "%"+in.Name+"%")
+	}
 	if in.RecommendStatus != 2 {
-		q = q.Where(productBrand.RecommendStatus.Eq(in.RecommendStatus))
+		db = db.Where("recommend_status = ?", in.RecommendStatus)
 	}
 	if in.IsEnabled != 2 {
-		q = q.Where(productBrand.IsEnabled.Eq(in.IsEnabled))
+		db = db.Where("is_enabled = ?", in.IsEnabled)
+	}
+	scopeWhere, scopeArgs := pkgscope.ScopeFilterSQL("", current)
+	db = db.Where(scopeWhere, scopeArgs...)
+
+	var total int64
+	if err := db.Count(&total).Error; err != nil {
+		logc.Errorf(l.ctx, "查询商品品牌总数失败,参数:%+v,异常:%s", in, err.Error())
+		return nil, errors.New("查询商品品牌列表失败")
 	}
 
-	result, count, err := q.FindByPage(int((in.PageNum-1)*in.PageSize), int(in.PageSize))
-
-	if err != nil {
+	var rows []logiccommon.CatalogScopeRow
+	if err := db.Order("sort asc, id desc").Offset(int((in.PageNum - 1) * in.PageSize)).Limit(int(in.PageSize)).Scan(&rows).Error; err != nil {
 		logc.Errorf(l.ctx, "查询商品品牌列表失败,参数:%+v,异常:%s", in, err.Error())
 		return nil, errors.New("查询商品品牌列表失败")
 	}
 
-	var list []*pmsclient.ProductBrandListData
-
-	for _, item := range result {
+	list := make([]*pmsclient.ProductBrandListData, 0, len(rows))
+	for _, item := range rows {
 		list = append(list, &pmsclient.ProductBrandListData{
-			Id:                  item.ID,                                          //
-			Name:                item.Name,                                        // 品牌名称
-			Logo:                item.Logo,                                        // 品牌logo
-			BigPic:              item.BigPic,                                      // 专区大图
-			Description:         item.Description,                                 // 描述
-			FirstLetter:         item.FirstLetter,                                 // 首字母
-			Sort:                item.Sort,                                        // 排序
-			RecommendStatus:     item.RecommendStatus,                             // 推荐状态
-			ProductCount:        item.ProductCount,                                // 产品数量
-			ProductCommentCount: item.ProductCommentCount,                         // 产品评论数量
-			IsEnabled:           item.IsEnabled,                                   // 是否启用
-			CreateBy:            item.CreateBy,                                    // 创建人ID
-			CreateTime:          time_util.TimeToStr(item.CreateTime),             // 创建时间
-			UpdateBy:            pointerprocess.DefaltData(item.UpdateBy).(int64), // 更新人ID
-			UpdateTime:          time_util.TimeToString(item.UpdateTime),          // 更新时间
-
+			Id:                  item.ID,
+			Name:                item.Name,
+			Logo:                item.Logo,
+			BigPic:              item.BigPic,
+			Description:         item.Description,
+			FirstLetter:         item.FirstLetter,
+			Sort:                item.Sort,
+			RecommendStatus:     item.RecommendStatus,
+			ProductCount:        item.ProductCount,
+			ProductCommentCount: item.ProductCommentCount,
+			IsEnabled:           item.IsEnabled,
+			CreateBy:            item.CreateBy,
+			CreateTime:          time_util.TimeToStr(item.CreateTime),
+			UpdateBy:            derefInt64(item.UpdateBy),
+			UpdateTime:          time_util.TimeToString(item.UpdateTime),
+			ScopeType:           item.GovernanceScope().ScopeType,
+			PlatformId:          item.PlatformID,
+			TenantId:            item.TenantID,
+			MerchantId:          item.MerchantID,
 		})
 	}
 
-	return &pmsclient.QueryProductBrandListResp{
-		Total: count,
-		List:  list,
-	}, nil
+	return &pmsclient.QueryProductBrandListResp{Total: total, List: list}, nil
+}
+
+func derefInt64(v *int64) int64 {
+	if v == nil {
+		return 0
+	}
+	return *v
 }

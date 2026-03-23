@@ -1,74 +1,8 @@
 package productspecservicelogic
-
 import (
-	"context"
-	"errors"
-	"github.com/feihua/zero-admin/rpc/pms/gen/model"
-	"github.com/feihua/zero-admin/rpc/pms/gen/query"
-	"github.com/feihua/zero-admin/rpc/pms/internal/svc"
-	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
-	"github.com/zeromicro/go-zero/core/logc"
-	"github.com/zeromicro/go-zero/core/logx"
-	"gorm.io/gorm"
-	"time"
-)
+	"context"; "errors"; "fmt"; "strings"; "time"
+	logiccommon "github.com/feihua/zero-admin/rpc/pms/internal/logic/common"; "github.com/feihua/zero-admin/rpc/pms/internal/svc"; "github.com/feihua/zero-admin/rpc/pms/pmsclient"; "github.com/zeromicro/go-zero/core/logc"; "github.com/zeromicro/go-zero/core/logx")
 
-// UpdateProductSpecLogic 更新商品规格
-/*
-Author: LiuFeiHua
-Date: 2025/06/16 14:37:37
-*/
-type UpdateProductSpecLogic struct {
-	ctx    context.Context
-	svcCtx *svc.ServiceContext
-	logx.Logger
-}
-
-func NewUpdateProductSpecLogic(ctx context.Context, svcCtx *svc.ServiceContext) *UpdateProductSpecLogic {
-	return &UpdateProductSpecLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
-		Logger: logx.WithContext(ctx),
-	}
-}
-
-// UpdateProductSpec 更新商品规格
-func (l *UpdateProductSpecLogic) UpdateProductSpec(in *pmsclient.UpdateProductSpecReq) (*pmsclient.UpdateProductSpecResp, error) {
-	spec := query.PmsProductSpec
-	q := spec.WithContext(l.ctx)
-
-	// 1.根据商品规格id查询商品规格是否已存在
-	detail, err := q.Where(spec.ID.Eq(in.Id)).First()
-
-	switch {
-	case errors.Is(err, gorm.ErrRecordNotFound):
-		logc.Errorf(l.ctx, "商品规格不存在, 请求参数：%+v, 异常信息: %s", in, err.Error())
-		return nil, errors.New("商品规格不存在")
-	case err != nil:
-		logc.Errorf(l.ctx, "查询商品规格异常, 请求参数：%+v, 异常信息: %s", in, err.Error())
-		return nil, errors.New("查询商品规格异常")
-	}
-
-	now := time.Now()
-	item := &model.PmsProductSpec{
-		ID:         in.Id,             //
-		CategoryID: in.CategoryId,     // 分类ID
-		Name:       in.Name,           // 规格名称
-		Sort:       in.Sort,           // 排序
-		Status:     in.Status,         // 状态：0->禁用；1->启用
-		CreateBy:   detail.CreateBy,   // 创建人ID
-		CreateTime: detail.CreateTime, // 创建时间
-		UpdateBy:   &in.UpdateBy,      // 更新人ID
-		UpdateTime: &now,              // 更新时间
-	}
-
-	// 2.商品规格存在时,则直接更新商品规格
-	err = l.svcCtx.DB.Model(&model.PmsProductSpec{}).WithContext(l.ctx).Where(spec.ID.Eq(in.Id)).Save(item).Error
-
-	if err != nil {
-		logc.Errorf(l.ctx, "更新商品规格失败,参数:%+v,异常:%s", item, err.Error())
-		return nil, errors.New("更新商品规格失败")
-	}
-
-	return &pmsclient.UpdateProductSpecResp{}, nil
-}
+type UpdateProductSpecLogic struct { ctx context.Context; svcCtx *svc.ServiceContext; logx.Logger }
+func NewUpdateProductSpecLogic(ctx context.Context, svcCtx *svc.ServiceContext) *UpdateProductSpecLogic { return &UpdateProductSpecLogic{ctx:ctx, svcCtx:svcCtx, Logger:logx.WithContext(ctx)} }
+func (l *UpdateProductSpecLogic) UpdateProductSpec(in *pmsclient.UpdateProductSpecReq) (*pmsclient.UpdateProductSpecResp, error) { currentScope, err := logiccommon.ResolveWriteScope(l.ctx, l.svcCtx.DB, in.Scope, in.UpdateBy); if err != nil { return nil, err }; if _, err := logiccommon.EnsureSpecScope(l.ctx, l.svcCtx.DB, currentScope, []int64{in.Id}, "pms.product_spec.update", in.UpdateBy, "", fmt.Sprintf("specId=%d", in.Id)); err != nil { return nil, err }; if err := logiccommon.EnsureScopedCategoryExists(l.ctx, l.svcCtx.DB, currentScope, in.CategoryId, "当前主体无权将商品规格归属到该商品分类"); err != nil { return nil, err }; var count int64; if err := l.svcCtx.DB.WithContext(l.ctx).Table("pms_product_spec").Where("is_deleted = 0 AND id <> ? AND category_id = ? AND name = ? AND platform_id = ? AND tenant_id = ? AND merchant_id = ?", in.Id, in.CategoryId, strings.TrimSpace(in.Name), currentScope.PlatformID, currentScope.TenantID, currentScope.MerchantID).Count(&count).Error; err != nil { logc.Errorf(l.ctx, "校验商品规格重复失败,参数:%+v,异常:%s", in, err.Error()); return nil, errors.New("校验商品规格重复失败") }; if count > 0 { return nil, errors.New(fmt.Sprintf("商品规格名称：%s,已存在", in.Name)) }; if err := l.svcCtx.DB.WithContext(l.ctx).Table("pms_product_spec").Where("id = ?", in.Id).Updates(map[string]interface{}{"category_id":in.CategoryId,"name":strings.TrimSpace(in.Name),"sort":in.Sort,"status":in.Status,"update_by":in.UpdateBy,"update_time":time.Now()}).Error; err != nil { logc.Errorf(l.ctx, "更新商品规格失败,参数:%+v,异常:%s", in, err.Error()); return nil, errors.New("更新商品规格失败") }; return &pmsclient.UpdateProductSpecResp{Pong:"ok"}, nil }

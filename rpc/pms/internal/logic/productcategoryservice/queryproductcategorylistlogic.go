@@ -3,20 +3,16 @@ package productcategoryservicelogic
 import (
 	"context"
 	"errors"
-	"github.com/feihua/zero-admin/pkg/pointerprocess"
+
+	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/pkg/time_util"
-	"github.com/feihua/zero-admin/rpc/pms/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/pms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/pms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-// QueryProductCategoryListLogic 查询产品分类列表
-/*
-Author: LiuFeiHua
-Date: 2025/05/26 10:33:54
-*/
 type QueryProductCategoryListLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
@@ -24,66 +20,50 @@ type QueryProductCategoryListLogic struct {
 }
 
 func NewQueryProductCategoryListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *QueryProductCategoryListLogic {
-	return &QueryProductCategoryListLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
-		Logger: logx.WithContext(ctx),
-	}
+	return &QueryProductCategoryListLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
-
-// QueryProductCategoryList 查询产品分类列表
 func (l *QueryProductCategoryListLogic) QueryProductCategoryList(in *pmsclient.QueryProductCategoryListReq) (*pmsclient.QueryProductCategoryListResp, error) {
-	productCategory := query.PmsProductCategory
-	q := productCategory.WithContext(l.ctx)
-	if len(in.Name) > 0 {
-		q = q.Where(productCategory.Name.Like("%" + in.Name + "%"))
+	current, err := logiccommon.NormalizeProtoScope(in.Scope)
+	if err != nil {
+		return nil, err
+	}
+	db := l.svcCtx.DB.WithContext(l.ctx).Table("pms_product_category").Where("is_deleted = 0")
+	if in.Name != "" {
+		db = db.Where("name LIKE ?", "%"+in.Name+"%")
 	}
 	if in.NavStatus != 2 {
-		q = q.Where(productCategory.NavStatus.Eq(in.NavStatus))
+		db = db.Where("nav_status = ?", in.NavStatus)
 	}
-	if len(in.Keywords) > 0 {
-		q = q.Where(productCategory.Keywords.Like("%" + in.Keywords + "%"))
+	if in.Keywords != "" {
+		db = db.Where("keywords LIKE ?", "%"+in.Keywords+"%")
 	}
 	if in.IsEnabled != 2 {
-		q = q.Where(productCategory.IsEnabled.Eq(in.IsEnabled))
+		db = db.Where("is_enabled = ?", in.IsEnabled)
 	}
 	if in.ParentId != 1000 {
-		q = q.Where(productCategory.ParentID.Eq(in.ParentId))
+		db = db.Where("parent_id = ?", in.ParentId)
 	}
-
-	result, count, err := q.FindByPage(int((in.PageNum-1)*in.PageSize), int(in.PageSize))
-
-	if err != nil {
+	scopeWhere, scopeArgs := pkgscope.ScopeFilterSQL("", current)
+	db = db.Where(scopeWhere, scopeArgs...)
+	var total int64
+	if err := db.Count(&total).Error; err != nil {
+		logc.Errorf(l.ctx, "查询产品分类总数失败,参数:%+v,异常:%s", in, err.Error())
+		return nil, errors.New("查询产品分类列表失败")
+	}
+	var rows []logiccommon.CatalogScopeRow
+	if err := db.Order("sort asc, id desc").Offset(int((in.PageNum - 1) * in.PageSize)).Limit(int(in.PageSize)).Scan(&rows).Error; err != nil {
 		logc.Errorf(l.ctx, "查询产品分类列表失败,参数:%+v,异常:%s", in, err.Error())
 		return nil, errors.New("查询产品分类列表失败")
 	}
-
-	var list []*pmsclient.ProductCategoryListData
-
-	for _, item := range result {
-		list = append(list, &pmsclient.ProductCategoryListData{
-			Id:           item.ID,                                          //
-			ParentId:     item.ParentID,                                    // 上级分类的编号：0表示一级分类
-			Name:         item.Name,                                        // 商品分类名称
-			Level:        item.Level,                                       // 分类级别：0->1级；1->2级
-			ProductCount: item.ProductCount,                                // 商品数量
-			ProductUnit:  item.ProductUnit,                                 // 商品单位
-			NavStatus:    item.NavStatus,                                   // 是否显示在导航栏：0->不显示；1->显示
-			Sort:         item.Sort,                                        // 排序
-			Icon:         item.Icon,                                        // 图标
-			Keywords:     item.Keywords,                                    // 关键字
-			Description:  item.Description,                                 // 描述
-			IsEnabled:    item.IsEnabled,                                   // 是否启用
-			CreateBy:     item.CreateBy,                                    // 创建人ID
-			CreateTime:   time_util.TimeToStr(item.CreateTime),             // 创建时间
-			UpdateBy:     pointerprocess.DefaltData(item.UpdateBy).(int64), // 更新人ID
-			UpdateTime:   time_util.TimeToString(item.UpdateTime),          // 更新时间
-
-		})
+	list := make([]*pmsclient.ProductCategoryListData, 0, len(rows))
+	for _, item := range rows {
+		list = append(list, &pmsclient.ProductCategoryListData{Id: item.ID, ParentId: item.ParentID, Name: item.Name, Level: item.Level, ProductCount: item.ProductCount, ProductUnit: item.ProductUnit, NavStatus: item.NavStatus, Sort: item.Sort, Icon: item.Icon, Keywords: item.Keywords, Description: item.Description, IsEnabled: item.IsEnabled, CreateBy: item.CreateBy, CreateTime: time_util.TimeToStr(item.CreateTime), UpdateBy: derefCategoryInt64(item.UpdateBy), UpdateTime: time_util.TimeToString(item.UpdateTime), ScopeType: item.GovernanceScope().ScopeType, PlatformId: item.PlatformID, TenantId: item.TenantID, MerchantId: item.MerchantID})
 	}
-
-	return &pmsclient.QueryProductCategoryListResp{
-		Total: count,
-		List:  list,
-	}, nil
+	return &pmsclient.QueryProductCategoryListResp{Total: total, List: list}, nil
+}
+func derefCategoryInt64(v *int64) int64 {
+	if v == nil {
+		return 0
+	}
+	return *v
 }

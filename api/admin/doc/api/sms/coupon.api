@@ -195,3 +195,4 @@ service admin-api {
 	@handler QueryCouponList
 	get /queryCouponList (QueryCouponListReq) returns (QueryCouponListResp)
 }
+

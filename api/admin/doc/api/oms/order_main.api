@@ -200,3 +200,4 @@ service admin-api {
 	@handler UpdateNote
 	post /updateNote (UpdateNoteReq) returns (BaseResp)
 }
+
