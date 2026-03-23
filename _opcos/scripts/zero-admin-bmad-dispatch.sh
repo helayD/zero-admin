@@ -20,6 +20,7 @@ STATE_DIR="$PROJECT_ROOT/_opcos/automation-state"
 LOG_FILE="$STATE_DIR/dispatcher.log"
 LOCK_FILE="$STATE_DIR/dispatcher.lock"
 ACTIVE_ACTION_FILE="$STATE_DIR/active-action.json"
+MANUAL_INTENT_FILE="$STATE_DIR/manual-intent.json"
 SPRINT_STATUS="$PROJECT_ROOT/_opcos/implementation-artifacts/sprint-status.yaml"
 WATCHDOG_LOG="$AUTOPILOT_ROOT/logs/watchdog.log"
 AUTOPILOT_STATE="$AUTOPILOT_ROOT/state/zero-admin.json"
@@ -93,6 +94,39 @@ print(data.get('action',''))
 PY
 }
 
+current_manual_intent() {
+  [ -f "$MANUAL_INTENT_FILE" ] || return 0
+  python3 - <<'PY'
+import json, os
+path=os.path.expanduser('/Users/helay/Documents/GitHub/zero-admin/_opcos/automation-state/manual-intent.json')
+with open(path,'r',encoding='utf-8') as f:
+    data=json.load(f)
+print(data.get('intent',''))
+PY
+}
+
+manual_intent_updated_at() {
+  [ -f "$MANUAL_INTENT_FILE" ] || return 0
+  python3 - <<'PY'
+import json, os
+path=os.path.expanduser('/Users/helay/Documents/GitHub/zero-admin/_opcos/automation-state/manual-intent.json')
+with open(path,'r',encoding='utf-8') as f:
+    data=json.load(f)
+print(data.get('updated_at',0))
+PY
+}
+
+active_action_updated_at() {
+  [ -f "$ACTIVE_ACTION_FILE" ] || return 0
+  python3 - <<'PY'
+import json, os
+path=os.path.expanduser('/Users/helay/Documents/GitHub/zero-admin/_opcos/automation-state/active-action.json')
+with open(path,'r',encoding='utf-8') as f:
+    data=json.load(f)
+print(data.get('updated_at',0))
+PY
+}
+
 set_active_action() {
   local action="$1"
   python3 - <<PY
@@ -135,7 +169,7 @@ choose_action() {
     local story_path
     story_path="$(story_path_for_key "$ready_story")"
     if [ -z "$story_path" ]; then
-      echo "create-story"
+      echo "create-story:$ready_story"
       return 0
     fi
     if has_uncommitted_changes; then
@@ -222,20 +256,38 @@ main() {
   with_lock
   require_file "$SPRINT_STATUS"
 
-  local action active
+  local action active manual_intent manual_updated_at active_updated_at now age
   action="$(choose_action)"
   active="$(current_active_action || true)"
+  manual_intent="$(current_manual_intent || true)"
+  manual_updated_at="$(manual_intent_updated_at || true)"
+  active_updated_at="$(active_action_updated_at || true)"
+  now="$(date +%s)"
 
-  log "chosen action=$action active=$active"
+  log "chosen action=$action active=$active manual_intent=$manual_intent"
 
   if [[ "$action" == blocked:* ]]; then
     log "blocked, no dispatch: $action"
     exit 0
   fi
 
-  if [ -n "$active" ] && [ "$active" = "$action" ]; then
-    log "same active action already recorded, skip duplicate dispatch"
+  if [ -n "$manual_intent" ]; then
+    if [ "$manual_intent" != "$action" ]; then
+      log "manual intent conflicts with derived action, block dispatch: intent=$manual_intent derived=$action"
+      exit 0
+    fi
+  else
+    log "no manual intent file present, block dispatch to avoid divergence from latest Feishu/user instruction"
     exit 0
+  fi
+
+  if [ -n "$active" ] && [ "$active" = "$action" ]; then
+    age=$(( now - ${active_updated_at:-0} ))
+    if [ "$age" -lt 1800 ]; then
+      log "same active action already recorded and still fresh, skip duplicate dispatch"
+      exit 0
+    fi
+    log "stale active action detected (age=${age}s), allowing redispatch"
   fi
 
   dispatch_action "$action"
