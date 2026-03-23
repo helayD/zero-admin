@@ -51,8 +51,8 @@ development_status:
   1-7-治理审计与安全事件检索: review
   epic-1-retrospective: optional
 
-  epic-2: backlog
-  2-1-商品分类-品牌与属性基础配置: ready-for-dev
+  epic-2: in-progress
+  2-1-商品分类-品牌与属性基础配置: in-progress
   2-2-商品规格-spu-sku-与库存建档: backlog
   2-3-商品上架审核与作用域可见性控制: backlog
   2-4-首页-分类与品牌导购浏览: backlog

@@ -24,7 +24,16 @@ func newProductCategoryScopeTestSvc(t *testing.T) *svc.ServiceContext {
 	if err := db.AutoMigrate(&model.PmsProductCategory{}); err != nil {
 		t.Fatalf("auto migrate category failed: %v", err)
 	}
-	for _, stmt := range []string{`ALTER TABLE pms_product_category ADD COLUMN platform_id INTEGER NOT NULL DEFAULT 1`, `ALTER TABLE pms_product_category ADD COLUMN tenant_id INTEGER NOT NULL DEFAULT 0`, `ALTER TABLE pms_product_category ADD COLUMN merchant_id INTEGER NOT NULL DEFAULT 0`} {
+	for _, stmt := range []string{
+		`ALTER TABLE pms_product_category ADD COLUMN platform_id INTEGER NOT NULL DEFAULT 1`,
+		`ALTER TABLE pms_product_category ADD COLUMN tenant_id INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE pms_product_category ADD COLUMN merchant_id INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE pms_product_category ADD COLUMN logo TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE pms_product_category ADD COLUMN big_pic TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE pms_product_category ADD COLUMN first_letter TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE pms_product_category ADD COLUMN recommend_status INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE pms_product_category ADD COLUMN product_comment_count INTEGER NOT NULL DEFAULT 0`,
+	} {
 		if err := db.Exec(stmt).Error; err != nil {
 			t.Fatalf("alter category scope columns failed: %v", err)
 		}

@@ -29,6 +29,7 @@ import {
   type GovernanceScopeValue,
   toGovernancePayload,
 } from '@/pages/system/components/governance';
+import { readErrorMessage } from '@/pages/system/components/requestError';
 
 const { confirm } = Modal;
 
@@ -45,6 +46,7 @@ const handleAdd = async (fields: ProductBrandListItem, scope: GovernanceScopeVal
     return true;
   } catch (error) {
     hide();
+    message.error(readErrorMessage(error, '添加品牌失败，请检查当前主体范围与品牌字段'));
     return false;
   }
 };
@@ -63,6 +65,7 @@ const handleUpdate = async (fields: ProductBrandListItem, scope: GovernanceScope
     return true;
   } catch (error) {
     hide();
+    message.error(readErrorMessage(error, '更新品牌失败，请检查当前主体范围与品牌状态'));
     return false;
   }
 };
@@ -81,6 +84,7 @@ const handleRemove = async (ids: number[], scope: GovernanceScopeValue) => {
     return true;
   } catch (error) {
     hide();
+    message.error(readErrorMessage(error, '删除品牌失败，请先解除被引用关系后重试'));
     return false;
   }
 };
@@ -108,6 +112,7 @@ const handleStatus = async (ids: number[], status: number, t: number, scope: Gov
     return true;
   } catch (error) {
     hide();
+    message.error(readErrorMessage(error, '更新品牌状态失败，请核对当前品牌状态后重试'));
     return false;
   }
 };

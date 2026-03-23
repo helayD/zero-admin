@@ -1,8 +1,15 @@
-import {request} from 'umi';
+import { request } from 'umi';
 import type { ProductSpecListParams, ProductSpecListItem } from './data.d';
+import type { GovernanceScopeValue } from '@/pages/system/components/governance';
 
-// 添加商品规格
-export async function addProductSpec(params: ProductSpecListItem) {
+interface ScopePayload extends GovernanceScopeValue {
+  scopeType?: 'platform' | 'tenant' | 'merchant';
+  platformId?: number;
+  tenantId?: number;
+  merchantId?: number;
+}
+
+export async function addProductSpec(params: ProductSpecListItem & ScopePayload) {
   return request('/api/pms/productSpec/addSpec', {
     method: 'POST',
     data: {
@@ -11,16 +18,17 @@ export async function addProductSpec(params: ProductSpecListItem) {
   });
 }
 
-// 删除商品规格
-export async function removeProductSpec(ids: number[]) {
-  return request('/api/pms/productSpec/deleteSpec?ids=' + ids.join(','), {
+export async function removeProductSpec(ids: number[], scope?: ScopePayload) {
+  return request('/api/pms/productSpec/deleteSpec', {
     method: 'GET',
+    params: {
+      ids: ids.join(','),
+      ...scope,
+    },
   });
 }
 
-
-// 更新商品规格
-export async function updateProductSpec(params: ProductSpecListItem) {
+export async function updateProductSpec(params: ProductSpecListItem & ScopePayload) {
   return request('/api/pms/productSpec/updateSpec', {
     method: 'POST',
     data: {
@@ -29,28 +37,26 @@ export async function updateProductSpec(params: ProductSpecListItem) {
   });
 }
 
-// 批量更新商品规格状态
-export async function updateProductSpecStatus(params: { ids: number[], status: number }) {
+export async function updateProductSpecStatus(params: { ids: number[]; status: number } & ScopePayload) {
   return request('/api/pms/productSpec/updateSpecStatus', {
     method: 'POST',
     data: {
       ...params,
     },
-
   });
 }
 
-
-// 查询商品规格详情
-export async function queryProductSpecDetail(id: number) {
-  return request('/api/pms/productSpec/querySpecDetail?id=' + id, {
+export async function queryProductSpecDetail(id: number, scope?: ScopePayload) {
+  return request('/api/pms/productSpec/querySpecDetail', {
     method: 'GET',
+    params: {
+      id,
+      ...scope,
+    },
   });
 }
 
-// 分页查询商品规格列表
-export async function queryProductSpecList(params: ProductSpecListParams) {
-
+export async function queryProductSpecList(params: ProductSpecListParams & ScopePayload) {
   return request('/api/pms/productSpec/querySpecList', {
     method: 'GET',
     params: {

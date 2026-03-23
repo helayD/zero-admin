@@ -1,8 +1,15 @@
-import {request} from 'umi';
+import { request } from 'umi';
 import type { ProductAttributeGroupListParams, ProductAttributeGroupListItem } from './data.d';
+import type { GovernanceScopeValue } from '@/pages/system/components/governance';
 
-// 添加商品属性分组
-export async function addProductAttributeGroup(params: ProductAttributeGroupListItem) {
+interface ScopePayload extends GovernanceScopeValue {
+  scopeType?: 'platform' | 'tenant' | 'merchant';
+  platformId?: number;
+  tenantId?: number;
+  merchantId?: number;
+}
+
+export async function addProductAttributeGroup(params: ProductAttributeGroupListItem & ScopePayload) {
   return request('/api/pms/attributeGroup/addAttributeGroup', {
     method: 'POST',
     data: {
@@ -11,16 +18,17 @@ export async function addProductAttributeGroup(params: ProductAttributeGroupList
   });
 }
 
-// 删除商品属性分组
-export async function removeProductAttributeGroup(ids: number[]) {
-  return request('/api/pms/attributeGroup/deleteAttributeGroup?ids=' + ids.join(','), {
+export async function removeProductAttributeGroup(ids: number[], scope?: ScopePayload) {
+  return request('/api/pms/attributeGroup/deleteAttributeGroup', {
     method: 'GET',
+    params: {
+      ids: ids.join(','),
+      ...scope,
+    },
   });
 }
 
-
-// 更新商品属性分组
-export async function updateProductAttributeGroup(params: ProductAttributeGroupListItem) {
+export async function updateProductAttributeGroup(params: ProductAttributeGroupListItem & ScopePayload) {
   return request('/api/pms/attributeGroup/updateAttributeGroup', {
     method: 'POST',
     data: {
@@ -29,28 +37,26 @@ export async function updateProductAttributeGroup(params: ProductAttributeGroupL
   });
 }
 
-// 批量更新商品属性分组状态
-export async function updateProductAttributeGroupStatus(params: { ids: number[], status: number }) {
+export async function updateProductAttributeGroupStatus(params: { ids: number[]; status: number } & ScopePayload) {
   return request('/api/pms/attributeGroup/updateAttributeGroupStatus', {
     method: 'POST',
     data: {
       ...params,
     },
-
   });
 }
 
-
-// 查询商品属性分组详情
-export async function queryProductAttributeGroupDetail(id: number) {
-  return request('/api/pms/attributeGroup/queryAttributeGroupDetail?id=' + id, {
+export async function queryProductAttributeGroupDetail(id: number, scope?: ScopePayload) {
+  return request('/api/pms/attributeGroup/queryAttributeGroupDetail', {
     method: 'GET',
+    params: {
+      id,
+      ...scope,
+    },
   });
 }
 
-// 分页查询商品属性分组列表
-export async function queryProductAttributeGroupList(params: ProductAttributeGroupListParams) {
-
+export async function queryProductAttributeGroupList(params: ProductAttributeGroupListParams & ScopePayload) {
   return request('/api/pms/attributeGroup/queryAttributeGroupList', {
     method: 'GET',
     params: {

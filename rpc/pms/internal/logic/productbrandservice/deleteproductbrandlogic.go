@@ -21,12 +21,21 @@ type DeleteProductBrandLogic struct {
 func NewDeleteProductBrandLogic(ctx context.Context, svcCtx *svc.ServiceContext) *DeleteProductBrandLogic {
 	return &DeleteProductBrandLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
+
 func (l *DeleteProductBrandLogic) DeleteProductBrand(in *pmsclient.DeleteProductBrandReq) (*pmsclient.DeleteProductBrandResp, error) {
 	currentScope, err := logiccommon.ResolveWriteScope(l.ctx, l.svcCtx.DB, in.Scope, in.UpdateBy)
 	if err != nil {
 		return nil, err
 	}
 	if _, err := logiccommon.EnsureBrandScope(l.ctx, l.svcCtx.DB, currentScope, in.Ids, "pms.product_brand.delete", in.UpdateBy, "", "delete brand"); err != nil {
+		return nil, err
+	}
+	if err := logiccommon.EnsureCatalogDeleteAllowed(l.ctx, l.svcCtx.DB, currentScope, in.Ids, []logiccommon.CatalogReferenceCheck{{
+		Table:      "pms_product_spu",
+		Column:     "brand_id",
+		Message:    "商品品牌已被商品建档引用，无法删除",
+		ScopeAware: true,
+	}}); err != nil {
 		return nil, err
 	}
 	if err := l.svcCtx.DB.WithContext(l.ctx).Table("pms_product_brand").Where("id IN ?", in.Ids).Updates(map[string]interface{}{"is_deleted": 1, "update_by": in.UpdateBy, "update_time": time.Now()}).Error; err != nil {
