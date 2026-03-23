@@ -7,6 +7,8 @@ info (
 type (
 	// 添加商品SKU请求参数
 	AddProductSkuReq {
+		Id                 int64   `json:"id,optional"` //SKU明细ID，更新时可回传
+		SpuId              int64   `json:"spuId,optional"` //商品SpuId
 		Name               string  `json:"name"` //SKU名称
 		SkuCode            string  `json:"skuCode,optional"` //SKU编码
 		MainPic            string  `json:"mainPic"` //主图
@@ -179,4 +181,3 @@ service admin-api {
 	@handler QueryProductSkuList
 	get /queryProductSkuList (QueryProductSkuListReq) returns (QueryProductSkuListResp)
 }
-

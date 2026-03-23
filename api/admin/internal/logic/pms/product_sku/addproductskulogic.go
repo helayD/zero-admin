@@ -48,6 +48,7 @@ func (l *AddProductSkuLogic) AddProductSku(req *types.AddProductSkuReq) (resp *t
 		return nil, err
 	}
 	_, err = l.svcCtx.ProductSkuService.AddProductSku(l.ctx, &pmsclient.AddProductSkuReq{
+		SpuId:              req.SpuId,              // 商品SpuId
 		Name:               req.Name,               // SKU名称
 		SkuCode:            req.SkuCode,            // SKU编码
 		MainPic:            req.MainPic,            // 主图

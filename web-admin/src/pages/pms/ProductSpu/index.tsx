@@ -1,15 +1,31 @@
-import {DeleteOutlined, EditOutlined, ExclamationCircleOutlined, PlusOutlined} from '@ant-design/icons';
+import {
+  DeleteOutlined,
+  EditOutlined,
+  ExclamationCircleOutlined,
+  PlusOutlined,
+} from '@ant-design/icons';
 import { Alert, Button, Divider, Drawer, message, Modal, Select, Space, Switch, Tag } from 'antd';
-import React, {useRef, useState} from 'react';
-import {PageContainer} from '@ant-design/pro-layout';
-import type {ActionType, ProColumns} from '@ant-design/pro-table';
+import React, { useRef, useState } from 'react';
+import { PageContainer } from '@ant-design/pro-layout';
+import type { ActionType, ProColumns } from '@ant-design/pro-table';
 import ProTable from '@ant-design/pro-table';
-import type {ProDescriptionsItemProps} from '@ant-design/pro-descriptions';
+import type { ProDescriptionsItemProps } from '@ant-design/pro-descriptions';
 import ProDescriptions from '@ant-design/pro-descriptions';
 import AddModal from './components/AddModal';
 import UpdateModal from './components/UpdateModal';
-import type { ProductSpuListItem} from './data.d';
-import {addProductSpu, queryProductSpuList, removeProductSpu, updateProductSpu, updateProductSpuStatus} from './service';
+import type {
+  ProductSpuDetailPayload,
+  ProductSpuListItem,
+  ProductSpuSubmitPayload,
+} from './data.d';
+import {
+  addProductSpu,
+  queryProductSpuDetail,
+  queryProductSpuList,
+  removeProductSpu,
+  updateProductSpu,
+  updateProductSpuStatus,
+} from './service';
 import SkuModal from '@/pages/pms/ProductSpu/components/SkuModal';
 import { buildCatalogActionError, type CatalogActionError } from '@/pages/pms/errorFeedback';
 import GovernanceScopeBar from '@/pages/system/components/GovernanceScopeBar';
@@ -20,7 +36,7 @@ import {
   toGovernancePayload,
 } from '@/pages/system/components/governance';
 
-const {confirm} = Modal;
+const { confirm } = Modal;
 
 type ProductSpuStatusAction = 'publish' | 'verify' | 'recommend' | 'new' | 'delete';
 
@@ -37,13 +53,13 @@ const productSpuActionLabel: Record<ProductSpuStatusAction, string> = {
  * @param fields
  */
 const handleAdd = async (
-  fields: ProductSpuListItem,
+  fields: ProductSpuSubmitPayload,
   scope: GovernanceScopeValue,
   onError?: (error: CatalogActionError) => void,
 ) => {
   const hide = message.loading('正在添加');
   try {
-    await addProductSpu({...fields, ...toGovernancePayload(scope)});
+    await addProductSpu({ ...fields, ...toGovernancePayload(scope) });
     hide();
     message.success('添加成功');
     return true;
@@ -61,7 +77,7 @@ const handleAdd = async (
  * @param fields
  */
 const handleUpdate = async (
-  fields: ProductSpuListItem & GovernanceScopeValue,
+  fields: ProductSpuSubmitPayload & GovernanceScopeValue,
   onError?: (error: CatalogActionError) => void,
 ) => {
   const hide = message.loading('正在更新');
@@ -78,6 +94,25 @@ const handleUpdate = async (
     message.error(catalogError.description);
     return false;
   }
+};
+
+const buildSubmitPayloadFromDetail = (
+  detail?: ProductSpuDetailPayload,
+): ProductSpuSubmitPayload | undefined => {
+  if (!detail?.productData) {
+    return undefined;
+  }
+
+  return {
+    ...(detail.productData as ProductSpuSubmitPayload),
+    ladderList: Array.isArray(detail.ladderList) ? detail.ladderList : [],
+    fullList: Array.isArray(detail.fullList) ? detail.fullList : [],
+    memberPriceList: Array.isArray(detail.memberPriceList) ? detail.memberPriceList : [],
+    skuList: Array.isArray(detail.skuList) ? detail.skuList : [],
+    attributeValueList: Array.isArray(detail.attributeValueList) ? detail.attributeValueList : [],
+    subjectIds: Array.isArray(detail.subjectIds) ? detail.subjectIds : [],
+    prefrenceAreaIds: Array.isArray(detail.prefrenceAreaIds) ? detail.prefrenceAreaIds : [],
+  };
 };
 
 /**
@@ -136,37 +171,54 @@ const ProductSpuList: React.FC = () => {
   const [showDetail, setShowDetail] = useState<boolean>(false);
   const actionRef = useRef<ActionType>();
   const [currentRow, setCurrentRow] = useState<ProductSpuListItem>();
+  const [currentSubmitData, setCurrentSubmitData] = useState<ProductSpuSubmitPayload>();
   const [skuVisible, handleSkuVisible] = useState<boolean>(false);
   const [scope, setScope] = useState<GovernanceScopeValue>(defaultGovernanceScope);
   const [submitError, setSubmitError] = useState<CatalogActionError>();
 
+  const openUpdateModal = async (record: ProductSpuListItem) => {
+    setSubmitError(undefined);
+    const hide = message.loading('正在加载商品详情...');
+    try {
+      const detailResp = await queryProductSpuDetail(record.id, toGovernancePayload(scope));
+      const submitDraft = buildSubmitPayloadFromDetail(detailResp.data);
+      setCurrentRow({ ...record, ...(detailResp.data?.productData || {}) });
+      setCurrentSubmitData(submitDraft);
+      handleUpdateVisible(true);
+    } catch (error) {
+      const catalogError = buildCatalogActionError(error, '商品 SPU 详情加载失败');
+      setSubmitError(catalogError);
+      message.error(catalogError.description);
+    } finally {
+      hide();
+    }
+  };
+
   const showDeleteConfirm = (ids: number[]) => {
     confirm({
       title: '是否删除记录?',
-      icon: <ExclamationCircleOutlined/>,
+      icon: <ExclamationCircleOutlined />,
       content: `当前主体：${buildGovernanceScopeLabel(scope)}。删除后不可恢复，请确认。`,
       onOk() {
         handleRemove(ids, scope).then(() => {
           actionRef.current?.reloadAndRest?.();
         });
       },
-      onCancel() {
-      },
+      onCancel() {},
     });
   };
 
   const showStatusConfirm = (action: ProductSpuStatusAction, ids: number[], status: number) => {
     confirm({
       title: `确定更新${productSpuActionLabel[action]}吗？`,
-      icon: <ExclamationCircleOutlined/>,
+      icon: <ExclamationCircleOutlined />,
       content: `当前主体：${buildGovernanceScopeLabel(scope)}。将影响 ${ids.length} 个商品。`,
       async onOk() {
-        await handleStatus(action, ids, status, scope)
+        await handleStatus(action, ids, status, scope);
         actionRef.current?.clearSelected?.();
         actionRef.current?.reload?.();
       },
-      onCancel() {
-      },
+      onCancel() {},
     });
   };
 
@@ -191,6 +243,10 @@ const ProductSpuList: React.FC = () => {
           </a>
         );
       },
+    },
+    {
+      title: '商品货号',
+      dataIndex: 'productSn',
     },
 
     {
@@ -300,7 +356,7 @@ const ProductSpuList: React.FC = () => {
     {
       title: '上架状态',
       dataIndex: 'publishStatus',
-      renderFormItem: (text, row, index) => {
+      renderFormItem: (text, row) => {
         return (
           <Select
             value={row.value}
@@ -326,7 +382,7 @@ const ProductSpuList: React.FC = () => {
       title: '是否新品',
       dataIndex: 'newStatus',
       hideInTable: true,
-      renderFormItem: (text, row, index) => {
+      renderFormItem: (text, row) => {
         return (
           <Select
             value={row.value}
@@ -352,7 +408,7 @@ const ProductSpuList: React.FC = () => {
       title: '是否推荐',
       dataIndex: 'recommendStatus',
       hideInTable: true,
-      renderFormItem: (text, row, index) => {
+      renderFormItem: (text, row) => {
         return (
           <Select
             value={row.value}
@@ -377,7 +433,7 @@ const ProductSpuList: React.FC = () => {
     {
       title: '审核状态',
       dataIndex: 'verifyStatus',
-      renderFormItem: (text, row, index) => {
+      renderFormItem: (text, row) => {
         return (
           <Select
             value={row.value}
@@ -403,7 +459,7 @@ const ProductSpuList: React.FC = () => {
       title: '预告商品',
       dataIndex: 'previewStatus',
       hideInTable: true,
-      renderFormItem: (text, row, index) => {
+      renderFormItem: (text, row) => {
         return (
           <Select
             value={row.value}
@@ -452,29 +508,28 @@ const ProductSpuList: React.FC = () => {
       hideInTable: true,
     },
     {
-      title:
-        '促销类型',
+      title: '促销类型',
       dataIndex: 'promotionType',
-      renderFormItem: (text, row, index) => {
+      renderFormItem: (text, row) => {
         return (
           <Select
             value={row.value}
             options={[
-              { value: '0', label: '原价' },
-              { value: '1', label: '促销价' },
-              { value: '2', label: '会员价' },
-              { value: '3', label: '阶梯价格' },
-              { value: '4', label: '满减价格' },
-              { value: '5', label: '秒杀价格' },
+              { value: 0, label: '原价' },
+              { value: 1, label: '促销价' },
+              { value: 2, label: '会员价' },
+              { value: 3, label: '阶梯价格' },
+              { value: 4, label: '满减价格' },
+              { value: 5, label: '秒杀价格' },
             ]}
           />
         );
       },
       render: (dom, entity) => {
         switch (entity.promotionType) {
-          case 1:
-            return <Tag color={'success'}>使用原价</Tag>;
           case 0:
+            return <Tag color={'success'}>使用原价</Tag>;
+          case 1:
             return <Tag color={'success'}>使用促销价</Tag>;
           case 2:
             return <Tag color={'success'}>使用会员价</Tag>;
@@ -548,12 +603,10 @@ const ProductSpuList: React.FC = () => {
             onClick={() => {
               handleSkuVisible(true);
               setCurrentRow(record);
-            }
-            }
+            }}
           >
-            <EditOutlined/> 规格
+            <EditOutlined /> 规格
           </a>
-
         </>
       ),
     },
@@ -567,8 +620,7 @@ const ProductSpuList: React.FC = () => {
           <a
             key="sort"
             onClick={() => {
-              handleUpdateVisible(true);
-              setCurrentRow(record);
+              void openUpdateModal(record);
             }}
           >
             <EditOutlined /> 编辑
@@ -588,7 +640,7 @@ const ProductSpuList: React.FC = () => {
     },
   ];
 
-return (
+  return (
     <PageContainer>
       <GovernanceScopeBar
         value={scope}
@@ -621,53 +673,64 @@ return (
         headerTitle="商品SPU管理"
         actionRef={actionRef}
         rowKey="id"
-        search={ {
+        search={{
           labelWidth: 120,
-        } }
+        }}
         toolBarRender={() => [
-          <Button type="primary" key="primary" onClick={() => handleAddVisible(true)}>
-            <PlusOutlined/> 新增
+          <Button
+            type="primary"
+            key="primary"
+            onClick={() => {
+              setSubmitError(undefined);
+              setCurrentRow(undefined);
+              setCurrentSubmitData(undefined);
+              handleAddVisible(true);
+            }}
+          >
+            <PlusOutlined /> 新增
           </Button>,
         ]}
         request={(params) => queryProductSpuList({ ...params, ...toGovernancePayload(scope) })}
         columns={columns}
-        rowSelection={ {} }
-        pagination={ {pageSize: 10}}
-        tableAlertRender={ ({
-                             selectedRowKeys,
-                             selectedRows,
-                           }) => {
+        rowSelection={{}}
+        pagination={{ pageSize: 10 }}
+        tableAlertRender={({ selectedRowKeys, selectedRows }) => {
           const ids = selectedRows.map((row) => row.id);
           return (
             <Space size={16}>
               <span>已选 {selectedRowKeys.length} 项</span>
               <Button
-                icon={<EditOutlined/>}
-                style={ {borderRadius: '5px'}}
+                icon={<EditOutlined />}
+                style={{ borderRadius: '5px' }}
                 onClick={async () => {
-                  showStatusConfirm('publish', ids, 1)
+                  showStatusConfirm('publish', ids, 1);
                 }}
-              >批量上架</Button>
+              >
+                批量上架
+              </Button>
               <Button
-                icon={<EditOutlined/>}
-                style={ {borderRadius: '5px'} }
+                icon={<EditOutlined />}
+                style={{ borderRadius: '5px' }}
                 onClick={async () => {
-                  showStatusConfirm('publish', ids, 0)
+                  showStatusConfirm('publish', ids, 0);
                 }}
-              >批量下架</Button>
+              >
+                批量下架
+              </Button>
               <Button
-                icon={<DeleteOutlined/>}
+                icon={<DeleteOutlined />}
                 danger
-                style={ {borderRadius: '5px'} }
+                style={{ borderRadius: '5px' }}
                 onClick={async () => {
                   showDeleteConfirm(ids);
                 }}
-              >批量删除</Button>
+              >
+                批量删除
+              </Button>
             </Space>
           );
         }}
       />
-
 
       <AddModal
         key={'AddModal'}
@@ -677,6 +740,7 @@ return (
           if (success) {
             handleAddVisible(false);
             setCurrentRow(undefined);
+            setCurrentSubmitData(undefined);
             if (actionRef.current) {
               actionRef.current.reload();
             }
@@ -684,21 +748,28 @@ return (
         }}
         onCancel={() => {
           handleAddVisible(false);
+          setCurrentSubmitData(undefined);
           if (!showDetail) {
             setCurrentRow(undefined);
           }
         }}
         addVisible={addVisible}
+        scope={scope}
+        submitError={submitError}
       />
 
       <UpdateModal
         key={'UpdateModal'}
         onSubmit={async (value) => {
           setSubmitError(undefined);
-          const success = await handleUpdate({...value, ...toGovernancePayload(scope)}, setSubmitError);
+          const success = await handleUpdate(
+            { ...(currentSubmitData || {}), ...value, ...toGovernancePayload(scope) },
+            setSubmitError,
+          );
           if (success) {
             handleUpdateVisible(false);
             setCurrentRow(undefined);
+            setCurrentSubmitData(undefined);
             if (actionRef.current) {
               actionRef.current.reload();
             }
@@ -706,12 +777,15 @@ return (
         }}
         onCancel={() => {
           handleUpdateVisible(false);
+          setCurrentSubmitData(undefined);
           if (!showDetail) {
             setCurrentRow(undefined);
           }
         }}
         updateVisible={updateVisible}
-        currentData={currentRow || {} }
+        currentData={currentSubmitData || currentRow || {}}
+        scope={scope}
+        submitError={submitError}
       />
       <SkuModal
         key={'SkuModal'}
@@ -722,7 +796,7 @@ return (
           }
         }}
         modalVisible={skuVisible}
-        spuId={currentRow?.id || 0 }
+        spuId={currentRow?.id || 0}
         scope={scope}
       />
       <Drawer
@@ -730,18 +804,18 @@ return (
         visible={showDetail}
         onClose={() => {
           setCurrentRow(undefined);
-          setShowDetail(false)
+          setShowDetail(false);
         }}
         closable={false}
       >
         {currentRow?.id && (
           <ProDescriptions<ProductSpuListItem>
             column={2}
-            title={"商品SPU详情"}
+            title={'商品SPU详情'}
             request={async () => ({
               data: currentRow || {},
             })}
-            params={ {
+            params={{
               id: currentRow?.id,
             }}
             columns={columns as ProDescriptionsItemProps<ProductSpuListItem>[]}

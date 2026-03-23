@@ -1396,6 +1396,7 @@ message QueryProductSkuListResp {
 
 message UpdateSkuStockReq {
   repeated UpdateSkuStockData data = 1;
+  GovernanceScope scope = 2; //治理范围(platform/tenant/merchant)
 }
 
 message UpdateSkuStockData {
@@ -1677,19 +1678,23 @@ message MemberPriceList {
   int64    level_id = 1;//会员id
   int64  price = 2;//会员价格
   string    level_name = 3;//会员名称
+  int64 id = 4;//明细ID，更新时可回传
 }
 message ProductAttributeValueList {
   int64    ProductAttributeId = 1;//商品满多少
   string  AttributeValues = 2;//商品满多少
+  int64 id = 3;//属性值明细ID，更新时可回传
 }
 message ProductFullReductionList {
   int64 full_price = 1; //商品满多少
   int64 reduce_price = 2; //商品减多少
+  int64 id = 3; //满减明细ID，更新时可回传
 }
 message ProductLadderList {
   int32 count = 1; //满足的商品数量
   int64 discount = 2; //折扣
   int64 price = 3; //折后价格
+  int64 id = 4; //阶梯价明细ID，更新时可回传
 }
 message SkuStockList {
   int64 spu_id = 1; //商品SpuId
@@ -1708,6 +1713,7 @@ message SkuStockList {
   int32 publish_status = 14; //上架状态：0-下架，1-上架
   int32 verify_status = 15; //审核状态：0-未审核，1-审核通过，2-审核不通过
   int32 sort = 16; //排序
+  int64 id = 17; //SKU明细ID，更新时可回传
 }
 
 // 添加商品SPU

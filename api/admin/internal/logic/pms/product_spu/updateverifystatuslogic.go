@@ -36,7 +36,14 @@ func NewUpdateVerifyStatusLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 
 // UpdateVerifyStatus 修改审核状态
 func (l *UpdateVerifyStatusLogic) UpdateVerifyStatus(req *types.UpdateProductSpuStatusReq) (resp *types.BaseResp, err error) {
-	userName := l.ctx.Value("userName").(string)
+	userId, err := common.GetUserId(l.ctx)
+	if err != nil {
+		return nil, err
+	}
+	userName, err := common.GetUserName(l.ctx)
+	if err != nil {
+		return nil, err
+	}
 	writeScope, err := common.ResolveWriteGovernanceScope(l.ctx, common.RequestedGovernanceScope{
 		ScopeType:  req.ScopeType,
 		PlatformID: req.PlatformId,
@@ -49,7 +56,9 @@ func (l *UpdateVerifyStatusLogic) UpdateVerifyStatus(req *types.UpdateProductSpu
 	_, err = l.svcCtx.ProductSpuService.UpdateVerifyStatus(l.ctx, &pmsclient.UpdateProductSpuStatusReq{
 		Ids:       req.Ids,
 		Status:    req.Status,
+		UpdateBy:  userId,
 		ReviewMan: userName,
+		Detail:    req.Detail,
 		Scope:     common.PMSGovernanceScope(writeScope),
 	})
 
