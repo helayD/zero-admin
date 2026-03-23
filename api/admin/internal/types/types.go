@@ -4019,6 +4019,19 @@ type QueryProductSpuListData struct {
 	CreateTime          string  `json:"createTime"`          //创建时间
 	UpdateBy            int64   `json:"updateBy"`            //更新人ID
 	UpdateTime          string  `json:"updateTime"`          //更新时间
+	ScopeType           string  `json:"scopeType"`           //作用域来源(platform/tenant/merchant)
+	PlatformId          int64   `json:"platformId"`          //平台ID
+	TenantId            int64   `json:"tenantId"`            //租户ID
+	MerchantId          int64   `json:"merchantId"`          //商户ID
+	ReviewMan           string  `json:"reviewMan"`           //最近审核人
+	ReviewTime          string  `json:"reviewTime"`          //最近审核时间
+	ReviewDetail        string  `json:"reviewDetail"`        //最近审核意见
+	PublishMan          string  `json:"publishMan"`          //最近上下架操作人
+	PublishTime         string  `json:"publishTime"`         //最近上下架时间
+	PublishDetail       string  `json:"publishDetail"`       //最近上下架说明
+	RecommendMan        string  `json:"recommendMan"`        //最近推荐操作人
+	RecommendTime       string  `json:"recommendTime"`       //最近推荐时间
+	RecommendDetail     string  `json:"recommendDetail"`     //最近推荐说明
 }
 
 type QueryProductSpuListReq struct {

@@ -105,9 +105,28 @@ func (l *QueryProductSpuListLogic) QueryProductSpuList(in *pmsclient.QueryProduc
 		return nil, errors.New("查询商品SPU列表失败")
 	}
 
+	reviewMetadata, err := loadProductReviewMetadata(l.ctx, l.svcCtx.ProductVertifyRecordModel, collectProductIDs(result))
+	if err != nil {
+		logc.Errorf(l.ctx, "查询商品审核元数据失败,参数:%+v,异常:%s", in, err.Error())
+		return nil, errors.New("查询商品SPU列表失败")
+	}
+	scopeMetadata, err := loadProductScopeMetadata(l.ctx, l.svcCtx.DB, current, collectProductIDs(result))
+	if err != nil {
+		logc.Errorf(l.ctx, "查询商品作用域元数据失败,参数:%+v,异常:%s", in, err.Error())
+		return nil, errors.New("查询商品SPU列表失败")
+	}
+	operationMetadata, err := loadProductOperationMetadata(l.ctx, l.svcCtx.DB, current, collectProductIDs(result))
+	if err != nil {
+		logc.Errorf(l.ctx, "查询商品状态操作元数据失败,参数:%+v,异常:%s", in, err.Error())
+		return nil, errors.New("查询商品SPU列表失败")
+	}
+
 	var list []*pmsclient.ProductSpuListData
 
 	for _, item := range result {
+		reviewMeta := reviewMetadata[item.ID]
+		scopeMeta := scopeMetadata[item.ID]
+		operationMeta := operationMetadata[item.ID]
 		list = append(list, &pmsclient.ProductSpuListData{
 			Id:                  item.ID,                                          // 商品SpuId
 			ProductSn:           item.ProductSn,                                   // 商品货号
@@ -142,7 +161,19 @@ func (l *QueryProductSpuListLogic) QueryProductSpuList(in *pmsclient.QueryProduc
 			CreateTime:          time_util.TimeToStr(item.CreateTime),             // 创建时间
 			UpdateBy:            pointerprocess.DefaltData(item.UpdateBy).(int64), // 更新人ID
 			UpdateTime:          time_util.TimeToString(item.UpdateTime),          // 更新时间
-
+			ScopeType:           scopeMeta.ScopeType,
+			PlatformId:          scopeMeta.PlatformID,
+			TenantId:            scopeMeta.TenantID,
+			MerchantId:          scopeMeta.MerchantID,
+			ReviewMan:           reviewMeta.ReviewMan,
+			ReviewTime:          reviewMeta.ReviewTime,
+			ReviewDetail:        reviewMeta.ReviewDetail,
+			PublishMan:          operationMeta.PublishMan,
+			PublishTime:         operationMeta.PublishTime,
+			PublishDetail:       operationMeta.PublishDetail,
+			RecommendMan:        operationMeta.RecommendMan,
+			RecommendTime:       operationMeta.RecommendTime,
+			RecommendDetail:     operationMeta.RecommendDetail,
 		})
 	}
 
@@ -150,4 +181,12 @@ func (l *QueryProductSpuListLogic) QueryProductSpuList(in *pmsclient.QueryProduc
 		Total: count,
 		List:  list,
 	}, nil
+}
+
+func collectProductIDs(items []model.PmsProductSpu) []int64 {
+	ids := make([]int64, 0, len(items))
+	for _, item := range items {
+		ids = append(ids, item.ID)
+	}
+	return ids
 }

@@ -45,7 +45,7 @@ func (l *UpdateDeleteStatusLogic) UpdateDeleteStatus(in *pmsclient.UpdateProduct
 		return nil, errors.New("批量修改删除状态失败")
 	}
 
-	sendProductESSyncBatch(l.ctx, l.svcCtx, in.Ids, currentScope)
+	sendProductESDelete(l.ctx, l.svcCtx, in.Ids, currentScope, buildProductEventMeta("pms.product_spu.delete_status", in.UpdateBy, in.ReviewMan))
 
 	return &pmsclient.UpdateProductSpuStatusResp{}, nil
 }

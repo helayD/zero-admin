@@ -4,6 +4,7 @@ import 'package:flutter_mall/view/home/brand/brand_detail.dart';
 import 'package:flutter_mall/config/service_url.dart';
 import 'package:flutter_mall/utils/http_util.dart';
 import 'package:flutter_mall/widgets/cached_image_widget.dart';
+import 'package:flutter_mall/widgets/empty_state_widget.dart';
 
 import '../../../model/brand_list.dart';
 
@@ -22,6 +23,8 @@ class BrandList extends StatefulWidget {
 
 class _BrandListState extends State<BrandList> {
   List<BrandListData> brandListData = [];
+  bool _isLoading = true;
+  bool _hasError = false;
 
   @override
   void initState() {
@@ -30,11 +33,25 @@ class _BrandListState extends State<BrandList> {
   }
 
   void _queryBrandListData() async {
-    Response result = await HttpUtil.get(brandListDataUrl);
     setState(() {
-      BrandListModel brandListModel = BrandListModel.fromJson(result.data);
-      brandListData = brandListModel.data;
+      _isLoading = true;
+      _hasError = false;
     });
+    try {
+      Response result = await HttpUtil.get(brandListDataUrl);
+      BrandListModel brandListModel = BrandListModel.fromJson(result.data);
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        brandListData = brandListModel.data;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _hasError = true;
+      });
+    }
   }
 
   @override
@@ -46,13 +63,35 @@ class _BrandListState extends State<BrandList> {
           titleTextStyle: const TextStyle(fontSize: 16, color: Colors.black),
           centerTitle: true,
         ),
-        body: Container(
-            color: Colors.white,
-            width: MediaQuery.of(context).size.width,
-            child: CustomScrollView(
-              shrinkWrap: true,
-              slivers: [buildBrandLogo(context), buildBrandList()],
-            )));
+        body: _buildBody(context));
+  }
+
+  Widget _buildBody(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_hasError) {
+      return ErrorRetryWidget(
+        message: '品牌数据加载失败',
+        onRetry: _queryBrandListData,
+      );
+    }
+    if (brandListData.isEmpty) {
+      return EmptyStateWidget(
+        message: '暂无推荐品牌',
+        icon: Icons.storefront_outlined,
+        actionText: '返回首页',
+        onAction: () => Navigator.of(context).pop(),
+      );
+    }
+    return Container(
+      color: Colors.white,
+      width: MediaQuery.of(context).size.width,
+      child: CustomScrollView(
+        shrinkWrap: true,
+        slivers: [buildBrandLogo(context), buildBrandList()],
+      ),
+    );
   }
 
   // 构建推荐品牌页面的logo上半部分

@@ -283,6 +283,19 @@ message ProductSpuListData {
   string create_time = 34; //创建时间
   int64 update_by = 35; //更新人ID
   string update_time = 36; //更新时间
+  string scope_type = 37; //作用域来源(platform/tenant/merchant)
+  int64 platform_id = 38; //平台ID
+  int64 tenant_id = 39; //租户ID
+  int64 merchant_id = 40; //商户ID
+  string review_man = 41; //最近审核人
+  string review_time = 42; //最近审核时间
+  string review_detail = 43; //最近审核意见
+  string publish_man = 44; //最近上下架操作人
+  string publish_time = 45; //最近上下架时间
+  string publish_detail = 46; //最近上下架说明
+  string recommend_man = 47; //最近推荐操作人
+  string recommend_time = 48; //最近推荐时间
+  string recommend_detail = 49; //最近推荐说明
 
 }
 

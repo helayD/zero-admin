@@ -787,6 +787,7 @@ type ProductDetailData struct {
 	FullList           []ProductFullReductionList  `json:"productFullReductionList"`  //商品满减信息
 	MemberPriceList    []MemberPriceList           `json:"memberPriceList"`           //商品会员价格
 	CouponList         []CouponData                `json:"couponList"`                //优惠券信息
+	Visibility         ProductVisibilityData       `json:"visibility"`                //商品可见性与可售反馈
 }
 
 type ProductFullReductionList struct {
@@ -802,6 +803,19 @@ type ProductLadderList struct {
 	Count     int32 `json:"count"`     //满足的商品数量
 	Discount  int64 `json:"discount"`  //折扣
 	Price     int64 `json:"price"`     //折后价格
+}
+
+type ProductVisibilityData struct {
+	Visible        bool   `json:"visible"`        //当前是否允许展示完整详情
+	Purchasable    bool   `json:"purchasable"`    //当前是否允许购买
+	ShowPrice      bool   `json:"showPrice"`      //是否展示价格
+	ShowStock      bool   `json:"showStock"`      //是否展示库存
+	Status         string `json:"status"`         //visible/hidden/not-saleable
+	ReasonCode     string `json:"reasonCode"`     //product_not_found/pending_review/review_rejected/off_shelf/preview_only/sold_out
+	ReasonMessage  string `json:"reasonMessage"`  //给商城端展示的明确反馈
+	RecoveryHint   string `json:"recoveryHint"`   //下一步建议
+	FallbackAction string `json:"fallbackAction"` //browse_product_list/browse_similar/go_home
+	FallbackTarget string `json:"fallbackTarget"` //替代落点标识
 }
 
 type QueryAddressDetailData struct {

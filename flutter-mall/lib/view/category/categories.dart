@@ -4,6 +4,7 @@ import 'package:flutter_mall/config/service_url.dart';
 import 'package:flutter_mall/view/category/product/product_list.dart';
 import 'package:flutter_mall/utils/http_util.dart';
 import 'package:flutter_mall/widgets/cached_image_widget.dart';
+import 'package:flutter_mall/widgets/empty_state_widget.dart';
 
 import '../../model/categories_model.dart';
 
@@ -34,6 +35,9 @@ class _CategoriesState extends State<Categories> {
   // 选择数据的索引
   int selectedIndex = 0;
 
+  bool _isLoading = true;
+  bool _hasError = false;
+
   @override
   void initState() {
     super.initState();
@@ -42,12 +46,29 @@ class _CategoriesState extends State<Categories> {
 
   // 请求分类列表数据
   void _queryCategoriesData() async {
-    Response result = await HttpUtil.get(categoriesDataUrl);
-    CategoriesModel categoriesModel = CategoriesModel.fromJson(result.data);
     setState(() {
-      firstCategoriesData = categoriesModel.data;
-      secondCategoriesData = categoriesModel.data[0].children;
+      _isLoading = true;
+      _hasError = false;
     });
+    try {
+      Response result = await HttpUtil.get(categoriesDataUrl);
+      CategoriesModel categoriesModel = CategoriesModel.fromJson(result.data);
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        firstCategoriesData = categoriesModel.data;
+        if (categoriesModel.data.isNotEmpty) {
+          secondCategoriesData = categoriesModel.data[0].children;
+          selectedCategory = categoriesModel.data[0].name;
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _hasError = true;
+      });
+    }
   }
 
   @override
@@ -59,24 +80,46 @@ class _CategoriesState extends State<Categories> {
         titleTextStyle: const TextStyle(fontSize: 16, color: Colors.black),
         centerTitle: true,
       ),
-      body: Container(
-        color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
-        child: Row(
-          children: <Widget>[
-            // 左侧一级菜单
-            firstCategoriesData != null ? buildFirstCategories() : Container(),
-            // 右侧二级菜单（流式布局）
-            Expanded(
-              child: Container(
-                alignment: Alignment.topCenter,
-                color: Colors.white,
-                margin: const EdgeInsets.only(left: 6, top: 6),
-                padding: const EdgeInsets.all(16.0),
-                child: secondCategoriesData != null ? buildSecondCategories() : Container(),
-              ),
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_hasError) {
+      return ErrorRetryWidget(
+        message: '分类数据加载失败',
+        onRetry: _queryCategoriesData,
+      );
+    }
+    if (firstCategoriesData == null || firstCategoriesData!.isEmpty) {
+      return const EmptyStateWidget(
+        message: '暂无商品分类',
+        icon: Icons.category_outlined,
+      );
+    }
+    return Container(
+      color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
+      child: Row(
+        children: <Widget>[
+          buildFirstCategories(),
+          Expanded(
+            child: Container(
+              alignment: Alignment.topCenter,
+              color: Colors.white,
+              margin: const EdgeInsets.only(left: 6, top: 6),
+              padding: const EdgeInsets.all(16.0),
+              child: (secondCategoriesData != null && secondCategoriesData!.isNotEmpty)
+                  ? buildSecondCategories()
+                  : const EmptyStateWidget(
+                      message: '该分类下暂无子分类',
+                      icon: Icons.folder_open_outlined,
+                    ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

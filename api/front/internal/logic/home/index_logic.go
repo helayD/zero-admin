@@ -3,6 +3,7 @@ package home
 import (
 	"context"
 	"strings"
+	"time"
 
 	frontcommon "github.com/feihua/zero-admin/api/front/internal/logic/common"
 	"github.com/feihua/zero-admin/api/front/internal/svc"
@@ -41,8 +42,8 @@ func (l *IndexLogic) Index(req *types.HomeReq) (resp *types.HomeResp, err error)
 		Code:    0,
 		Message: "操作成功",
 		Data: types.Data{
-			AdvertiseList:      queryAdvertiseList(l),
-			BrandList:          queryBrandList(l, req),
+			AdvertiseList:      queryAdvertiseList(l, currentScope),
+			BrandList:          queryBrandList(l, req, currentScope),
 			HomeFlashPromotion: queryHomeFlashPromotion(l, req),
 			NewProductList:     queryNewProductList(l, req, currentScope),
 			HotProductList:     queryHotProductList(l, req, currentScope),
@@ -115,6 +116,9 @@ func queryHotProductList(l *IndexLogic, req *types.HomeReq, currentScope pkgscop
 	}
 
 	for _, detail := range resp.List {
+		if err := frontcommon.EnsureFrontProductVisible(detail); err != nil {
+			continue
+		}
 		price := strings.Split(detail.PriceRange, "-")[0]
 		list = append(list, types.IndexProductData{
 			Id:                  detail.Id,                  // 商品SpuId
@@ -175,6 +179,9 @@ func queryNewProductList(l *IndexLogic, req *types.HomeReq, currentScope pkgscop
 	}
 
 	for _, detail := range resp.List {
+		if err := frontcommon.EnsureFrontProductVisible(detail); err != nil {
+			continue
+		}
 		price := strings.Split(detail.PriceRange, "-")[0]
 		list = append(list, types.IndexProductData{
 			Id:                  detail.Id,                  // 商品SpuId
@@ -277,13 +284,14 @@ func queryHomeFlashPromotion(l *IndexLogic, req *types.HomeReq) types.HomeFlashP
 }
 
 // 推荐品牌
-func queryBrandList(l *IndexLogic, req *types.HomeReq) []types.IndexBrandData {
+func queryBrandList(l *IndexLogic, req *types.HomeReq, currentScope pkgscope.GovernanceScope) []types.IndexBrandData {
 	result, err := l.svcCtx.ProductBrandService.QueryProductBrandList(l.ctx, &pmsclient.QueryProductBrandListReq{
 		PageNum:         1,
 		PageSize:        req.BrandNumber,
 		Name:            "", // 品牌名称
 		RecommendStatus: 1,  // 推荐状态
 		IsEnabled:       1,  // 是否启用
+		Scope:           frontcommon.PMSGovernanceScope(currentScope),
 	})
 
 	var list []types.IndexBrandData
@@ -311,7 +319,11 @@ func queryBrandList(l *IndexLogic, req *types.HomeReq) []types.IndexBrandData {
 }
 
 // 获取轮播广告
-func queryAdvertiseList(l *IndexLogic) []types.AdvertiseList {
+// 注意：RPC 的 StartTime/EndTime 参数语义是管理后台范围搜索（start_time >= value, end_time <= value），
+// 与前台需要的“当前有效广告”过滤方向相反，因此在 front-api 侧做客户端时间过滤。
+func queryAdvertiseList(l *IndexLogic, currentScope pkgscope.GovernanceScope) []types.AdvertiseList {
+	now := time.Now()
+	_ = currentScope // 广告位 RPC 暂无 scope 字段，预留作用域参数供后续扩展
 	result, err := l.svcCtx.HomeAdvertiseService.QueryHomeAdvertiseList(l.ctx, &smsclient.QueryHomeAdvertiseListReq{
 		PageNum:  1,
 		PageSize: 100,
@@ -326,6 +338,17 @@ func queryAdvertiseList(l *IndexLogic) []types.AdvertiseList {
 	}
 
 	for _, detail := range result.List {
+		// 客户端时间过滤：只保留当前时间在 [start_time, end_time] 区间内的广告
+		if len(detail.StartTime) > 0 {
+			if startTime, err := time.Parse("2006-01-02 15:04:05", detail.StartTime); err == nil && now.Before(startTime) {
+				continue // 广告尚未生效
+			}
+		}
+		if len(detail.EndTime) > 0 {
+			if endTime, err := time.Parse("2006-01-02 15:04:05", detail.EndTime); err == nil && now.After(endTime) {
+				continue // 广告已过期
+			}
+		}
 		list = append(list, types.AdvertiseList{
 			Id:         detail.Id,         // 编号
 			Name:       detail.Name,       // 名称

@@ -38,6 +38,12 @@ create table pms_product_spu
     create_time           datetime     default CURRENT_TIMESTAMP not null comment '创建时间',
     update_by             bigint                                 null comment '更新人ID',
     update_time           datetime                               null on update CURRENT_TIMESTAMP comment '更新时间',
+    publish_man           varchar(64)                            null comment '最近上下架操作人',
+    publish_time          datetime                               null comment '最近上下架时间',
+    publish_detail        varchar(255) default ''                not null comment '最近上下架说明',
+    recommend_man         varchar(64)                            null comment '最近推荐操作人',
+    recommend_time        datetime                               null comment '最近推荐时间',
+    recommend_detail      varchar(255) default ''                not null comment '最近推荐说明',
     is_deleted            tinyint      default 0                 not null comment '是否删除'
 )
     comment '商品SPU表';

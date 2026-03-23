@@ -4,7 +4,19 @@ import {
   ExclamationCircleOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
-import { Alert, Button, Divider, Drawer, message, Modal, Select, Space, Switch, Tag } from 'antd';
+import {
+  Alert,
+  Button,
+  Divider,
+  Drawer,
+  message,
+  Modal,
+  Select,
+  Space,
+  Switch,
+  Tag,
+  Typography,
+} from 'antd';
 import React, { useRef, useState } from 'react';
 import { PageContainer } from '@ant-design/pro-layout';
 import type { ActionType, ProColumns } from '@ant-design/pro-table';
@@ -12,6 +24,9 @@ import ProTable from '@ant-design/pro-table';
 import type { ProDescriptionsItemProps } from '@ant-design/pro-descriptions';
 import ProDescriptions from '@ant-design/pro-descriptions';
 import AddModal from './components/AddModal';
+import StatusActionModal, {
+  type ProductSpuStatusModalAction,
+} from './components/StatusActionModal';
 import UpdateModal from './components/UpdateModal';
 import type {
   ProductSpuDetailPayload,
@@ -32,13 +47,21 @@ import GovernanceScopeBar from '@/pages/system/components/GovernanceScopeBar';
 import {
   buildGovernanceScopeLabel,
   defaultGovernanceScope,
+  governanceScopeColor,
   type GovernanceScopeValue,
   toGovernancePayload,
 } from '@/pages/system/components/governance';
 
 const { confirm } = Modal;
+const { Text } = Typography;
 
 type ProductSpuStatusAction = 'publish' | 'verify' | 'recommend' | 'new' | 'delete';
+type PendingStatusAction = {
+  action: ProductSpuStatusModalAction;
+  ids: number[];
+  initialStatus?: number;
+  currentProduct?: ProductSpuListItem;
+};
 
 const productSpuActionLabel: Record<ProductSpuStatusAction, string> = {
   publish: '上架状态',
@@ -46,6 +69,109 @@ const productSpuActionLabel: Record<ProductSpuStatusAction, string> = {
   recommend: '推荐状态',
   new: '新品状态',
   delete: '删除状态',
+};
+
+const renderPublishStatusTag = (status: number) =>
+  status === 1 ? <Tag color="blue">已上架</Tag> : <Tag>已下架</Tag>;
+
+const renderVerifyStatusTag = (status: number) => {
+  switch (status) {
+    case 1:
+      return <Tag color="green">审核通过</Tag>;
+    case 2:
+      return <Tag color="red">审核驳回</Tag>;
+    default:
+      return <Tag>未审核</Tag>;
+  }
+};
+
+const renderRecommendStatusTag = (status: number) =>
+  status === 1 ? <Tag color="gold">推荐中</Tag> : <Tag>未推荐</Tag>;
+
+const renderScopeSource = (record: Pick<
+  ProductSpuListItem,
+  'scopeType' | 'platformId' | 'tenantId' | 'merchantId'
+>) => {
+  const scopeLabel = buildGovernanceScopeLabel({
+    scopeType: record.scopeType,
+    platformId: record.platformId,
+    tenantId: record.tenantId,
+    merchantId: record.merchantId,
+  });
+
+  return <Tag color={governanceScopeColor(record.scopeType)}>{scopeLabel}</Tag>;
+};
+
+const renderReviewSummary = (record: Pick<
+  ProductSpuListItem,
+  'verifyStatus' | 'reviewMan' | 'reviewTime' | 'reviewDetail'
+>) => {
+  if (!record.reviewMan && !record.reviewTime && !record.reviewDetail) {
+    return <Text type="secondary">暂无审核记录</Text>;
+  }
+
+  return (
+    <Space direction="vertical" size={2}>
+      <Space size={6} wrap>
+        {renderVerifyStatusTag(record.verifyStatus)}
+        {record.reviewMan ? <Text>{record.reviewMan}</Text> : null}
+        {record.reviewTime ? <Text type="secondary">{record.reviewTime}</Text> : null}
+      </Space>
+      {record.reviewDetail ? (
+        <Text type={record.verifyStatus === 2 ? 'danger' : undefined}>{record.reviewDetail}</Text>
+      ) : (
+        <Text type="secondary">本次审核未填写说明</Text>
+      )}
+    </Space>
+  );
+};
+
+const renderPublishSummary = (record: Pick<
+  ProductSpuListItem,
+  'publishStatus' | 'publishMan' | 'publishTime' | 'publishDetail'
+>) => {
+  if (!record.publishMan && !record.publishTime && !record.publishDetail) {
+    return <Text type="secondary">暂无上下架记录</Text>;
+  }
+
+  return (
+    <Space direction="vertical" size={2}>
+      <Space size={6} wrap>
+        {renderPublishStatusTag(record.publishStatus)}
+        {record.publishMan ? <Text>{record.publishMan}</Text> : null}
+        {record.publishTime ? <Text type="secondary">{record.publishTime}</Text> : null}
+      </Space>
+      {record.publishDetail ? (
+        <Text type={record.publishStatus === 0 ? 'danger' : undefined}>{record.publishDetail}</Text>
+      ) : (
+        <Text type="secondary">本次上下架未填写说明</Text>
+      )}
+    </Space>
+  );
+};
+
+const renderRecommendSummary = (record: Pick<
+  ProductSpuListItem,
+  'recommendStatus' | 'recommendMan' | 'recommendTime' | 'recommendDetail'
+>) => {
+  if (!record.recommendMan && !record.recommendTime && !record.recommendDetail) {
+    return <Text type="secondary">暂无推荐记录</Text>;
+  }
+
+  return (
+    <Space direction="vertical" size={2}>
+      <Space size={6} wrap>
+        {renderRecommendStatusTag(record.recommendStatus)}
+        {record.recommendMan ? <Text>{record.recommendMan}</Text> : null}
+        {record.recommendTime ? <Text type="secondary">{record.recommendTime}</Text> : null}
+      </Space>
+      {record.recommendDetail ? (
+        <Text>{record.recommendDetail}</Text>
+      ) : (
+        <Text type="secondary">本次推荐调整未填写说明</Text>
+      )}
+    </Space>
+  );
 };
 
 /**
@@ -144,6 +270,8 @@ const handleStatus = async (
   ids: number[],
   status: number,
   scope: GovernanceScopeValue,
+  detail?: string,
+  onError?: (error: CatalogActionError) => void,
 ) => {
   const hide = message.loading('正在更新状态');
   if (ids.length == 0) {
@@ -154,6 +282,7 @@ const handleStatus = async (
     await updateProductSpuStatus(action, {
       ids,
       status,
+      detail,
       ...toGovernancePayload(scope),
     });
     hide();
@@ -161,6 +290,9 @@ const handleStatus = async (
     return true;
   } catch (error) {
     hide();
+    const catalogError = buildCatalogActionError(error, `${productSpuActionLabel[action]}更新失败`);
+    onError?.(catalogError);
+    message.error(catalogError.description);
     return false;
   }
 };
@@ -175,6 +307,21 @@ const ProductSpuList: React.FC = () => {
   const [skuVisible, handleSkuVisible] = useState<boolean>(false);
   const [scope, setScope] = useState<GovernanceScopeValue>(defaultGovernanceScope);
   const [submitError, setSubmitError] = useState<CatalogActionError>();
+  const [pendingStatusAction, setPendingStatusAction] = useState<PendingStatusAction>();
+  const [quickView, setQuickView] = useState<
+    'all' | 'pendingReview' | 'onShelf' | 'offShelf' | 'recommended'
+  >('all');
+
+  const quickViewParams =
+    quickView === 'pendingReview'
+      ? { verifyStatus: 0 }
+      : quickView === 'onShelf'
+        ? { publishStatus: 1 }
+        : quickView === 'offShelf'
+          ? { publishStatus: 0 }
+          : quickView === 'recommended'
+            ? { recommendStatus: 1 }
+            : {};
 
   const openUpdateModal = async (record: ProductSpuListItem) => {
     setSubmitError(undefined);
@@ -208,18 +355,14 @@ const ProductSpuList: React.FC = () => {
     });
   };
 
-  const showStatusConfirm = (action: ProductSpuStatusAction, ids: number[], status: number) => {
-    confirm({
-      title: `确定更新${productSpuActionLabel[action]}吗？`,
-      icon: <ExclamationCircleOutlined />,
-      content: `当前主体：${buildGovernanceScopeLabel(scope)}。将影响 ${ids.length} 个商品。`,
-      async onOk() {
-        await handleStatus(action, ids, status, scope);
-        actionRef.current?.clearSelected?.();
-        actionRef.current?.reload?.();
-      },
-      onCancel() {},
-    });
+  const openStatusActionModal = (
+    action: ProductSpuStatusModalAction,
+    ids: number[],
+    initialStatus?: number,
+    currentProduct?: ProductSpuListItem,
+  ) => {
+    setSubmitError(undefined);
+    setPendingStatusAction({ action, ids, initialStatus, currentProduct });
   };
 
   const columns: ProColumns<ProductSpuListItem>[] = [
@@ -354,6 +497,12 @@ const ProductSpuList: React.FC = () => {
       hideInSearch: true,
     },
     {
+      title: '作用域来源',
+      dataIndex: 'scopeType',
+      hideInSearch: true,
+      render: (_, entity) => renderScopeSource(entity),
+    },
+    {
       title: '上架状态',
       dataIndex: 'publishStatus',
       renderFormItem: (text, row) => {
@@ -369,14 +518,30 @@ const ProductSpuList: React.FC = () => {
       },
       render: (dom, entity) => {
         return (
-          <Switch
-            checked={entity.publishStatus == 1}
-            onChange={(flag) => {
-              showStatusConfirm('publish', [entity.id], flag ? 1 : 0);
-            }}
-          />
+          <Space size={8}>
+            {renderPublishStatusTag(entity.publishStatus)}
+            <a
+              onClick={() => {
+                openStatusActionModal(
+                  'publish',
+                  [entity.id],
+                  entity.publishStatus === 1 ? 0 : 1,
+                  entity,
+                );
+              }}
+            >
+              {entity.publishStatus === 1 ? '下架' : '上架'}
+            </a>
+          </Space>
         );
       },
+    },
+    {
+      title: '最近上下架说明',
+      dataIndex: 'publishDetail',
+      hideInSearch: true,
+      width: 260,
+      render: (_, entity) => renderPublishSummary(entity),
     },
     {
       title: '是否新品',
@@ -407,7 +572,6 @@ const ProductSpuList: React.FC = () => {
     {
       title: '是否推荐',
       dataIndex: 'recommendStatus',
-      hideInTable: true,
       renderFormItem: (text, row) => {
         return (
           <Select
@@ -421,14 +585,30 @@ const ProductSpuList: React.FC = () => {
       },
       render: (dom, entity) => {
         return (
-          <Switch
-            checked={entity.recommendStatus == 1}
-            onChange={(flag) => {
-              showStatusConfirm('recommend', [entity.id], flag ? 1 : 0);
-            }}
-          />
+          <Space size={8}>
+            {renderRecommendStatusTag(entity.recommendStatus)}
+            <a
+              onClick={() => {
+                openStatusActionModal(
+                  'recommend',
+                  [entity.id],
+                  entity.recommendStatus === 1 ? 0 : 1,
+                  entity,
+                );
+              }}
+            >
+              {entity.recommendStatus === 1 ? '取消推荐' : '推荐'}
+            </a>
+          </Space>
         );
       },
+    },
+    {
+      title: '最近推荐反馈',
+      dataIndex: 'recommendDetail',
+      hideInSearch: true,
+      width: 260,
+      render: (_, entity) => renderRecommendSummary(entity),
     },
     {
       title: '审核状态',
@@ -440,20 +620,32 @@ const ProductSpuList: React.FC = () => {
             options={[
               { value: 1, label: '审核通过' },
               { value: 0, label: '未审核' },
+              { value: 2, label: '审核驳回' },
             ]}
           />
         );
       },
       render: (dom, entity) => {
         return (
-          <Switch
-            checked={entity.verifyStatus == 1}
-            onChange={(flag) => {
-              showStatusConfirm('verify', [entity.id], flag ? 1 : 0);
-            }}
-          />
+          <Space size={8}>
+            {renderVerifyStatusTag(entity.verifyStatus)}
+            <a
+              onClick={() => {
+                openStatusActionModal('verify', [entity.id], 1, entity);
+              }}
+            >
+              审核
+            </a>
+          </Space>
         );
       },
+    },
+    {
+      title: '最新审核反馈',
+      dataIndex: 'reviewDetail',
+      hideInSearch: true,
+      width: 260,
+      render: (_, entity) => renderReviewSummary(entity),
     },
     {
       title: '预告商品',
@@ -677,6 +869,53 @@ const ProductSpuList: React.FC = () => {
           labelWidth: 120,
         }}
         toolBarRender={() => [
+          <Space key="quick-view" size={8} wrap>
+            <Button
+              type={quickView === 'all' ? 'primary' : 'default'}
+              onClick={() => {
+                setQuickView('all');
+                actionRef.current?.reload?.();
+              }}
+            >
+              全部
+            </Button>
+            <Button
+              type={quickView === 'pendingReview' ? 'primary' : 'default'}
+              onClick={() => {
+                setQuickView('pendingReview');
+                actionRef.current?.reload?.();
+              }}
+            >
+              待审核
+            </Button>
+            <Button
+              type={quickView === 'onShelf' ? 'primary' : 'default'}
+              onClick={() => {
+                setQuickView('onShelf');
+                actionRef.current?.reload?.();
+              }}
+            >
+              已上架
+            </Button>
+            <Button
+              type={quickView === 'offShelf' ? 'primary' : 'default'}
+              onClick={() => {
+                setQuickView('offShelf');
+                actionRef.current?.reload?.();
+              }}
+            >
+              已下架
+            </Button>
+            <Button
+              type={quickView === 'recommended' ? 'primary' : 'default'}
+              onClick={() => {
+                setQuickView('recommended');
+                actionRef.current?.reload?.();
+              }}
+            >
+              推荐中
+            </Button>
+          </Space>,
           <Button
             type="primary"
             key="primary"
@@ -690,7 +929,13 @@ const ProductSpuList: React.FC = () => {
             <PlusOutlined /> 新增
           </Button>,
         ]}
-        request={(params) => queryProductSpuList({ ...params, ...toGovernancePayload(scope) })}
+        request={(params) =>
+          queryProductSpuList({
+            ...params,
+            ...quickViewParams,
+            ...toGovernancePayload(scope),
+          })
+        }
         columns={columns}
         rowSelection={{}}
         pagination={{ pageSize: 10 }}
@@ -703,7 +948,7 @@ const ProductSpuList: React.FC = () => {
                 icon={<EditOutlined />}
                 style={{ borderRadius: '5px' }}
                 onClick={async () => {
-                  showStatusConfirm('publish', ids, 1);
+                  openStatusActionModal('publish', ids, 1);
                 }}
               >
                 批量上架
@@ -712,10 +957,28 @@ const ProductSpuList: React.FC = () => {
                 icon={<EditOutlined />}
                 style={{ borderRadius: '5px' }}
                 onClick={async () => {
-                  showStatusConfirm('publish', ids, 0);
+                  openStatusActionModal('publish', ids, 0);
                 }}
               >
                 批量下架
+              </Button>
+              <Button
+                icon={<EditOutlined />}
+                style={{ borderRadius: '5px' }}
+                onClick={async () => {
+                  openStatusActionModal('verify', ids, 1);
+                }}
+              >
+                批量审核通过
+              </Button>
+              <Button
+                icon={<EditOutlined />}
+                style={{ borderRadius: '5px' }}
+                onClick={async () => {
+                  openStatusActionModal('verify', ids, 2);
+                }}
+              >
+                批量驳回
               </Button>
               <Button
                 icon={<DeleteOutlined />}
@@ -729,6 +992,34 @@ const ProductSpuList: React.FC = () => {
               </Button>
             </Space>
           );
+        }}
+      />
+
+      <StatusActionModal
+        visible={!!pendingStatusAction}
+        action={pendingStatusAction?.action}
+        scopeLabel={buildGovernanceScopeLabel(scope)}
+        targetCount={pendingStatusAction?.ids.length || 0}
+        initialStatus={pendingStatusAction?.initialStatus}
+        currentProduct={pendingStatusAction?.currentProduct}
+        onCancel={() => setPendingStatusAction(undefined)}
+        onSubmit={async ({ status, detail }) => {
+          if (!pendingStatusAction) {
+            return;
+          }
+          const success = await handleStatus(
+            pendingStatusAction.action,
+            pendingStatusAction.ids,
+            status,
+            scope,
+            detail,
+            setSubmitError,
+          );
+          if (success) {
+            setPendingStatusAction(undefined);
+            actionRef.current?.clearSelected?.();
+            actionRef.current?.reload?.();
+          }
         }}
       />
 

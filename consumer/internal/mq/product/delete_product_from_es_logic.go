@@ -16,7 +16,7 @@ func DeleteProductFromEs(ctx context.Context, body []byte, Search search_client.
 		logc.Errorf(ctx, "解析商品 ES 删除消息失败: %v", err)
 		return
 	}
-	logc.Infof(ctx, "处理商品ES删除消息,ids:%+v,traceId:%s,scope:%s/%d/%d/%d", payload.IDs, payload.TraceID, current.ScopeType, current.PlatformID, current.TenantID, current.MerchantID)
+	logc.Infof(ctx, "处理商品ES删除消息,ids:%+v,traceId:%s,action:%s,actor:%d/%s,version:%d,scope:%s/%d/%d/%d", payload.IDs, payload.TraceID, payload.Action, payload.ActorID, payload.ActorName, payload.Version, current.ScopeType, current.PlatformID, current.TenantID, current.MerchantID)
 
 	_, err = Search.Delete(ctx, &search_client.DeleteReq{
 		Ids: payload.IDs,

@@ -9,6 +9,11 @@ import (
 type ProductESSyncPayload struct {
 	ID         int64  `json:"id"`
 	TraceID    string `json:"traceId,omitempty"`
+	Action     string `json:"action,omitempty"`
+	ActorID    int64  `json:"actorId,omitempty"`
+	ActorName  string `json:"actorName,omitempty"`
+	OccurredAt string `json:"occurredAt,omitempty"`
+	Version    int64  `json:"version,omitempty"`
 	ScopeType  string `json:"scopeType"`
 	PlatformID int64  `json:"platformId"`
 	TenantID   int64  `json:"tenantId,omitempty"`
@@ -18,16 +23,34 @@ type ProductESSyncPayload struct {
 type ProductESDeletePayload struct {
 	IDs        []int64 `json:"ids"`
 	TraceID    string  `json:"traceId,omitempty"`
+	Action     string  `json:"action,omitempty"`
+	ActorID    int64   `json:"actorId,omitempty"`
+	ActorName  string  `json:"actorName,omitempty"`
+	OccurredAt string  `json:"occurredAt,omitempty"`
+	Version    int64   `json:"version,omitempty"`
 	ScopeType  string  `json:"scopeType"`
 	PlatformID int64   `json:"platformId"`
 	TenantID   int64   `json:"tenantId,omitempty"`
 	MerchantID int64   `json:"merchantId,omitempty"`
 }
 
-func NewProductESSyncPayload(id int64, current GovernanceScope, traceID string) ProductESSyncPayload {
+type ProductEventMeta struct {
+	Action     string
+	ActorID    int64
+	ActorName  string
+	OccurredAt string
+	Version    int64
+}
+
+func NewProductESSyncPayload(id int64, current GovernanceScope, traceID string, meta ProductEventMeta) ProductESSyncPayload {
 	return ProductESSyncPayload{
 		ID:         id,
 		TraceID:    strings.TrimSpace(traceID),
+		Action:     strings.TrimSpace(meta.Action),
+		ActorID:    meta.ActorID,
+		ActorName:  strings.TrimSpace(meta.ActorName),
+		OccurredAt: strings.TrimSpace(meta.OccurredAt),
+		Version:    meta.Version,
 		ScopeType:  current.ScopeType,
 		PlatformID: current.PlatformID,
 		TenantID:   current.TenantID,
@@ -35,10 +58,15 @@ func NewProductESSyncPayload(id int64, current GovernanceScope, traceID string) 
 	}
 }
 
-func NewProductESDeletePayload(ids []int64, current GovernanceScope, traceID string) ProductESDeletePayload {
+func NewProductESDeletePayload(ids []int64, current GovernanceScope, traceID string, meta ProductEventMeta) ProductESDeletePayload {
 	return ProductESDeletePayload{
 		IDs:        UniquePositiveIDs(ids),
 		TraceID:    strings.TrimSpace(traceID),
+		Action:     strings.TrimSpace(meta.Action),
+		ActorID:    meta.ActorID,
+		ActorName:  strings.TrimSpace(meta.ActorName),
+		OccurredAt: strings.TrimSpace(meta.OccurredAt),
+		Version:    meta.Version,
 		ScopeType:  current.ScopeType,
 		PlatformID: current.PlatformID,
 		TenantID:   current.TenantID,

@@ -3,13 +3,13 @@ package brand
 import (
 	"context"
 
+	frontcommon "github.com/feihua/zero-admin/api/front/internal/logic/common"
+	"github.com/feihua/zero-admin/api/front/internal/svc"
+	"github.com/feihua/zero-admin/api/front/internal/types"
 	"github.com/feihua/zero-admin/pkg/errorx"
 	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
 	"github.com/zeromicro/go-zero/core/logc"
 	"google.golang.org/grpc/status"
-
-	"github.com/feihua/zero-admin/api/front/internal/svc"
-	"github.com/feihua/zero-admin/api/front/internal/types"
 
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -35,11 +35,14 @@ func NewQueryBrandListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Qu
 
 // QueryBrandList 分页获取推荐品牌
 func (l *QueryBrandListLogic) QueryBrandList(req *types.BrandListReq) (resp *types.BrandListResp, err error) {
+	currentScope := frontcommon.ResolveEffectiveGovernanceScope(l.ctx)
+
 	brandListResp, err := l.svcCtx.ProductBrandService.QueryProductBrandList(l.ctx, &pmsclient.QueryProductBrandListReq{
 		PageNum:         req.Current,
 		PageSize:        req.PageSize,
 		RecommendStatus: 2, // 推荐状态
 		IsEnabled:       1, // 是否启用
+		Scope:           frontcommon.PMSGovernanceScope(currentScope),
 	})
 
 	if err != nil {

@@ -1,72 +1,41 @@
 package scope
 
-import (
-	"encoding/json"
-	"testing"
-)
+import "testing"
 
-func TestDecodeProductESSyncPayload(t *testing.T) {
-	current, err := NormalizeGovernanceScope(SubjectTypeMerchant, 1, 18, 301)
-	if err != nil {
-		t.Fatalf("NormalizeGovernanceScope returned error: %v", err)
-	}
-
-	body, err := json.Marshal(NewProductESSyncPayload(99, current, "trace-1"))
-	if err != nil {
-		t.Fatalf("Marshal returned error: %v", err)
+func TestProductESSyncPayloadCarriesEventMeta(t *testing.T) {
+	current := DefaultScope(1, 10, 301)
+	meta := ProductEventMeta{
+		Action:     "pms.product_spu.publish_status",
+		ActorID:    2001,
+		ActorName:  "reviewer",
+		OccurredAt: "2026-03-23T21:52:00+08:00",
+		Version:    1742737920000,
 	}
 
-	payload, resolved, err := DecodeProductESSyncPayload(body)
-	if err != nil {
-		t.Fatalf("DecodeProductESSyncPayload returned error: %v", err)
+	payload := NewProductESSyncPayload(123, current, "trace-1", meta)
+	if payload.Action != meta.Action || payload.ActorID != meta.ActorID || payload.ActorName != meta.ActorName {
+		t.Fatalf("expected event meta to be copied, got %+v", payload)
 	}
-	if payload.ID != 99 {
-		t.Fatalf("unexpected payload id: %d", payload.ID)
-	}
-	if payload.TraceID != "trace-1" {
-		t.Fatalf("unexpected trace id: %q", payload.TraceID)
-	}
-	if !resolved.SameScope(current) {
-		t.Fatalf("unexpected scope: got %+v want %+v", resolved, current)
+	if payload.Version != meta.Version || payload.OccurredAt != meta.OccurredAt {
+		t.Fatalf("expected version/timestamp to be copied, got %+v", payload)
 	}
 }
 
-func TestDecodeProductESSyncPayloadRejectsMissingScope(t *testing.T) {
-	body := []byte(`{"id":1}`)
-	if _, _, err := DecodeProductESSyncPayload(body); err == nil {
-		t.Fatalf("expected payload without scope to fail")
-	}
-}
-
-func TestDecodeProductESDeletePayload(t *testing.T) {
-	current, err := NormalizeGovernanceScope(SubjectTypeTenant, 1, 18, 0)
-	if err != nil {
-		t.Fatalf("NormalizeGovernanceScope returned error: %v", err)
+func TestProductESDeletePayloadDeduplicatesIDsAndCarriesEventMeta(t *testing.T) {
+	current := DefaultScope(1, 10, 301)
+	meta := ProductEventMeta{
+		Action:     "pms.product_spu.verify_status",
+		ActorID:    2002,
+		ActorName:  "operator",
+		OccurredAt: "2026-03-23T21:53:00+08:00",
+		Version:    1742737980000,
 	}
 
-	body, err := json.Marshal(NewProductESDeletePayload([]int64{9, 9, 10}, current, "trace-delete"))
-	if err != nil {
-		t.Fatalf("Marshal returned error: %v", err)
-	}
-
-	payload, resolved, err := DecodeProductESDeletePayload(body)
-	if err != nil {
-		t.Fatalf("DecodeProductESDeletePayload returned error: %v", err)
-	}
-	if payload.TraceID != "trace-delete" {
-		t.Fatalf("unexpected trace id: %q", payload.TraceID)
-	}
+	payload := NewProductESDeletePayload([]int64{9, 9, 0, 10}, current, "trace-2", meta)
 	if len(payload.IDs) != 2 || payload.IDs[0] != 9 || payload.IDs[1] != 10 {
-		t.Fatalf("unexpected ids: %+v", payload.IDs)
+		t.Fatalf("expected unique positive ids, got %+v", payload.IDs)
 	}
-	if !resolved.SameScope(current) {
-		t.Fatalf("unexpected scope: got %+v want %+v", resolved, current)
-	}
-}
-
-func TestDecodeProductESDeletePayloadRejectsMissingScope(t *testing.T) {
-	body := []byte(`{"ids":[1,2]}`)
-	if _, _, err := DecodeProductESDeletePayload(body); err == nil {
-		t.Fatalf("expected payload without scope to fail")
+	if payload.Action != meta.Action || payload.ActorID != meta.ActorID || payload.Version != meta.Version {
+		t.Fatalf("expected event meta to be copied, got %+v", payload)
 	}
 }

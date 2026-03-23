@@ -17,9 +17,11 @@ import (
 
 type mockProductSpuService struct {
 	productspuservice.ProductSpuService
-	addFn       func(context.Context, *pmsclient.ProductSpuReq, ...grpc.CallOption) (*pmsclient.ProductSpuResp, error)
-	queryListFn func(context.Context, *pmsclient.QueryProductSpuListReq, ...grpc.CallOption) (*pmsclient.QueryProductSpuListResp, error)
-	updateVerifyFn func(context.Context, *pmsclient.UpdateProductSpuStatusReq, ...grpc.CallOption) (*pmsclient.UpdateProductSpuStatusResp, error)
+	addFn             func(context.Context, *pmsclient.ProductSpuReq, ...grpc.CallOption) (*pmsclient.ProductSpuResp, error)
+	queryListFn       func(context.Context, *pmsclient.QueryProductSpuListReq, ...grpc.CallOption) (*pmsclient.QueryProductSpuListResp, error)
+	updateVerifyFn    func(context.Context, *pmsclient.UpdateProductSpuStatusReq, ...grpc.CallOption) (*pmsclient.UpdateProductSpuStatusResp, error)
+	updatePublishFn   func(context.Context, *pmsclient.UpdateProductSpuStatusReq, ...grpc.CallOption) (*pmsclient.UpdateProductSpuStatusResp, error)
+	updateRecommendFn func(context.Context, *pmsclient.UpdateProductSpuStatusReq, ...grpc.CallOption) (*pmsclient.UpdateProductSpuStatusResp, error)
 }
 
 func (m *mockProductSpuService) AddProductSpu(ctx context.Context, in *pmsclient.ProductSpuReq, opts ...grpc.CallOption) (*pmsclient.ProductSpuResp, error) {
@@ -32,6 +34,14 @@ func (m *mockProductSpuService) QueryProductSpuList(ctx context.Context, in *pms
 
 func (m *mockProductSpuService) UpdateVerifyStatus(ctx context.Context, in *pmsclient.UpdateProductSpuStatusReq, opts ...grpc.CallOption) (*pmsclient.UpdateProductSpuStatusResp, error) {
 	return m.updateVerifyFn(ctx, in, opts...)
+}
+
+func (m *mockProductSpuService) UpdatePublishStatus(ctx context.Context, in *pmsclient.UpdateProductSpuStatusReq, opts ...grpc.CallOption) (*pmsclient.UpdateProductSpuStatusResp, error) {
+	return m.updatePublishFn(ctx, in, opts...)
+}
+
+func (m *mockProductSpuService) UpdateRecommendStatus(ctx context.Context, in *pmsclient.UpdateProductSpuStatusReq, opts ...grpc.CallOption) (*pmsclient.UpdateProductSpuStatusResp, error) {
+	return m.updateRecommendFn(ctx, in, opts...)
 }
 
 func newAdminProductSpuContext(scopeType string, platformID, tenantID, merchantID int64) context.Context {
@@ -97,17 +107,17 @@ func TestAddProductSpuPassesScopeAndNestedDetailIDsToRPC(t *testing.T) {
 			Price:    7600,
 		}},
 		SkuList: []types.AddProductSkuReq{{
-			Id:       15,
-			SpuId:    2001,
-			Name:     "黑-L",
-			SkuCode:  "SKU-001",
-			MainPic:  "sku-main.png",
-			AlbumPics:"sku-a.png,sku-b.png",
-			Price:    99.5,
-			Stock:    10,
-			LowStock: 2,
-			SpecData: `{"颜色":"黑","尺码":"L"}`,
-			Weight:   1.2,
+			Id:        15,
+			SpuId:     2001,
+			Name:      "黑-L",
+			SkuCode:   "SKU-001",
+			MainPic:   "sku-main.png",
+			AlbumPics: "sku-a.png,sku-b.png",
+			Price:     99.5,
+			Stock:     10,
+			LowStock:  2,
+			SpecData:  `{"颜色":"黑","尺码":"L"}`,
+			Weight:    1.2,
 		}},
 	})
 	if err != nil {
@@ -283,5 +293,81 @@ func TestUpdateVerifyStatusMapsRpcErrorMessage(t *testing.T) {
 	codeErr, ok := err.(*adminerrorx.CodeError)
 	if !ok || codeErr.Code != adminerrorx.DefaultCode || codeErr.Message != "当前主体无权送审该商品" {
 		t.Fatalf("unexpected mapped error: %#v", err)
+	}
+}
+
+func TestUpdatePublishStatusPassesOperatorScopeAndDetailToRPC(t *testing.T) {
+	ctx := newAdminProductSpuContext("merchant", 1, 88, 3001)
+	var captured *pmsclient.UpdateProductSpuStatusReq
+
+	logic := NewUpdatePublishStatusLogic(ctx, &svc.ServiceContext{
+		ProductSpuService: &mockProductSpuService{
+			updatePublishFn: func(ctx context.Context, in *pmsclient.UpdateProductSpuStatusReq, opts ...grpc.CallOption) (*pmsclient.UpdateProductSpuStatusResp, error) {
+				captured = in
+				return &pmsclient.UpdateProductSpuStatusResp{}, nil
+			},
+		},
+	})
+
+	_, err := logic.UpdatePublishStatus(&types.UpdateProductSpuStatusReq{
+		Ids:    []int64{2001},
+		Status: 0,
+		Detail: "库存盘点后暂时下架",
+	})
+	if err != nil {
+		t.Fatalf("UpdatePublishStatus returned error: %v", err)
+	}
+	if captured == nil {
+		t.Fatal("expected rpc request to be captured")
+	}
+	if captured.UpdateBy != 1001 {
+		t.Fatalf("expected UpdateBy=1001, got %d", captured.UpdateBy)
+	}
+	if captured.ReviewMan != "tester" {
+		t.Fatalf("expected ReviewMan=tester, got %q", captured.ReviewMan)
+	}
+	if captured.Detail != "库存盘点后暂时下架" {
+		t.Fatalf("expected detail to pass through, got %q", captured.Detail)
+	}
+	if captured.Scope == nil || captured.Scope.ScopeType != "merchant" || captured.Scope.TenantId != 88 || captured.Scope.MerchantId != 3001 {
+		t.Fatalf("unexpected scope passed to rpc: %+v", captured.Scope)
+	}
+}
+
+func TestUpdateRecommendStatusPassesOperatorScopeAndDetailToRPC(t *testing.T) {
+	ctx := newAdminProductSpuContext("merchant", 1, 88, 3001)
+	var captured *pmsclient.UpdateProductSpuStatusReq
+
+	logic := NewUpdateRecommendStatusLogic(ctx, &svc.ServiceContext{
+		ProductSpuService: &mockProductSpuService{
+			updateRecommendFn: func(ctx context.Context, in *pmsclient.UpdateProductSpuStatusReq, opts ...grpc.CallOption) (*pmsclient.UpdateProductSpuStatusResp, error) {
+				captured = in
+				return &pmsclient.UpdateProductSpuStatusResp{}, nil
+			},
+		},
+	})
+
+	_, err := logic.UpdateRecommendStatus(&types.UpdateProductSpuStatusReq{
+		Ids:    []int64{2001},
+		Status: 1,
+		Detail: "加入本周精选推荐",
+	})
+	if err != nil {
+		t.Fatalf("UpdateRecommendStatus returned error: %v", err)
+	}
+	if captured == nil {
+		t.Fatal("expected rpc request to be captured")
+	}
+	if captured.UpdateBy != 1001 {
+		t.Fatalf("expected UpdateBy=1001, got %d", captured.UpdateBy)
+	}
+	if captured.ReviewMan != "tester" {
+		t.Fatalf("expected ReviewMan=tester, got %q", captured.ReviewMan)
+	}
+	if captured.Detail != "加入本周精选推荐" {
+		t.Fatalf("expected detail to pass through, got %q", captured.Detail)
+	}
+	if captured.Scope == nil || captured.Scope.ScopeType != "merchant" || captured.Scope.TenantId != 88 || captured.Scope.MerchantId != 3001 {
+		t.Fatalf("unexpected scope passed to rpc: %+v", captured.Scope)
 	}
 }

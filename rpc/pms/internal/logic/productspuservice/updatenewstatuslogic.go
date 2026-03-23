@@ -45,7 +45,7 @@ func (l *UpdateNewStatusLogic) UpdateNewStatus(in *pmsclient.UpdateProductSpuSta
 		return nil, errors.New("批量设为新品失败")
 	}
 
-	sendProductESSyncBatch(l.ctx, l.svcCtx, in.Ids, currentScope)
+	syncProductIndexVisibility(l.ctx, l.svcCtx, currentScope, in.Ids, buildProductEventMeta("pms.product_spu.new_status", in.UpdateBy, in.ReviewMan))
 
 	return &pmsclient.UpdateProductSpuStatusResp{}, nil
 }

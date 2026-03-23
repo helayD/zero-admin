@@ -69,6 +69,12 @@ func newProductSpuDraftTestSvc(t *testing.T) (*svc.ServiceContext, pkgscope.Gove
 		`ALTER TABLE pms_product_spu ADD COLUMN platform_id INTEGER NOT NULL DEFAULT 1`,
 		`ALTER TABLE pms_product_spu ADD COLUMN tenant_id INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE pms_product_spu ADD COLUMN merchant_id INTEGER NOT NULL DEFAULT 0`,
+		`ALTER TABLE pms_product_spu ADD COLUMN publish_man TEXT`,
+		`ALTER TABLE pms_product_spu ADD COLUMN publish_time DATETIME`,
+		`ALTER TABLE pms_product_spu ADD COLUMN publish_detail TEXT NOT NULL DEFAULT ''`,
+		`ALTER TABLE pms_product_spu ADD COLUMN recommend_man TEXT`,
+		`ALTER TABLE pms_product_spu ADD COLUMN recommend_time DATETIME`,
+		`ALTER TABLE pms_product_spu ADD COLUMN recommend_detail TEXT NOT NULL DEFAULT ''`,
 		`ALTER TABLE pms_product_sku ADD COLUMN platform_id INTEGER NOT NULL DEFAULT 1`,
 		`ALTER TABLE pms_product_sku ADD COLUMN tenant_id INTEGER NOT NULL DEFAULT 0`,
 		`ALTER TABLE pms_product_sku ADD COLUMN merchant_id INTEGER NOT NULL DEFAULT 0`,
@@ -93,6 +99,8 @@ func newProductSpuDraftTestSvc(t *testing.T) (*svc.ServiceContext, pkgscope.Gove
 		`CREATE TABLE pms_product_category (id INTEGER PRIMARY KEY, is_enabled INTEGER NOT NULL DEFAULT 1, is_deleted INTEGER NOT NULL DEFAULT 0, platform_id INTEGER NOT NULL DEFAULT 1, tenant_id INTEGER NOT NULL DEFAULT 0, merchant_id INTEGER NOT NULL DEFAULT 0)`,
 		`CREATE TABLE pms_product_brand (id INTEGER PRIMARY KEY, is_enabled INTEGER NOT NULL DEFAULT 1, is_deleted INTEGER NOT NULL DEFAULT 0, platform_id INTEGER NOT NULL DEFAULT 1, tenant_id INTEGER NOT NULL DEFAULT 0, merchant_id INTEGER NOT NULL DEFAULT 0)`,
 		`CREATE TABLE pms_product_attribute (id INTEGER PRIMARY KEY, status INTEGER NOT NULL DEFAULT 1, is_deleted INTEGER NOT NULL DEFAULT 0, platform_id INTEGER NOT NULL DEFAULT 1, tenant_id INTEGER NOT NULL DEFAULT 0, merchant_id INTEGER NOT NULL DEFAULT 0)`,
+		`CREATE TABLE sys_tenant (id INTEGER PRIMARY KEY, status INTEGER NOT NULL DEFAULT 1)`,
+		`CREATE TABLE sys_merchant (id INTEGER PRIMARY KEY, business_status INTEGER NOT NULL DEFAULT 1)`,
 	} {
 		if err := db.Exec(stmt).Error; err != nil {
 			t.Fatalf("exec schema failed: %v", err)
@@ -103,6 +111,8 @@ func newProductSpuDraftTestSvc(t *testing.T) (*svc.ServiceContext, pkgscope.Gove
 		t.Fatalf("normalize scope failed: %v", err)
 	}
 	for _, stmt := range []string{
+		`INSERT INTO sys_tenant(id, status) VALUES (10, 1)`,
+		`INSERT INTO sys_merchant(id, business_status) VALUES (301, 1)`,
 		`INSERT INTO pms_product_category(id, is_enabled, is_deleted, platform_id, tenant_id, merchant_id) VALUES (11, 1, 0, 1, 10, 301)`,
 		`INSERT INTO pms_product_brand(id, is_enabled, is_deleted, platform_id, tenant_id, merchant_id) VALUES (21, 1, 0, 1, 10, 301)`,
 		`INSERT INTO pms_product_attribute(id, status, is_deleted, platform_id, tenant_id, merchant_id) VALUES (31, 1, 0, 1, 10, 301)`,
@@ -120,20 +130,20 @@ func TestAddProductSpuGeneratesDeterministicSkuCodesAndScopeSummary(t *testing.T
 	logic := NewAddProductSpuLogic(context.Background(), svcCtx)
 
 	resp, err := logic.AddProductSpu(&pmsclient.ProductSpuReq{
-		Name:         "测试商品",
-		ProductSn:    "SPU-NEW-1",
-		CategoryId:   11,
-		CategoryName: "测试分类",
-		BrandId:      21,
-		BrandName:    "测试品牌",
-		Unit:         "件",
-		MainPic:      "main.png",
-		AlbumPics:    "a.png,b.png",
-		CreateBy:     1001,
-		Scope:        &pmsclient.GovernanceScope{ScopeType: scope.ScopeType, PlatformId: scope.PlatformID, TenantId: scope.TenantID, MerchantId: scope.MerchantID},
-		MemberPriceList: []*pmsclient.MemberPriceList{{LevelId: 1, Price: 88, LevelName: "黄金会员"}},
-		ProductLadderList: []*pmsclient.ProductLadderList{{Count: 2, Discount: 90, Price: 89}},
-		ProductFullReductionList: []*pmsclient.ProductFullReductionList{{FullPrice: 199, ReducePrice: 20}},
+		Name:                      "测试商品",
+		ProductSn:                 "SPU-NEW-1",
+		CategoryId:                11,
+		CategoryName:              "测试分类",
+		BrandId:                   21,
+		BrandName:                 "测试品牌",
+		Unit:                      "件",
+		MainPic:                   "main.png",
+		AlbumPics:                 "a.png,b.png",
+		CreateBy:                  1001,
+		Scope:                     &pmsclient.GovernanceScope{ScopeType: scope.ScopeType, PlatformId: scope.PlatformID, TenantId: scope.TenantID, MerchantId: scope.MerchantID},
+		MemberPriceList:           []*pmsclient.MemberPriceList{{LevelId: 1, Price: 88, LevelName: "黄金会员"}},
+		ProductLadderList:         []*pmsclient.ProductLadderList{{Count: 2, Discount: 90, Price: 89}},
+		ProductFullReductionList:  []*pmsclient.ProductFullReductionList{{FullPrice: 199, ReducePrice: 20}},
 		ProductAttributeValueList: []*pmsclient.ProductAttributeValueList{{ProductAttributeId: 31, AttributeValues: "黑色"}},
 		SkuStockList: []*pmsclient.SkuStockList{
 			{Name: "黑色-L", Price: 99, PromotionPrice: 79, Stock: 8, LowStock: 2, SpecData: `{"颜色":"黑色","尺码":"L"}`},
@@ -260,21 +270,21 @@ func TestUpdateProductSpuRebuildsSkuSummaryWithDeterministicCodes(t *testing.T) 
 
 	logic := NewUpdateProductSpuLogic(context.Background(), svcCtx)
 	_, err := logic.UpdateProductSpu(&pmsclient.ProductSpuReq{
-		Id:           901,
-		Name:         "新商品",
-		ProductSn:    "SPU-901",
-		CategoryId:   11,
-		CategoryName: "测试分类",
-		BrandId:      21,
-		BrandName:    "测试品牌",
-		Unit:         "件",
-		MainPic:      "new.png",
-		AlbumPics:    "new.png",
-		CreateBy:     1002,
-		Scope:        &pmsclient.GovernanceScope{ScopeType: scope.ScopeType, PlatformId: scope.PlatformID, TenantId: scope.TenantID, MerchantId: scope.MerchantID},
-		MemberPriceList: []*pmsclient.MemberPriceList{{LevelId: 2, Price: 108, LevelName: "白金会员"}},
-		ProductLadderList: []*pmsclient.ProductLadderList{{Count: 3, Discount: 85, Price: 119}},
-		ProductFullReductionList: []*pmsclient.ProductFullReductionList{{FullPrice: 299, ReducePrice: 30}},
+		Id:                        901,
+		Name:                      "新商品",
+		ProductSn:                 "SPU-901",
+		CategoryId:                11,
+		CategoryName:              "测试分类",
+		BrandId:                   21,
+		BrandName:                 "测试品牌",
+		Unit:                      "件",
+		MainPic:                   "new.png",
+		AlbumPics:                 "new.png",
+		CreateBy:                  1002,
+		Scope:                     &pmsclient.GovernanceScope{ScopeType: scope.ScopeType, PlatformId: scope.PlatformID, TenantId: scope.TenantID, MerchantId: scope.MerchantID},
+		MemberPriceList:           []*pmsclient.MemberPriceList{{LevelId: 2, Price: 108, LevelName: "白金会员"}},
+		ProductLadderList:         []*pmsclient.ProductLadderList{{Count: 3, Discount: 85, Price: 119}},
+		ProductFullReductionList:  []*pmsclient.ProductFullReductionList{{FullPrice: 299, ReducePrice: 30}},
 		ProductAttributeValueList: []*pmsclient.ProductAttributeValueList{{ProductAttributeId: 31, AttributeValues: "白色"}},
 		SkuStockList: []*pmsclient.SkuStockList{
 			{Name: "白色-M", Price: 109, Stock: 4, LowStock: 1, SpecData: `{"颜色":"白色","尺码":"M"}`},
@@ -360,6 +370,25 @@ func TestUpdateVerifyStatusCreatesReviewRecordForDraft(t *testing.T) {
 	if err := svcCtx.DB.Exec(`UPDATE pms_product_spu SET platform_id=?, tenant_id=?, merchant_id=? WHERE id=?`, scope.PlatformID, scope.TenantID, scope.MerchantID, 1201).Error; err != nil {
 		t.Fatalf("seed draft spu scope failed: %v", err)
 	}
+	if err := svcCtx.DB.Create(&model.PmsProductSku{
+		ID:            2201,
+		SpuID:         1201,
+		Name:          "待送审SKU",
+		SkuCode:       "SKU-1201",
+		Price:         99,
+		Stock:         8,
+		LowStock:      2,
+		SpecData:      `{"颜色":"黑色"}`,
+		VerifyStatus:  0,
+		PublishStatus: 0,
+		CreateBy:      1001,
+		CreateTime:    now,
+	}).Error; err != nil {
+		t.Fatalf("seed draft sku failed: %v", err)
+	}
+	if err := svcCtx.DB.Exec(`UPDATE pms_product_sku SET platform_id=?, tenant_id=?, merchant_id=? WHERE id=?`, scope.PlatformID, scope.TenantID, scope.MerchantID, 2201).Error; err != nil {
+		t.Fatalf("seed draft sku scope failed: %v", err)
+	}
 
 	logic := NewUpdateVerifyStatusLogic(context.Background(), svcCtx)
 	_, err := logic.UpdateVerifyStatus(&pmsclient.UpdateProductSpuStatusReq{
@@ -386,6 +415,13 @@ func TestUpdateVerifyStatusCreatesReviewRecordForDraft(t *testing.T) {
 	if spu.VerifyStatus != 1 {
 		t.Fatalf("expected verify status 1, got %d", spu.VerifyStatus)
 	}
+	var sku model.PmsProductSku
+	if err := svcCtx.DB.First(&sku, 2201).Error; err != nil {
+		t.Fatalf("reload sku failed: %v", err)
+	}
+	if sku.VerifyStatus != 1 {
+		t.Fatalf("expected sku verify status 1, got %d", sku.VerifyStatus)
+	}
 	if len(verifyModel.inserted) != 1 {
 		t.Fatalf("expected 1 verify record, got %d", len(verifyModel.inserted))
 	}
@@ -395,5 +431,258 @@ func TestUpdateVerifyStatusCreatesReviewRecordForDraft(t *testing.T) {
 	}
 	if record.Detail != "草稿满足最小送审条件，进入审核链路" {
 		t.Fatalf("expected review detail to persist, got %q", record.Detail)
+	}
+}
+
+func TestUpdatePublishStatusClearsRecommendStatusWhenOffShelf(t *testing.T) {
+	svcCtx, scope := newProductSpuDraftTestSvc(t)
+	now := time.Now()
+	if err := svcCtx.DB.Create(&model.PmsProductSpu{
+		ID:              1301,
+		Name:            "已上架商品",
+		ProductSn:       "SPU-1301",
+		CategoryID:      11,
+		CategoryName:    "测试分类",
+		BrandID:         21,
+		BrandName:       "测试品牌",
+		MainPic:         "main.png",
+		Stock:           6,
+		LowStock:        1,
+		VerifyStatus:    1,
+		PublishStatus:   1,
+		RecommendStatus: 1,
+		CreateBy:        1,
+		CreateTime:      now,
+	}).Error; err != nil {
+		t.Fatalf("seed spu failed: %v", err)
+	}
+	if err := svcCtx.DB.Exec(`UPDATE pms_product_spu SET platform_id=?, tenant_id=?, merchant_id=? WHERE id=?`, scope.PlatformID, scope.TenantID, scope.MerchantID, 1301).Error; err != nil {
+		t.Fatalf("seed spu scope failed: %v", err)
+	}
+	if err := svcCtx.DB.Create(&model.PmsProductSku{
+		ID:            2301,
+		SpuID:         1301,
+		Name:          "SKU",
+		SkuCode:       "SKU-1301",
+		Price:         88,
+		Stock:         6,
+		LowStock:      1,
+		SpecData:      `{"颜色":"黑色"}`,
+		VerifyStatus:  1,
+		PublishStatus: 1,
+		CreateBy:      1,
+		CreateTime:    now,
+	}).Error; err != nil {
+		t.Fatalf("seed sku failed: %v", err)
+	}
+	if err := svcCtx.DB.Exec(`UPDATE pms_product_sku SET platform_id=?, tenant_id=?, merchant_id=? WHERE id=?`, scope.PlatformID, scope.TenantID, scope.MerchantID, 2301).Error; err != nil {
+		t.Fatalf("seed sku scope failed: %v", err)
+	}
+
+	logic := NewUpdatePublishStatusLogic(context.Background(), svcCtx)
+	_, err := logic.UpdatePublishStatus(&pmsclient.UpdateProductSpuStatusReq{
+		Ids:       []int64{1301},
+		Status:    0,
+		UpdateBy:  2001,
+		ReviewMan: "operator",
+		Scope: &pmsclient.GovernanceScope{
+			ScopeType:  scope.ScopeType,
+			PlatformId: scope.PlatformID,
+			TenantId:   scope.TenantID,
+			MerchantId: scope.MerchantID,
+		},
+	})
+	if err != nil {
+		t.Fatalf("UpdatePublishStatus failed: %v", err)
+	}
+
+	var spu model.PmsProductSpu
+	if err := svcCtx.DB.First(&spu, 1301).Error; err != nil {
+		t.Fatalf("reload spu failed: %v", err)
+	}
+	if spu.PublishStatus != 0 || spu.RecommendStatus != 0 {
+		t.Fatalf("expected off-shelf spu with recommend cleared, got %+v", spu)
+	}
+
+	var sku model.PmsProductSku
+	if err := svcCtx.DB.First(&sku, 2301).Error; err != nil {
+		t.Fatalf("reload sku failed: %v", err)
+	}
+	if sku.PublishStatus != 0 {
+		t.Fatalf("expected sku publish status 0, got %d", sku.PublishStatus)
+	}
+
+	var meta struct {
+		PublishMan      string     `gorm:"column:publish_man"`
+		PublishTime     *time.Time `gorm:"column:publish_time"`
+		PublishDetail   string     `gorm:"column:publish_detail"`
+		RecommendMan    string     `gorm:"column:recommend_man"`
+		RecommendTime   *time.Time `gorm:"column:recommend_time"`
+		RecommendDetail string     `gorm:"column:recommend_detail"`
+	}
+	if err := svcCtx.DB.Table("pms_product_spu").Select(
+		"publish_man, publish_time, publish_detail, recommend_man, recommend_time, recommend_detail",
+	).Where("id = ?", 1301).Take(&meta).Error; err != nil {
+		t.Fatalf("load publish metadata failed: %v", err)
+	}
+	if meta.PublishMan != "operator" {
+		t.Fatalf("expected publish operator to persist, got %+v", meta)
+	}
+	if meta.PublishTime == nil || meta.PublishTime.IsZero() {
+		t.Fatalf("expected publish time to persist, got %+v", meta)
+	}
+	if meta.RecommendMan != "operator" || meta.RecommendTime == nil || meta.RecommendTime.IsZero() {
+		t.Fatalf("expected recommend cancellation metadata to persist, got %+v", meta)
+	}
+	if meta.RecommendDetail != "商品下架，已同步取消推荐" {
+		t.Fatalf("unexpected recommend detail after off-shelf: %+v", meta)
+	}
+}
+
+func TestUpdateRecommendStatusRejectsInvisibleProduct(t *testing.T) {
+	svcCtx, scope := newProductSpuDraftTestSvc(t)
+	now := time.Now()
+	if err := svcCtx.DB.Create(&model.PmsProductSpu{
+		ID:              1401,
+		Name:            "未上架商品",
+		ProductSn:       "SPU-1401",
+		CategoryID:      11,
+		CategoryName:    "测试分类",
+		BrandID:         21,
+		BrandName:       "测试品牌",
+		MainPic:         "main.png",
+		Stock:           6,
+		LowStock:        1,
+		VerifyStatus:    1,
+		PublishStatus:   0,
+		RecommendStatus: 0,
+		CreateBy:        1,
+		CreateTime:      now,
+	}).Error; err != nil {
+		t.Fatalf("seed spu failed: %v", err)
+	}
+	if err := svcCtx.DB.Exec(`UPDATE pms_product_spu SET platform_id=?, tenant_id=?, merchant_id=? WHERE id=?`, scope.PlatformID, scope.TenantID, scope.MerchantID, 1401).Error; err != nil {
+		t.Fatalf("seed spu scope failed: %v", err)
+	}
+	if err := svcCtx.DB.Create(&model.PmsProductSku{
+		ID:            2401,
+		SpuID:         1401,
+		Name:          "SKU",
+		SkuCode:       "SKU-1401",
+		Price:         66,
+		Stock:         6,
+		LowStock:      1,
+		SpecData:      `{"颜色":"白色"}`,
+		VerifyStatus:  1,
+		PublishStatus: 0,
+		CreateBy:      1,
+		CreateTime:    now,
+	}).Error; err != nil {
+		t.Fatalf("seed sku failed: %v", err)
+	}
+	if err := svcCtx.DB.Exec(`UPDATE pms_product_sku SET platform_id=?, tenant_id=?, merchant_id=? WHERE id=?`, scope.PlatformID, scope.TenantID, scope.MerchantID, 2401).Error; err != nil {
+		t.Fatalf("seed sku scope failed: %v", err)
+	}
+
+	logic := NewUpdateRecommendStatusLogic(context.Background(), svcCtx)
+	_, err := logic.UpdateRecommendStatus(&pmsclient.UpdateProductSpuStatusReq{
+		Ids:       []int64{1401},
+		Status:    1,
+		UpdateBy:  2001,
+		ReviewMan: "operator",
+		Scope: &pmsclient.GovernanceScope{
+			ScopeType:  scope.ScopeType,
+			PlatformId: scope.PlatformID,
+			TenantId:   scope.TenantID,
+			MerchantId: scope.MerchantID,
+		},
+	})
+	if err == nil || !strings.Contains(err.Error(), "未上架") {
+		t.Fatalf("expected off-shelf recommendation error, got %v", err)
+	}
+}
+
+func TestUpdateRecommendStatusPersistsOperationMetadata(t *testing.T) {
+	svcCtx, scope := newProductSpuDraftTestSvc(t)
+	now := time.Now()
+	if err := svcCtx.DB.Create(&model.PmsProductSpu{
+		ID:              1501,
+		Name:            "可推荐商品",
+		ProductSn:       "SPU-1501",
+		CategoryID:      11,
+		CategoryName:    "测试分类",
+		BrandID:         21,
+		BrandName:       "测试品牌",
+		MainPic:         "main.png",
+		Stock:           6,
+		LowStock:        1,
+		VerifyStatus:    1,
+		PublishStatus:   1,
+		RecommendStatus: 0,
+		CreateBy:        1,
+		CreateTime:      now,
+	}).Error; err != nil {
+		t.Fatalf("seed spu failed: %v", err)
+	}
+	if err := svcCtx.DB.Exec(`UPDATE pms_product_spu SET platform_id=?, tenant_id=?, merchant_id=? WHERE id=?`, scope.PlatformID, scope.TenantID, scope.MerchantID, 1501).Error; err != nil {
+		t.Fatalf("seed spu scope failed: %v", err)
+	}
+	if err := svcCtx.DB.Create(&model.PmsProductSku{
+		ID:            2501,
+		SpuID:         1501,
+		Name:          "SKU",
+		SkuCode:       "SKU-1501",
+		Price:         66,
+		Stock:         6,
+		LowStock:      1,
+		SpecData:      `{"颜色":"白色"}`,
+		VerifyStatus:  1,
+		PublishStatus: 1,
+		CreateBy:      1,
+		CreateTime:    now,
+	}).Error; err != nil {
+		t.Fatalf("seed sku failed: %v", err)
+	}
+	if err := svcCtx.DB.Exec(`UPDATE pms_product_sku SET platform_id=?, tenant_id=?, merchant_id=? WHERE id=?`, scope.PlatformID, scope.TenantID, scope.MerchantID, 2501).Error; err != nil {
+		t.Fatalf("seed sku scope failed: %v", err)
+	}
+
+	logic := NewUpdateRecommendStatusLogic(context.Background(), svcCtx)
+	_, err := logic.UpdateRecommendStatus(&pmsclient.UpdateProductSpuStatusReq{
+		Ids:       []int64{1501},
+		Status:    1,
+		UpdateBy:  2001,
+		ReviewMan: "operator",
+		Detail:    "加入本周精选推荐",
+		Scope: &pmsclient.GovernanceScope{
+			ScopeType:  scope.ScopeType,
+			PlatformId: scope.PlatformID,
+			TenantId:   scope.TenantID,
+			MerchantId: scope.MerchantID,
+		},
+	})
+	if err != nil {
+		t.Fatalf("UpdateRecommendStatus failed: %v", err)
+	}
+
+	var meta struct {
+		RecommendStatus int32      `gorm:"column:recommend_status"`
+		RecommendMan    string     `gorm:"column:recommend_man"`
+		RecommendTime   *time.Time `gorm:"column:recommend_time"`
+		RecommendDetail string     `gorm:"column:recommend_detail"`
+	}
+	if err := svcCtx.DB.Table("pms_product_spu").Select(
+		"recommend_status, recommend_man, recommend_time, recommend_detail",
+	).Where("id = ?", 1501).Take(&meta).Error; err != nil {
+		t.Fatalf("load recommend metadata failed: %v", err)
+	}
+	if meta.RecommendStatus != 1 || meta.RecommendMan != "operator" {
+		t.Fatalf("unexpected recommend metadata: %+v", meta)
+	}
+	if meta.RecommendTime == nil || meta.RecommendTime.IsZero() {
+		t.Fatalf("expected recommend time to persist, got %+v", meta)
+	}
+	if meta.RecommendDetail != "加入本周精选推荐" {
+		t.Fatalf("unexpected recommend detail: %+v", meta)
 	}
 }

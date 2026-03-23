@@ -36,6 +36,19 @@ export interface ProductSpuListItem {
   createTime: string; //创建时间
   updateBy: number; //更新人ID
   updateTime: string; //更新时间
+  scopeType?: 'platform' | 'tenant' | 'merchant'; //作用域来源
+  platformId?: number; //平台ID
+  tenantId?: number; //租户ID
+  merchantId?: number; //商户ID
+  reviewMan?: string; //最近审核人
+  reviewTime?: string; //最近审核时间
+  reviewDetail?: string; //最近审核意见
+  publishMan?: string; //最近上下架操作人
+  publishTime?: string; //最近上下架时间
+  publishDetail?: string; //最近上下架说明
+  recommendMan?: string; //最近推荐操作人
+  recommendTime?: string; //最近推荐时间
+  recommendDetail?: string; //最近推荐说明
   isDeleted: number; //是否删除
 }
 
@@ -174,6 +187,15 @@ export interface ProductSpuListParams {
   createTime?: string; //创建时间
   updateBy?: number; //更新人ID
   updateTime?: string; //更新时间
+  reviewMan?: string;
+  reviewTime?: string;
+  reviewDetail?: string;
+  publishMan?: string;
+  publishTime?: string;
+  publishDetail?: string;
+  recommendMan?: string;
+  recommendTime?: string;
+  recommendDetail?: string;
   isDeleted?: number; //是否删除
   scopeType?: 'platform' | 'tenant' | 'merchant';
   platformId?: number;

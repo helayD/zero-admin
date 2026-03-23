@@ -33,6 +33,8 @@ class _ProductDetailState extends State<ProductDetail> {
   List<ProductAttributeValueList> productAttributeValueList = [];
   List<SkuStockList> skuStockList = [];
   List<CouponList> couponList = [];
+  ProductVisibility visibility = ProductVisibility.fromJson({});
+  bool loading = true;
 
   @override
   void initState() {
@@ -41,21 +43,61 @@ class _ProductDetailState extends State<ProductDetail> {
   }
 
   void queryCollectionList() async {
-    Response result = await HttpUtil.get(
-      productDetailDataUrl + widget.productId.toString(),
-    );
-    ProductDetailModel productDetailModel = ProductDetailModel.fromJson(
-      result.data,
-    );
-    ProductDetailData productDetailData = productDetailModel.data;
-    setState(() {
-      product = productDetailData.product;
-      brand = productDetailData.brand;
-      productAttributeList = productDetailData.productAttributeList;
-      productAttributeValueList = productDetailData.productAttributeValueList;
-      skuStockList = productDetailData.skuStockList;
-      couponList = productDetailData.couponList;
-    });
+    try {
+      Response result = await HttpUtil.get(
+        productDetailDataUrl + widget.productId.toString(),
+      );
+      ProductDetailModel productDetailModel = ProductDetailModel.fromJson(
+        result.data,
+      );
+      ProductDetailData productDetailData = productDetailModel.data;
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        loading = false;
+        visibility = productDetailData.visibility;
+        if (productDetailData.visibility.visible) {
+          product = productDetailData.product;
+          brand = productDetailData.brand;
+          productAttributeList = productDetailData.productAttributeList;
+          productAttributeValueList =
+              productDetailData.productAttributeValueList;
+          skuStockList = productDetailData.skuStockList;
+          couponList = productDetailData.couponList;
+        } else {
+          product = null;
+          productAttributeList = [];
+          productAttributeValueList = [];
+          skuStockList = [];
+          couponList = [];
+        }
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        loading = false;
+        product = null;
+        productAttributeList = [];
+        productAttributeValueList = [];
+        skuStockList = [];
+        couponList = [];
+        visibility = ProductVisibility(
+          visible: false,
+          purchasable: false,
+          showPrice: false,
+          showStock: false,
+          status: "hidden",
+          reasonCode: "request_failed",
+          reasonMessage: "商品详情加载失败",
+          recoveryHint: "请稍后重试，或先返回首页继续浏览",
+          fallbackAction: "go_home",
+          fallbackTarget: "home",
+        );
+      });
+    }
   }
 
   @override
@@ -72,23 +114,31 @@ class _ProductDetailState extends State<ProductDetail> {
           Container(
             color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
             width: MediaQuery.of(context).size.width,
-            child: (product != null
-                ? ListView(
-                    children: [
-                      buildProductPic(),
-                      buildProductBaseInfo(),
-                      buildProductShare(),
-                      buildAttributesInfo(context),
-                      buildPinJiaInfo(),
-                      buildBrandInfo(),
-                      buildImageDetailInfo(),
-                    ],
-                  )
-                : Container()),
+            child: buildPageBody(context),
           ),
-          buildFooter(context),
+          if (!loading && product != null) buildFooter(context),
         ],
       ),
+    );
+  }
+
+  Widget buildPageBody(BuildContext context) {
+    if (loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (!visibility.visible || product == null) {
+      return buildUnavailableState(context);
+    }
+    return ListView(
+      children: [
+        buildProductPic(),
+        buildProductBaseInfo(),
+        buildProductShare(),
+        buildAttributesInfo(context),
+        buildPinJiaInfo(),
+        buildBrandInfo(),
+        buildImageDetailInfo(),
+      ],
     );
   }
 
@@ -145,6 +195,22 @@ class _ProductDetailState extends State<ProductDetail> {
               color: Color(int.parse('909399', radix: 16)).withAlpha(255),
             ),
           ),
+          if (!visibility.purchasable && visibility.reasonMessage.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Color(int.parse('fff5f5', radix: 16)).withAlpha(255),
+                borderRadius: const BorderRadius.all(Radius.circular(20)),
+              ),
+              child: Text(
+                visibility.reasonMessage,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
+                ),
+              ),
+            ),
           SizedBox(
             height: 32,
             child: Row(
@@ -484,6 +550,7 @@ class _ProductDetailState extends State<ProductDetail> {
 
   // 底部悬浮
   Positioned buildFooter(BuildContext context) {
+    bool disabled = !visibility.purchasable;
     return Positioned(
       bottom: 0,
       width: MediaQuery.of(context).size.width,
@@ -524,7 +591,9 @@ class _ProductDetailState extends State<ProductDetail> {
               height: 40,
               width: 100,
               decoration: BoxDecoration(
-                color: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
+                color: disabled
+                    ? Color(int.parse('c0c4cc', radix: 16)).withAlpha(255)
+                    : Color(int.parse('fa436a', radix: 16)).withAlpha(255),
                 borderRadius: const BorderRadius.all(Radius.circular(50)),
                 boxShadow: const [
                   BoxShadow(
@@ -535,13 +604,17 @@ class _ProductDetailState extends State<ProductDetail> {
                 ],
               ),
               child: TextButton(
-                onPressed: () {
-                  // context.read<Counter>().increment();
-                  // context.watch<Counter>().count;
-                  _addCart(product!);
-                },
-                child: const Text(
-                  '加入购物车',
+                onPressed: disabled
+                    ? null
+                    : () {
+                        _addCart(product!);
+                      },
+                child: Text(
+                  disabled
+                      ? (visibility.reasonMessage.isNotEmpty
+                          ? visibility.reasonMessage
+                          : '暂不可购买')
+                      : '加入购物车',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 12,
@@ -556,11 +629,110 @@ class _ProductDetailState extends State<ProductDetail> {
     );
   }
 
+  Widget buildUnavailableState(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.inventory_2_outlined,
+              size: 72,
+              color: Color(int.parse('c0c4cc', radix: 16)).withAlpha(255),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              visibility.reasonMessage.isNotEmpty
+                  ? visibility.reasonMessage
+                  : "商品暂不可查看",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Color(int.parse('303133', radix: 16)).withAlpha(255),
+              ),
+            ),
+            if (visibility.recoveryHint.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Text(
+                visibility.recoveryHint,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Color(int.parse('909399', radix: 16)).withAlpha(255),
+                ),
+              ),
+            ],
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => _handleFallbackAction(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor:
+                      Color(int.parse('fa436a', radix: 16)).withAlpha(255),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                child: Text(buildFallbackActionLabel()),
+              ),
+            ),
+            if (Navigator.of(context).canPop()) ...[
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text("返回上一页"),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  String buildFallbackActionLabel() {
+    switch (visibility.fallbackAction) {
+      case "browse_product_list":
+      case "browse_similar":
+        return "返回继续逛";
+      case "go_home":
+        return "回到首页";
+      default:
+        return "继续浏览";
+    }
+  }
+
+  void _handleFallbackAction(BuildContext context) {
+    switch (visibility.fallbackAction) {
+      case "browse_product_list":
+      case "browse_similar":
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+          return;
+        }
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => const MainTab(),
+          ),
+        );
+        return;
+      case "go_home":
+      default:
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (context) => const MainTab(),
+          ),
+          (route) => false,
+        );
+        return;
+    }
+  }
+
   InkWell buildImage(String url, String title) {
     return InkWell(
       onTap: () {
         if (title.contains("收藏")) {
-          print("点击了收藏");
           return;
         }
         Navigator.of(context).push(
@@ -1077,7 +1249,7 @@ class _ProductDetailState extends State<ProductDetail> {
     addCartParams["memberNickname"] = "test";
     addCartParams["productAttr"] =
         "[{\"key\":\"颜色\",\"value\":\"黑色\"},{\"key\":\"容量\",\"value\":\"128G\"}]";
-    Response result = await HttpUtil.post(cartAddUrl, data: addCartParams);
+    await HttpUtil.post(cartAddUrl, data: addCartParams);
 
     // LoginModel loginModel = LoginModel.fromJson(result.data);
     //

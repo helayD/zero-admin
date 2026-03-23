@@ -68,6 +68,30 @@ func (l *QueryProductSpuDetailLogic) QueryProductSpuDetail(in *pmsclient.QueryPr
 		return nil, errors.New("查询商品SPU异常")
 	}
 
+	if err := logiccommon.EnsureProductsOwnerActive(l.ctx, l.svcCtx.DB, current, []int64{item.ID}); err != nil {
+		logc.Errorf(l.ctx, "商品主体状态不可用, 请求参数：%+v, 异常信息: %s", in, err.Error())
+		return nil, errors.New(err.Error())
+	}
+
+	reviewMetadata, err := loadProductReviewMetadata(l.ctx, l.svcCtx.ProductVertifyRecordModel, []int64{item.ID})
+	if err != nil {
+		logc.Errorf(l.ctx, "查询商品审核元数据失败, 请求参数：%+v, 异常信息: %s", in, err.Error())
+		return nil, errors.New("查询商品SPU异常")
+	}
+	reviewMeta := reviewMetadata[item.ID]
+	scopeMetadata, err := loadProductScopeMetadata(l.ctx, l.svcCtx.DB, current, []int64{item.ID})
+	if err != nil {
+		logc.Errorf(l.ctx, "查询商品作用域元数据失败, 请求参数：%+v, 异常信息: %s", in, err.Error())
+		return nil, errors.New("查询商品SPU异常")
+	}
+	scopeMeta := scopeMetadata[item.ID]
+	operationMetadata, err := loadProductOperationMetadata(l.ctx, l.svcCtx.DB, current, []int64{item.ID})
+	if err != nil {
+		logc.Errorf(l.ctx, "查询商品状态操作元数据失败, 请求参数：%+v, 异常信息: %s", in, err.Error())
+		return nil, errors.New("查询商品SPU异常")
+	}
+	operationMeta := operationMetadata[item.ID]
+
 	product := &pmsclient.ProductSpuListData{
 		Id:                  item.ID,                                          // 商品SpuId
 		Name:                item.Name,                                        // 商品名称
@@ -102,6 +126,19 @@ func (l *QueryProductSpuDetailLogic) QueryProductSpuDetail(in *pmsclient.QueryPr
 		CreateTime:          time_util.TimeToStr(item.CreateTime),             // 创建时间
 		UpdateBy:            pointerprocess.DefaltData(item.UpdateBy).(int64), // 更新人ID
 		UpdateTime:          time_util.TimeToString(item.UpdateTime),          // 更新时间
+		ScopeType:           scopeMeta.ScopeType,
+		PlatformId:          scopeMeta.PlatformID,
+		TenantId:            scopeMeta.TenantID,
+		MerchantId:          scopeMeta.MerchantID,
+		ReviewMan:           reviewMeta.ReviewMan,
+		ReviewTime:          reviewMeta.ReviewTime,
+		ReviewDetail:        reviewMeta.ReviewDetail,
+		PublishMan:          operationMeta.PublishMan,
+		PublishTime:         operationMeta.PublishTime,
+		PublishDetail:       operationMeta.PublishDetail,
+		RecommendMan:        operationMeta.RecommendMan,
+		RecommendTime:       operationMeta.RecommendTime,
+		RecommendDetail:     operationMeta.RecommendDetail,
 	}
 
 	productAttributeListData, attributeIds := buildProductAttributeListData(l, &item)

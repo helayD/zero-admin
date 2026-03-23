@@ -143,6 +143,19 @@ func buildProductData(resp *pmsclient.QueryProductSpuDetailResp) types.QueryProd
 		CreateTime:          product.CreateTime,          // 创建时间
 		UpdateBy:            product.UpdateBy,            // 更新人ID
 		UpdateTime:          product.UpdateTime,          // 更新时间
+		ScopeType:           product.ScopeType,           // 作用域来源
+		PlatformId:          product.PlatformId,          // 平台ID
+		TenantId:            product.TenantId,            // 租户ID
+		MerchantId:          product.MerchantId,          // 商户ID
+		ReviewMan:           product.ReviewMan,           // 最近审核人
+		ReviewTime:          product.ReviewTime,          // 最近审核时间
+		ReviewDetail:        product.ReviewDetail,        // 最近审核意见
+		PublishMan:          product.PublishMan,          // 最近上下架操作人
+		PublishTime:         product.PublishTime,         // 最近上下架时间
+		PublishDetail:       product.PublishDetail,       // 最近上下架说明
+		RecommendMan:        product.RecommendMan,        // 最近推荐操作人
+		RecommendTime:       product.RecommendTime,       // 最近推荐时间
+		RecommendDetail:     product.RecommendDetail,     // 最近推荐说明
 	}
 }
 

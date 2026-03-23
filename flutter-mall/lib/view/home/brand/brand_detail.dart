@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mall/config/service_url.dart';
 import 'package:flutter_mall/utils/http_util.dart';
 import 'package:flutter_mall/widgets/cached_image_widget.dart';
+import 'package:flutter_mall/widgets/empty_state_widget.dart';
 
 import '../../../model/brand_detail.dart';
 import '../../category/product/product_detail.dart';
@@ -26,22 +27,36 @@ class BrandDetail extends StatefulWidget {
 class _BrandDetailState extends State<BrandDetail> {
   BrandData? brandDetailData;
   List<BrandProductData>? productListBrandDataItem = [];
-  // List<ProductList>? productList = [];
+  bool _isLoading = true;
+  bool _hasError = false;
 
   @override
   void initState() {
     super.initState();
     _queryBrandDetailData();
-    // _queryProductListData();
   }
 
   void _queryBrandDetailData() async {
-    Response result = await HttpUtil.get(brandDetailDataUrl + widget.brandId.toString());
     setState(() {
-      BrandDetailModel brandDetailModel = BrandDetailModel.fromJson(result.data);
-      brandDetailData = brandDetailModel.data.brandData;
-      productListBrandDataItem = brandDetailModel.data.brandProductData;
+      _isLoading = true;
+      _hasError = false;
     });
+    try {
+      Response result = await HttpUtil.get(brandDetailDataUrl + widget.brandId.toString());
+      BrandDetailModel brandDetailModel = BrandDetailModel.fromJson(result.data);
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        brandDetailData = brandDetailModel.data.brandData;
+        productListBrandDataItem = brandDetailModel.data.brandProductData;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _hasError = true;
+      });
+    }
   }
 
   // void _queryProductListData() async {
@@ -61,15 +76,48 @@ class _BrandDetailState extends State<BrandDetail> {
           titleTextStyle: const TextStyle(fontSize: 16, color: Colors.black),
           centerTitle: true,
         ),
-        body: brandDetailData != null
-            ? Container(
-                color: Colors.white,
-                width: MediaQuery.of(context).size.width,
-                child: CustomScrollView(
-                  shrinkWrap: true,
-                  slivers: [buildBrandLogo(context), buildBrandList()],
-                ))
-            : Container());
+        body: _buildBody(context));
+  }
+
+  Widget _buildBody(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_hasError) {
+      return ErrorRetryWidget(
+        message: '品牌详情加载失败',
+        onRetry: _queryBrandDetailData,
+      );
+    }
+    if (brandDetailData == null) {
+      return EmptyStateWidget(
+        message: '品牌信息不存在',
+        icon: Icons.storefront_outlined,
+        actionText: '浏览其他品牌',
+        onAction: () => Navigator.of(context).pop(),
+      );
+    }
+    return Container(
+      color: Colors.white,
+      width: MediaQuery.of(context).size.width,
+      child: CustomScrollView(
+        shrinkWrap: true,
+        slivers: [
+          buildBrandLogo(context),
+          if (productListBrandDataItem != null && productListBrandDataItem!.isNotEmpty)
+            buildBrandList()
+          else
+            SliverToBoxAdapter(
+              child: EmptyStateWidget(
+                message: '该品牌下暂无可售商品',
+                icon: Icons.shopping_bag_outlined,
+                actionText: '浏览其他品牌',
+                onAction: () => Navigator.of(context).pop(),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 
   // 构建推荐品牌页面的logo上半部分

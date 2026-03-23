@@ -48,7 +48,7 @@ func (l *DeleteProductSpuLogic) DeleteProductSpu(in *pmsclient.DeleteProductSpuR
 		return nil, errors.New("删除商品SPU失败")
 	}
 
-	sendProductESDelete(l.ctx, l.svcCtx, in.Ids, currentScope)
+	sendProductESDelete(l.ctx, l.svcCtx, in.Ids, currentScope, buildProductEventMeta("pms.product_spu.delete", 0, ""))
 
 	return &pmsclient.DeleteProductSpuResp{}, nil
 }

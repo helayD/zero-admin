@@ -56,6 +56,9 @@ func (l *QueryProductListLogic) QueryProductList(req *types.QueryProductListReq)
 
 	var productLists []types.ProductData
 	for _, product := range productListResp.List {
+		if err := frontcommon.EnsureFrontProductVisible(product); err != nil {
+			continue
+		}
 		price := strings.Split(product.PriceRange, "-")[0]
 		productLists = append(productLists, types.ProductData{
 			Id:                  product.Id,                  // 商品SpuId

@@ -40,6 +40,10 @@ func (l *UpdateRecommendStatusLogic) UpdateRecommendStatus(req *types.UpdateProd
 	if err != nil {
 		return nil, err
 	}
+	userName, err := common.GetUserName(l.ctx)
+	if err != nil {
+		return nil, err
+	}
 	writeScope, err := common.ResolveWriteGovernanceScope(l.ctx, common.RequestedGovernanceScope{
 		ScopeType:  req.ScopeType,
 		PlatformID: req.PlatformId,
@@ -50,10 +54,12 @@ func (l *UpdateRecommendStatusLogic) UpdateRecommendStatus(req *types.UpdateProd
 		return nil, err
 	}
 	_, err = l.svcCtx.ProductSpuService.UpdateRecommendStatus(l.ctx, &pmsclient.UpdateProductSpuStatusReq{
-		Ids:      req.Ids,
-		Status:   req.Status,
-		UpdateBy: userId,
-		Scope:    common.PMSGovernanceScope(writeScope),
+		Ids:       req.Ids,
+		Status:    req.Status,
+		UpdateBy:  userId,
+		ReviewMan: userName,
+		Detail:    req.Detail,
+		Scope:     common.PMSGovernanceScope(writeScope),
 	})
 
 	if err != nil {

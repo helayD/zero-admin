@@ -7,6 +7,7 @@ import (
 	"context"
 	"strings"
 
+	frontcommon "github.com/feihua/zero-admin/api/front/internal/logic/common"
 	"github.com/feihua/zero-admin/api/front/internal/svc"
 	"github.com/feihua/zero-admin/api/front/internal/types"
 	"github.com/feihua/zero-admin/pkg/errorx"
@@ -32,8 +33,11 @@ func NewQueryBrandDetailLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 func (l *QueryBrandDetailLogic) QueryBrandDetail(req *types.QueryBrandDetailReq) (resp *types.QueryBrandDetailResp, err error) {
+	currentScope := frontcommon.ResolveEffectiveGovernanceScope(l.ctx)
+
 	detail, err := l.svcCtx.ProductBrandService.QueryProductBrandDetail(l.ctx, &pmsclient.QueryProductBrandDetailReq{
-		Id: req.BrandId,
+		Id:    req.BrandId,
+		Scope: frontcommon.PMSGovernanceScope(currentScope),
 	})
 
 	if err != nil {
@@ -67,7 +71,7 @@ func (l *QueryBrandDetailLogic) QueryBrandDetail(req *types.QueryBrandDetailReq)
 		VerifyStatus:    1,           // 审核状态：0->未审核；1->审核通过
 		PreviewStatus:   0,           // 是否为预告商品：0->不是；1->是
 		PromotionType:   6,           // 促销类型：0->没有促销使用原价;1->使用促销价；2->使用会员价；3->使用阶梯价格；4->使用满减价格；5->秒杀
-
+		Scope:           frontcommon.PMSGovernanceScope(currentScope),
 	})
 
 	if err != nil {
@@ -78,6 +82,9 @@ func (l *QueryBrandDetailLogic) QueryBrandDetail(req *types.QueryBrandDetailReq)
 
 	productLists := make([]types.BrandProductData, 0)
 	for _, product := range productListResp.List {
+		if err := frontcommon.EnsureFrontProductVisible(product); err != nil {
+			continue
+		}
 		price := strings.Split(product.PriceRange, "-")[0]
 		productLists = append(productLists, types.BrandProductData{
 			Id:                  product.Id,                  // 商品SpuId

@@ -55,17 +55,22 @@ class _HomePageState extends State<HomePage> {
     _queryHomeData();
   }
 
-  void _queryHomeData() async {
-    Response result = await HttpUtil.get(homeDataUrl);
-    setState(() {
-      HomeModel homeModel = HomeModel.fromJson(result.data);
-      advertiseList = homeModel.data.advertiseList;
-      brandList = homeModel.data.brandList;
-      homeFlashPromotion = homeModel.data.homeFlashPromotion;
-      flashProductList = homeModel.data.homeFlashPromotion.productList;
-      newProductList = homeModel.data.newProductList;
-      hotProductList = homeModel.data.hotProductList;
-    });
+  Future<void> _queryHomeData() async {
+    try {
+      Response result = await HttpUtil.get(homeDataUrl);
+      if (!mounted) return;
+      setState(() {
+        HomeModel homeModel = HomeModel.fromJson(result.data);
+        advertiseList = homeModel.data.advertiseList;
+        brandList = homeModel.data.brandList;
+        homeFlashPromotion = homeModel.data.homeFlashPromotion;
+        flashProductList = homeModel.data.homeFlashPromotion.productList;
+        newProductList = homeModel.data.newProductList;
+        hotProductList = homeModel.data.hotProductList;
+      });
+    } catch (e) {
+      // 首页数据加载失败时保持现有数据，不清空
+    }
   }
 
   @override
@@ -82,12 +87,9 @@ class _HomePageState extends State<HomePage> {
         child: EasyRefresh(
           controller: _controller,
           onRefresh: () async {
-            setState(() {
-              _count = 6;
-            });
+            await _queryHomeData();
             _controller.finishRefresh();
             _controller.resetFooter();
-            // return IndicatorResult.success;
           },
           onLoad: () async {
             await Future.delayed(const Duration(seconds: 2));
@@ -105,18 +107,18 @@ class _HomePageState extends State<HomePage> {
             shrinkWrap: true,
             slivers: [
               buildHeader(),
-              buildBanner(),
+              if (advertiseList.isNotEmpty) buildBanner(),
               buildSubject(),
-              buildBrandTitle(),
-              buildBrandContent(),
-              buildFlashSaleTitle(),
-              buildFlashSaleContent(4),
-              buildNewProductTitle(),
-              buildNewProductContent(6),
-              buildHotProductTitle(),
-              buildHotProductContent(6),
-              buildLikeTitle(),
-              buildLikeContent(_count),
+              if (brandList.isNotEmpty) buildBrandTitle(),
+              if (brandList.isNotEmpty) buildBrandContent(),
+              if (flashProductList.isNotEmpty) buildFlashSaleTitle(),
+              if (flashProductList.isNotEmpty) buildFlashSaleContent(4),
+              if (newProductList.isNotEmpty) buildNewProductTitle(),
+              if (newProductList.isNotEmpty) buildNewProductContent(6),
+              if (hotProductList.isNotEmpty) buildHotProductTitle(),
+              if (hotProductList.isNotEmpty) buildHotProductContent(6),
+              if (hotProductList.isNotEmpty) buildLikeTitle(),
+              if (hotProductList.isNotEmpty) buildLikeContent(_count),
             ],
           ),
         ),

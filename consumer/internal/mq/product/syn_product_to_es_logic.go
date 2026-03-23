@@ -17,7 +17,7 @@ func SynProductToEs(ctx context.Context, body []byte, Search search_client.Searc
 		logc.Errorf(ctx, "解析商品 ES 同步消息失败: %v", err)
 		return
 	}
-	logc.Infof(ctx, "处理商品ES同步消息,spuId:%d,traceId:%s,scope:%s/%d/%d/%d", payload.ID, payload.TraceID, current.ScopeType, current.PlatformID, current.TenantID, current.MerchantID)
+	logc.Infof(ctx, "处理商品ES同步消息,spuId:%d,traceId:%s,action:%s,actor:%d/%s,version:%d,scope:%s/%d/%d/%d", payload.ID, payload.TraceID, payload.Action, payload.ActorID, payload.ActorName, payload.Version, current.ScopeType, current.PlatformID, current.TenantID, current.MerchantID)
 
 	res, err := productSpuService.QueryProductSpuDetail(ctx, &productspuservice.QueryProductSpuDetailReq{
 		Id: payload.ID,

@@ -37,7 +37,9 @@ func (l *AddProductToEsLogic) AddProductToEs(req *types.ProductEsReq) (resp *typ
 
 	for _, id := range req.Ids {
 		traceID := audit.NewTraceID("consumer.product_es.sync", id)
-		message := pkgscope.NewProductESSyncPayload(id, current, traceID)
+		message := pkgscope.NewProductESSyncPayload(id, current, traceID, pkgscope.ProductEventMeta{
+			Action: "consumer.product_es.sync",
+		})
 		body, _ := sonic.Marshal(message)
 		err = l.svcCtx.RabbitMQ.SendMessage("product.event.exchange", "syn.product.to.es.queue", "syn.product.key", body)
 		if err != nil {

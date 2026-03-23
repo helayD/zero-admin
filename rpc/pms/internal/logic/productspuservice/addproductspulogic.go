@@ -182,7 +182,7 @@ func (l *AddProductSpuLogic) AddProductSpu(in *pmsclient.ProductSpuReq) (*pmscli
 		return nil, err
 	}
 
-	sendProductESSync(l.ctx, l.svcCtx, spuId, currentScope)
+	sendProductESSync(l.ctx, l.svcCtx, spuId, currentScope, buildProductEventMeta("pms.product_spu.create", in.CreateBy, ""))
 
 	return &pmsclient.ProductSpuResp{
 		SpuId: spuId,

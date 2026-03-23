@@ -53,7 +53,15 @@ func (l *QueryProductDetailLogic) QueryProductDetail(req *types.QueryProductDeta
 	if err != nil {
 		logc.Errorf(l.ctx, "查询商品SPU详情失败,参数：%+v,响应：%s", req, err.Error())
 		s, _ := status.FromError(err)
+		if visibility, ok := mapProductDetailQueryError(s.Message()); ok {
+			return buildProductDetailResponse(nil, nil, visibility), nil
+		}
 		return nil, errorx.NewDefaultError(s.Message())
+	}
+
+	visibility := frontcommon.BuildFrontProductVisibility(detail.Data)
+	if !visibility.Visible {
+		return buildProductDetailResponse(detail, nil, visibility), nil
 	}
 
 	// 8.商品可用优惠券(根据商品id和分类id查询)
@@ -62,22 +70,7 @@ func (l *QueryProductDetailLogic) QueryProductDetail(req *types.QueryProductDeta
 		Scope:    frontcommon.SMSGovernanceScope(currentScope),
 	})
 
-	return &types.QueryProductDetailResp{
-		Code:    0,
-		Message: "操作成功",
-		Data: types.ProductDetailData{
-			ProductData:        buildProductData(detail),
-			BrandData:          buildBrandData(detail),
-			AttributeList:      buildProductAttributeListData(detail),
-			AttributeValueList: buildProductAttributeValueListData(detail),
-			SkuList:            buildSkuStockListData(detail),
-			LadderList:         buildProductLadderListData(detail),
-			FullList:           buildProductFullReductionListData(detail),
-			MemberPriceList:    buildMemberPriceListData(detail),
-
-			CouponList: buildCouponListData(couponList.List),
-		},
-	}, nil
+	return buildProductDetailResponse(detail, couponList, visibility), nil
 }
 
 // 1.获取商品信息

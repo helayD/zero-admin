@@ -4,15 +4,16 @@ import (
 	"context"
 	"errors"
 	"github.com/feihua/zero-admin/rpc/pms/gen/model"
-	"github.com/feihua/zero-admin/rpc/pms/gen/query"
 	logiccommon "github.com/feihua/zero-admin/rpc/pms/internal/logic/common"
 	"github.com/zeromicro/go-zero/core/logc"
 	"strconv"
+	"time"
 
 	"github.com/feihua/zero-admin/rpc/pms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
 
 	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
 )
 
 type UpdateVerifyStatusLogic struct {
@@ -31,7 +32,6 @@ func NewUpdateVerifyStatusLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 
 // UpdateVerifyStatus 修改审核状态
 func (l *UpdateVerifyStatusLogic) UpdateVerifyStatus(in *pmsclient.UpdateProductSpuStatusReq) (*pmsclient.UpdateProductSpuStatusResp, error) {
-	q := query.PmsProductSpu
 	currentScope, err := logiccommon.ResolveWriteScope(l.ctx, l.svcCtx.DB, in.Scope, in.UpdateBy)
 	if err != nil {
 		return nil, err
@@ -39,29 +39,63 @@ func (l *UpdateVerifyStatusLogic) UpdateVerifyStatus(in *pmsclient.UpdateProduct
 	if _, err := logiccommon.EnsureProductScope(l.ctx, l.svcCtx.DB, currentScope, in.Ids, "pms.product_spu.verify_status", in.UpdateBy, in.ReviewMan, "status="+strconv.Itoa(int(in.Status))); err != nil {
 		return nil, err
 	}
-	_, err = q.WithContext(l.ctx).Where(q.ID.In(in.Ids...)).Update(q.VerifyStatus, in.Status)
+	if in.Status == logiccommon.ProductVerifyStatusApproved {
+		if err := logiccommon.EnsureProductsReviewReady(l.ctx, l.svcCtx.DB, currentScope, in.Ids); err != nil {
+			return nil, err
+		}
+	}
+
+	err = l.svcCtx.DB.WithContext(l.ctx).Transaction(func(tx *gorm.DB) error {
+		updates := map[string]interface{}{
+			"verify_status": in.Status,
+			"update_by":     in.UpdateBy,
+			"update_time":   time.Now(),
+		}
+		if in.Status == logiccommon.ProductVerifyStatusRejected {
+			updates["publish_status"] = logiccommon.ProductPublishStatusOffShelf
+			updates["recommend_status"] = logiccommon.ProductRecommendStatusOff
+		}
+
+		if err := tx.Table("pms_product_spu").Where("id IN ?", in.Ids).Updates(updates).Error; err != nil {
+			return err
+		}
+		if err := tx.Table("pms_product_sku").Where("spu_id IN ?", in.Ids).Updates(map[string]interface{}{
+			"verify_status": in.Status,
+			"update_by":     in.UpdateBy,
+			"update_time":   time.Now(),
+		}).Error; err != nil {
+			return err
+		}
+		if in.Status == logiccommon.ProductVerifyStatusRejected {
+			if err := tx.Table("pms_product_sku").Where("spu_id IN ?", in.Ids).Updates(map[string]interface{}{
+				"publish_status": logiccommon.ProductPublishStatusOffShelf,
+				"update_by":      in.UpdateBy,
+				"update_time":    time.Now(),
+			}).Error; err != nil {
+				return err
+			}
+		}
+
+		for _, id := range in.Ids {
+			if err := l.svcCtx.ProductVertifyRecordModel.Insert(l.ctx, &model.ProductVertifyRecord{
+				ProductId: id,
+				ReviewMan: in.ReviewMan,
+				Status:    in.Status,
+				Detail:    in.Detail,
+			}); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
 
 	if err != nil {
 		logc.Errorf(l.ctx, "批量修改审核状态失败,参数:%+v,异常:%s", in, err.Error())
 		return nil, errors.New("批量修改审核状态失败")
 	}
 
-	// 修改完审核状态后插入审核记录
-	for _, id := range in.Ids {
-		err = l.svcCtx.ProductVertifyRecordModel.Insert(l.ctx, &model.ProductVertifyRecord{
-			ProductId: id,           // 商品id
-			ReviewMan: in.ReviewMan, // 审核人
-			Status:    in.Status,    // 审核状态：0->未通过；1->通过
-			Detail:    in.Detail,    // 反馈详情
-		})
-
-		if err != nil {
-			logc.Errorf(l.ctx, "批量修改审核状态失败,参数:%+v,异常:%s", in, err.Error())
-			return nil, errors.New("批量修改审核状态失败")
-		}
-	}
-
-	sendProductESSyncBatch(l.ctx, l.svcCtx, in.Ids, currentScope)
+	syncProductIndexVisibility(l.ctx, l.svcCtx, currentScope, in.Ids, buildProductEventMeta("pms.product_spu.verify_status", in.UpdateBy, in.ReviewMan))
 
 	return &pmsclient.UpdateProductSpuStatusResp{}, nil
 }

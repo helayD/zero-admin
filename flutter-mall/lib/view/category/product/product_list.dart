@@ -4,6 +4,7 @@ import 'package:flutter_mall/config/service_url.dart';
 import 'package:flutter_mall/utils/http_util.dart';
 import 'package:flutter_mall/view/category/product/product_detail.dart';
 import 'package:flutter_mall/widgets/cached_image_widget.dart';
+import 'package:flutter_mall/widgets/empty_state_widget.dart';
 
 import '../../../model/product_list.dart';
 
@@ -23,6 +24,8 @@ class ProductList extends StatefulWidget {
 
 class _ProductListState extends State<ProductList> {
   List<ProductListData> productDataItem = [];
+  bool _isLoading = true;
+  bool _hasError = false;
 
   @override
   void initState() {
@@ -31,11 +34,25 @@ class _ProductListState extends State<ProductList> {
   }
 
   void queryCollectionList() async {
-    Response result = await HttpUtil.get(productListDataUrl+widget.productCategoryId.toString());
-    ProductListModel collectionListModel = ProductListModel.fromJson(result.data);
     setState(() {
-      productDataItem = collectionListModel.data;
+      _isLoading = true;
+      _hasError = false;
     });
+    try {
+      Response result = await HttpUtil.get(productListDataUrl + widget.productCategoryId.toString());
+      ProductListModel collectionListModel = ProductListModel.fromJson(result.data);
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        productDataItem = collectionListModel.data;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _hasError = true;
+      });
+    }
   }
 
   @override
@@ -47,68 +64,130 @@ class _ProductListState extends State<ProductList> {
           titleTextStyle: const TextStyle(fontSize: 16, color: Colors.black),
           centerTitle: true,
         ),
-        body: Container(
-            color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
-            width: MediaQuery.of(context).size.width,
-            child: Container(
-                color: Colors.white,
-                // height: 300,
-                margin: const EdgeInsets.only(top: 5),
-                padding: const EdgeInsets.all(15),
-                child: GridView.builder(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2, childAspectRatio: 0.63, crossAxisSpacing: 10),
-                    itemCount: productDataItem.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      return InkWell(
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => ProductDetail(productId: productDataItem[index].id),
+        body: _buildBody(context));
+  }
+
+  Widget _buildBody(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_hasError) {
+      return ErrorRetryWidget(
+        message: '商品列表加载失败',
+        onRetry: queryCollectionList,
+      );
+    }
+    if (productDataItem.isEmpty) {
+      return EmptyStateWidget(
+        message: '当前分类下暂无商品',
+        icon: Icons.shopping_bag_outlined,
+        actionText: '浏览其他分类',
+        onAction: () => Navigator.of(context).pop(),
+      );
+    }
+    return Container(
+      color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
+      width: MediaQuery.of(context).size.width,
+      child: Container(
+        color: Colors.white,
+        margin: const EdgeInsets.only(top: 5),
+        padding: const EdgeInsets.all(15),
+        child: GridView.builder(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2, childAspectRatio: 0.58, crossAxisSpacing: 10),
+          itemCount: productDataItem.length,
+          itemBuilder: (BuildContext context, int index) {
+            final item = productDataItem[index];
+            return InkWell(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => ProductDetail(productId: item.id),
+                  ),
+                );
+              },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Stack(
+                    children: [
+                      CachedImageWidget(
+                        165,
+                        165,
+                        item.mainPic,
+                        fit: BoxFit.fill,
+                      ),
+                      if (item.stock <= 0)
+                        Positioned(
+                          top: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade600,
+                              borderRadius: const BorderRadius.only(
+                                bottomLeft: Radius.circular(8),
                               ),
-                            );
-                          },
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              CachedImageWidget(
-                                165,
-                                165,
-                                productDataItem[index].mainPic,
-                                fit: BoxFit.fill,
+                            ),
+                            child: const Text(
+                              '缺货',
+                              style: TextStyle(color: Colors.white, fontSize: 10),
+                            ),
+                          ),
+                        )
+                      else if (item.stock > 0 && item.stock <= item.lowStock)
+                        Positioned(
+                          top: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
+                              borderRadius: const BorderRadius.only(
+                                bottomLeft: Radius.circular(8),
                               ),
-                              const SizedBox(
-                                height: 8,
-                              ),
-                              Text(productDataItem[index].name,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                      fontSize: 16, color: Color(int.parse('303133', radix: 16)).withAlpha(255))),
-                              const SizedBox(
-                                height: 5,
-                              ),
-                              Text(productDataItem[index].subTitle,
-                                  maxLines: 2,
-                                  style: TextStyle(
-                                      fontSize: 12, color: Color(int.parse('707070', radix: 16)).withAlpha(255))),
-                              const SizedBox(
-                                height: 5,
-                              ),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text("￥${productDataItem[index].price}",
-                                        style: TextStyle(
-                                            fontSize: 16, color: Color(int.parse('fa436a', radix: 16)).withAlpha(255))),
-                                  ),
-                                  Text("已售 ${productDataItem[index].sales}",
-                                      style: TextStyle(
-                                          fontSize: 12, color: Color(int.parse('909399', radix: 16)).withAlpha(255))),
-                                ],
-                              )
-                            ],
-                          ));
-                    }))));
+                            ),
+                            child: Text(
+                              '仅剩${item.stock}件',
+                              style: const TextStyle(color: Colors.white, fontSize: 10),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(item.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          fontSize: 16, color: Color(int.parse('303133', radix: 16)).withAlpha(255))),
+                  const SizedBox(height: 5),
+                  Text(item.subTitle,
+                      maxLines: 2,
+                      style: TextStyle(
+                          fontSize: 12, color: Color(int.parse('707070', radix: 16)).withAlpha(255))),
+                  const SizedBox(height: 5),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text("￥${item.price}",
+                            style: TextStyle(
+                                fontSize: 16,
+                                color: item.stock <= 0
+                                    ? const Color(0xFF909399)
+                                    : Color(int.parse('fa436a', radix: 16)).withAlpha(255))),
+                      ),
+                      Text("已售 ${item.sales}",
+                          style: TextStyle(
+                              fontSize: 12, color: Color(int.parse('909399', radix: 16)).withAlpha(255))),
+                    ],
+                  )
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
   }
 }

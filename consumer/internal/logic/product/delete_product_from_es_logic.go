@@ -39,7 +39,9 @@ func (l *DeleteProductFromEsLogic) DeleteProductFromEs(req *types.ProductEsReq) 
 		traceID = audit.NewTraceID("consumer.product_es.delete", ids[0])
 	}
 
-	message := pkgscope.NewProductESDeletePayload(req.Ids, current, traceID)
+	message := pkgscope.NewProductESDeletePayload(req.Ids, current, traceID, pkgscope.ProductEventMeta{
+		Action: "consumer.product_es.delete",
+	})
 	body, _ := sonic.Marshal(message)
 	err = l.svcCtx.RabbitMQ.SendMessage("product.event.exchange", "delete.product.from.es.queue", "delete.product.key", body)
 

@@ -105,7 +105,19 @@ func (l *QueryProductSpuListLogic) QueryProductSpuList(req *types.QueryProductSp
 			CreateTime:          detail.CreateTime,          // 创建时间
 			UpdateBy:            detail.UpdateBy,            // 更新人ID
 			UpdateTime:          detail.UpdateTime,          // 更新时间
-
+			ScopeType:           detail.ScopeType,           // 作用域来源
+			PlatformId:          detail.PlatformId,          // 平台ID
+			TenantId:            detail.TenantId,            // 租户ID
+			MerchantId:          detail.MerchantId,          // 商户ID
+			ReviewMan:           detail.ReviewMan,           // 最近审核人
+			ReviewTime:          detail.ReviewTime,          // 最近审核时间
+			ReviewDetail:        detail.ReviewDetail,        // 最近审核意见
+			PublishMan:          detail.PublishMan,          // 最近上下架操作人
+			PublishTime:         detail.PublishTime,         // 最近上下架时间
+			PublishDetail:       detail.PublishDetail,       // 最近上下架说明
+			RecommendMan:        detail.RecommendMan,        // 最近推荐操作人
+			RecommendTime:       detail.RecommendTime,       // 最近推荐时间
+			RecommendDetail:     detail.RecommendDetail,     // 最近推荐说明
 		})
 	}
 
