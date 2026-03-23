@@ -4,21 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/feihua/zero-admin/rpc/pms/gen/model"
-	"github.com/feihua/zero-admin/rpc/pms/gen/query"
+	"strings"
+	"time"
+
+	logiccommon "github.com/feihua/zero-admin/rpc/pms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/pms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
-	"time"
 )
 
-// UpdateProductCategoryLogic 更新产品分类
-/*
-Author: LiuFeiHua
-Date: 2025/05/26 10:33:54
-*/
 type UpdateProductCategoryLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
@@ -26,76 +22,34 @@ type UpdateProductCategoryLogic struct {
 }
 
 func NewUpdateProductCategoryLogic(ctx context.Context, svcCtx *svc.ServiceContext) *UpdateProductCategoryLogic {
-	return &UpdateProductCategoryLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
-		Logger: logx.WithContext(ctx),
-	}
+	return &UpdateProductCategoryLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
-
-// UpdateProductCategory 更新产品分类
 func (l *UpdateProductCategoryLogic) UpdateProductCategory(in *pmsclient.UpdateProductCategoryReq) (*pmsclient.UpdateProductCategoryResp, error) {
-	category := query.PmsProductCategory
-	q := category.WithContext(l.ctx)
-
-	// 1.根据产品分类id查询产品分类是否已存在
-	detail, err := q.Where(category.ID.Eq(in.Id)).First()
-
-	switch {
-	case errors.Is(err, gorm.ErrRecordNotFound):
-		logc.Errorf(l.ctx, "产品分类不存在, 请求参数：%+v, 异常信息: %s", in, err.Error())
-		return nil, errors.New("产品分类不存在")
-	case err != nil:
-		logc.Errorf(l.ctx, "查询产品分类异常, 请求参数：%+v, 异常信息: %s", in, err.Error())
-		return nil, errors.New("查询产品分类异常")
+	currentScope, err := logiccommon.ResolveWriteScope(l.ctx, l.svcCtx.DB, in.Scope, in.UpdateBy)
+	if err != nil {
+		return nil, err
 	}
-
-	count, _ := q.WithContext(l.ctx).Where(category.ID.Neq(in.Id), category.Name.Eq(in.Name)).Count()
-
+	if _, err := logiccommon.EnsureCategoryScope(l.ctx, l.svcCtx.DB, currentScope, []int64{in.Id}, "pms.product_category.update", in.UpdateBy, "", fmt.Sprintf("categoryId=%d", in.Id)); err != nil {
+		return nil, err
+	}
+	var count int64
+	if err := l.svcCtx.DB.WithContext(l.ctx).Table("pms_product_category").Where("is_deleted = 0 AND id <> ? AND parent_id = ? AND name = ? AND platform_id = ? AND tenant_id = ? AND merchant_id = ?", in.Id, in.ParentId, strings.TrimSpace(in.Name), currentScope.PlatformID, currentScope.TenantID, currentScope.MerchantID).Count(&count).Error; err != nil {
+		logc.Errorf(l.ctx, "校验商品分类重复失败,参数:%+v,异常:%s", in, err.Error())
+		return nil, errors.New("校验商品分类重复失败")
+	}
 	if count > 0 {
 		return nil, errors.New(fmt.Sprintf("商品分类名称：%s,已存在", in.Name))
 	}
-	now := time.Now()
-	item := &model.PmsProductCategory{
-		ID:       in.Id,       //
-		ParentID: in.ParentId, // 上级分类的编号：0表示一级分类
-		Name:     in.Name,     // 商品分类名称
-		Level:    in.Level,    // 分类级别：0->1级；1->2级
-		// ProductCount: in.ProductCount, // 商品数量
-		ProductUnit: in.ProductUnit,    // 商品单位
-		NavStatus:   in.NavStatus,      // 是否显示在导航栏：0->不显示；1->显示
-		Sort:        in.Sort,           // 排序
-		Icon:        in.Icon,           // 图标
-		Keywords:    in.Keywords,       // 关键字
-		Description: in.Description,    // 描述
-		IsEnabled:   in.IsEnabled,      // 是否启用
-		CreateBy:    detail.CreateBy,   // 创建者
-		CreateTime:  detail.CreateTime, // 创建时间
-		UpdateBy:    &in.UpdateBy,      // 更新者
-		UpdateTime:  &now,              // 更新时间
-	}
-
-	// 同时更新筛选属性的信息
-	relation := query.PmsProductCategoryAttributeRelation
-	_, _ = relation.WithContext(l.ctx).Where(relation.ProductCategoryID.Eq(in.Id)).Delete()
-	if len(in.ProductAttributeIdList) > 0 {
-		var list []*model.PmsProductCategoryAttributeRelation
-		for _, productAttributeId := range in.ProductAttributeIdList {
-			list = append(list, &model.PmsProductCategoryAttributeRelation{
-				ProductCategoryID:  in.Id,
-				ProductAttributeID: productAttributeId,
-			})
+	updates := map[string]interface{}{"parent_id": in.ParentId, "name": strings.TrimSpace(in.Name), "level": in.Level, "product_unit": in.ProductUnit, "nav_status": in.NavStatus, "sort": in.Sort, "icon": in.Icon, "keywords": in.Keywords, "description": in.Description, "is_enabled": in.IsEnabled, "update_by": in.UpdateBy, "update_time": time.Now()}
+	err = l.svcCtx.DB.WithContext(l.ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Table("pms_product_category").Where("id = ?", in.Id).Updates(updates).Error; err != nil {
+			return err
 		}
-		_ = relation.WithContext(l.ctx).CreateInBatches(list, len(list))
-	}
-
-	// 2.产品分类存在时,则直接更新产品分类
-	err = l.svcCtx.DB.Model(&model.PmsProductCategory{}).WithContext(l.ctx).Where(category.ID.Eq(in.Id)).Save(item).Error
-
+		return replaceCategoryRelations(tx, in.Id, in.ProductAttributeIdList, currentScope)
+	})
 	if err != nil {
-		logc.Errorf(l.ctx, "更新产品分类失败,参数:%+v,异常:%s", item, err.Error())
+		logc.Errorf(l.ctx, "更新产品分类失败,参数:%+v,异常:%s", in, err.Error())
 		return nil, errors.New("更新产品分类失败")
 	}
-
 	return &pmsclient.UpdateProductCategoryResp{}, nil
 }

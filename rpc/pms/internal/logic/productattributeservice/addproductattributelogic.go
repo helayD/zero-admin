@@ -3,57 +3,25 @@ package productattributeservicelogic
 import (
 	"context"
 	"errors"
-	"github.com/feihua/zero-admin/rpc/pms/gen/model"
-	"github.com/feihua/zero-admin/rpc/pms/gen/query"
+	"fmt"
+	"strings"
+
+	logiccommon "github.com/feihua/zero-admin/rpc/pms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/pms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-// AddProductAttributeLogic 添加商品属性
-/*
-Author: LiuFeiHua
-Date: 2025/06/16 14:37:37
-*/
-type AddProductAttributeLogic struct {
-	ctx    context.Context
-	svcCtx *svc.ServiceContext
-	logx.Logger
-}
-
-func NewAddProductAttributeLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AddProductAttributeLogic {
-	return &AddProductAttributeLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
-		Logger: logx.WithContext(ctx),
-	}
-}
-
-// AddProductAttribute 添加商品属性
+type AddProductAttributeLogic struct { ctx context.Context; svcCtx *svc.ServiceContext; logx.Logger }
+func NewAddProductAttributeLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AddProductAttributeLogic { return &AddProductAttributeLogic{ctx:ctx, svcCtx:svcCtx, Logger:logx.WithContext(ctx)} }
 func (l *AddProductAttributeLogic) AddProductAttribute(in *pmsclient.AddProductAttributeReq) (*pmsclient.AddProductAttributeResp, error) {
-	q := query.PmsProductAttribute
-
-	item := &model.PmsProductAttribute{
-		GroupID:      in.GroupId,      // 属性分组ID
-		Name:         in.Name,         // 属性名称
-		InputType:    in.InputType,    // 输入类型：1-手动输入，2-单选，3-多选
-		ValueType:    in.ValueType,    // 值类型：1-文本，2-数字，3-日期
-		InputList:    in.InputList,    // 可选值列表，用逗号分隔
-		Unit:         in.Unit,         // 单位
-		IsRequired:   in.IsRequired,   // 是否必填
-		IsSearchable: in.IsSearchable, // 是否支持搜索
-		IsShow:       in.IsShow,       // 是否显示
-		Sort:         in.Sort,         // 排序
-		Status:       in.Status,       // 状态：0->禁用；1->启用
-		CreateBy:     in.CreateBy,     // 创建人ID
-	}
-
-	err := q.WithContext(l.ctx).Create(item)
-	if err != nil {
-		logc.Errorf(l.ctx, "添加商品属性失败,参数:%+v,异常:%s", item, err.Error())
-		return nil, errors.New("添加商品属性失败")
-	}
-
-	return &pmsclient.AddProductAttributeResp{}, nil
+	currentScope, err := logiccommon.ResolveWriteScope(l.ctx, l.svcCtx.DB, in.Scope, in.CreateBy); if err != nil { return nil, err }
+	if err := logiccommon.EnsureScopedAttributeGroupExists(l.ctx, l.svcCtx.DB, currentScope, in.GroupId, "当前主体无权在该属性分组下创建商品属性"); err != nil { return nil, err }
+	var count int64
+	if err := l.svcCtx.DB.WithContext(l.ctx).Table("pms_product_attribute").Where("is_deleted = 0 AND group_id = ? AND name = ? AND platform_id = ? AND tenant_id = ? AND merchant_id = ?", in.GroupId, strings.TrimSpace(in.Name), currentScope.PlatformID, currentScope.TenantID, currentScope.MerchantID).Count(&count).Error; err != nil { logc.Errorf(l.ctx, "校验商品属性重复失败,参数:%+v,异常:%s", in, err.Error()); return nil, errors.New("校验商品属性重复失败") }
+	if count > 0 { return nil, errors.New(fmt.Sprintf("商品属性名称：%s,已存在", in.Name)) }
+	item := map[string]interface{}{"group_id":in.GroupId,"name":strings.TrimSpace(in.Name),"input_type":in.InputType,"value_type":in.ValueType,"input_list":in.InputList,"unit":in.Unit,"is_required":in.IsRequired,"is_searchable":in.IsSearchable,"is_show":in.IsShow,"sort":in.Sort,"status":in.Status,"create_by":in.CreateBy,"platform_id":currentScope.PlatformID,"tenant_id":currentScope.TenantID,"merchant_id":currentScope.MerchantID}
+	if err := l.svcCtx.DB.WithContext(l.ctx).Table("pms_product_attribute").Create(item).Error; err != nil { logc.Errorf(l.ctx, "添加商品属性失败,参数:%+v,异常:%s", item, err.Error()); return nil, errors.New("添加商品属性失败") }
+	return &pmsclient.AddProductAttributeResp{Pong:"ok"}, nil
 }

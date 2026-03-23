@@ -85,3 +85,4 @@ service admin-api {
 	@handler HomeRecommendSubjectList
 	get /queryHomeRecommendSubjectList (ListHomeRecommendSubjectReq) returns (ListHomeRecommendSubjectResp)
 }
+

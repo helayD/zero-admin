@@ -2,21 +2,16 @@ package product_category
 
 import (
 	"context"
+	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
 	"github.com/feihua/zero-admin/api/admin/internal/types"
 	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
 	"github.com/zeromicro/go-zero/core/logc"
-	"google.golang.org/grpc/status"
-
 	"github.com/zeromicro/go-zero/core/logx"
+	"google.golang.org/grpc/status"
 )
 
-// QueryProductCategoryListLogic 查询产品分类列表
-/*
-Author: LiuFeiHua
-Date: 2025/05/26 13:56:03
-*/
 type QueryProductCategoryListLogic struct {
 	logx.Logger
 	ctx    context.Context
@@ -24,62 +19,22 @@ type QueryProductCategoryListLogic struct {
 }
 
 func NewQueryProductCategoryListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *QueryProductCategoryListLogic {
-	return &QueryProductCategoryListLogic{
-		Logger: logx.WithContext(ctx),
-		ctx:    ctx,
-		svcCtx: svcCtx,
-	}
+	return &QueryProductCategoryListLogic{Logger: logx.WithContext(ctx), ctx: ctx, svcCtx: svcCtx}
 }
-
-// QueryProductCategoryList 查询产品分类列表
-func (l *QueryProductCategoryListLogic) QueryProductCategoryList(req *types.QueryProductCategoryListReq) (resp *types.QueryProductCategoryListResp, err error) {
-	result, err := l.svcCtx.ProductCategoryService.QueryProductCategoryList(l.ctx, &pmsclient.QueryProductCategoryListReq{
-		PageNum:   req.Current,
-		PageSize:  req.PageSize,
-		ParentId:  req.ParentId,  // 上级分类的编号：0表示一级分类
-		Name:      req.Name,      // 商品分类名称
-		NavStatus: req.NavStatus, // 是否显示在导航栏：0->不显示；1->显示
-		Keywords:  req.Keywords,  // 关键字
-		IsEnabled: req.IsEnabled, // 是否启用
-	})
-
+func (l *QueryProductCategoryListLogic) QueryProductCategoryList(req *types.QueryProductCategoryListReq) (*types.QueryProductCategoryListResp, error) {
+	queryScope, err := admincommon.ResolveQueryGovernanceScope(l.ctx, admincommon.RequestedGovernanceScope{ScopeType: req.ScopeType, PlatformID: req.PlatformId, TenantID: req.TenantId, MerchantID: req.MerchantId})
 	if err != nil {
-		logc.Errorf(l.ctx, "查询字产品分类列表失败,参数：%+v,响应：%s", req, err.Error())
+		return nil, errorx.NewDefaultError(err.Error())
+	}
+	result, err := l.svcCtx.ProductCategoryService.QueryProductCategoryList(l.ctx, &pmsclient.QueryProductCategoryListReq{PageNum: req.Current, PageSize: req.PageSize, ParentId: req.ParentId, Name: req.Name, NavStatus: req.NavStatus, Keywords: req.Keywords, IsEnabled: req.IsEnabled, Scope: admincommon.PMSGovernanceScope(queryScope)})
+	if err != nil {
+		logc.Errorf(l.ctx, "查询产品分类列表失败,参数：%+v,响应：%s", req, err.Error())
 		s, _ := status.FromError(err)
 		return nil, errorx.NewDefaultError(s.Message())
 	}
-
-	var list []*types.QueryProductCategoryListData
-
+	list := make([]*types.QueryProductCategoryListData, 0, len(result.List))
 	for _, detail := range result.List {
-		list = append(list, &types.QueryProductCategoryListData{
-			Id:           detail.Id,           //
-			ParentId:     detail.ParentId,     // 上级分类的编号：0表示一级分类
-			Name:         detail.Name,         // 商品分类名称
-			Level:        detail.Level,        // 分类级别：0->1级；1->2级
-			ProductCount: detail.ProductCount, // 商品数量
-			ProductUnit:  detail.ProductUnit,  // 商品单位
-			NavStatus:    detail.NavStatus,    // 是否显示在导航栏：0->不显示；1->显示
-			Sort:         detail.Sort,         // 排序
-			Icon:         detail.Icon,         // 图标
-			Keywords:     detail.Keywords,     // 关键字
-			Description:  detail.Description,  // 描述
-			IsEnabled:    detail.IsEnabled,    // 是否启用
-			CreateBy:     detail.CreateBy,     // 创建人ID
-			CreateTime:   detail.CreateTime,   // 创建时间
-			UpdateBy:     detail.UpdateBy,     // 更新人ID
-			UpdateTime:   detail.UpdateTime,   // 更新时间
-
-		})
+		list = append(list, &types.QueryProductCategoryListData{Id: detail.Id, ParentId: detail.ParentId, Name: detail.Name, Level: detail.Level, ProductCount: detail.ProductCount, ProductUnit: detail.ProductUnit, NavStatus: detail.NavStatus, Sort: detail.Sort, Icon: detail.Icon, Keywords: detail.Keywords, Description: detail.Description, IsEnabled: detail.IsEnabled, CreateBy: detail.CreateBy, CreateTime: detail.CreateTime, UpdateBy: detail.UpdateBy, UpdateTime: detail.UpdateTime, ScopeType: detail.ScopeType, PlatformId: detail.PlatformId, TenantId: detail.TenantId, MerchantId: detail.MerchantId})
 	}
-
-	return &types.QueryProductCategoryListResp{
-		Code:     "000000",
-		Message:  "查询产品分类列表成功",
-		Current:  req.Current,
-		Data:     list,
-		PageSize: req.PageSize,
-		Success:  true,
-		Total:    result.Total,
-	}, nil
+	return &types.QueryProductCategoryListResp{Code: "000000", Message: "查询产品分类列表成功", Current: req.Current, Data: list, PageSize: req.PageSize, Success: true, Total: result.Total}, nil
 }

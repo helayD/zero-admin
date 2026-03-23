@@ -183,3 +183,4 @@ service admin-api {
 	@handler QuerySubjectList
 	get /querySubjectList (QuerySubjectListReq) returns (QuerySubjectListResp)
 }
+

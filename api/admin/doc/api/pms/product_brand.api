@@ -7,88 +7,114 @@ info (
 )
 
 type (
-	// 添加商品品牌请求参数
 	AddProductBrandReq {
-		Name            string `json:"name"` //品牌名称
-		Logo            string `json:"logo"` //品牌logo
-		BigPic          string `json:"bigPic"` //专区大图
-		Description     string `json:"description"` //描述
-		FirstLetter     string `json:"firstLetter"` //首字母
-		Sort            int32  `json:"sort"` //排序
-		RecommendStatus int32  `json:"recommendStatus"` //推荐状态
-		IsEnabled       int32  `json:"isEnabled"` //是否启用
+		Name            string `json:"name"`
+		Logo            string `json:"logo"`
+		BigPic          string `json:"bigPic"`
+		Description     string `json:"description"`
+		FirstLetter     string `json:"firstLetter"`
+		Sort            int32  `json:"sort"`
+		RecommendStatus int32  `json:"recommendStatus"`
+		IsEnabled       int32  `json:"isEnabled"`
+		ScopeType       string `json:"scopeType,optional"`
+		PlatformId      int64  `json:"platformId,optional"`
+		TenantId        int64  `json:"tenantId,optional"`
+		MerchantId      int64  `json:"merchantId,optional"`
 	}
-	// 删除商品品牌请求参数
 	DeleteProductBrandReq {
-		Ids []int64 `form:"ids"`
+		Ids        []int64 `form:"ids"`
+		ScopeType  string  `form:"scopeType,optional"`
+		PlatformId int64   `form:"platformId,optional"`
+		TenantId   int64   `form:"tenantId,optional"`
+		MerchantId int64   `form:"merchantId,optional"`
 	}
-	// 更新商品品牌请求参数
 	UpdateProductBrandReq {
-		Id              int64  `json:"id"` //
-		Name            string `json:"name"` //品牌名称
-		Logo            string `json:"logo"` //品牌logo
-		BigPic          string `json:"bigPic"` //专区大图
-		Description     string `json:"description"` //描述
-		FirstLetter     string `json:"firstLetter"` //首字母
-		Sort            int32  `json:"sort"` //排序
-		RecommendStatus int32  `json:"recommendStatus"` //推荐状态
-		IsEnabled       int32  `json:"isEnabled"` //是否启用
+		Id              int64  `json:"id"`
+		Name            string `json:"name"`
+		Logo            string `json:"logo"`
+		BigPic          string `json:"bigPic"`
+		Description     string `json:"description"`
+		FirstLetter     string `json:"firstLetter"`
+		Sort            int32  `json:"sort"`
+		RecommendStatus int32  `json:"recommendStatus"`
+		IsEnabled       int32  `json:"isEnabled"`
+		ScopeType       string `json:"scopeType,optional"`
+		PlatformId      int64  `json:"platformId,optional"`
+		TenantId        int64  `json:"tenantId,optional"`
+		MerchantId      int64  `json:"merchantId,optional"`
 	}
-	// 更新商品品牌状态请求参数
 	UpdateProductBrandStatusReq {
-		Ids    []int64 `json:"ids"` //
-		Status int32   `json:"status"` //推荐状态
+		Ids        []int64 `json:"ids"`
+		Status     int32   `json:"status"`
+		ScopeType  string  `json:"scopeType,optional"`
+		PlatformId int64   `json:"platformId,optional"`
+		TenantId   int64   `json:"tenantId,optional"`
+		MerchantId int64   `json:"merchantId,optional"`
 	}
-	// 查询商品品牌详情请求参数
 	QueryProductBrandDetailReq {
-		Id int64 `form:"id"`
+		Id         int64  `form:"id"`
+		ScopeType  string `form:"scopeType,optional"`
+		PlatformId int64  `form:"platformId,optional"`
+		TenantId   int64  `form:"tenantId,optional"`
+		MerchantId int64  `form:"merchantId,optional"`
 	}
 	QueryProductBrandDetailData {
-		Id                  int64  `json:"id"` //
-		Name                string `json:"name"` //品牌名称
-		Logo                string `json:"logo"` //品牌logo
-		BigPic              string `json:"bigPic"` //专区大图
-		Description         string `json:"description"` //描述
-		FirstLetter         string `json:"firstLetter"` //首字母
-		Sort                int32  `json:"sort"` //排序
-		RecommendStatus     int32  `json:"recommendStatus"` //推荐状态
-		ProductCount        int32  `json:"productCount"` //产品数量
-		ProductCommentCount int32  `json:"productCommentCount"` //产品评论数量
-		IsEnabled           int32  `json:"isEnabled"` //是否启用
-		CreateBy            int64  `json:"createBy"` //创建人ID
-		CreateTime          string `json:"createTime"` //创建时间
-		UpdateBy            int64  `json:"updateBy"` //更新人ID
-		UpdateTime          string `json:"updateTime"` //更新时间
+		Id                  int64  `json:"id"`
+		Name                string `json:"name"`
+		Logo                string `json:"logo"`
+		BigPic              string `json:"bigPic"`
+		Description         string `json:"description"`
+		FirstLetter         string `json:"firstLetter"`
+		Sort                int32  `json:"sort"`
+		RecommendStatus     int32  `json:"recommendStatus"`
+		ProductCount        int32  `json:"productCount"`
+		ProductCommentCount int32  `json:"productCommentCount"`
+		IsEnabled           int32  `json:"isEnabled"`
+		CreateBy            int64  `json:"createBy"`
+		CreateTime          string `json:"createTime"`
+		UpdateBy            int64  `json:"updateBy"`
+		UpdateTime          string `json:"updateTime"`
+		ScopeType           string `json:"scopeType,optional"`
+		PlatformId          int64  `json:"platformId,optional"`
+		TenantId            int64  `json:"tenantId,optional"`
+		MerchantId          int64  `json:"merchantId,optional"`
 	}
 	QueryProductBrandDetailResp {
 		Code    string                      `json:"code"`
 		Message string                      `json:"message"`
 		Data    QueryProductBrandDetailData `json:"data"`
 	}
-	// 分页查询商品品牌列表请求参数
 	QueryProductBrandListReq {
-		Current         int32  `form:"current,default=1"` //第几页
-		PageSize        int32  `form:"pageSize,default=20"` //每页的数量
-		Name            string `form:"name,optional"` //品牌名称
-		RecommendStatus int32  `form:"recommendStatus,default=2"` //推荐状态
-		IsEnabled       int32  `form:"isEnabled,,default=2"` //是否启用
+		Current         int32  `form:"current,default=1"`
+		PageSize        int32  `form:"pageSize,default=20"`
+		Name            string `form:"name,optional"`
+		RecommendStatus int32  `form:"recommendStatus,default=2"`
+		IsEnabled       int32  `form:"isEnabled,default=2"`
+		ScopeType       string `form:"scopeType,optional"`
+		PlatformId      int64  `form:"platformId,optional"`
+		TenantId        int64  `form:"tenantId,optional"`
+		MerchantId      int64  `form:"merchantId,optional"`
 	}
 	QueryProductBrandListData {
-		Id                  int64  `json:"id"` //
-		Name                string `json:"name"` //品牌名称
-		Logo                string `json:"logo"` //品牌logo
-		BigPic              string `json:"bigPic"` //专区大图
-		Description         string `json:"description"` //描述
-		FirstLetter         string `json:"firstLetter"` //首字母
-		Sort                int32  `json:"sort"` //排序
-		RecommendStatus     int32  `json:"recommendStatus"` //推荐状态
-		ProductCount        int32  `json:"productCount"` //产品数量
-		ProductCommentCount int32  `json:"productCommentCount"` //产品评论数量
-		IsEnabled           int32  `json:"isEnabled"` //是否启用
-		CreateBy            int64  `json:"createBy"` //创建人ID
-		CreateTime          string `json:"createTime"` //创建时间
-		UpdateBy            int64  `json:"updateBy"` //更新人ID
-		UpdateTime          string `json:"updateTime"` //更新时间
+		Id                  int64  `json:"id"`
+		Name                string `json:"name"`
+		Logo                string `json:"logo"`
+		BigPic              string `json:"bigPic"`
+		Description         string `json:"description"`
+		FirstLetter         string `json:"firstLetter"`
+		Sort                int32  `json:"sort"`
+		RecommendStatus     int32  `json:"recommendStatus"`
+		ProductCount        int32  `json:"productCount"`
+		ProductCommentCount int32  `json:"productCommentCount"`
+		IsEnabled           int32  `json:"isEnabled"`
+		CreateBy            int64  `json:"createBy"`
+		CreateTime          string `json:"createTime"`
+		UpdateBy            int64  `json:"updateBy"`
+		UpdateTime          string `json:"updateTime"`
+		ScopeType           string `json:"scopeType,optional"`
+		PlatformId          int64  `json:"platformId,optional"`
+		TenantId            int64  `json:"tenantId,optional"`
+		MerchantId          int64  `json:"merchantId,optional"`
 	}
 	QueryProductBrandListResp {
 		Code     string                       `json:"code"`
@@ -110,31 +136,24 @@ type (
 	authType:   apiKey
 )
 service admin-api {
-	// 添加商品品牌
 	@handler AddProductBrand
 	post /addProductBrand (AddProductBrandReq) returns (BaseResp)
 
-	// 删除商品品牌
 	@handler DeleteProductBrand
 	get /deleteProductBrand (DeleteProductBrandReq) returns (BaseResp)
 
-	// 更新商品品牌
 	@handler UpdateProductBrand
 	post /updateProductBrand (UpdateProductBrandReq) returns (BaseResp)
 
-	// 更新商品品牌状态
 	@handler UpdateProductBrandStatus
 	post /updateProductBrandStatus (UpdateProductBrandStatusReq) returns (BaseResp)
 
-	// 查询商品品牌详情
 	@handler QueryProductBrandDetail
 	get /queryProductBrandDetail (QueryProductBrandDetailReq) returns (QueryProductBrandDetailResp)
 
-	// 分页查询商品品牌列表
 	@handler QueryProductBrandList
 	get /queryProductBrandList (QueryProductBrandListReq) returns (QueryProductBrandListResp)
 
-	// 更新商品品牌推荐状态
 	@handler UpdateProductBrandRecommendStatus
 	post /updateProductBrandRecommendStatus (UpdateProductBrandStatusReq) returns (BaseResp)
 }

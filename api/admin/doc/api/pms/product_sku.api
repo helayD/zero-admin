@@ -178,3 +178,4 @@ service admin-api {
 	@handler QueryProductSkuList
 	get /queryProductSkuList (QueryProductSkuListReq) returns (QueryProductSkuListResp)
 }
+

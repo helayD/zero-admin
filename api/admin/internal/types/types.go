@@ -254,24 +254,32 @@ type AddPreferredAreaReq struct {
 }
 
 type AddProductAttributeGroupReq struct {
-	CategoryId int64  `json:"categoryId"` //分类ID
-	Name       string `json:"name"`       //分组名称
-	Sort       int32  `json:"sort"`       //排序
-	Status     int32  `json:"status"`     //状态：0->禁用；1->启用
+	CategoryId int64  `json:"categoryId"`
+	Name       string `json:"name"`
+	Sort       int32  `json:"sort,default=0"`
+	Status     int32  `json:"status,default=1"`
+	ScopeType  string `json:"scopeType,optional"`
+	PlatformId int64  `json:"platformId,optional"`
+	TenantId   int64  `json:"tenantId,optional"`
+	MerchantId int64  `json:"merchantId,optional"`
 }
 
 type AddProductAttributeReq struct {
-	GroupId      int64  `json:"groupId"`      //属性分组ID
-	Name         string `json:"name"`         //属性名称
-	InputType    int32  `json:"inputType"`    //输入类型：1-手动输入，2-单选，3-多选
-	ValueType    int32  `json:"valueType"`    //值类型：1-文本，2-数字，3-日期
-	InputList    string `json:"inputList"`    //可选值列表，用逗号分隔
-	Unit         string `json:"unit"`         //单位
-	IsRequired   int32  `json:"isRequired"`   //是否必填
-	IsSearchable int32  `json:"isSearchable"` //是否支持搜索
-	IsShow       int32  `json:"isShow"`       //是否显示
-	Sort         int32  `json:"sort"`         //排序
-	Status       int32  `json:"status"`       //状态：0->禁用；1->启用
+	GroupId      int64  `json:"groupId"`
+	Name         string `json:"name"`
+	InputType    int32  `json:"inputType"`
+	ValueType    int32  `json:"valueType"`
+	InputList    string `json:"inputList"`
+	Unit         string `json:"unit"`
+	IsRequired   int32  `json:"isRequired,default=0"`
+	IsSearchable int32  `json:"isSearchable,default=0"`
+	IsShow       int32  `json:"isShow,default=1"`
+	Sort         int32  `json:"sort,default=0"`
+	Status       int32  `json:"status,default=1"`
+	ScopeType    string `json:"scopeType,optional"`
+	PlatformId   int64  `json:"platformId,optional"`
+	TenantId     int64  `json:"tenantId,optional"`
+	MerchantId   int64  `json:"merchantId,optional"`
 }
 
 type AddProductAttributeValueReq struct {
@@ -281,28 +289,36 @@ type AddProductAttributeValueReq struct {
 }
 
 type AddProductBrandReq struct {
-	Name            string `json:"name"`            //品牌名称
-	Logo            string `json:"logo"`            //品牌logo
-	BigPic          string `json:"bigPic"`          //专区大图
-	Description     string `json:"description"`     //描述
-	FirstLetter     string `json:"firstLetter"`     //首字母
-	Sort            int32  `json:"sort"`            //排序
-	RecommendStatus int32  `json:"recommendStatus"` //推荐状态
-	IsEnabled       int32  `json:"isEnabled"`       //是否启用
+	Name            string `json:"name"`
+	Logo            string `json:"logo"`
+	BigPic          string `json:"bigPic"`
+	Description     string `json:"description"`
+	FirstLetter     string `json:"firstLetter"`
+	Sort            int32  `json:"sort"`
+	RecommendStatus int32  `json:"recommendStatus"`
+	IsEnabled       int32  `json:"isEnabled"`
+	ScopeType       string `json:"scopeType,optional"`
+	PlatformId      int64  `json:"platformId,optional"`
+	TenantId        int64  `json:"tenantId,optional"`
+	MerchantId      int64  `json:"merchantId,optional"`
 }
 
 type AddProductCategoryReq struct {
-	ParentId               int64   `json:"parentId"`                        //上级分类的编号：0表示一级分类
-	Name                   string  `json:"name"`                            //商品分类名称
-	Level                  int32   `json:"level"`                           //分类级别：0->1级；1->2级
-	ProductUnit            string  `json:"productUnit"`                     //商品单位
-	NavStatus              int32   `json:"navStatus"`                       //是否显示在导航栏：0->不显示；1->显示
-	Sort                   int32   `json:"sort"`                            //排序
-	Icon                   string  `json:"icon"`                            //图标
-	Keywords               string  `json:"keywords"`                        //关键字
-	Description            string  `json:"description"`                     //描述
-	IsEnabled              int32   `json:"isEnabled"`                       //是否启用
-	ProductAttributeIdList []int64 `json:"productAttributeIdList,optional"` // 商品相关筛选属性集合
+	ParentId               int64   `json:"parentId"`
+	Name                   string  `json:"name"`
+	Level                  int32   `json:"level"`
+	ProductUnit            string  `json:"productUnit"`
+	NavStatus              int32   `json:"navStatus"`
+	Sort                   int32   `json:"sort"`
+	Icon                   string  `json:"icon"`
+	Keywords               string  `json:"keywords"`
+	Description            string  `json:"description"`
+	IsEnabled              int32   `json:"isEnabled"`
+	ProductAttributeIdList []int64 `json:"productAttributeIdList,optional"`
+	ScopeType              string  `json:"scopeType,optional"`
+	PlatformId             int64   `json:"platformId,optional"`
+	TenantId               int64   `json:"tenantId,optional"`
+	MerchantId             int64   `json:"merchantId,optional"`
 }
 
 type AddProductSkuReq struct {
@@ -327,17 +343,25 @@ type AddProductSkuReq struct {
 }
 
 type AddProductSpecReq struct {
-	CategoryId int64  `json:"categoryId"` //分类ID
-	Name       string `json:"name"`       //规格名称
-	Sort       int32  `json:"sort"`       //排序
-	Status     int32  `json:"status"`     //状态：0->禁用；1->启用
+	CategoryId int64  `json:"categoryId"`
+	Name       string `json:"name"`
+	Sort       int32  `json:"sort,default=0"`
+	Status     int32  `json:"status,default=1"`
+	ScopeType  string `json:"scopeType,optional"`
+	PlatformId int64  `json:"platformId,optional"`
+	TenantId   int64  `json:"tenantId,optional"`
+	MerchantId int64  `json:"merchantId,optional"`
 }
 
 type AddProductSpecValueReq struct {
-	SpecId int64  `json:"specId"` //规格ID
-	Value  string `json:"value"`  //规格值
-	Sort   int32  `json:"sort"`   //排序
-	Status int32  `json:"status"` //状态：0->禁用；1->启用
+	SpecId     int64  `json:"specId"`
+	Value      string `json:"value"`
+	Sort       int32  `json:"sort,default=0"`
+	Status     int32  `json:"status,default=1"`
+	ScopeType  string `json:"scopeType,optional"`
+	PlatformId int64  `json:"platformId,optional"`
+	TenantId   int64  `json:"tenantId,optional"`
+	MerchantId int64  `json:"merchantId,optional"`
 }
 
 type AddProductSpuReq struct {
@@ -685,11 +709,19 @@ type DeletePreferredAreaReq struct {
 }
 
 type DeleteProductAttributeGroupReq struct {
-	Ids []int64 `form:"ids"`
+	Ids        []int64 `form:"ids"`
+	ScopeType  string  `form:"scopeType,optional"`
+	PlatformId int64   `form:"platformId,optional"`
+	TenantId   int64   `form:"tenantId,optional"`
+	MerchantId int64   `form:"merchantId,optional"`
 }
 
 type DeleteProductAttributeReq struct {
-	Ids []int64 `form:"ids"`
+	Ids        []int64 `form:"ids"`
+	ScopeType  string  `form:"scopeType,optional"`
+	PlatformId int64   `form:"platformId,optional"`
+	TenantId   int64   `form:"tenantId,optional"`
+	MerchantId int64   `form:"merchantId,optional"`
 }
 
 type DeleteProductAttributeValueReq struct {
@@ -697,11 +729,19 @@ type DeleteProductAttributeValueReq struct {
 }
 
 type DeleteProductBrandReq struct {
-	Ids []int64 `form:"ids"`
+	Ids        []int64 `form:"ids"`
+	ScopeType  string  `form:"scopeType,optional"`
+	PlatformId int64   `form:"platformId,optional"`
+	TenantId   int64   `form:"tenantId,optional"`
+	MerchantId int64   `form:"merchantId,optional"`
 }
 
 type DeleteProductCategoryReq struct {
-	Ids []int64 `form:"ids"`
+	Ids        []int64 `form:"ids"`
+	ScopeType  string  `form:"scopeType,optional"`
+	PlatformId int64   `form:"platformId,optional"`
+	TenantId   int64   `form:"tenantId,optional"`
+	MerchantId int64   `form:"merchantId,optional"`
 }
 
 type DeleteProductSkuReq struct {
@@ -713,11 +753,19 @@ type DeleteProductSkuReq struct {
 }
 
 type DeleteProductSpecReq struct {
-	Ids []int64 `form:"ids"`
+	Ids        []int64 `form:"ids"`
+	ScopeType  string  `form:"scopeType,optional"`
+	PlatformId int64   `form:"platformId,optional"`
+	TenantId   int64   `form:"tenantId,optional"`
+	MerchantId int64   `form:"merchantId,optional"`
 }
 
 type DeleteProductSpecValueReq struct {
-	Ids []int64 `form:"ids"`
+	Ids        []int64 `form:"ids"`
+	ScopeType  string  `form:"scopeType,optional"`
+	PlatformId int64   `form:"platformId,optional"`
+	TenantId   int64   `form:"tenantId,optional"`
+	MerchantId int64   `form:"merchantId,optional"`
 }
 
 type DeleteProductSpuReq struct {
@@ -3319,26 +3367,34 @@ type QueryPreferredAreaListResp struct {
 }
 
 type QueryProductAttributeDetailData struct {
-	Id           int64  `json:"id"`           //主键id
-	GroupId      int64  `json:"groupId"`      //属性分组ID
-	Name         string `json:"name"`         //属性名称
-	InputType    int32  `json:"inputType"`    //输入类型：1-手动输入，2-单选，3-多选
-	ValueType    int32  `json:"valueType"`    //值类型：1-文本，2-数字，3-日期
-	InputList    string `json:"inputList"`    //可选值列表，用逗号分隔
-	Unit         string `json:"unit"`         //单位
-	IsRequired   int32  `json:"isRequired"`   //是否必填
-	IsSearchable int32  `json:"isSearchable"` //是否支持搜索
-	IsShow       int32  `json:"isShow"`       //是否显示
-	Sort         int32  `json:"sort"`         //排序
-	Status       int32  `json:"status"`       //状态：0->禁用；1->启用
-	CreateBy     int64  `json:"createBy"`     //创建人ID
-	CreateTime   string `json:"createTime"`   //创建时间
-	UpdateBy     int64  `json:"updateBy"`     //更新人ID
-	UpdateTime   string `json:"updateTime"`   //更新时间
+	Id           int64  `json:"id"`
+	GroupId      int64  `json:"groupId"`
+	Name         string `json:"name"`
+	InputType    int32  `json:"inputType"`
+	ValueType    int32  `json:"valueType"`
+	InputList    string `json:"inputList"`
+	Unit         string `json:"unit"`
+	IsRequired   int32  `json:"isRequired"`
+	IsSearchable int32  `json:"isSearchable"`
+	IsShow       int32  `json:"isShow"`
+	Sort         int32  `json:"sort"`
+	Status       int32  `json:"status"`
+	CreateBy     int64  `json:"createBy"`
+	CreateTime   string `json:"createTime"`
+	UpdateBy     int64  `json:"updateBy"`
+	UpdateTime   string `json:"updateTime"`
+	ScopeType    string `json:"scopeType,optional"`
+	PlatformId   int64  `json:"platformId,optional"`
+	TenantId     int64  `json:"tenantId,optional"`
+	MerchantId   int64  `json:"merchantId,optional"`
 }
 
 type QueryProductAttributeDetailReq struct {
-	Id int64 `form:"id"`
+	Id         int64  `form:"id"`
+	ScopeType  string `form:"scopeType,optional"`
+	PlatformId int64  `form:"platformId,optional"`
+	TenantId   int64  `form:"tenantId,optional"`
+	MerchantId int64  `form:"merchantId,optional"`
 }
 
 type QueryProductAttributeDetailResp struct {
@@ -3348,19 +3404,28 @@ type QueryProductAttributeDetailResp struct {
 }
 
 type QueryProductAttributeGroupDetailData struct {
-	Id         int64  `json:"id"`         //主键id
-	CategoryId int64  `json:"categoryId"` //分类ID
-	Name       string `json:"name"`       //分组名称
-	Sort       int32  `json:"sort"`       //排序
-	Status     int32  `json:"status"`     //状态：0->禁用；1->启用
-	CreateBy   int64  `json:"createBy"`   //创建人ID
-	CreateTime string `json:"createTime"` //创建时间
-	UpdateBy   int64  `json:"updateBy"`   //更新人ID
-	UpdateTime string `json:"updateTime"` //更新时间
+	Id         int64  `json:"id"`
+	CategoryId int64  `json:"categoryId"`
+	Name       string `json:"name"`
+	Sort       int32  `json:"sort"`
+	Status     int32  `json:"status"`
+	CreateBy   int64  `json:"createBy"`
+	CreateTime string `json:"createTime"`
+	UpdateBy   int64  `json:"updateBy"`
+	UpdateTime string `json:"updateTime"`
+	IsDeleted  int32  `json:"isDeleted"`
+	ScopeType  string `json:"scopeType,optional"`
+	PlatformId int64  `json:"platformId,optional"`
+	TenantId   int64  `json:"tenantId,optional"`
+	MerchantId int64  `json:"merchantId,optional"`
 }
 
 type QueryProductAttributeGroupDetailReq struct {
-	Id int64 `form:"id"`
+	Id         int64  `form:"id"`
+	ScopeType  string `form:"scopeType,optional"`
+	PlatformId int64  `form:"platformId,optional"`
+	TenantId   int64  `form:"tenantId,optional"`
+	MerchantId int64  `form:"merchantId,optional"`
 }
 
 type QueryProductAttributeGroupDetailResp struct {
@@ -3370,75 +3435,91 @@ type QueryProductAttributeGroupDetailResp struct {
 }
 
 type QueryProductAttributeGroupListData struct {
-	Id         int64  `json:"id"`         //主键id
-	CategoryId int64  `json:"categoryId"` //分类ID
-	Name       string `json:"name"`       //分组名称
-	Sort       int32  `json:"sort"`       //排序
-	Status     int32  `json:"status"`     //状态：0->禁用；1->启用
-	CreateBy   int64  `json:"createBy"`   //创建人ID
-	CreateTime string `json:"createTime"` //创建时间
-	UpdateBy   int64  `json:"updateBy"`   //更新人ID
-	UpdateTime string `json:"updateTime"` //更新时间
+	Id         int64  `json:"id"`
+	CategoryId int64  `json:"categoryId"`
+	Name       string `json:"name"`
+	Sort       int32  `json:"sort"`
+	Status     int32  `json:"status"`
+	CreateBy   int64  `json:"createBy"`
+	CreateTime string `json:"createTime"`
+	UpdateBy   int64  `json:"updateBy"`
+	UpdateTime string `json:"updateTime"`
+	IsDeleted  int32  `json:"isDeleted"`
+	ScopeType  string `json:"scopeType,optional"`
+	PlatformId int64  `json:"platformId,optional"`
+	TenantId   int64  `json:"tenantId,optional"`
+	MerchantId int64  `json:"merchantId,optional"`
 }
 
 type QueryProductAttributeGroupListReq struct {
-	Current    int32  `form:"current,default=1"`   //第几页
-	PageSize   int32  `form:"pageSize,default=20"` //每页的数量
-	CategoryId int64  `form:"categoryId,optional"` //分类ID
-	Name       string `form:"name,optional"`       //分组名称
-	Status     int32  `form:"status,default=2"`    //状态：0-禁用，1-启用
+	Current    int32  `form:"current,default=1"`
+	PageSize   int32  `form:"pageSize,default=20"`
+	CategoryId int64  `form:"categoryId,optional"`
+	Name       string `form:"name,optional"`
+	Status     int32  `form:"status,default=2"`
+	ScopeType  string `form:"scopeType,optional"`
+	PlatformId int64  `form:"platformId,optional"`
+	TenantId   int64  `form:"tenantId,optional"`
+	MerchantId int64  `form:"merchantId,optional"`
 }
 
 type QueryProductAttributeGroupListResp struct {
 	Code     string                                `json:"code"`
 	Message  string                                `json:"message"`
-	Data     []*QueryProductAttributeGroupListData `json:"data"`
 	Current  int32                                 `json:"current,default=1"`
+	Data     []*QueryProductAttributeGroupListData `json:"data"`
 	PageSize int32                                 `json:"pageSize,default=20"`
-	Total    int64                                 `json:"total"`
 	Success  bool                                  `json:"success"`
+	Total    int64                                 `json:"total"`
 }
 
 type QueryProductAttributeListData struct {
-	Id           int64  `json:"id"`           //主键id
-	GroupId      int64  `json:"groupId"`      //属性分组ID
-	Name         string `json:"name"`         //属性名称
-	InputType    int32  `json:"inputType"`    //输入类型：1-手动输入，2-单选，3-多选
-	ValueType    int32  `json:"valueType"`    //值类型：1-文本，2-数字，3-日期
-	InputList    string `json:"inputList"`    //可选值列表，用逗号分隔
-	Unit         string `json:"unit"`         //单位
-	IsRequired   int32  `json:"isRequired"`   //是否必填
-	IsSearchable int32  `json:"isSearchable"` //是否支持搜索
-	IsShow       int32  `json:"isShow"`       //是否显示
-	Sort         int32  `json:"sort"`         //排序
-	Status       int32  `json:"status"`       //状态：0->禁用；1->启用
-	CreateBy     int64  `json:"createBy"`     //创建人ID
-	CreateTime   string `json:"createTime"`   //创建时间
-	UpdateBy     int64  `json:"updateBy"`     //更新人ID
-	UpdateTime   string `json:"updateTime"`   //更新时间
+	Id           int64  `json:"id"`
+	GroupId      int64  `json:"groupId"`
+	Name         string `json:"name"`
+	InputType    int32  `json:"inputType"`
+	ValueType    int32  `json:"valueType"`
+	InputList    string `json:"inputList"`
+	Unit         string `json:"unit"`
+	IsRequired   int32  `json:"isRequired"`
+	IsSearchable int32  `json:"isSearchable"`
+	IsShow       int32  `json:"isShow"`
+	Sort         int32  `json:"sort"`
+	Status       int32  `json:"status"`
+	CreateBy     int64  `json:"createBy"`
+	CreateTime   string `json:"createTime"`
+	UpdateBy     int64  `json:"updateBy"`
+	UpdateTime   string `json:"updateTime"`
+	ScopeType    string `json:"scopeType,optional"`
+	PlatformId   int64  `json:"platformId,optional"`
+	TenantId     int64  `json:"tenantId,optional"`
+	MerchantId   int64  `json:"merchantId,optional"`
 }
 
 type QueryProductAttributeListReq struct {
-	Current      int32  `form:"current,default=1"`     //第几页
-	PageSize     int32  `form:"pageSize,default=20"`   //每页的数量
-	GroupId      int64  `form:"groupId,optional"`      //属性分组ID
-	Name         string `form:"name,optional"`         //属性名称
-	InputType    int32  `form:"inputType,optional"`    //输入类型：1-手动输入，2-单选，3-多选
-	ValueType    int32  `form:"valueType,optional"`    //值类型：1-文本，2-数字，3-日期
-	IsRequired   int32  `form:"isRequired,optional"`   //是否必填
-	IsSearchable int32  `form:"isSearchable,optional"` //是否支持搜索
-	IsShow       int32  `form:"isShow,default=2"`      //是否显示
-	Status       int32  `form:"status,default=2"`      //状态：0-禁用，1-启用
+	Current      int32  `form:"current,default=1"`
+	PageSize     int32  `form:"pageSize,default=20"`
+	GroupId      int64  `form:"groupId,optional"`
+	Name         string `form:"name,optional"`
+	InputType    int32  `form:"inputType,default=0"`
+	IsRequired   int32  `form:"isRequired,default=2"`
+	IsSearchable int32  `form:"isSearchable,default=2"`
+	IsShow       int32  `form:"isShow,default=2"`
+	Status       int32  `form:"status,default=2"`
+	ScopeType    string `form:"scopeType,optional"`
+	PlatformId   int64  `form:"platformId,optional"`
+	TenantId     int64  `form:"tenantId,optional"`
+	MerchantId   int64  `form:"merchantId,optional"`
 }
 
 type QueryProductAttributeListResp struct {
 	Code     string                           `json:"code"`
 	Message  string                           `json:"message"`
-	Data     []*QueryProductAttributeListData `json:"data"`
 	Current  int32                            `json:"current,default=1"`
+	Data     []*QueryProductAttributeListData `json:"data"`
 	PageSize int32                            `json:"pageSize,default=20"`
-	Total    int64                            `json:"total"`
 	Success  bool                             `json:"success"`
+	Total    int64                            `json:"total"`
 }
 
 type QueryProductAttributeValueDetailData struct {
@@ -3494,25 +3575,33 @@ type QueryProductAttributeValueListResp struct {
 }
 
 type QueryProductBrandDetailData struct {
-	Id                  int64  `json:"id"`                  //
-	Name                string `json:"name"`                //品牌名称
-	Logo                string `json:"logo"`                //品牌logo
-	BigPic              string `json:"bigPic"`              //专区大图
-	Description         string `json:"description"`         //描述
-	FirstLetter         string `json:"firstLetter"`         //首字母
-	Sort                int32  `json:"sort"`                //排序
-	RecommendStatus     int32  `json:"recommendStatus"`     //推荐状态
-	ProductCount        int32  `json:"productCount"`        //产品数量
-	ProductCommentCount int32  `json:"productCommentCount"` //产品评论数量
-	IsEnabled           int32  `json:"isEnabled"`           //是否启用
-	CreateBy            int64  `json:"createBy"`            //创建人ID
-	CreateTime          string `json:"createTime"`          //创建时间
-	UpdateBy            int64  `json:"updateBy"`            //更新人ID
-	UpdateTime          string `json:"updateTime"`          //更新时间
+	Id                  int64  `json:"id"`
+	Name                string `json:"name"`
+	Logo                string `json:"logo"`
+	BigPic              string `json:"bigPic"`
+	Description         string `json:"description"`
+	FirstLetter         string `json:"firstLetter"`
+	Sort                int32  `json:"sort"`
+	RecommendStatus     int32  `json:"recommendStatus"`
+	ProductCount        int32  `json:"productCount"`
+	ProductCommentCount int32  `json:"productCommentCount"`
+	IsEnabled           int32  `json:"isEnabled"`
+	CreateBy            int64  `json:"createBy"`
+	CreateTime          string `json:"createTime"`
+	UpdateBy            int64  `json:"updateBy"`
+	UpdateTime          string `json:"updateTime"`
+	ScopeType           string `json:"scopeType,optional"`
+	PlatformId          int64  `json:"platformId,optional"`
+	TenantId            int64  `json:"tenantId,optional"`
+	MerchantId          int64  `json:"merchantId,optional"`
 }
 
 type QueryProductBrandDetailReq struct {
-	Id int64 `form:"id"`
+	Id         int64  `form:"id"`
+	ScopeType  string `form:"scopeType,optional"`
+	PlatformId int64  `form:"platformId,optional"`
+	TenantId   int64  `form:"tenantId,optional"`
+	MerchantId int64  `form:"merchantId,optional"`
 }
 
 type QueryProductBrandDetailResp struct {
@@ -3522,29 +3611,37 @@ type QueryProductBrandDetailResp struct {
 }
 
 type QueryProductBrandListData struct {
-	Id                  int64  `json:"id"`                  //
-	Name                string `json:"name"`                //品牌名称
-	Logo                string `json:"logo"`                //品牌logo
-	BigPic              string `json:"bigPic"`              //专区大图
-	Description         string `json:"description"`         //描述
-	FirstLetter         string `json:"firstLetter"`         //首字母
-	Sort                int32  `json:"sort"`                //排序
-	RecommendStatus     int32  `json:"recommendStatus"`     //推荐状态
-	ProductCount        int32  `json:"productCount"`        //产品数量
-	ProductCommentCount int32  `json:"productCommentCount"` //产品评论数量
-	IsEnabled           int32  `json:"isEnabled"`           //是否启用
-	CreateBy            int64  `json:"createBy"`            //创建人ID
-	CreateTime          string `json:"createTime"`          //创建时间
-	UpdateBy            int64  `json:"updateBy"`            //更新人ID
-	UpdateTime          string `json:"updateTime"`          //更新时间
+	Id                  int64  `json:"id"`
+	Name                string `json:"name"`
+	Logo                string `json:"logo"`
+	BigPic              string `json:"bigPic"`
+	Description         string `json:"description"`
+	FirstLetter         string `json:"firstLetter"`
+	Sort                int32  `json:"sort"`
+	RecommendStatus     int32  `json:"recommendStatus"`
+	ProductCount        int32  `json:"productCount"`
+	ProductCommentCount int32  `json:"productCommentCount"`
+	IsEnabled           int32  `json:"isEnabled"`
+	CreateBy            int64  `json:"createBy"`
+	CreateTime          string `json:"createTime"`
+	UpdateBy            int64  `json:"updateBy"`
+	UpdateTime          string `json:"updateTime"`
+	ScopeType           string `json:"scopeType,optional"`
+	PlatformId          int64  `json:"platformId,optional"`
+	TenantId            int64  `json:"tenantId,optional"`
+	MerchantId          int64  `json:"merchantId,optional"`
 }
 
 type QueryProductBrandListReq struct {
-	Current         int32  `form:"current,default=1"`         //第几页
-	PageSize        int32  `form:"pageSize,default=20"`       //每页的数量
-	Name            string `form:"name,optional"`             //品牌名称
-	RecommendStatus int32  `form:"recommendStatus,default=2"` //推荐状态
-	IsEnabled       int32  `form:"isEnabled,,default=2"`      //是否启用
+	Current         int32  `form:"current,default=1"`
+	PageSize        int32  `form:"pageSize,default=20"`
+	Name            string `form:"name,optional"`
+	RecommendStatus int32  `form:"recommendStatus,default=2"`
+	IsEnabled       int32  `form:"isEnabled,default=2"`
+	ScopeType       string `form:"scopeType,optional"`
+	PlatformId      int64  `form:"platformId,optional"`
+	TenantId        int64  `form:"tenantId,optional"`
+	MerchantId      int64  `form:"merchantId,optional"`
 }
 
 type QueryProductBrandListResp struct {
@@ -3558,26 +3655,34 @@ type QueryProductBrandListResp struct {
 }
 
 type QueryProductCategoryDetailData struct {
-	Id           int64  `json:"id"`           //
-	ParentId     int64  `json:"parentId"`     //上级分类的编号：0表示一级分类
-	Name         string `json:"name"`         //商品分类名称
-	Level        int32  `json:"level"`        //分类级别：0->1级；1->2级
-	ProductCount int32  `json:"productCount"` //商品数量
-	ProductUnit  string `json:"productUnit"`  //商品单位
-	NavStatus    int32  `json:"navStatus"`    //是否显示在导航栏：0->不显示；1->显示
-	Sort         int32  `json:"sort"`         //排序
-	Icon         string `json:"icon"`         //图标
-	Keywords     string `json:"keywords"`     //关键字
-	Description  string `json:"description"`  //描述
-	IsEnabled    int32  `json:"isEnabled"`    //是否启用
-	CreateBy     int64  `json:"createBy"`     //创建人ID
-	CreateTime   string `json:"createTime"`   //创建时间
-	UpdateBy     int64  `json:"updateBy"`     //更新人ID
-	UpdateTime   string `json:"updateTime"`   //更新时间
+	Id           int64  `json:"id"`
+	ParentId     int64  `json:"parentId"`
+	Name         string `json:"name"`
+	Level        int32  `json:"level"`
+	ProductCount int32  `json:"productCount"`
+	ProductUnit  string `json:"productUnit"`
+	NavStatus    int32  `json:"navStatus"`
+	Sort         int32  `json:"sort"`
+	Icon         string `json:"icon"`
+	Keywords     string `json:"keywords"`
+	Description  string `json:"description"`
+	IsEnabled    int32  `json:"isEnabled"`
+	CreateBy     int64  `json:"createBy"`
+	CreateTime   string `json:"createTime"`
+	UpdateBy     int64  `json:"updateBy"`
+	UpdateTime   string `json:"updateTime"`
+	ScopeType    string `json:"scopeType,optional"`
+	PlatformId   int64  `json:"platformId,optional"`
+	TenantId     int64  `json:"tenantId,optional"`
+	MerchantId   int64  `json:"merchantId,optional"`
 }
 
 type QueryProductCategoryDetailReq struct {
-	Id int64 `form:"id"`
+	Id         int64  `form:"id"`
+	ScopeType  string `form:"scopeType,optional"`
+	PlatformId int64  `form:"platformId,optional"`
+	TenantId   int64  `form:"tenantId,optional"`
+	MerchantId int64  `form:"merchantId,optional"`
 }
 
 type QueryProductCategoryDetailResp struct {
@@ -3587,32 +3692,40 @@ type QueryProductCategoryDetailResp struct {
 }
 
 type QueryProductCategoryListData struct {
-	Id           int64  `json:"id"`           //
-	ParentId     int64  `json:"parentId"`     //上级分类的编号：0表示一级分类
-	Name         string `json:"name"`         //商品分类名称
-	Level        int32  `json:"level"`        //分类级别：0->1级；1->2级
-	ProductCount int32  `json:"productCount"` //商品数量
-	ProductUnit  string `json:"productUnit"`  //商品单位
-	NavStatus    int32  `json:"navStatus"`    //是否显示在导航栏：0->不显示；1->显示
-	Sort         int32  `json:"sort"`         //排序
-	Icon         string `json:"icon"`         //图标
-	Keywords     string `json:"keywords"`     //关键字
-	Description  string `json:"description"`  //描述
-	IsEnabled    int32  `json:"isEnabled"`    //是否启用
-	CreateBy     int64  `json:"createBy"`     //创建人ID
-	CreateTime   string `json:"createTime"`   //创建时间
-	UpdateBy     int64  `json:"updateBy"`     //更新人ID
-	UpdateTime   string `json:"updateTime"`   //更新时间
+	Id           int64  `json:"id"`
+	ParentId     int64  `json:"parentId"`
+	Name         string `json:"name"`
+	Level        int32  `json:"level"`
+	ProductCount int32  `json:"productCount"`
+	ProductUnit  string `json:"productUnit"`
+	NavStatus    int32  `json:"navStatus"`
+	Sort         int32  `json:"sort"`
+	Icon         string `json:"icon"`
+	Keywords     string `json:"keywords"`
+	Description  string `json:"description"`
+	IsEnabled    int32  `json:"isEnabled"`
+	CreateBy     int64  `json:"createBy"`
+	CreateTime   string `json:"createTime"`
+	UpdateBy     int64  `json:"updateBy"`
+	UpdateTime   string `json:"updateTime"`
+	ScopeType    string `json:"scopeType,optional"`
+	PlatformId   int64  `json:"platformId,optional"`
+	TenantId     int64  `json:"tenantId,optional"`
+	MerchantId   int64  `json:"merchantId,optional"`
 }
 
 type QueryProductCategoryListReq struct {
-	Current   int32  `form:"current,default=1"`     //第几页
-	PageSize  int32  `form:"pageSize,default=20"`   //每页的数量
-	ParentId  int64  `form:"parentId,default=1000"` //上级分类的编号：0表示一级分类
-	Name      string `form:"name,optional"`         //商品分类名称
-	NavStatus int32  `form:"navStatus,default=2"`   //是否显示在导航栏：0->不显示；1->显示
-	Keywords  string `form:"keywords,optional"`     //关键字
-	IsEnabled int32  `form:"isEnabled,default=2"`   //是否启用
+	Current    int32  `form:"current,default=1"`
+	PageSize   int32  `form:"pageSize,default=20"`
+	ParentId   int64  `form:"parentId,default=1000"`
+	Name       string `form:"name,optional"`
+	NavStatus  int32  `form:"navStatus,default=2"`
+	Keywords   string `form:"keywords,optional"`
+	IsEnabled  int32  `form:"isEnabled,default=2"`
+	ScopeType  string `form:"scopeType,optional"`
+	PlatformId int64  `form:"platformId,optional"`
+	TenantId   int64  `form:"tenantId,optional"`
+	MerchantId int64  `form:"merchantId,optional"`
 }
 
 type QueryProductCategoryListResp struct {
@@ -3716,19 +3829,27 @@ type QueryProductSkuListResp struct {
 }
 
 type QueryProductSpecDetailData struct {
-	Id         int64  `json:"id"`         //
-	CategoryId int64  `json:"categoryId"` //分类ID
-	Name       string `json:"name"`       //规格名称
-	Sort       int32  `json:"sort"`       //排序
-	Status     int32  `json:"status"`     //状态：0->禁用；1->启用
-	CreateBy   int64  `json:"createBy"`   //创建人ID
-	CreateTime string `json:"createTime"` //创建时间
-	UpdateBy   int64  `json:"updateBy"`   //更新人ID
-	UpdateTime string `json:"updateTime"` //更新时间
+	Id         int64  `json:"id"`
+	CategoryId int64  `json:"categoryId"`
+	Name       string `json:"name"`
+	Sort       int32  `json:"sort"`
+	Status     int32  `json:"status"`
+	CreateBy   int64  `json:"createBy"`
+	CreateTime string `json:"createTime"`
+	UpdateBy   int64  `json:"updateBy"`
+	UpdateTime string `json:"updateTime"`
+	ScopeType  string `json:"scopeType,optional"`
+	PlatformId int64  `json:"platformId,optional"`
+	TenantId   int64  `json:"tenantId,optional"`
+	MerchantId int64  `json:"merchantId,optional"`
 }
 
 type QueryProductSpecDetailReq struct {
-	Id int64 `form:"id"`
+	Id         int64  `form:"id"`
+	ScopeType  string `form:"scopeType,optional"`
+	PlatformId int64  `form:"platformId,optional"`
+	TenantId   int64  `form:"tenantId,optional"`
+	MerchantId int64  `form:"merchantId,optional"`
 }
 
 type QueryProductSpecDetailResp struct {
@@ -3738,49 +3859,66 @@ type QueryProductSpecDetailResp struct {
 }
 
 type QueryProductSpecListData struct {
-	Id         int64  `json:"id"`         //
-	CategoryId int64  `json:"categoryId"` //分类ID
-	Name       string `json:"name"`       //规格名称
-	Sort       int32  `json:"sort"`       //排序
-	Status     int32  `json:"status"`     //状态：0->禁用；1->启用
-	CreateBy   int64  `json:"createBy"`   //创建人ID
-	CreateTime string `json:"createTime"` //创建时间
-	UpdateBy   int64  `json:"updateBy"`   //更新人ID
-	UpdateTime string `json:"updateTime"` //更新时间
+	Id         int64  `json:"id"`
+	CategoryId int64  `json:"categoryId"`
+	Name       string `json:"name"`
+	Sort       int32  `json:"sort"`
+	Status     int32  `json:"status"`
+	CreateBy   int64  `json:"createBy"`
+	CreateTime string `json:"createTime"`
+	UpdateBy   int64  `json:"updateBy"`
+	UpdateTime string `json:"updateTime"`
+	IsDeleted  int32  `json:"isDeleted"`
+	ScopeType  string `json:"scopeType,optional"`
+	PlatformId int64  `json:"platformId,optional"`
+	TenantId   int64  `json:"tenantId,optional"`
+	MerchantId int64  `json:"merchantId,optional"`
 }
 
 type QueryProductSpecListReq struct {
-	Current    int32  `form:"current,default=1"`   //第几页
-	PageSize   int32  `form:"pageSize,default=20"` //每页的数量
-	CategoryId int64  `form:"categoryId,optional"` //分类ID
-	Name       string `form:"name,optional"`       //规格名称
-	Status     int32  `form:"status,default=2"`    //状态：0-禁用，1-启用
+	Current    int32  `form:"current,default=1"`
+	PageSize   int32  `form:"pageSize,default=20"`
+	CategoryId int64  `form:"categoryId,optional"`
+	Name       string `form:"name,optional"`
+	Status     int32  `form:"status,default=2"`
+	ScopeType  string `form:"scopeType,optional"`
+	PlatformId int64  `form:"platformId,optional"`
+	TenantId   int64  `form:"tenantId,optional"`
+	MerchantId int64  `form:"merchantId,optional"`
 }
 
 type QueryProductSpecListResp struct {
 	Code     string                      `json:"code"`
 	Message  string                      `json:"message"`
-	Data     []*QueryProductSpecListData `json:"data"`
 	Current  int32                       `json:"current,default=1"`
+	Data     []*QueryProductSpecListData `json:"data"`
 	PageSize int32                       `json:"pageSize,default=20"`
-	Total    int64                       `json:"total"`
 	Success  bool                        `json:"success"`
+	Total    int64                       `json:"total"`
 }
 
 type QueryProductSpecValueDetailData struct {
-	Id         int64  `json:"id"`         //
-	SpecId     int64  `json:"specId"`     //规格ID
-	Value      string `json:"value"`      //规格值
-	Sort       int32  `json:"sort"`       //排序
-	Status     int32  `json:"status"`     //状态：0->禁用；1->启用
-	CreateBy   int64  `json:"createBy"`   //创建人ID
-	CreateTime string `json:"createTime"` //创建时间
-	UpdateBy   int64  `json:"updateBy"`   //更新人ID
-	UpdateTime string `json:"updateTime"` //更新时间
+	Id         int64  `json:"id"`
+	SpecId     int64  `json:"specId"`
+	Value      string `json:"value"`
+	Sort       int32  `json:"sort"`
+	Status     int32  `json:"status"`
+	CreateBy   int64  `json:"createBy"`
+	CreateTime string `json:"createTime"`
+	UpdateBy   int64  `json:"updateBy"`
+	UpdateTime string `json:"updateTime"`
+	ScopeType  string `json:"scopeType,optional"`
+	PlatformId int64  `json:"platformId,optional"`
+	TenantId   int64  `json:"tenantId,optional"`
+	MerchantId int64  `json:"merchantId,optional"`
 }
 
 type QueryProductSpecValueDetailReq struct {
-	Id int64 `form:"id"`
+	Id         int64  `form:"id"`
+	ScopeType  string `form:"scopeType,optional"`
+	PlatformId int64  `form:"platformId,optional"`
+	TenantId   int64  `form:"tenantId,optional"`
+	MerchantId int64  `form:"merchantId,optional"`
 }
 
 type QueryProductSpecValueDetailResp struct {
@@ -3790,32 +3928,40 @@ type QueryProductSpecValueDetailResp struct {
 }
 
 type QueryProductSpecValueListData struct {
-	Id         int64  `json:"id"`         //
-	SpecId     int64  `json:"specId"`     //规格ID
-	Value      string `json:"value"`      //规格值
-	Sort       int32  `json:"sort"`       //排序
-	Status     int32  `json:"status"`     //状态：0->禁用；1->启用
-	CreateBy   int64  `json:"createBy"`   //创建人ID
-	CreateTime string `json:"createTime"` //创建时间
-	UpdateBy   int64  `json:"updateBy"`   //更新人ID
-	UpdateTime string `json:"updateTime"` //更新时间
+	Id         int64  `json:"id"`
+	SpecId     int64  `json:"specId"`
+	Value      string `json:"value"`
+	Sort       int32  `json:"sort"`
+	Status     int32  `json:"status"`
+	CreateBy   int64  `json:"createBy"`
+	CreateTime string `json:"createTime"`
+	UpdateBy   int64  `json:"updateBy"`
+	UpdateTime string `json:"updateTime"`
+	ScopeType  string `json:"scopeType,optional"`
+	PlatformId int64  `json:"platformId,optional"`
+	TenantId   int64  `json:"tenantId,optional"`
+	MerchantId int64  `json:"merchantId,optional"`
 }
 
 type QueryProductSpecValueListReq struct {
-	Current  int32 `form:"current,default=1"`   //第几页
-	PageSize int32 `form:"pageSize,default=20"` //每页的数量
-	SpecId   int64 `form:"specId,optional"`     //规格ID
-	Status   int32 `form:"status,default=2"`    //状态：0-禁用，1-启用
+	Current    int32  `form:"current,default=1"`
+	PageSize   int32  `form:"pageSize,default=20"`
+	SpecId     int64  `form:"specId,optional"`
+	Status     int32  `form:"status,default=2"`
+	ScopeType  string `form:"scopeType,optional"`
+	PlatformId int64  `form:"platformId,optional"`
+	TenantId   int64  `form:"tenantId,optional"`
+	MerchantId int64  `form:"merchantId,optional"`
 }
 
 type QueryProductSpecValueListResp struct {
 	Code     string                           `json:"code"`
 	Message  string                           `json:"message"`
-	Data     []*QueryProductSpecValueListData `json:"data"`
 	Current  int32                            `json:"current,default=1"`
+	Data     []*QueryProductSpecValueListData `json:"data"`
 	PageSize int32                            `json:"pageSize,default=20"`
-	Total    int64                            `json:"total"`
 	Success  bool                             `json:"success"`
+	Total    int64                            `json:"total"`
 }
 
 type QueryProductSpuDetailReq struct {
@@ -5036,36 +5182,52 @@ type UpdatePreferredAreaStatusReq struct {
 }
 
 type UpdateProductAttributeGroupReq struct {
-	Id         int64  `json:"id"`         //主键id
-	CategoryId int64  `json:"categoryId"` //分类ID
-	Name       string `json:"name"`       //分组名称
-	Sort       int32  `json:"sort"`       //排序
-	Status     int32  `json:"status"`     //状态：0->禁用；1->启用
+	Id         int64  `json:"id"`
+	CategoryId int64  `json:"categoryId"`
+	Name       string `json:"name"`
+	Sort       int32  `json:"sort,default=0"`
+	Status     int32  `json:"status,default=1"`
+	ScopeType  string `json:"scopeType,optional"`
+	PlatformId int64  `json:"platformId,optional"`
+	TenantId   int64  `json:"tenantId,optional"`
+	MerchantId int64  `json:"merchantId,optional"`
 }
 
 type UpdateProductAttributeGroupStatusReq struct {
-	Ids    []int64 `json:"ids"`    //主键id
-	Status int32   `json:"status"` //状态：0->禁用；1->启用
+	Ids        []int64 `json:"ids"`
+	Status     int32   `json:"status"`
+	ScopeType  string  `json:"scopeType,optional"`
+	PlatformId int64   `json:"platformId,optional"`
+	TenantId   int64   `json:"tenantId,optional"`
+	MerchantId int64   `json:"merchantId,optional"`
 }
 
 type UpdateProductAttributeReq struct {
-	Id           int64  `json:"id"`           //主键id
-	GroupId      int64  `json:"groupId"`      //属性分组ID
-	Name         string `json:"name"`         //属性名称
-	InputType    int32  `json:"inputType"`    //输入类型：1-手动输入，2-单选，3-多选
-	ValueType    int32  `json:"valueType"`    //值类型：1-文本，2-数字，3-日期
-	InputList    string `json:"inputList"`    //可选值列表，用逗号分隔
-	Unit         string `json:"unit"`         //单位
-	IsRequired   int32  `json:"isRequired"`   //是否必填
-	IsSearchable int32  `json:"isSearchable"` //是否支持搜索
-	IsShow       int32  `json:"isShow"`       //是否显示
-	Sort         int32  `json:"sort"`         //排序
-	Status       int32  `json:"status"`       //状态：0->禁用；1->启用
+	Id           int64  `json:"id"`
+	GroupId      int64  `json:"groupId"`
+	Name         string `json:"name"`
+	InputType    int32  `json:"inputType"`
+	ValueType    int32  `json:"valueType"`
+	InputList    string `json:"inputList"`
+	Unit         string `json:"unit"`
+	IsRequired   int32  `json:"isRequired,default=0"`
+	IsSearchable int32  `json:"isSearchable,default=0"`
+	IsShow       int32  `json:"isShow,default=1"`
+	Sort         int32  `json:"sort,default=0"`
+	Status       int32  `json:"status,default=1"`
+	ScopeType    string `json:"scopeType,optional"`
+	PlatformId   int64  `json:"platformId,optional"`
+	TenantId     int64  `json:"tenantId,optional"`
+	MerchantId   int64  `json:"merchantId,optional"`
 }
 
 type UpdateProductAttributeStatusReq struct {
-	Ids    []int64 `json:"ids"`    //主键id
-	Status int32   `json:"status"` //状态：0->禁用；1->启用
+	Ids        []int64 `json:"ids"`
+	Status     int32   `json:"status"`
+	ScopeType  string  `json:"scopeType,optional"`
+	PlatformId int64   `json:"platformId,optional"`
+	TenantId   int64   `json:"tenantId,optional"`
+	MerchantId int64   `json:"merchantId,optional"`
 }
 
 type UpdateProductAttributeValueReq struct {
@@ -5087,40 +5249,56 @@ type UpdateProductAttributeValueStatusResp struct {
 }
 
 type UpdateProductBrandReq struct {
-	Id              int64  `json:"id"`              //
-	Name            string `json:"name"`            //品牌名称
-	Logo            string `json:"logo"`            //品牌logo
-	BigPic          string `json:"bigPic"`          //专区大图
-	Description     string `json:"description"`     //描述
-	FirstLetter     string `json:"firstLetter"`     //首字母
-	Sort            int32  `json:"sort"`            //排序
-	RecommendStatus int32  `json:"recommendStatus"` //推荐状态
-	IsEnabled       int32  `json:"isEnabled"`       //是否启用
+	Id              int64  `json:"id"`
+	Name            string `json:"name"`
+	Logo            string `json:"logo"`
+	BigPic          string `json:"bigPic"`
+	Description     string `json:"description"`
+	FirstLetter     string `json:"firstLetter"`
+	Sort            int32  `json:"sort"`
+	RecommendStatus int32  `json:"recommendStatus"`
+	IsEnabled       int32  `json:"isEnabled"`
+	ScopeType       string `json:"scopeType,optional"`
+	PlatformId      int64  `json:"platformId,optional"`
+	TenantId        int64  `json:"tenantId,optional"`
+	MerchantId      int64  `json:"merchantId,optional"`
 }
 
 type UpdateProductBrandStatusReq struct {
-	Ids    []int64 `json:"ids"`    //
-	Status int32   `json:"status"` //推荐状态
+	Ids        []int64 `json:"ids"`
+	Status     int32   `json:"status"`
+	ScopeType  string  `json:"scopeType,optional"`
+	PlatformId int64   `json:"platformId,optional"`
+	TenantId   int64   `json:"tenantId,optional"`
+	MerchantId int64   `json:"merchantId,optional"`
 }
 
 type UpdateProductCategoryReq struct {
-	Id                     int64   `json:"id"`                              //
-	ParentId               int64   `json:"parentId"`                        //上级分类的编号：0表示一级分类
-	Name                   string  `json:"name"`                            //商品分类名称
-	Level                  int32   `json:"level"`                           //分类级别：0->1级；1->2级
-	ProductUnit            string  `json:"productUnit"`                     //商品单位
-	NavStatus              int32   `json:"navStatus"`                       //是否显示在导航栏：0->不显示；1->显示
-	Sort                   int32   `json:"sort"`                            //排序
-	Icon                   string  `json:"icon"`                            //图标
-	Keywords               string  `json:"keywords"`                        //关键字
-	Description            string  `json:"description"`                     //描述
-	IsEnabled              int32   `json:"isEnabled"`                       //是否启用
-	ProductAttributeIdList []int64 `json:"productAttributeIdList,optional"` // 商品相关筛选属性集合
+	Id                     int64   `json:"id"`
+	ParentId               int64   `json:"parentId"`
+	Name                   string  `json:"name"`
+	Level                  int32   `json:"level"`
+	ProductUnit            string  `json:"productUnit"`
+	NavStatus              int32   `json:"navStatus"`
+	Sort                   int32   `json:"sort"`
+	Icon                   string  `json:"icon"`
+	Keywords               string  `json:"keywords"`
+	Description            string  `json:"description"`
+	IsEnabled              int32   `json:"isEnabled"`
+	ProductAttributeIdList []int64 `json:"productAttributeIdList,optional"`
+	ScopeType              string  `json:"scopeType,optional"`
+	PlatformId             int64   `json:"platformId,optional"`
+	TenantId               int64   `json:"tenantId,optional"`
+	MerchantId             int64   `json:"merchantId,optional"`
 }
 
 type UpdateProductCategoryStatusReq struct {
-	Ids    []int64 `json:"ids"`    //
-	Status int32   `json:"status"` //是否
+	Ids        []int64 `json:"ids"`
+	Status     int32   `json:"status"`
+	ScopeType  string  `json:"scopeType,optional"`
+	PlatformId int64   `json:"platformId,optional"`
+	TenantId   int64   `json:"tenantId,optional"`
+	MerchantId int64   `json:"merchantId,optional"`
 }
 
 type UpdateProductSkuData struct {
@@ -5152,29 +5330,45 @@ type UpdateProductSkuReq struct {
 }
 
 type UpdateProductSpecReq struct {
-	Id         int64  `json:"id"`         //
-	CategoryId int64  `json:"categoryId"` //分类ID
-	Name       string `json:"name"`       //规格名称
-	Sort       int32  `json:"sort"`       //排序
-	Status     int32  `json:"status"`     //状态：0->禁用；1->启用
+	Id         int64  `json:"id"`
+	CategoryId int64  `json:"categoryId"`
+	Name       string `json:"name"`
+	Sort       int32  `json:"sort,default=0"`
+	Status     int32  `json:"status,default=1"`
+	ScopeType  string `json:"scopeType,optional"`
+	PlatformId int64  `json:"platformId,optional"`
+	TenantId   int64  `json:"tenantId,optional"`
+	MerchantId int64  `json:"merchantId,optional"`
 }
 
 type UpdateProductSpecStatusReq struct {
-	Ids    []int64 `json:"ids"`    //
-	Status int32   `json:"status"` //状态：0->禁用；1->启用
+	Ids        []int64 `json:"ids"`
+	Status     int32   `json:"status"`
+	ScopeType  string  `json:"scopeType,optional"`
+	PlatformId int64   `json:"platformId,optional"`
+	TenantId   int64   `json:"tenantId,optional"`
+	MerchantId int64   `json:"merchantId,optional"`
 }
 
 type UpdateProductSpecValueReq struct {
-	Id     int64  `json:"id"`     //
-	SpecId int64  `json:"specId"` //规格ID
-	Value  string `json:"value"`  //规格值
-	Sort   int32  `json:"sort"`   //排序
-	Status int32  `json:"status"` //状态：0->禁用；1->启用
+	Id         int64  `json:"id"`
+	SpecId     int64  `json:"specId"`
+	Value      string `json:"value"`
+	Sort       int32  `json:"sort,default=0"`
+	Status     int32  `json:"status,default=1"`
+	ScopeType  string `json:"scopeType,optional"`
+	PlatformId int64  `json:"platformId,optional"`
+	TenantId   int64  `json:"tenantId,optional"`
+	MerchantId int64  `json:"merchantId,optional"`
 }
 
 type UpdateProductSpecValueStatusReq struct {
-	Ids    []int64 `json:"ids"`    //
-	Status int32   `json:"status"` //状态：0->禁用；1->启用
+	Ids        []int64 `json:"ids"`
+	Status     int32   `json:"status"`
+	ScopeType  string  `json:"scopeType,optional"`
+	PlatformId int64   `json:"platformId,optional"`
+	TenantId   int64   `json:"tenantId,optional"`
+	MerchantId int64   `json:"merchantId,optional"`
 }
 
 type UpdateProductSpuReq struct {

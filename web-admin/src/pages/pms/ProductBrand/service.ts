@@ -1,8 +1,16 @@
 import {request} from 'umi';
 import type { ProductBrandListParams, ProductBrandListItem } from './data.d';
+import type { GovernanceScopeValue } from '@/pages/system/components/governance';
+
+interface ScopePayload extends GovernanceScopeValue {
+  scopeType?: 'platform' | 'tenant' | 'merchant';
+  platformId?: number;
+  tenantId?: number;
+  merchantId?: number;
+}
 
 // 添加商品品牌
-export async function addProductBrand(params: ProductBrandListItem) {
+export async function addProductBrand(params: ProductBrandListItem & ScopePayload) {
   return request('/api/pms/brand/addProductBrand', {
     method: 'POST',
     data: {
@@ -12,15 +20,19 @@ export async function addProductBrand(params: ProductBrandListItem) {
 }
 
 // 删除商品品牌
-export async function removeProductBrand(ids: number[]) {
-  return request('/api/pms/brand/deleteProductBrand?ids=' + ids.join(','), {
+export async function removeProductBrand(ids: number[], scope?: ScopePayload) {
+  return request('/api/pms/brand/deleteProductBrand', {
     method: 'GET',
+    params: {
+      ids: ids.join(','),
+      ...scope,
+    },
   });
 }
 
 
 // 更新商品品牌
-export async function updateProductBrand(params: ProductBrandListItem) {
+export async function updateProductBrand(params: ProductBrandListItem & ScopePayload) {
   return request('/api/pms/brand/updateProductBrand', {
     method: 'POST',
     data: {
@@ -30,7 +42,7 @@ export async function updateProductBrand(params: ProductBrandListItem) {
 }
 
 // 批量更新商品品牌状态
-export async function updateProductBrandStatus(params: { ids: number[], status: number }) {
+export async function updateProductBrandStatus(params: { ids: number[], status: number } & ScopePayload) {
   return request('/api/pms/brand/updateProductBrandStatus', {
     method: 'POST',
     data: {
@@ -41,7 +53,7 @@ export async function updateProductBrandStatus(params: { ids: number[], status: 
 }
 
 // 批量更新商品品牌状态
-export async function updateProductBrandRecommendStatus(params: { ids: number[], status: number }) {
+export async function updateProductBrandRecommendStatus(params: { ids: number[], status: number } & ScopePayload) {
   return request('/api/pms/brand/updateProductBrandRecommendStatus', {
     method: 'POST',
     data: {
@@ -52,9 +64,13 @@ export async function updateProductBrandRecommendStatus(params: { ids: number[],
 }
 
 // 查询商品品牌详情
-export async function queryProductBrandDetail(id: number) {
-  return request('/api/pms/brand/queryProductBrandDetail?id=' + id, {
+export async function queryProductBrandDetail(id: number, scope?: ScopePayload) {
+  return request('/api/pms/brand/queryProductBrandDetail', {
     method: 'GET',
+    params: {
+      id,
+      ...scope,
+    },
   });
 }
 

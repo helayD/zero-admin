@@ -63,3 +63,4 @@ service admin-api {
 	@handler HomeRecommendProductList
 	get /queryHomeRecommendProductList (ListHomeRecommendProductReq) returns (ListHomeRecommendProductResp)
 }
+

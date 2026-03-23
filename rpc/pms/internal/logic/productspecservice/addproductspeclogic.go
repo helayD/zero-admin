@@ -1,52 +1,8 @@
 package productspecservicelogic
-
 import (
-	"context"
-	"errors"
-	"github.com/feihua/zero-admin/rpc/pms/gen/model"
-	"github.com/feihua/zero-admin/rpc/pms/gen/query"
-	"github.com/feihua/zero-admin/rpc/pms/internal/svc"
-	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
-	"github.com/zeromicro/go-zero/core/logc"
-	"github.com/zeromicro/go-zero/core/logx"
-)
+	"context"; "errors"; "fmt"; "strings"
+	logiccommon "github.com/feihua/zero-admin/rpc/pms/internal/logic/common"; "github.com/feihua/zero-admin/rpc/pms/internal/svc"; "github.com/feihua/zero-admin/rpc/pms/pmsclient"; "github.com/zeromicro/go-zero/core/logc"; "github.com/zeromicro/go-zero/core/logx")
 
-// AddProductSpecLogic 添加商品规格
-/*
-Author: LiuFeiHua
-Date: 2025/06/16 14:37:37
-*/
-type AddProductSpecLogic struct {
-	ctx    context.Context
-	svcCtx *svc.ServiceContext
-	logx.Logger
-}
-
-func NewAddProductSpecLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AddProductSpecLogic {
-	return &AddProductSpecLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
-		Logger: logx.WithContext(ctx),
-	}
-}
-
-// AddProductSpec 添加商品规格
-func (l *AddProductSpecLogic) AddProductSpec(in *pmsclient.AddProductSpecReq) (*pmsclient.AddProductSpecResp, error) {
-	q := query.PmsProductSpec
-
-	item := &model.PmsProductSpec{
-		CategoryID: in.CategoryId, // 分类ID
-		Name:       in.Name,       // 规格名称
-		Sort:       in.Sort,       // 排序
-		Status:     in.Status,     // 状态：0->禁用；1->启用
-		CreateBy:   in.CreateBy,   // 创建人ID
-	}
-
-	err := q.WithContext(l.ctx).Create(item)
-	if err != nil {
-		logc.Errorf(l.ctx, "添加商品规格失败,参数:%+v,异常:%s", item, err.Error())
-		return nil, errors.New("添加商品规格失败")
-	}
-
-	return &pmsclient.AddProductSpecResp{}, nil
-}
+type AddProductSpecLogic struct { ctx context.Context; svcCtx *svc.ServiceContext; logx.Logger }
+func NewAddProductSpecLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AddProductSpecLogic { return &AddProductSpecLogic{ctx:ctx, svcCtx:svcCtx, Logger:logx.WithContext(ctx)} }
+func (l *AddProductSpecLogic) AddProductSpec(in *pmsclient.AddProductSpecReq) (*pmsclient.AddProductSpecResp, error) { currentScope, err := logiccommon.ResolveWriteScope(l.ctx, l.svcCtx.DB, in.Scope, in.CreateBy); if err != nil { return nil, err }; if err := logiccommon.EnsureScopedCategoryExists(l.ctx, l.svcCtx.DB, currentScope, in.CategoryId, "当前主体无权在该商品分类下创建商品规格"); err != nil { return nil, err }; var count int64; if err := l.svcCtx.DB.WithContext(l.ctx).Table("pms_product_spec").Where("is_deleted = 0 AND category_id = ? AND name = ? AND platform_id = ? AND tenant_id = ? AND merchant_id = ?", in.CategoryId, strings.TrimSpace(in.Name), currentScope.PlatformID, currentScope.TenantID, currentScope.MerchantID).Count(&count).Error; err != nil { logc.Errorf(l.ctx, "校验商品规格重复失败,参数:%+v,异常:%s", in, err.Error()); return nil, errors.New("校验商品规格重复失败") }; if count > 0 { return nil, errors.New(fmt.Sprintf("商品规格名称：%s,已存在", in.Name)) }; item := map[string]interface{}{"category_id":in.CategoryId,"name":strings.TrimSpace(in.Name),"sort":in.Sort,"status":in.Status,"create_by":in.CreateBy,"platform_id":currentScope.PlatformID,"tenant_id":currentScope.TenantID,"merchant_id":currentScope.MerchantID}; if err := l.svcCtx.DB.WithContext(l.ctx).Table("pms_product_spec").Create(item).Error; err != nil { logc.Errorf(l.ctx, "添加商品规格失败,参数:%+v,异常:%s", item, err.Error()); return nil, errors.New("添加商品规格失败") }; return &pmsclient.AddProductSpecResp{Pong:"ok"}, nil }

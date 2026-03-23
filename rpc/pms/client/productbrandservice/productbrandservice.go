@@ -234,22 +234,14 @@ type (
 	UpdateSkuStockReq                             = pmsclient.UpdateSkuStockReq
 
 	ProductBrandService interface {
-		// 添加商品品牌
 		AddProductBrand(ctx context.Context, in *AddProductBrandReq, opts ...grpc.CallOption) (*AddProductBrandResp, error)
-		// 删除商品品牌
 		DeleteProductBrand(ctx context.Context, in *DeleteProductBrandReq, opts ...grpc.CallOption) (*DeleteProductBrandResp, error)
-		// 更新商品品牌
 		UpdateProductBrand(ctx context.Context, in *UpdateProductBrandReq, opts ...grpc.CallOption) (*UpdateProductBrandResp, error)
-		// 更新商品品牌状态
 		UpdateProductBrandStatus(ctx context.Context, in *UpdateProductBrandStatusReq, opts ...grpc.CallOption) (*UpdateProductBrandStatusResp, error)
-		// 查询商品品牌详情
 		QueryProductBrandDetail(ctx context.Context, in *QueryProductBrandDetailReq, opts ...grpc.CallOption) (*QueryProductBrandDetailResp, error)
-		// 查询商品品牌列表
 		QueryProductBrandList(ctx context.Context, in *QueryProductBrandListReq, opts ...grpc.CallOption) (*QueryProductBrandListResp, error)
 		QueryBrandListByIds(ctx context.Context, in *QueryBrandListByIdsReq, opts ...grpc.CallOption) (*QueryProductBrandListResp, error)
-		// 更新品牌的推荐状态
 		UpdateBrandRecommendStatus(ctx context.Context, in *UpdateProductBrandStatusReq, opts ...grpc.CallOption) (*UpdateProductBrandStatusResp, error)
-		// 更新品牌的排序
 		UpdateBrandSort(ctx context.Context, in *UpdateProductBrandSortReq, opts ...grpc.CallOption) (*UpdateProductBrandStatusResp, error)
 	}
 
@@ -264,37 +256,31 @@ func NewProductBrandService(cli zrpc.Client) ProductBrandService {
 	}
 }
 
-// 添加商品品牌
 func (m *defaultProductBrandService) AddProductBrand(ctx context.Context, in *AddProductBrandReq, opts ...grpc.CallOption) (*AddProductBrandResp, error) {
 	client := pmsclient.NewProductBrandServiceClient(m.cli.Conn())
 	return client.AddProductBrand(ctx, in, opts...)
 }
 
-// 删除商品品牌
 func (m *defaultProductBrandService) DeleteProductBrand(ctx context.Context, in *DeleteProductBrandReq, opts ...grpc.CallOption) (*DeleteProductBrandResp, error) {
 	client := pmsclient.NewProductBrandServiceClient(m.cli.Conn())
 	return client.DeleteProductBrand(ctx, in, opts...)
 }
 
-// 更新商品品牌
 func (m *defaultProductBrandService) UpdateProductBrand(ctx context.Context, in *UpdateProductBrandReq, opts ...grpc.CallOption) (*UpdateProductBrandResp, error) {
 	client := pmsclient.NewProductBrandServiceClient(m.cli.Conn())
 	return client.UpdateProductBrand(ctx, in, opts...)
 }
 
-// 更新商品品牌状态
 func (m *defaultProductBrandService) UpdateProductBrandStatus(ctx context.Context, in *UpdateProductBrandStatusReq, opts ...grpc.CallOption) (*UpdateProductBrandStatusResp, error) {
 	client := pmsclient.NewProductBrandServiceClient(m.cli.Conn())
 	return client.UpdateProductBrandStatus(ctx, in, opts...)
 }
 
-// 查询商品品牌详情
 func (m *defaultProductBrandService) QueryProductBrandDetail(ctx context.Context, in *QueryProductBrandDetailReq, opts ...grpc.CallOption) (*QueryProductBrandDetailResp, error) {
 	client := pmsclient.NewProductBrandServiceClient(m.cli.Conn())
 	return client.QueryProductBrandDetail(ctx, in, opts...)
 }
 
-// 查询商品品牌列表
 func (m *defaultProductBrandService) QueryProductBrandList(ctx context.Context, in *QueryProductBrandListReq, opts ...grpc.CallOption) (*QueryProductBrandListResp, error) {
 	client := pmsclient.NewProductBrandServiceClient(m.cli.Conn())
 	return client.QueryProductBrandList(ctx, in, opts...)
@@ -305,13 +291,11 @@ func (m *defaultProductBrandService) QueryBrandListByIds(ctx context.Context, in
 	return client.QueryBrandListByIds(ctx, in, opts...)
 }
 
-// 更新品牌的推荐状态
 func (m *defaultProductBrandService) UpdateBrandRecommendStatus(ctx context.Context, in *UpdateProductBrandStatusReq, opts ...grpc.CallOption) (*UpdateProductBrandStatusResp, error) {
 	client := pmsclient.NewProductBrandServiceClient(m.cli.Conn())
 	return client.UpdateBrandRecommendStatus(ctx, in, opts...)
 }
 
-// 更新品牌的排序
 func (m *defaultProductBrandService) UpdateBrandSort(ctx context.Context, in *UpdateProductBrandSortReq, opts ...grpc.CallOption) (*UpdateProductBrandStatusResp, error) {
 	client := pmsclient.NewProductBrandServiceClient(m.cli.Conn())
 	return client.UpdateBrandSort(ctx, in, opts...)

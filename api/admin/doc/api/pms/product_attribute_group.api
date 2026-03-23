@@ -7,77 +7,105 @@ info (
 )
 
 type (
-	// 添加商品属性分组请求参数
 	AddProductAttributeGroupReq {
-		CategoryId int64  `json:"categoryId"` //分类ID
-		Name       string `json:"name"` //分组名称
-		Sort       int32  `json:"sort"` //排序
-		Status     int32  `json:"status"` //状态：0->禁用；1->启用
+		CategoryId int64  `json:"categoryId"`
+		Name       string `json:"name"`
+		Sort       int32  `json:"sort,default=0"`
+		Status     int32  `json:"status,default=1"`
+		ScopeType  string `json:"scopeType,optional"`
+		PlatformId int64  `json:"platformId,optional"`
+		TenantId   int64  `json:"tenantId,optional"`
+		MerchantId int64  `json:"merchantId,optional"`
 	}
-	// 删除商品属性分组请求参数
 	DeleteProductAttributeGroupReq {
-		Ids []int64 `form:"ids"`
+		Ids        []int64 `form:"ids"`
+		ScopeType  string  `form:"scopeType,optional"`
+		PlatformId int64   `form:"platformId,optional"`
+		TenantId   int64   `form:"tenantId,optional"`
+		MerchantId int64   `form:"merchantId,optional"`
 	}
-	// 更新商品属性分组请求参数
 	UpdateProductAttributeGroupReq {
-		Id         int64  `json:"id"` //主键id
-		CategoryId int64  `json:"categoryId"` //分类ID
-		Name       string `json:"name"` //分组名称
-		Sort       int32  `json:"sort"` //排序
-		Status     int32  `json:"status"` //状态：0->禁用；1->启用
+		Id         int64  `json:"id"`
+		CategoryId int64  `json:"categoryId"`
+		Name       string `json:"name"`
+		Sort       int32  `json:"sort,default=0"`
+		Status     int32  `json:"status,default=1"`
+		ScopeType  string `json:"scopeType,optional"`
+		PlatformId int64  `json:"platformId,optional"`
+		TenantId   int64  `json:"tenantId,optional"`
+		MerchantId int64  `json:"merchantId,optional"`
 	}
-	// 更新商品属性分组状态请求参数
 	UpdateProductAttributeGroupStatusReq {
-		Ids    []int64 `json:"ids"` //主键id
-		Status int32   `json:"status"` //状态：0->禁用；1->启用
+		Ids        []int64 `json:"ids"`
+		Status     int32   `json:"status"`
+		ScopeType  string  `json:"scopeType,optional"`
+		PlatformId int64   `json:"platformId,optional"`
+		TenantId   int64   `json:"tenantId,optional"`
+		MerchantId int64   `json:"merchantId,optional"`
 	}
-	// 查询商品属性分组详情请求参数
 	QueryProductAttributeGroupDetailReq {
-		Id int64 `form:"id"`
+		Id         int64  `form:"id"`
+		ScopeType  string `form:"scopeType,optional"`
+		PlatformId int64  `form:"platformId,optional"`
+		TenantId   int64  `form:"tenantId,optional"`
+		MerchantId int64  `form:"merchantId,optional"`
 	}
 	QueryProductAttributeGroupDetailData {
-		Id         int64  `json:"id"` //主键id
-		CategoryId int64  `json:"categoryId"` //分类ID
-		Name       string `json:"name"` //分组名称
-		Sort       int32  `json:"sort"` //排序
-		Status     int32  `json:"status"` //状态：0->禁用；1->启用
-		CreateBy   int64  `json:"createBy"` //创建人ID
-		CreateTime string `json:"createTime"` //创建时间
-		UpdateBy   int64  `json:"updateBy"` //更新人ID
-		UpdateTime string `json:"updateTime"` //更新时间
+		Id         int64  `json:"id"`
+		CategoryId int64  `json:"categoryId"`
+		Name       string `json:"name"`
+		Sort       int32  `json:"sort"`
+		Status     int32  `json:"status"`
+		CreateBy   int64  `json:"createBy"`
+		CreateTime string `json:"createTime"`
+		UpdateBy   int64  `json:"updateBy"`
+		UpdateTime string `json:"updateTime"`
+		IsDeleted  int32  `json:"isDeleted"`
+		ScopeType  string `json:"scopeType,optional"`
+		PlatformId int64  `json:"platformId,optional"`
+		TenantId   int64  `json:"tenantId,optional"`
+		MerchantId int64  `json:"merchantId,optional"`
 	}
 	QueryProductAttributeGroupDetailResp {
 		Code    string                               `json:"code"`
 		Message string                               `json:"message"`
 		Data    QueryProductAttributeGroupDetailData `json:"data"`
 	}
-	// 分页查询商品属性分组列表请求参数
 	QueryProductAttributeGroupListReq {
-		Current    int32  `form:"current,default=1"` //第几页
-		PageSize   int32  `form:"pageSize,default=20"` //每页的数量
-		CategoryId int64  `form:"categoryId,optional"` //分类ID
-		Name       string `form:"name,optional"` //分组名称
-		Status     int32  `form:"status,default=2"` //状态：0-禁用，1-启用
+		Current    int32  `form:"current,default=1"`
+		PageSize   int32  `form:"pageSize,default=20"`
+		CategoryId int64  `form:"categoryId,optional"`
+		Name       string `form:"name,optional"`
+		Status     int32  `form:"status,default=2"`
+		ScopeType  string `form:"scopeType,optional"`
+		PlatformId int64  `form:"platformId,optional"`
+		TenantId   int64  `form:"tenantId,optional"`
+		MerchantId int64  `form:"merchantId,optional"`
 	}
 	QueryProductAttributeGroupListData {
-		Id         int64  `json:"id"` //主键id
-		CategoryId int64  `json:"categoryId"` //分类ID
-		Name       string `json:"name"` //分组名称
-		Sort       int32  `json:"sort"` //排序
-		Status     int32  `json:"status"` //状态：0->禁用；1->启用
-		CreateBy   int64  `json:"createBy"` //创建人ID
-		CreateTime string `json:"createTime"` //创建时间
-		UpdateBy   int64  `json:"updateBy"` //更新人ID
-		UpdateTime string `json:"updateTime"` //更新时间
+		Id         int64  `json:"id"`
+		CategoryId int64  `json:"categoryId"`
+		Name       string `json:"name"`
+		Sort       int32  `json:"sort"`
+		Status     int32  `json:"status"`
+		CreateBy   int64  `json:"createBy"`
+		CreateTime string `json:"createTime"`
+		UpdateBy   int64  `json:"updateBy"`
+		UpdateTime string `json:"updateTime"`
+		IsDeleted  int32  `json:"isDeleted"`
+		ScopeType  string `json:"scopeType,optional"`
+		PlatformId int64  `json:"platformId,optional"`
+		TenantId   int64  `json:"tenantId,optional"`
+		MerchantId int64  `json:"merchantId,optional"`
 	}
 	QueryProductAttributeGroupListResp {
 		Code     string                                `json:"code"`
 		Message  string                                `json:"message"`
-		Data     []*QueryProductAttributeGroupListData `json:"data"`
 		Current  int32                                 `json:"current,default=1"`
+		Data     []*QueryProductAttributeGroupListData `json:"data"`
 		PageSize int32                                 `json:"pageSize,default=20"`
-		Total    int64                                 `json:"total"`
 		Success  bool                                  `json:"success"`
+		Total    int64                                 `json:"total"`
 	}
 )
 
@@ -90,27 +118,21 @@ type (
 	authType:   apiKey
 )
 service admin-api {
-	// 添加商品属性分组
 	@handler AddProductAttributeGroup
 	post /addAttributeGroup (AddProductAttributeGroupReq) returns (BaseResp)
 
-	// 删除商品属性分组
 	@handler DeleteProductAttributeGroup
 	get /deleteAttributeGroup (DeleteProductAttributeGroupReq) returns (BaseResp)
 
-	// 更新商品属性分组
 	@handler UpdateProductAttributeGroup
 	post /updateAttributeGroup (UpdateProductAttributeGroupReq) returns (BaseResp)
 
-	// 更新商品属性分组状态
 	@handler UpdateProductAttributeGroupStatus
 	post /updateAttributeGroupStatus (UpdateProductAttributeGroupStatusReq) returns (BaseResp)
 
-	// 查询商品属性分组详情
 	@handler QueryProductAttributeGroupDetail
 	get /queryAttributeGroupDetail (QueryProductAttributeGroupDetailReq) returns (QueryProductAttributeGroupDetailResp)
 
-	// 分页查询商品属性分组列表
 	@handler QueryProductAttributeGroupList
 	get /queryAttributeGroupList (QueryProductAttributeGroupListReq) returns (QueryProductAttributeGroupListResp)
 }

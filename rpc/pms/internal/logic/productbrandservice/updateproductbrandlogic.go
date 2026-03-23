@@ -4,21 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/feihua/zero-admin/rpc/pms/gen/model"
-	"github.com/feihua/zero-admin/rpc/pms/gen/query"
+	"strings"
+	"time"
+
+	logiccommon "github.com/feihua/zero-admin/rpc/pms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/pms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
-	"gorm.io/gorm"
-	"time"
 )
 
-// UpdateProductBrandLogic 更新商品品牌
-/*
-Author: LiuFeiHua
-Date: 2025/05/26 10:33:54
-*/
 type UpdateProductBrandLogic struct {
 	ctx    context.Context
 	svcCtx *svc.ServiceContext
@@ -26,61 +21,31 @@ type UpdateProductBrandLogic struct {
 }
 
 func NewUpdateProductBrandLogic(ctx context.Context, svcCtx *svc.ServiceContext) *UpdateProductBrandLogic {
-	return &UpdateProductBrandLogic{
-		ctx:    ctx,
-		svcCtx: svcCtx,
-		Logger: logx.WithContext(ctx),
-	}
+	return &UpdateProductBrandLogic{ctx: ctx, svcCtx: svcCtx, Logger: logx.WithContext(ctx)}
 }
 
-// UpdateProductBrand 更新商品品牌
 func (l *UpdateProductBrandLogic) UpdateProductBrand(in *pmsclient.UpdateProductBrandReq) (*pmsclient.UpdateProductBrandResp, error) {
-	brand := query.PmsProductBrand
-	q := brand.WithContext(l.ctx)
-
-	// 1.根据商品品牌id查询商品品牌是否已存在
-	detail, err := q.Where(brand.ID.Eq(in.Id)).First()
-
-	switch {
-	case errors.Is(err, gorm.ErrRecordNotFound):
-		logc.Errorf(l.ctx, "商品品牌不存在, 请求参数：%+v, 异常信息: %s", in, err.Error())
-		return nil, errors.New("商品品牌不存在")
-	case err != nil:
-		logc.Errorf(l.ctx, "查询商品品牌异常, 请求参数：%+v, 异常信息: %s", in, err.Error())
-		return nil, errors.New("查询商品品牌异常")
+	currentScope, err := logiccommon.ResolveWriteScope(l.ctx, l.svcCtx.DB, in.Scope, in.UpdateBy)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := logiccommon.EnsureBrandScope(l.ctx, l.svcCtx.DB, currentScope, []int64{in.Id}, "pms.product_brand.update", in.UpdateBy, "", fmt.Sprintf("brandId=%d", in.Id)); err != nil {
+		return nil, err
 	}
 
-	count, _ := q.WithContext(l.ctx).Where(brand.ID.Neq(in.Id), brand.Name.Eq(in.Name)).Count()
-
+	var count int64
+	if err := l.svcCtx.DB.WithContext(l.ctx).Table("pms_product_brand").Where("is_deleted = 0 AND id <> ? AND name = ? AND platform_id = ? AND tenant_id = ? AND merchant_id = ?", in.Id, strings.TrimSpace(in.Name), currentScope.PlatformID, currentScope.TenantID, currentScope.MerchantID).Count(&count).Error; err != nil {
+		logc.Errorf(l.ctx, "校验商品品牌重复失败,参数:%+v,异常:%s", in, err.Error())
+		return nil, errors.New("校验商品品牌重复失败")
+	}
 	if count > 0 {
 		return nil, errors.New(fmt.Sprintf("品牌名称：%s,已存在", in.Name))
 	}
-	now := time.Now()
-	item := &model.PmsProductBrand{
-		ID:                  in.Id,                  //
-		Name:                in.Name,                // 品牌名称
-		Logo:                in.Logo,                // 品牌logo
-		BigPic:              in.BigPic,              // 专区大图
-		Description:         in.Description,         // 描述
-		FirstLetter:         in.FirstLetter,         // 首字母
-		Sort:                in.Sort,                // 排序
-		RecommendStatus:     in.RecommendStatus,     // 推荐状态
-		ProductCount:        in.ProductCount,        // 产品数量
-		ProductCommentCount: in.ProductCommentCount, // 产品评论数量
-		IsEnabled:           in.IsEnabled,           // 是否启用
-		CreateBy:            detail.CreateBy,        // 创建者
-		CreateTime:          detail.CreateTime,      // 创建时间
-		UpdateBy:            &in.UpdateBy,           // 更新者
-		UpdateTime:          &now,                   // 更新时间
-	}
 
-	// 2.商品品牌存在时,则直接更新商品品牌
-	err = l.svcCtx.DB.Model(&model.PmsProductBrand{}).WithContext(l.ctx).Where(brand.ID.Eq(in.Id)).Save(item).Error
-
-	if err != nil {
-		logc.Errorf(l.ctx, "更新商品品牌失败,参数:%+v,异常:%s", item, err.Error())
+	updates := map[string]interface{}{"name": strings.TrimSpace(in.Name), "logo": in.Logo, "big_pic": in.BigPic, "description": in.Description, "first_letter": strings.TrimSpace(in.FirstLetter), "sort": in.Sort, "recommend_status": in.RecommendStatus, "is_enabled": in.IsEnabled, "update_by": in.UpdateBy, "update_time": time.Now()}
+	if err := l.svcCtx.DB.WithContext(l.ctx).Table("pms_product_brand").Where("id = ?", in.Id).Updates(updates).Error; err != nil {
+		logc.Errorf(l.ctx, "更新商品品牌失败,参数:%+v,异常:%s", in, err.Error())
 		return nil, errors.New("更新商品品牌失败")
 	}
-
 	return &pmsclient.UpdateProductBrandResp{}, nil
 }
