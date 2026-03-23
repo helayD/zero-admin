@@ -64,7 +64,7 @@ func querySubjectList(l *IndexLogic, req *types.HomeReq, currentScope pkgscope.G
 	})
 
 	if err != nil || res == nil {
-		l.Errorf("querySubjectList failed: err=%v", err)
+		l.Errorf("querySubjectList failed: req=%+v scope=%+v err=%v", req, currentScope, err)
 		return list
 	}
 
@@ -110,7 +110,7 @@ func queryHotProductList(l *IndexLogic, req *types.HomeReq, currentScope pkgscop
 
 	var list []types.IndexProductData
 	if err != nil || resp == nil {
-		l.Errorf("queryHotProductList failed: err=%v", err)
+		l.Errorf("queryHotProductList failed: req=%+v scope=%+v err=%v", req, currentScope, err)
 		return list
 	}
 
@@ -170,7 +170,7 @@ func queryNewProductList(l *IndexLogic, req *types.HomeReq, currentScope pkgscop
 
 	var list []types.IndexProductData
 	if err != nil || resp == nil {
-		l.Errorf("queryNewProductList failed: err=%v", err)
+		l.Errorf("queryNewProductList failed: req=%+v scope=%+v err=%v", req, currentScope, err)
 		return list
 	}
 
@@ -288,7 +288,7 @@ func queryBrandList(l *IndexLogic, req *types.HomeReq) []types.IndexBrandData {
 
 	var list []types.IndexBrandData
 	if err != nil || result == nil {
-		l.Errorf("queryBrandList failed: err=%v", err)
+		l.Errorf("queryBrandList failed: req=%+v err=%v", req, err)
 		return list
 	}
 
@@ -321,7 +321,7 @@ func queryAdvertiseList(l *IndexLogic) []types.AdvertiseList {
 
 	var list []types.AdvertiseList
 	if err != nil || result == nil {
-		l.Errorf("queryAdvertiseList failed: err=%v", err)
+		l.Errorf("queryAdvertiseList failed: pageNum=%d pageSize=%d type=%d status=%d err=%v", 1, 100, 1, 1, err)
 		return list
 	}
 
