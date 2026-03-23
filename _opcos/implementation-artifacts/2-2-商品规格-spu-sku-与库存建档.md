@@ -49,14 +49,14 @@ so that 我可以把自有商品准备成具备进入后续审核流程条件的
 
 - [ ] 5. 完成库存、价格与规格组合校验，防止生成缺少库存或归属错误的可售记录（AC: 2）
   - [x] 在保存前校验 SKU 规格组合唯一性、SKU 编码唯一性、价格合法性、库存非负、安全库存边界、必填销售属性完整性与商户归属一致性
-  - [ ] 对“有 SPU 无 SKU”“有价格无库存”“有库存无规格主键”“商户主体与分类/品牌归属不一致”等场景返回结构化错误，并在表单层定位到对应字段或行
+  - [x] 对“有 SPU 无 SKU”“有价格无库存”“有库存无规格主键”“商户主体与分类/品牌归属不一致”等场景返回结构化错误，并在表单层定位到对应字段或行
   - [x] 对草稿商品进入 2.3 上架审核前定义最小可发布条件，例如：至少一个有效 SKU、主图/基础信息完整、价格库存合法、目录引用有效、主体归属合法
   - [ ] 如涉及库存批量维护或规格矩阵编辑，优先复用现有 PMS 模型与页面交互，不新增平行库存中心或手工导入依赖
 
 - [ ] 6. 交付商户可用的商品建档后台体验，并保持与现有 Web Admin 结构一致（AC: 1, 2）
   - [ ] 在 `web-admin/src/pages/pms/` 下核查并修正商品/SPU/SKU/库存相关页面，保持 `index.tsx + service.ts + data.d.ts + components/*` 与 `PageContainer + ProTable + Drawer/Modal` 模式
   - [ ] 页面持续显示当前主体上下文，符合 `Scope Context Bar` 语义，让平台、租户、商户在建档时一眼知道自己正在操作谁的数据
-  - [ ] 建档表单要优先服务“核对流程”而不是“填空流程”：默认带出 2.1 的目录基础数据，规格矩阵、价格和库存采用分段编辑与即时校验，降低商户出错成本
+  - [x] 建档表单要优先服务“核对流程”而不是“填空流程”：默认带出 2.1 的目录基础数据，规格矩阵、价格和库存采用分段编辑与即时校验，降低商户出错成本
   - [ ] 对新增、编辑、复制、删除、批量库存调整等高风险动作提供 `Consequence Preview` 与 `Recovery-first Feedback`；被引用、越权、库存非法、价格冲突等问题都要给出可修复提示
 
 - [ ] 7. 为后续 2.3 审核与 2.5 商品详情提供可复用的基础字段（AC: 1）
@@ -67,9 +67,9 @@ so that 我可以把自有商品准备成具备进入后续审核流程条件的
 
 - [ ] 8. 补齐测试、回归与跨 story 兼容验证（AC: 1, 2）
   - [x] 为 `rpc/pms` 增加 SPU/SKU/库存读写测试，覆盖同主体成功、跨主体拒绝、详情越权拒绝、规格组合冲突、价格/库存非法、草稿最小发布条件、批量库存更新一致性
-  - [ ] 为 admin-api 侧增加 scope 透传与错误映射测试，确认平台 / 租户 / 商户上下文下商品建档行为一致，且错误能被页面正确消费
+  - [x] 为 admin-api 侧增加 scope 透传与错误映射测试，确认平台 / 租户 / 商户上下文下商品建档行为一致，且错误能被页面正确消费
   - [ ] 回归 Story 1.4 的角色 / 菜单模板、1.5 的商户主体与启停、1.6A 的查询隔离、1.6B 的写路径越权校验，以及 Story 2.1 的目录基础数据可复用性，确保 2.2 不破坏已有治理底座
-  - [ ] 对 2.3 商品上架审核与作用域可见性做最小联调验证，确认本 story 产出的草稿商品确实可进入后续审核流，而不是形成新的接口缺口
+  - [x] 对 2.3 商品上架审核与作用域可见性做最小联调验证，确认本 story 产出的草稿商品确实可进入后续审核流，而不是形成新的接口缺口
 
 ## Dev Notes
 
@@ -242,6 +242,23 @@ GPT-5 via BMAD `create-story` workflow
 - 已补 `rpc/pms/proto/product_spu.proto`、`rpc/pms/proto/product_sku.proto` 的 2.2 契约源：为 SPU 嵌套的会员价 / 阶梯价 / 满减 / 属性值 / SKU 明细补可回传 `id` 字段，并为库存锁定请求补治理范围字段，给后续生成链收口留出正式契约入口
 - 已新增 `script/sql/pms/migration_20260323_product_draft_scope_constraints.sql`，为 `pms_product_spu` / `pms_product_sku` 补联合唯一约束与作用域索引，并为 `pms_product_attribute_value`、`pms_member_price`、`pms_product_ladder`、`pms_product_full_reduction` 补 `platform_id/tenant_id/merchant_id` 和最小历史回填 SQL
 - 已将 `ApplyProductScope` 扩展到 SPU 关联的属性值、会员价、阶梯价、满减表，避免商品草稿主记录有 scope、关联明细仍是“无主体”数据
+- 已将 2.2 的正式生成链源同步到 `api/admin/doc/api/pms/*.api` 与 `rpc/pms/pms.proto`：补齐独立 `AddProductSku` 的 `spuId`、SPU 嵌套会员价/阶梯价/满减/属性值/SKU 明细的可回传 `id`，并把库存锁定请求的 `scope` 正式写回可生成源，而不是只停留在拆分 proto 草稿
+- 已新增 admin-api 定向测试，覆盖 `AddProductSku` 的 `spuId + scope` 透传，以及 `build*List` / `buildUpdate*List` 对嵌套明细 `id` 的显式映射，确认 2.2 契约收口不再依赖手工补字段
+- 已补 `QueryProductSpuList` 对 `productSn` 的透传，以及 `UpdateVerifyStatus` 对 `updateBy/reviewMan/detail/scope` 的显式映射，避免 2.2 商品草稿查询和送审备注链路继续丢字段
+- 已修正 `api/admin/doc/api/pms/product_spu.api` 中 `UpdateProductSpuStatusReq.detail` 的正式契约标签，从 `form` 改为 `json`，并新增 handler 级解析回归，确保 Web Admin 以 JSON body 提交审核备注时不会被静默吞掉
+- 已补 `product_sku` admin-api 测试覆盖：新增 `AddProductSku` 错误映射、`QueryProductSkuList` scope+筛选透传、`UpdateProductSku` updateBy+scope 透传、`DeleteProductSku` scope+错误映射回归，继续向 story 8 的 admin-api 验证面收口
+- 已修正 `web-admin/src/pages/pms/ProductSpu/service.ts` 的提交构造：不再把 `ladderList/fullList/memberPriceList/skuList/attributeValueList` 强制清空或误塞进 `productData`，至少保证后续表单一旦提供嵌套数据，请求层不会先把 payload 丢掉
+- 已继续收口 `web-admin/src/pages/pms/ProductSpu/`：编辑前先调用详情接口装载当前 SPU 的 `sku/memberPrice/ladder/full/attributeValue/subjectIds/prefrenceAreaIds`，更新时用详情快照保留这些嵌套明细，避免只改主表字段时把现有建档内容整体覆盖掉
+- 已把 `ProductSpu` 页面主提交流与正式契约再拉近一段：补 `productSn` 搜索/编辑、补 `subTitle` 表单字段、过滤 `brief/description/priceRange/createBy/updateBy/isDeleted` 等历史页面噪音字段，并修正 `promotionType` 的前端取值与展示口径
+- 已通过 `npx eslint src/pages/pms/ProductSpu/data.d.ts src/pages/pms/ProductSpu/service.ts src/pages/pms/ProductSpu/index.tsx src/pages/pms/ProductSpu/components/AddModal.tsx src/pages/pms/ProductSpu/components/UpdateModal.tsx --format unix`，确认这轮 `ProductSpu` 前端定向改动无新增 lint 告警
+- 已为 `web-admin/src/pages/pms/ProductSpu/components/` 新增 `NestedDraftSections.tsx`，并把 `AddModal` / `UpdateModal` 接到真实的 `sku/memberPrice/ladder/full/attributeValue` 分段表单，2.2 的 SPU 建档页已不再只能“保留已有嵌套数据”，而是可以直接编辑并提交这些明细
+- 已将 `ProductSpu` 新增 / 编辑弹窗扩为可滚动大弹窗，补默认状态值与首条 SKU 草稿初始化，同时把主表单的状态单选文案调整到更贴近正式商品语义的“下架/上架、否/是、未审核/审核通过”
+- 已通过 `npx prettier --write src/pages/pms/ProductSpu/data.d.ts src/pages/pms/ProductSpu/service.ts src/pages/pms/ProductSpu/index.tsx src/pages/pms/ProductSpu/components/AddModal.tsx src/pages/pms/ProductSpu/components/UpdateModal.tsx src/pages/pms/ProductSpu/components/NestedDraftSections.tsx` 与对应 `eslint` 定向校验，确认嵌套建档组件接线后无新增前端 lint 问题
+- 已新增 `useCatalogOptions.ts` 并接入 `ProductSpu` 新增 / 编辑弹窗，直接复用 Story 2.1 的 `ProductCategory / ProductBrand / ProductAttribute` 查询服务，避免 SPU 建档继续依赖手工输入分类、品牌和属性 ID
+- 已将 `ProductSpu` 的基础建档字段从自由输入收口为目录选择器：商品分类改为树形选择并自动回填 `categoryName/categoryIds`，商品品牌改为候选下拉并自动回填 `brandName`，属性值明细里的 `attributeId` 也改为属性候选项下拉
+- 已再次通过 `ProductSpu` 定向 prettier + eslint，确认目录联动接入后前端仍保持可编译、无新增 lint 告警
+- 已新增 `web-admin/src/pages/pms/ProductSpu/draftFeedback.ts` 与对应 Jest 用例，把后端返回的草稿错误重新映射到 `skuList` / `attributeValueList` 的具体字段，并为 `NestedDraftSections` 补齐 SKU 规格 JSON、SKU 编码、价格、库存、预警库存、属性绑定的即时校验，避免前端只能提示“建档失败”却无法定位具体问题行
+- 已补 `api/admin/internal/logic/pms/product_spu/productspu_logic_test.go` 的 `UpdateVerifyStatus` 错误映射断言，以及 `rpc/pms/internal/logic/productspuservice/productspu_draft_test.go` 的送审记录断言，给 2.2 -> 2.3 的最小草稿送审闭环补上自动化证据
 
 ### Stage Acceptance Notes
 
@@ -249,7 +266,15 @@ GPT-5 via BMAD `create-story` workflow
 - 本次分析已将 story 与 sprint 状态回写为 `in-progress`，避免后续调度继续把一个已启动开发的 story 误判为未开始。
 - 当前实现与最近提交部分一致：已覆盖商品草稿校验、SKU 维护、错误反馈与针对性测试；但与 story 完整范围仍不完全一致，暂无证据表明可直接进入 `code-review`。
 - `2026-03-23`：已补 `rpc/pms/internal/logic/productspuservice/productspu_draft_test.go`，并通过 `cd rpc/pms && go test ./internal/logic/common ./internal/logic/productspuservice ./internal/logic/productskuservice`，说明 2.2 在 SPU/SKU 保存与校验链路上又向前推进一段。
-- 当前缺口集中在：`api/admin/doc/api/pms/` 与 admin-api 侧的 2.2 契约/测试尚未同步收口、Web Admin 的商品建档页仍未真正串起嵌套 SKU/价格/属性值 payload、跨 story 回归与 2.3 最小联调尚未完成，说明本 story 仍更接近“开发中途”而非“开发完成”。
+- `2026-03-23`：已通过 `goctl api go -api ./api/admin/doc/api/admin.api -dir ./api/admin/` 与 `goctl rpc protoc rpc/pms/pms.proto --go_out=./rpc/pms/ --go-grpc_out=./rpc/pms/ --zrpc_out=./rpc/pms/ -m` 回刷生成链，并通过 `go test ./api/admin/internal/logic/pms/product_spu ./api/admin/internal/logic/pms/product_sku ./rpc/pms/internal/logic/productspuservice ./rpc/pms/internal/logic/productskuservice`，说明 admin-api 与 pms-rpc 的 2.2 契约源已开始真正同步收口。
+- `2026-03-23`：已通过 `go test ./api/admin/internal/handler/pms/product_spu ./api/admin/internal/logic/pms/product_spu ./api/admin/internal/logic/pms/product_sku`，确认 `UpdateProductSpuStatusReq.detail` 的 JSON 解析、`product_spu` 的审核/列表透传，以及 `product_sku` 的 scope/错误映射回归全部为绿；同时 `web-admin` 提交层已不再默认清空 2.2 所需嵌套 payload。
+- `2026-03-23`：已通过 `web-admin` 的 `ProductSpu` 定向 prettier + eslint，且编辑态现在会先取详情再提交更新，说明 2.2 的前端建档链已从“会丢嵌套数据的生成页”推进到“主字段可编辑且不会覆盖掉既有嵌套明细”的状态。
+- `2026-03-23`：已把 `NestedDraftSections` 接入 `ProductSpu` 新增 / 编辑弹窗，并通过定向 prettier + eslint，说明 2.2 的 Web Admin 已具备直接编辑 `SKU/会员价/阶梯价/满减/属性值` 嵌套 payload 的能力，不再只停留在“保留旧明细、无法新增或修改”的阶段。
+- `2026-03-23`：已将 2.1 目录基础数据接入 `ProductSpu` 建档表单，分类/品牌/属性不再完全依赖手输，说明 2.2 的 Web Admin 已开始符合“按目录语义建档而非纯字段录入”的目标。
+- `2026-03-23`：已通过 `./node_modules/.bin/eslint src/pages/pms/ProductSpu/draftFeedback.ts src/pages/pms/ProductSpu/draftFeedback.test.ts src/pages/pms/ProductSpu/components/NestedDraftSections.tsx src/pages/pms/ProductSpu/components/useCatalogOptions.ts src/pages/pms/ProductSpu/components/AddModal.tsx src/pages/pms/ProductSpu/components/UpdateModal.tsx src/pages/pms/ProductSpu/data.d.ts src/pages/pms/ProductSpu/index.tsx --format unix`，确认这轮前端新增的表单反馈与候选项接线没有引入新的 lint 问题。
+- `2026-03-23`：已通过 `./node_modules/.bin/umi test --runInBand src/pages/pms/ProductSpu/draftFeedback.test.ts`，确认 SKU 规格归一化、重复校验与后端错误映射 helper 可用；执行时需避免 login shell，否则会被本机 `SecItemCopyMatching failed -50` 环境噪音打断。
+- `2026-03-23`：已通过 `GOCACHE=/tmp/zero-admin-go-cache go test ./api/admin/internal/logic/pms/product_spu ./api/admin/internal/logic/pms/product_sku ./api/admin/internal/handler/pms/product_spu ./rpc/pms/internal/logic/productspuservice`，确认 admin-api 的 scope/错误映射与 rpc/pms 的草稿送审记录链路均为绿，2.2 已具备“草稿可送审”的最小自动化证据。
+- 当前缺口集中在：Web Admin 虽已接入目录候选项、即时校验和字段级错误回填，但目录禁用/失效态的前置阻断、1.4/1.5/1.6A/1.6B/2.1 的系统级回归，以及高风险动作的 `Consequence Preview` 仍未补齐，说明本 story 仍更接近“开发中途”而非“开发完成”。
 - 建议下一 BMAD 节点：继续 `dev-story:2-2-商品规格-spu-sku-与库存建档`，优先补齐契约 / 数据模型 / 剩余测试与任务回写；完成后再进入 `code-review`。
 
 ### File List
@@ -263,6 +288,34 @@ GPT-5 via BMAD `create-story` workflow
 - `rpc/pms/internal/logic/common/write_scope.go`
 - `rpc/pms/internal/logic/common/write_scope_test.go`
 - `rpc/pms/internal/logic/productskuservice/maintainproductsku_test.go`
+- `api/admin/doc/api/pms/product_attribute_value.api`
+- `api/admin/doc/api/pms/product_full_reduction.api`
+- `api/admin/doc/api/pms/product_ladder.api`
+- `api/admin/doc/api/pms/product_member_price.api`
+- `api/admin/doc/api/pms/product_spu.api`
+- `api/admin/doc/api/pms/product_sku.api`
+- `api/admin/internal/handler/routes.go`
+- `api/admin/internal/handler/pms/product_spu/updateverifystatushandler_test.go`
+- `api/admin/internal/types/types.go`
+- `api/admin/internal/logic/pms/product_sku/addproductskulogic.go`
+- `api/admin/internal/logic/pms/product_sku/addproductskulogic_test.go`
+- `api/admin/internal/logic/pms/product_spu/addproductspulogic.go`
+- `api/admin/internal/logic/pms/product_spu/queryproductspulistlogic.go`
+- `api/admin/internal/logic/pms/product_spu/updateverifystatuslogic.go`
+- `api/admin/internal/logic/pms/product_spu/productspu_logic_test.go`
+- `api/admin/internal/logic/pms/product_spu/updateproductspulogic.go`
+- `api/admin/internal/logic/pms/product_spu/productspu_mapping_test.go`
+- `web-admin/src/pages/pms/ProductSpu/data.d.ts`
+- `web-admin/src/pages/pms/ProductSpu/draftFeedback.ts`
+- `web-admin/src/pages/pms/ProductSpu/draftFeedback.test.ts`
+- `web-admin/src/pages/pms/ProductSpu/components/AddModal.tsx`
+- `web-admin/src/pages/pms/ProductSpu/components/NestedDraftSections.tsx`
+- `web-admin/src/pages/pms/ProductSpu/components/UpdateModal.tsx`
+- `web-admin/src/pages/pms/ProductSpu/components/useCatalogOptions.ts`
+- `web-admin/src/pages/pms/ProductSpu/index.tsx`
+- `web-admin/src/pages/pms/ProductSpu/service.ts`
+- `rpc/pms/pms.proto`
+- `rpc/pms/pmsclient/pms.pb.go`
 - `rpc/pms/proto/product_spu.proto`
 - `rpc/pms/proto/product_sku.proto`
 - `script/sql/pms/migration_20260323_product_draft_scope_constraints.sql`

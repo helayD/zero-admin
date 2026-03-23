@@ -1,0 +1,6 @@
+{
+  "intent": "dev-story:2-3-商品上架审核与作用域可见性控制",
+  "source": "feishu-latest-confirmed-instruction",
+  "updated_at": 0,
+  "note": "dispatcher 只把这个文件当作最新人工/飞书确认意图；active-action.json 仅作为执行结果记录，不作为真相源"
+}
