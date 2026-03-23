@@ -58,13 +58,23 @@
   5. `~/.autopilot/state/zero-admin.json`
   6. `~/.autopilot/logs/watchdog.log`
   7. 必要时 tmux 窗口 `autopilot:zero-admin` pane 输出
-- 该 agent 每次只能输出并派发**一个明确的 BMAD 节点动作**，例如：
+- 该 agent 每次只能输出并派发**一个明确的 BMAD 节点动作**。
+- **节点规则可以固定，但 story key 严禁硬编码。**
+- 所有带 story key 的动作都必须由 agent 在执行当下根据真实状态**动态推导**，而不是把 `2-2`、`2-3` 一类编号写死在规则、脚本或提示词里。
+- 允许输出的动作形态例如：
   - `create-story`
-  - `refine-story:2-2`
-  - `dev-story:2-2`
-  - `analyze-current-state:2-2`
-  - `code-review:2-2`
-  - `fix-review-findings:2-2`
+  - `refine-story:<derived_story_key>`
+  - `dev-story:<derived_story_key>`
+  - `analyze-current-state:<derived_story_key>`
+  - `code-review:<derived_story_key>`
+  - `fix-review-findings:<derived_story_key>`
+  - `blocked:<reason>`
+- `<derived_story_key>` 的推导必须至少结合：
+  1. `sprint-status.yaml` 中按顺序出现的 `in-progress` / `ready-for-dev` story
+  2. 对应 story 文件状态
+  3. `git status --short` 中是否已存在该 story 的实现痕迹
+  4. autopilot / watchdog 当前是否存在阻塞、空闲、已派发但未收口状态
+- 如果代码状态与 story 工件状态不一致，优先输出 `analyze-current-state:<derived_story_key>`，不得直接盲派发 `dev-story` 或 `code-review`。
 - 禁止把模糊任务直接交给执行层，例如：
   - “继续做”
   - “你看着办”
@@ -75,12 +85,28 @@
   3. 关键里程碑完成
   4. 出现明确阻塞
   5. 一个 BMAD 节点完成
-- Feishu 进展汇报默认结构：
-  - 当前节点
-  - 当前状态
-  - 最优下一步
-  - 是否已派发
-  - 当前阻塞 / 风险（若有）
+- Feishu 进展汇报必须尽量短、结构固定、便于群内快速扫读。默认结构：
+  - 当前节点：<node>
+  - 当前状态：<1~3 行总结>
+  - 最优下一步：<action>
+  - 是否已派发：已派发 / 未派发
+  - 阻塞/风险：<没有则写“无硬阻塞”>
+- 若只是定时检查且无明显变化，必须使用极简模板：
+  - 当前节点：<node>
+  - 当前状态：无状态变化
+  - 最优下一步：维持当前节点
+  - 是否已派发：否
+  - 阻塞/风险：无硬阻塞
+- 对群内消息做节流：
+  - 不要每次轮询都发长文
+  - 无状态变化时必须极简
+  - 只有在“新动作已派发 / 阻塞变化 / 节点完成”时才允许发较完整说明
+- **节点完成回传是必需的**。create-story / refine-story / dev-story / code-review / fix-review-findings / analyze-current-state 任一节点完成后，必须再次在 Feishu 中回传一次“完成结果”，默认模板：
+  - 节点完成：<node>
+  - 结果：<完成了什么>
+  - 结论：<可继续 / 需人工确认 / blocked>
+  - 下一步建议：<next-action>
+  - 关键风险：<没有则写“无新的硬阻塞”>
 - 默认允许自动执行的 BMAD 节点：
   - create-story
   - story refine
@@ -97,6 +123,28 @@
   - 改 BMAD 主计划 / sprint 顺序
 - 如果代码状态与 BMAD 工件状态不一致（例如：代码已改很多，但 story 仍是 `ready-for-dev`），该 agent **不得盲目继续开发**，必须优先触发 `analyze-current-state:<story>`，先做阶段性验收分析，再决定下一步。
 - 如果执行层卡在登录页、权限页、shell recovery、测试红线或关键工件缺失，该 agent 必须将其判定为 **blocked**，并在 Feishu 中直接汇报阻塞点，而不是继续派发下一个节点。
+- **“仍在执行中”不能只靠 story=in-progress 或工作区有未提交改动来判断。** 只有同时满足下列信号中的至少一项，才允许在群里使用“继续推进 / 仍在执行中 / 正在补齐”这类表述：
+  1. tmux pane 最近有新增输出，且内容显示正在继续处理当前 story
+  2. 最近出现新的测试执行、文件变更或提交推进信号
+  3. Codex 没有停在普通 prompt / 等待输入态，而是处于明确的工作态
+- 如果 story 未完成，但当前只看到“tmux 停在 prompt、watchdog 连续 idle、没有新的输出/测试/提交”，则必须降级判断为：
+  - `当前节点未完成，但执行层处于等待/半静止状态`
+  - 此时不得继续宣称“自动推进中”，也不得重复派发同一动作，除非确认需要续派发。
+- 若 `watchdog/state` 与 tmux pane 观测不一致，优先在群里明确写出“状态源不一致”，避免把不确定状态包装成确定结论。
+- **自动化不仅要会派发节点，也要会治理会话。** 当检测到状态源不一致、上下文污染、半静止等待或交互阻断时，必须优先执行会话治理动作，而不是继续盲派发下一节点。
+- 默认会话治理动作分四类：
+  1. `analyze-current-state:<derived_story_key>`：用于状态不一致、代码与工件不同步、上下文不可信时，先做阶段性验收分析。
+  2. `compact-current-session`：仅当当前 story 仍正确、只是上下文过长或轻度污染时使用。
+  3. `start-clean-session-for:<derived_story_key>`：当旧会话已明显污染、或准备切换到下一个 BMAD 节点时，必须启动全新 Codex 会话，不得继续沿用旧会话。
+  4. `hold-and-report`：出现硬阻塞、关键工件缺失、登录/权限卡死时，不派发，只汇报。
+- 自动化判定顺序：
+  1. 先判定是否 `blocked`
+  2. 再判定是否“状态源不一致 / 上下文污染”
+  3. 若需要，先 `analyze-current-state`
+  4. 分析后若当前 story 仍可继续：轻污染则 `compact-current-session`，重污染则 `start-clean-session-for:<same_story>`
+  5. 只有在当前节点已有明确完成证据时，才允许切到下一节点，并且必须使用 `start-clean-session-for:<next_story_or_next_node>`
+- **严禁在旧会话里直接跨 story 推进。** 例如：不能在 2.2 的旧会话里直接续推 2.3；若要推进 2.3，必须先判断 2.2 是否完成或应中止，然后以 `start-clean-session-for:2-3` 形式开启全新会话。
+- 若判定为“当前节点未完成，但执行层处于等待/半静止状态”，默认最优动作不是继续硬派发，而是先 `analyze-current-state`，确认是否该续派发、compact、还是新会话。
 
 ## 绑定项目群回复规则
 

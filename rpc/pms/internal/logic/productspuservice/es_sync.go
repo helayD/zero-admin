@@ -16,6 +16,9 @@ const (
 )
 
 func sendProductESSync(ctx context.Context, svcCtx *svc.ServiceContext, productID int64, current pkgscope.GovernanceScope) {
+	if svcCtx == nil || svcCtx.RabbitMQ == nil {
+		return
+	}
 	traceID := audit.NewTraceID(productESSyncAction, productID)
 	body, _ := sonic.Marshal(pkgscope.NewProductESSyncPayload(productID, current, traceID))
 	if err := svcCtx.RabbitMQ.SendMessage("product.event.exchange", "syn.product.to.es.queue", "syn.product.key", body); err != nil {
@@ -30,6 +33,9 @@ func sendProductESSyncBatch(ctx context.Context, svcCtx *svc.ServiceContext, pro
 }
 
 func sendProductESDelete(ctx context.Context, svcCtx *svc.ServiceContext, productIDs []int64, current pkgscope.GovernanceScope) {
+	if svcCtx == nil || svcCtx.RabbitMQ == nil {
+		return
+	}
 	uniqueIDs := pkgscope.UniquePositiveIDs(productIDs)
 	if len(uniqueIDs) == 0 {
 		return

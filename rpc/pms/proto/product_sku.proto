@@ -149,6 +149,7 @@ message QueryProductSkuListResp {
 
 message UpdateSkuStockReq {
   repeated UpdateSkuStockData data = 1;
+  GovernanceScope scope = 2; //治理范围(platform/tenant/merchant)
 }
 
 message UpdateSkuStockData {

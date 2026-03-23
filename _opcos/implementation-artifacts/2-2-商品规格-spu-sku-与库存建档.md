@@ -1,6 +1,6 @@
 # Story 2.2: 商品规格、SPU/SKU 与库存建档
 
-Status: ready-for-dev
+Status: in-progress
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -25,14 +25,14 @@ so that 我可以把自有商品准备成具备进入后续审核流程条件的
 
 - [ ] 1. 收口商品建档契约，统一 SPU/SKU/库存/规格的 API、RPC 与生成链源定义（AC: 1, 2）
   - [ ] 盘点 `api/admin/doc/api/pms/` 下商品建档相关 `.api`，重点覆盖 `product.api`、`sku_stock.api`、`product_operate_log.api`、图片/属性/阶梯价/满减等与建档直接相关的契约，确认列表、详情、保存、更新、上下架前校验、草稿保存都落在同一套接口语义里
-  - [ ] 盘点 `rpc/pms/proto/` 中 SPU、SKU、库存、商品属性值、规格值、图片与价格相关 proto，避免继续沿用旧单商户字段命名或页面私有 DTO
+  - [x] 盘点 `rpc/pms/proto/` 中 SPU、SKU、库存、商品属性值、规格值、图片与价格相关 proto，避免继续沿用旧单商户字段命名或页面私有 DTO
   - [ ] 对请求参数补齐分页默认值、作用域字段、状态字段和必要校验字段，保证 admin-api 与 rpc/pms 之间的映射在 logic 中显式完成，而不是依赖隐式默认或手改生成物
-  - [ ] 严守生成链：只改 `.api`、`.proto`、SQL 源和手工 logic；不直接修改 `types.go`、`routes.go`、`*_pb.go`、`client`、`gen/query`、`gen/model` 等生成产物
+  - [x] 严守生成链：只改 `.api`、`.proto`、SQL 源和手工 logic；不直接修改 `types.go`、`routes.go`、`*_pb.go`、`client`、`gen/query`、`gen/model` 等生成产物
 
 - [ ] 2. 以商户作用域为真相源建立 SPU/SKU/库存数据模型与约束（AC: 1, 2）
-  - [ ] 核查 `script/sql/pms/` 中 `pms_product`、`pms_sku_stock` 及相关商品属性/图片/会员价/阶梯价/满减等表结构，确认是否已具备 `platform_id/tenant_id/merchant_id`、审计字段、状态字段、版本/更新时间字段以及高频查询索引
-  - [ ] 对缺失的商户归属字段、联合唯一约束和库存/编码检索索引补 migration，保证同一商户可维护自己的 SPU/SKU，不污染其他商户数据，也不因共享编码造成冲突
-  - [ ] 设计最小历史数据回填策略，避免作用域字段上线后把既有商品建档数据全部打成“无主体”或默认平台全局数据
+  - [x] 核查 `script/sql/pms/` 中 `pms_product`、`pms_sku_stock` 及相关商品属性/图片/会员价/阶梯价/满减等表结构，确认是否已具备 `platform_id/tenant_id/merchant_id`、审计字段、状态字段、版本/更新时间字段以及高频查询索引
+  - [x] 对缺失的商户归属字段、联合唯一约束和库存/编码检索索引补 migration，保证同一商户可维护自己的 SPU/SKU，不污染其他商户数据，也不因共享编码造成冲突
+  - [x] 设计最小历史数据回填策略，避免作用域字段上线后把既有商品建档数据全部打成“无主体”或默认平台全局数据
   - [ ] 明确商品草稿、待审核、上架、下架等状态边界；2.2 只负责建档与可进入审核的草稿准备，不把上架审核流提前塞进本 story
 
 - [ ] 3. 复用 1.6A / 1.6B 的治理底座，打通 admin-api -> rpc/pms 的作用域感知读写闭环（AC: 1, 2）
@@ -48,9 +48,9 @@ so that 我可以把自有商品准备成具备进入后续审核流程条件的
   - [ ] 对被 2.1 基础目录引用的禁用/删除数据建立前置校验：分类、品牌、属性已失效时，商品建档页必须给出可理解阻断原因，而不是保存后才失败
 
 - [ ] 5. 完成库存、价格与规格组合校验，防止生成缺少库存或归属错误的可售记录（AC: 2）
-  - [ ] 在保存前校验 SKU 规格组合唯一性、SKU 编码唯一性、价格合法性、库存非负、安全库存边界、必填销售属性完整性与商户归属一致性
+  - [x] 在保存前校验 SKU 规格组合唯一性、SKU 编码唯一性、价格合法性、库存非负、安全库存边界、必填销售属性完整性与商户归属一致性
   - [ ] 对“有 SPU 无 SKU”“有价格无库存”“有库存无规格主键”“商户主体与分类/品牌归属不一致”等场景返回结构化错误，并在表单层定位到对应字段或行
-  - [ ] 对草稿商品进入 2.3 上架审核前定义最小可发布条件，例如：至少一个有效 SKU、主图/基础信息完整、价格库存合法、目录引用有效、主体归属合法
+  - [x] 对草稿商品进入 2.3 上架审核前定义最小可发布条件，例如：至少一个有效 SKU、主图/基础信息完整、价格库存合法、目录引用有效、主体归属合法
   - [ ] 如涉及库存批量维护或规格矩阵编辑，优先复用现有 PMS 模型与页面交互，不新增平行库存中心或手工导入依赖
 
 - [ ] 6. 交付商户可用的商品建档后台体验，并保持与现有 Web Admin 结构一致（AC: 1, 2）
@@ -66,7 +66,7 @@ so that 我可以把自有商品准备成具备进入后续审核流程条件的
   - [ ] 沿用现有日志 / 审计机制记录关键建档动作，满足后续审核与治理追踪所需的最小可追溯性，不在本 story 内新增独立审计产品能力
 
 - [ ] 8. 补齐测试、回归与跨 story 兼容验证（AC: 1, 2）
-  - [ ] 为 `rpc/pms` 增加 SPU/SKU/库存读写测试，覆盖同主体成功、跨主体拒绝、详情越权拒绝、规格组合冲突、价格/库存非法、草稿最小发布条件、批量库存更新一致性
+  - [x] 为 `rpc/pms` 增加 SPU/SKU/库存读写测试，覆盖同主体成功、跨主体拒绝、详情越权拒绝、规格组合冲突、价格/库存非法、草稿最小发布条件、批量库存更新一致性
   - [ ] 为 admin-api 侧增加 scope 透传与错误映射测试，确认平台 / 租户 / 商户上下文下商品建档行为一致，且错误能被页面正确消费
   - [ ] 回归 Story 1.4 的角色 / 菜单模板、1.5 的商户主体与启停、1.6A 的查询隔离、1.6B 的写路径越权校验，以及 Story 2.1 的目录基础数据可复用性，确保 2.2 不破坏已有治理底座
   - [ ] 对 2.3 商品上架审核与作用域可见性做最小联调验证，确认本 story 产出的草稿商品确实可进入后续审核流，而不是形成新的接口缺口
@@ -237,8 +237,32 @@ GPT-5 via BMAD `create-story` workflow
 - 已基于 Epic / PRD / Architecture / UX / project-context / 前置故事 1.5、1.6A、1.6B、2.1 生成完整实施文档，并将状态设为 `ready-for-dev`
 - 已将 2-2 明确收口为“商品建档与库存真相源层”，避免与 2.3 的审核可见性、2.4 的导购浏览、2.5 的详情消费范围重叠
 - 已把对后续故事的输出契约（审核、详情、导购）显式写入 Dev Notes，减少后续 story 再回头补结构的风险
+- 已在 `rpc/pms/internal/logic/productspuservice/` 将 SPU 保存链路改为复用 `EnsureSkuCode` / `RefreshSpuDraftSummary`，统一空 SKU 编码生成策略，避免继续使用时间戳随机码并让 SPU 汇总字段以真实落库 SKU 为准
+- 已为 `productspuservice` 增加 `productspu_draft_test.go`，覆盖 SPU 新增 / 更新时的 SKU 编码生成、库存汇总与作用域回写；同时为 ES 同步发送增加空 `RabbitMQ` 保护，避免测试与本地最小环境发生空指针
+- 已补 `rpc/pms/proto/product_spu.proto`、`rpc/pms/proto/product_sku.proto` 的 2.2 契约源：为 SPU 嵌套的会员价 / 阶梯价 / 满减 / 属性值 / SKU 明细补可回传 `id` 字段，并为库存锁定请求补治理范围字段，给后续生成链收口留出正式契约入口
+- 已新增 `script/sql/pms/migration_20260323_product_draft_scope_constraints.sql`，为 `pms_product_spu` / `pms_product_sku` 补联合唯一约束与作用域索引，并为 `pms_product_attribute_value`、`pms_member_price`、`pms_product_ladder`、`pms_product_full_reduction` 补 `platform_id/tenant_id/merchant_id` 和最小历史回填 SQL
+- 已将 `ApplyProductScope` 扩展到 SPU 关联的属性值、会员价、阶梯价、满减表，避免商品草稿主记录有 scope、关联明细仍是“无主体”数据
+
+### Stage Acceptance Notes
+
+- `2026-03-23`：`git log --oneline -10` 已出现 `feat: advance story 2.2 product draft validation and feedback`，且提交实际落到了 `rpc/pms/internal/logic/common/product_draft_validation.go`、`rpc/pms/internal/logic/productskuservice/*`、`rpc/pms/internal/logic/productspuservice/*`、`web-admin/src/pages/pms/ProductSpu/index.tsx`、`web-admin/src/pages/pms/ProductSku/index.tsx` 等 2.2 实现文件，说明开发已开始，`ready-for-dev` 与真实代码状态不一致。
+- 本次分析已将 story 与 sprint 状态回写为 `in-progress`，避免后续调度继续把一个已启动开发的 story 误判为未开始。
+- 当前实现与最近提交部分一致：已覆盖商品草稿校验、SKU 维护、错误反馈与针对性测试；但与 story 完整范围仍不完全一致，暂无证据表明可直接进入 `code-review`。
+- `2026-03-23`：已补 `rpc/pms/internal/logic/productspuservice/productspu_draft_test.go`，并通过 `cd rpc/pms && go test ./internal/logic/common ./internal/logic/productspuservice ./internal/logic/productskuservice`，说明 2.2 在 SPU/SKU 保存与校验链路上又向前推进一段。
+- 当前缺口集中在：`api/admin/doc/api/pms/` 与 admin-api 侧的 2.2 契约/测试尚未同步收口、Web Admin 的商品建档页仍未真正串起嵌套 SKU/价格/属性值 payload、跨 story 回归与 2.3 最小联调尚未完成，说明本 story 仍更接近“开发中途”而非“开发完成”。
+- 建议下一 BMAD 节点：继续 `dev-story:2-2-商品规格-spu-sku-与库存建档`，优先补齐契约 / 数据模型 / 剩余测试与任务回写；完成后再进入 `code-review`。
 
 ### File List
 
 - `_opcos/implementation-artifacts/2-2-商品规格-spu-sku-与库存建档.md`
 - `_opcos/implementation-artifacts/sprint-status.yaml`
+- `rpc/pms/internal/logic/productspuservice/addproductspulogic.go`
+- `rpc/pms/internal/logic/productspuservice/updateproductspulogic.go`
+- `rpc/pms/internal/logic/productspuservice/es_sync.go`
+- `rpc/pms/internal/logic/productspuservice/productspu_draft_test.go`
+- `rpc/pms/internal/logic/common/write_scope.go`
+- `rpc/pms/internal/logic/common/write_scope_test.go`
+- `rpc/pms/internal/logic/productskuservice/maintainproductsku_test.go`
+- `rpc/pms/proto/product_spu.proto`
+- `rpc/pms/proto/product_sku.proto`
+- `script/sql/pms/migration_20260323_product_draft_scope_constraints.sql`

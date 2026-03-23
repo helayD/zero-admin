@@ -2,9 +2,6 @@ package productspuservicelogic
 
 import (
 	"context"
-	"math/rand"
-	"strconv"
-	"time"
 
 	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/rpc/pms/gen/model"
@@ -137,9 +134,9 @@ func (l *AddProductSpuLogic) AddProductSpu(in *pmsclient.ProductSpuReq) (*pmscli
 
 		sku := qtx.PmsProductSku.WithContext(l.ctx)
 		for _, list := range in.SkuStockList {
-			skuCode := list.SkuCode
-			if skuCode == "" {
-				skuCode = time.Now().Format("200601021504") + strconv.Itoa(rand.Intn(10))
+			skuCode, err := logiccommon.EnsureSkuCode(l.ctx, tx, currentScope, spuId, list.SkuCode, list.SpecData, list.Name, nil)
+			if err != nil {
+				return err
 			}
 			if err := sku.Create(&model.PmsProductSku{
 				SpuID:          spuId,                        // 商品SpuId
@@ -172,6 +169,10 @@ func (l *AddProductSpuLogic) AddProductSpu(in *pmsclient.ProductSpuReq) (*pmscli
 			}); err != nil {
 				return err
 			}
+		}
+
+		if err := logiccommon.RefreshSpuDraftSummary(l.ctx, tx, currentScope, spuId); err != nil {
+			return err
 		}
 
 		return logiccommon.ApplyProductScope(l.ctx, tx, spuId, currentScope)
