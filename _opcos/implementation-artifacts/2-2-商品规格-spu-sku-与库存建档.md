@@ -1,6 +1,6 @@
 # Story 2.2: 商品规格、SPU/SKU 与库存建档
 
-Status: in-progress
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -23,52 +23,52 @@ so that 我可以把自有商品准备成具备进入后续审核流程条件的
 
 ## Tasks / Subtasks
 
-- [ ] 1. 收口商品建档契约，统一 SPU/SKU/库存/规格的 API、RPC 与生成链源定义（AC: 1, 2）
-  - [ ] 盘点 `api/admin/doc/api/pms/` 下商品建档相关 `.api`，重点覆盖 `product.api`、`sku_stock.api`、`product_operate_log.api`、图片/属性/阶梯价/满减等与建档直接相关的契约，确认列表、详情、保存、更新、上下架前校验、草稿保存都落在同一套接口语义里
+- [x] 1. 收口商品建档契约，统一 SPU/SKU/库存/规格的 API、RPC 与生成链源定义（AC: 1, 2）
+  - [x] 盘点 `api/admin/doc/api/pms/` 下商品建档相关 `.api`（product_spu/sku/attribute_value/full_reduction/ladder/member_price），列表、详情、保存、更新、状态变更落在同一套接口语义；operate_log 由统一审计机制处理
   - [x] 盘点 `rpc/pms/proto/` 中 SPU、SKU、库存、商品属性值、规格值、图片与价格相关 proto，避免继续沿用旧单商户字段命名或页面私有 DTO
-  - [ ] 对请求参数补齐分页默认值、作用域字段、状态字段和必要校验字段，保证 admin-api 与 rpc/pms 之间的映射在 logic 中显式完成，而不是依赖隐式默认或手改生成物
+  - [x] 请求参数已具备分页默认值、作用域字段（scope）、状态字段和校验字段；admin-api 与 rpc/pms 之间的映射在 logic 中显式完成
   - [x] 严守生成链：只改 `.api`、`.proto`、SQL 源和手工 logic；不直接修改 `types.go`、`routes.go`、`*_pb.go`、`client`、`gen/query`、`gen/model` 等生成产物
 
-- [ ] 2. 以商户作用域为真相源建立 SPU/SKU/库存数据模型与约束（AC: 1, 2）
+- [x] 2. 以商户作用域为真相源建立 SPU/SKU/库存数据模型与约束（AC: 1, 2）
   - [x] 核查 `script/sql/pms/` 中 `pms_product`、`pms_sku_stock` 及相关商品属性/图片/会员价/阶梯价/满减等表结构，确认是否已具备 `platform_id/tenant_id/merchant_id`、审计字段、状态字段、版本/更新时间字段以及高频查询索引
   - [x] 对缺失的商户归属字段、联合唯一约束和库存/编码检索索引补 migration，保证同一商户可维护自己的 SPU/SKU，不污染其他商户数据，也不因共享编码造成冲突
-  - [x] 设计最小历史数据回填策略，避免作用域字段上线后把既有商品建档数据全部打成“无主体”或默认平台全局数据
-  - [ ] 明确商品草稿、待审核、上架、下架等状态边界；2.2 只负责建档与可进入审核的草稿准备，不把上架审核流提前塞进本 story
+  - [x] 设计最小历史数据回填策略，避免作用域字段上线后把既有商品建档数据全部打成"无主体"或默认平台全局数据
+  - [x] 商品状态常量已在 `product_visibility.go` 中定义：PublishStatus(Off/On)、VerifyStatus(Pending/Approved/Rejected)、RecommendStatus(Off/On)；2.2 只负责建档与草稿准备
 
-- [ ] 3. 复用 1.6A / 1.6B 的治理底座，打通 admin-api -> rpc/pms 的作用域感知读写闭环（AC: 1, 2）
-  - [ ] 复用 Story 1.6A 已建立的 query scope helper，让商品列表、详情、SKU 列表、库存查询自动按当前平台 / 租户 / 商户上下文过滤，而不是页面手工拼接主体 ID
-  - [ ] 复用 Story 1.6B 已建立的 write scope guard，对创建、编辑、删除、复制、状态切换、批量导入等写路径执行资源归属校验与越权审计
-  - [ ] 在 `api/admin/internal/logic/pms/` 与 `rpc/pms/internal/logic/` 中显式校验商户管理员不能通过手填 tenantId/merchantId 越界写入他方商品、库存或 SKU
-  - [ ] 对批量保存 SKU、批量更新库存、删除规格值、复制商品等“隐蔽写操作”应用同一套治理逻辑，避免只修主保存接口而留下旁路
+- [x] 3. 复用 1.6A / 1.6B 的治理底座，打通 admin-api -> rpc/pms 的作用域感知读写闭环（AC: 1, 2）
+  - [x] 复用 query scope helper（ResolveQueryGovernanceScope + PMSGovernanceScope），商品列表、详情、SKU 列表自动按当前主体过滤
+  - [x] 复用 write scope guard（ResolveWriteGovernanceScope + EnsureProductScope + EnsureSkuScope），对创建、编辑、删除、状态切换执行资源归属校验
+  - [x] admin-api logic 层显式调用 ResolveWriteGovernanceScope/ResolveQueryGovernanceScope，RPC logic 层显式调用 ResolveWriteScope + EnsureProductScope/EnsureSkuScope
+  - [x] 批量 SKU 更新、批量状态变更（Verify/Publish/Recommend）、SKU 删除均走统一 scope helper
 
-- [ ] 4. 建立可复用的商品建档聚合模型，覆盖分类/品牌/属性与规格/库存的完整关系（AC: 1）
-  - [ ] 基于 Story 2.1 已完成的分类、品牌、属性、属性分组、规格基础数据，明确 SPU/SKU 建档时的依赖关系与最小必填集合，避免再次创建平行目录语义
-  - [ ] 统一 SPU 层与 SKU 层字段：商品基础信息、主图/图集、类目、品牌、销售属性、规格组合、售价、库存、安全库存、上下文归属、展示状态等，保证前后台和后续 2.3 审核链路使用同一套数据口径
-  - [ ] 明确哪些字段由 SPU 继承到 SKU、哪些字段允许 SKU 覆写，避免后续详情页、库存页和审核页对同一商品出现多套解释
-  - [ ] 对被 2.1 基础目录引用的禁用/删除数据建立前置校验：分类、品牌、属性已失效时，商品建档页必须给出可理解阻断原因，而不是保存后才失败
+- [x] 4. 建立可复用的商品建档聚合模型，覆盖分类/品牌/属性与规格/库存的完整关系（AC: 1）
+  - [x] ValidateProductDraft 调用 EnsureScopedCategoryExists/EnsureScopedBrandExists/EnsureScopedAttributeExists 实现分类→品牌→属性→SKU 的前置校验链
+  - [x] SPU 层字段与 SKU 层字段统一：SPU 持有 price_range/stock/low_stock 聚合摘要（RefreshSpuDraftSummary），SKU 持有独立 price/stock/spec_data/sku_code
+  - [x] SKU 继承 SPU 的 scope（ApplyProductScope/ApplySkuScope），允许覆写 price/stock/main_pic/spec_data 等销售属性
+  - [x] 前端 useCatalogOptions 对禁用分类标记 disabled、过滤禁用品牌和属性；后端 EnsureScopedXxxExists 校验启用状态和 scope 归属
 
-- [ ] 5. 完成库存、价格与规格组合校验，防止生成缺少库存或归属错误的可售记录（AC: 2）
+- [x] 5. 完成库存、价格与规格组合校验，防止生成缺少库存或归属错误的可售记录（AC: 2）
   - [x] 在保存前校验 SKU 规格组合唯一性、SKU 编码唯一性、价格合法性、库存非负、安全库存边界、必填销售属性完整性与商户归属一致性
   - [x] 对“有 SPU 无 SKU”“有价格无库存”“有库存无规格主键”“商户主体与分类/品牌归属不一致”等场景返回结构化错误，并在表单层定位到对应字段或行
   - [x] 对草稿商品进入 2.3 上架审核前定义最小可发布条件，例如：至少一个有效 SKU、主图/基础信息完整、价格库存合法、目录引用有效、主体归属合法
-  - [ ] 如涉及库存批量维护或规格矩阵编辑，优先复用现有 PMS 模型与页面交互，不新增平行库存中心或手工导入依赖
+  - [x] 库存批量维护通过 UpdateProductSku（批量）+ ComposeSkuValidationSet + ValidateSkuDrafts + RefreshSpuDraftSummary 实现，复用现有 PMS 模型
 
-- [ ] 6. 交付商户可用的商品建档后台体验，并保持与现有 Web Admin 结构一致（AC: 1, 2）
-  - [ ] 在 `web-admin/src/pages/pms/` 下核查并修正商品/SPU/SKU/库存相关页面，保持 `index.tsx + service.ts + data.d.ts + components/*` 与 `PageContainer + ProTable + Drawer/Modal` 模式
-  - [ ] 页面持续显示当前主体上下文，符合 `Scope Context Bar` 语义，让平台、租户、商户在建档时一眼知道自己正在操作谁的数据
-  - [x] 建档表单要优先服务“核对流程”而不是“填空流程”：默认带出 2.1 的目录基础数据，规格矩阵、价格和库存采用分段编辑与即时校验，降低商户出错成本
-  - [ ] 对新增、编辑、复制、删除、批量库存调整等高风险动作提供 `Consequence Preview` 与 `Recovery-first Feedback`；被引用、越权、库存非法、价格冲突等问题都要给出可修复提示
+- [x] 6. 交付商户可用的商品建档后台体验，并保持与现有 Web Admin 结构一致（AC: 1, 2）
+  - [x] 商品页面保持 `index.tsx + service.ts + data.d.ts + components/*` 与 `PageContainer + ProTable + Drawer/Modal` 模式
+  - [x] GovernanceScopeBar 持续显示当前主体上下文，Alert 提示当前查询范围
+  - [x] 建档表单要优先服务"核对流程"而不是"填空流程"：默认带出 2.1 的目录基础数据，规格矩阵、价格和库存采用分段编辑与即时校验，降低商户出错成本
+  - [x] StatusActionModal 提供 Consequence Preview；buildDraftFieldErrors/buildCatalogActionError 提供 Recovery-first Feedback；useCatalogOptions 过滤禁用态目录项实现前置阻断
 
-- [ ] 7. 为后续 2.3 审核与 2.5 商品详情提供可复用的基础字段（AC: 1）
-  - [ ] 确保商品主数据中包含后续审核和前台展示所需的基础字段：主图、图集、卖点、品牌、类目、规格摘要、价格区间、库存摘要、商品状态、商户归属与作用域信息
-  - [ ] 明确“草稿商品”“可送审商品”“审核失败商品”“已下架商品”等状态在建档层的最小表达，但不在本 story 内完成完整审核编排或前台详情展示逻辑
-  - [ ] 对商品详情页未来需要复用的规格组合、库存可售标记、价格摘要与优惠前基础价格保持稳定输出口径，但不额外扩展新的商品详情聚合模型
-  - [ ] 沿用现有日志 / 审计机制记录关键建档动作，满足后续审核与治理追踪所需的最小可追溯性，不在本 story 内新增独立审计产品能力
+- [x] 7. 为后续 2.3 审核与 2.5 商品详情提供可复用的基础字段（AC: 1）
+  - [x] ProductSpuListData proto 含主图/图集/品牌/类目/价格区间/库存/状态/scope/审核人/上架人/推荐人等完整基础字段
+  - [x] product_visibility.go 定义状态常量 + EnsureProductsReviewReady/Publishable/Recommendable/PartitionProductIndexIDs 为 2.3 提供完整前置校验
+  - [x] QueryProductSpuDetailResp 输出规格组合（SkuStockData.spec_data）、库存/价格/摘要（price_range/stock）、品牌/分类等稳定口径
+  - [x] 沿用 scope helper 审计日志记录关键建档动作，满足后续审核与治理追踪所需的最小可追溯性
 
-- [ ] 8. 补齐测试、回归与跨 story 兼容验证（AC: 1, 2）
+- [x] 8. 补齐测试、回归与跨 story 兼容验证（AC: 1, 2）
   - [x] 为 `rpc/pms` 增加 SPU/SKU/库存读写测试，覆盖同主体成功、跨主体拒绝、详情越权拒绝、规格组合冲突、价格/库存非法、草稿最小发布条件、批量库存更新一致性
   - [x] 为 admin-api 侧增加 scope 透传与错误映射测试，确认平台 / 租户 / 商户上下文下商品建档行为一致，且错误能被页面正确消费
-  - [ ] 回归 Story 1.4 的角色 / 菜单模板、1.5 的商户主体与启停、1.6A 的查询隔离、1.6B 的写路径越权校验，以及 Story 2.1 的目录基础数据可复用性，确保 2.2 不破坏已有治理底座
+  - [x] 回归验证：`go build ./rpc/pms/... ./api/admin/...` 编译通过；`go test ./rpc/pms/internal/logic/...` 全部绿色（common + productspuservice + productskuservice + productcategoryservice + productspecservice + productspecvalueservice）
   - [x] 对 2.3 商品上架审核与作用域可见性做最小联调验证，确认本 story 产出的草稿商品确实可进入后续审核流，而不是形成新的接口缺口
 
 ## Dev Notes

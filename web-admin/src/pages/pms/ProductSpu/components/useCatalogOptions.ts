@@ -21,6 +21,7 @@ type CategoryTreeOption = {
   label: string;
   title: string;
   parentId: number;
+  disabled?: boolean;
   children?: CategoryTreeOption[];
 };
 
@@ -120,9 +121,10 @@ export const useCatalogOptions = (
           categoryItems.map((item) => ({
             value: item.id,
             id: item.id,
-            label: item.name,
-            title: item.name,
+            label: item.isEnabled === 1 ? item.name : `${item.name}（已停用）`,
+            title: item.isEnabled === 1 ? item.name : `${item.name}（已停用）`,
             parentId: item.parentId,
+            disabled: item.isEnabled !== 1,
           })),
           0,
           'parentId',
@@ -130,12 +132,15 @@ export const useCatalogOptions = (
 
         const { categoryNameById, pathById } = buildCategoryPathMap(categoryItems);
 
+        const enabledBrands = brandItems.filter((item) => item.isEnabled === 1);
+        const enabledAttributes = attributeItems.filter((item) => item.status === 1);
+
         setCatalogOptions({
-          attributeOptions: attributeItems.map((item) => ({
+          attributeOptions: enabledAttributes.map((item) => ({
             label: item.name,
             value: item.id,
           })),
-          brandOptions: brandItems.map((item) => ({
+          brandOptions: enabledBrands.map((item) => ({
             label: item.name,
             value: item.id,
           })),
