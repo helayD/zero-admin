@@ -323,6 +323,7 @@ type AddProductCategoryReq struct {
 
 type AddProductSkuReq struct {
 	Name               string  `json:"name"`                        //SKU名称
+	SkuCode            string  `json:"skuCode,optional"`            //SKU编码
 	MainPic            string  `json:"mainPic"`                     //主图
 	AlbumPics          string  `json:"albumPics"`                   //图片集
 	Price              float32 `json:"price"`                       //价格

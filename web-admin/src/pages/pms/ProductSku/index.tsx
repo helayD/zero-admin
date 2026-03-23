@@ -1,5 +1,5 @@
 import {DeleteOutlined, EditOutlined, ExclamationCircleOutlined, PlusOutlined} from '@ant-design/icons';
-import {Button, Divider, Drawer, message, Modal, Select, Space, Switch} from 'antd';
+import {Alert, Button, Divider, Drawer, message, Modal, Select, Space, Switch} from 'antd';
 import React, {useRef, useState} from 'react';
 import type {ActionType, ProColumns} from '@ant-design/pro-table';
 import ProTable from '@ant-design/pro-table';
@@ -9,6 +9,7 @@ import AddModal from './components/AddModal';
 import UpdateModal from './components/UpdateModal';
 import type { ProductSkuListItem} from './data.d';
 import {addProductSku, queryProductSkuList, removeProductSku, updateProductSku} from './service';
+import { buildCatalogActionError, type CatalogActionError } from '@/pages/pms/errorFeedback';
 import { defaultGovernanceScope, type GovernanceScopeValue, toGovernancePayload } from '@/pages/system/components/governance';
 
 const {confirm} = Modal;
@@ -17,7 +18,12 @@ const {confirm} = Modal;
  * 添加商品SKU
  * @param fields
  */
-const handleAdd = async (fields: ProductSkuListItem, scope: GovernanceScopeValue, spuId: number) => {
+const handleAdd = async (
+  fields: ProductSkuListItem,
+  scope: GovernanceScopeValue,
+  spuId: number,
+  onError?: (error: CatalogActionError) => void,
+) => {
   const hide = message.loading('正在添加');
   try {
     await addProductSku({...fields, spuId, ...toGovernancePayload(scope)});
@@ -26,6 +32,9 @@ const handleAdd = async (fields: ProductSkuListItem, scope: GovernanceScopeValue
     return true;
   } catch (error) {
     hide();
+    const catalogError = buildCatalogActionError(error, '商品 SKU 建档失败');
+    onError?.(catalogError);
+    message.error(catalogError.description);
     return false;
   }
 };
@@ -34,7 +43,11 @@ const handleAdd = async (fields: ProductSkuListItem, scope: GovernanceScopeValue
  * 更新商品SKU
  * @param fields
  */
-const handleUpdate = async (fields: ProductSkuListItem, scope: GovernanceScopeValue) => {
+const handleUpdate = async (
+  fields: ProductSkuListItem,
+  scope: GovernanceScopeValue,
+  onError?: (error: CatalogActionError) => void,
+) => {
   const hide = message.loading('正在更新');
   try {
     await updateProductSku({
@@ -47,6 +60,9 @@ const handleUpdate = async (fields: ProductSkuListItem, scope: GovernanceScopeVa
     return true;
   } catch (error) {
     hide();
+    const catalogError = buildCatalogActionError(error, '商品 SKU 更新失败');
+    onError?.(catalogError);
+    message.error(catalogError.description);
     return false;
   }
 };
@@ -113,6 +129,7 @@ const ProductSkuList: React.FC<SignProps> = (props) => {
   const [showDetail, setShowDetail] = useState<boolean>(false);
   const actionRef = useRef<ActionType>();
   const [currentRow, setCurrentRow] = useState<ProductSkuListItem>();
+  const [submitError, setSubmitError] = useState<CatalogActionError>();
   const effectiveScope = props.scope || defaultGovernanceScope;
 
   const showDeleteConfirm = (ids: number[]) => {
@@ -353,6 +370,17 @@ const ProductSkuList: React.FC<SignProps> = (props) => {
 
 return (
     <>
+      {submitError && (
+        <Alert
+          showIcon
+          closable
+          type="error"
+          style={{ marginBottom: 16 }}
+          message={submitError.title}
+          description={submitError.description}
+          onClose={() => setSubmitError(undefined)}
+        />
+      )}
       <ProTable<ProductSkuListItem>
         headerTitle="商品SKU管理"
         actionRef={actionRef}
@@ -425,7 +453,8 @@ return (
       <AddModal
         key={'AddModal'}
         onSubmit={async (value) => {
-          const success = await handleAdd(value, effectiveScope, props.spuId);
+          setSubmitError(undefined);
+          const success = await handleAdd(value, effectiveScope, props.spuId, setSubmitError);
           if (success) {
             handleAddVisible(false);
             setCurrentRow(undefined);
@@ -446,11 +475,12 @@ return (
       <UpdateModal
         key={'UpdateModal'}
         onSubmit={async (value) => {
+          setSubmitError(undefined);
           const success = await handleUpdate({
             ...currentRow,
             ...value,
             spuId: value.spuId || currentRow?.spuId || props.spuId,
-          }, effectiveScope);
+          }, effectiveScope, setSubmitError);
           if (success) {
             handleUpdateVisible(false);
             setCurrentRow(undefined);

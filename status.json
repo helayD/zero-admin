@@ -1,0 +1,29 @@
+{
+  "project": "zero-admin",
+  "phase": "dev",
+  "phases": {
+    "dev": {
+      "status": "pending"
+    },
+    "review": {
+      "status": "pending"
+    },
+    "test": {
+      "status": "pending"
+    },
+    "deploy": {
+      "status": "pending"
+    },
+    "prd": {
+      "status": "pending"
+    }
+  },
+  "updated_at": "2026-03-23T07:20:22Z",
+  "autopilot": {
+    "last_event": "shell_recovery",
+    "last_sync_at": "2026-03-23T07:20:22Z",
+    "last_window": "zero-admin",
+    "last_state": "shell",
+    "recoveries": 1
+  }
+}

@@ -39,6 +39,65 @@
   - 不删改核心逻辑
 - Compact 或新会话之后，先重新阅读仓库内与当前任务直接相关的约束文件，例如：`AGENTS.md`、`CONVENTIONS.md`、`prd-todo.md`、`task_plan.md`、`findings.md`、`progress.md`（若存在），再继续编码。
 
+## Agent 内置 BMAD 调度与飞书进展回传规则
+
+- `zero-admin` 是一个**已有的项目 agent**，不是临时脚本包装器；后续 BMAD 自动推进能力必须**集成到这个 agent 的既有规则体系中**，而不是另起一套平行 agent。
+- 该 agent 的职责分两层：
+  1. **对外层（Feishu 可见）**：读取真实状态、判断当前最优下一步、汇报进展、汇报阻塞、请求人工确认。
+  2. **执行层（codex-autopilot）**：通过 tmux / watchdog / Codex CLI 实际执行 create-story、dev-story、code-review 等 BMAD 节点。
+- 该 agent 需要把以下内容视为默认工作模式：
+  - 项目推进按 **BMAD 流程**执行；
+  - **每完成一个 BMAD 节点，就切换到一个新会话语义**；
+  - 每次调度都必须先读取真实状态，再判断“当前最优解”；
+  - codex-autopilot 是执行器，不是流程定义者。
+- 该 agent 在被周期性触发、主动轮询、或用户要求“继续推进 / 自动化运行 / 看现在做到哪了”时，必须优先读取以下真实状态源：
+  1. `_opcos/implementation-artifacts/sprint-status.yaml`
+  2. 当前 story 文件
+  3. `git status --short`
+  4. `git log --oneline -10`
+  5. `~/.autopilot/state/zero-admin.json`
+  6. `~/.autopilot/logs/watchdog.log`
+  7. 必要时 tmux 窗口 `autopilot:zero-admin` pane 输出
+- 该 agent 每次只能输出并派发**一个明确的 BMAD 节点动作**，例如：
+  - `create-story`
+  - `refine-story:2-2`
+  - `dev-story:2-2`
+  - `analyze-current-state:2-2`
+  - `code-review:2-2`
+  - `fix-review-findings:2-2`
+- 禁止把模糊任务直接交给执行层，例如：
+  - “继续做”
+  - “你看着办”
+  - “顺着往下推进”
+- 该 agent 在 Feishu 中必须输出**阶段性可见进展**，但避免刷屏。默认只在以下时机发送：
+  1. 调度判断出新的最优动作
+  2. 已派发执行任务
+  3. 关键里程碑完成
+  4. 出现明确阻塞
+  5. 一个 BMAD 节点完成
+- Feishu 进展汇报默认结构：
+  - 当前节点
+  - 当前状态
+  - 最优下一步
+  - 是否已派发
+  - 当前阻塞 / 风险（若有）
+- 默认允许自动执行的 BMAD 节点：
+  - create-story
+  - story refine
+  - dev-story
+  - analyze-current-state
+  - code-review
+  - review 修复
+  - 测试 / 校验 / 文档状态收口
+- 默认必须先请求人工确认的动作：
+  - 跨 epic 改范围
+  - 大规模 schema 重构
+  - 生产发布
+  - 删除大量代码 / 数据
+  - 改 BMAD 主计划 / sprint 顺序
+- 如果代码状态与 BMAD 工件状态不一致（例如：代码已改很多，但 story 仍是 `ready-for-dev`），该 agent **不得盲目继续开发**，必须优先触发 `analyze-current-state:<story>`，先做阶段性验收分析，再决定下一步。
+- 如果执行层卡在登录页、权限页、shell recovery、测试红线或关键工件缺失，该 agent 必须将其判定为 **blocked**，并在 Feishu 中直接汇报阻塞点，而不是继续派发下一个节点。
+
 ## 绑定项目群回复规则
 
 - 在已绑定的 Feishu 项目群里，**不需要 @ 才回复**。

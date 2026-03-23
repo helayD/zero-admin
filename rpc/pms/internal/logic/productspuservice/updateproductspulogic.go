@@ -68,40 +68,44 @@ func (l *UpdateProductSpuLogic) UpdateProductSpu(in *pmsclient.ProductSpuReq) (*
 	}
 
 	now := time.Now()
+	summary, err := logiccommon.ValidateProductDraft(l.ctx, l.svcCtx.DB, currentScope, in)
+	if err != nil {
+		return nil, err
+	}
 	item := &model.PmsProductSpu{
-		ID:                  in.Id,                  // 商品SpuId
-		ProductSn:           in.ProductSn,           // 商品货号
-		Name:                in.Name,                // 商品名称
-		CategoryID:          in.CategoryId,          // 商品分类ID
-		CategoryIds:         in.CategoryIds,         // 商品分类ID集合
-		CategoryName:        in.CategoryName,        // 商品分类名称
-		BrandID:             in.BrandId,             // 品牌ID
-		BrandName:           in.BrandName,           // 品牌名称
-		Unit:                in.Unit,                // 单位
-		Weight:              float64(in.Weight),     // 重量(kg)
-		Keywords:            in.Keywords,            // 关键词
-		AlbumPics:           in.AlbumPics,           // 画册图片，最多8张，以逗号分割
-		MainPic:             in.MainPic,             // 主图
-		PriceRange:          in.PriceRange,          // 价格区间
-		PublishStatus:       in.PublishStatus,       // 上架状态：0-下架，1-上架
-		NewStatus:           in.NewStatus,           // 新品状态:0->不是新品；1->新品
-		RecommendStatus:     in.RecommendStatus,     // 推荐状态；0->不推荐；1->推荐
-		VerifyStatus:        in.VerifyStatus,        // 审核状态：0->未审核；1->审核通过
-		PreviewStatus:       in.PreviewStatus,       // 是否为预告商品：0->不是；1->是
-		Sort:                in.Sort,                // 排序
-		NewStatusSort:       in.NewStatusSort,       // 新品排序
-		RecommendStatusSort: in.RecommendStatusSort, // 推荐排序
-		Sales:               in.Sales,               // 销量
-		Stock:               in.Stock,               // 库存
-		LowStock:            in.LowStock,            // 预警库存
-		PromotionType:       in.PromotionType,       // 促销类型：0->没有促销使用原价;1->使用促销价；2->使用会员价；3->使用阶梯价格；4->使用满减价格；5->秒杀
-		SubTitle:            in.SubTitle,            // 副标题
-		DetailHTML:          in.DetailHtml,          // 产品详情网页内容
-		DetailMobileHTML:    in.DetailMobileHtml,    // 移动端网页详情
-		CreateBy:            detail.CreateBy,        // 创建人ID
-		CreateTime:          detail.CreateTime,      // 创建时间
-		UpdateBy:            &in.CreateBy,           // 更新人ID
-		UpdateTime:          &now,                   // 更新时间
+		ID:                  in.Id,
+		ProductSn:           in.ProductSn,
+		Name:                in.Name,
+		CategoryID:          in.CategoryId,
+		CategoryIds:         in.CategoryIds,
+		CategoryName:        in.CategoryName,
+		BrandID:             in.BrandId,
+		BrandName:           in.BrandName,
+		Unit:                in.Unit,
+		Weight:              float64(in.Weight),
+		Keywords:            in.Keywords,
+		AlbumPics:           in.AlbumPics,
+		MainPic:             in.MainPic,
+		PriceRange:          summary.PriceRange,
+		PublishStatus:       in.PublishStatus,
+		NewStatus:           in.NewStatus,
+		RecommendStatus:     in.RecommendStatus,
+		VerifyStatus:        in.VerifyStatus,
+		PreviewStatus:       in.PreviewStatus,
+		Sort:                in.Sort,
+		NewStatusSort:       in.NewStatusSort,
+		RecommendStatusSort: in.RecommendStatusSort,
+		Sales:               in.Sales,
+		Stock:               summary.TotalStock,
+		LowStock:            summary.LowStock,
+		PromotionType:       in.PromotionType,
+		SubTitle:            in.SubTitle,
+		DetailHTML:          in.DetailHtml,
+		DetailMobileHTML:    in.DetailMobileHtml,
+		CreateBy:            detail.CreateBy,
+		CreateTime:          detail.CreateTime,
+		UpdateBy:            &in.CreateBy,
+		UpdateTime:          &now,
 	}
 
 	spuId := in.Id
@@ -161,7 +165,10 @@ func (l *UpdateProductSpuLogic) UpdateProductSpu(in *pmsclient.ProductSpuReq) (*
 			return err
 		}
 		for _, list := range in.SkuStockList {
-			skuCode := time.Now().Format("200601021504") + strconv.Itoa(rand.Intn(10))
+			skuCode := list.SkuCode
+			if skuCode == "" {
+				skuCode = time.Now().Format("200601021504") + strconv.Itoa(rand.Intn(10))
+			}
 			if err := sku.Create(&model.PmsProductSku{
 				SpuID:          spuId,                        // 商品SpuId
 				Name:           list.Name,                    // SKU名称
@@ -202,7 +209,7 @@ func (l *UpdateProductSpuLogic) UpdateProductSpu(in *pmsclient.ProductSpuReq) (*
 	})
 	if err != nil {
 		logc.Errorf(l.ctx, "更新商品SPU失败,参数:%+v,异常:%s", item, err.Error())
-		return nil, errors.New("更新商品SPU失败")
+		return nil, err
 	}
 
 	sendProductESSync(l.ctx, l.svcCtx, spuId, currentScope)
