@@ -21,88 +21,193 @@ class FocusOn extends StatefulWidget {
 }
 
 class _FocusOnState extends State<FocusOn> {
-  // 定义一个用于存储关注列表数据的列表
-  List<AttentionListData> collectionDataItem = [];
+  List<AttentionListData> attentionDataItem = [];
+  bool _isLoading = true;
+  String? _errorMessage;
 
-  // 初始化状态方法，用于在组件挂载时调用
   @override
   void initState() {
     super.initState();
-    // 在组件初始化时查询关注列表数据
     queryFocusOnList();
   }
 
-  // 异步方法，用于查询关注列表数据
-  void queryFocusOnList() async {
-    // 发起GET请求获取关注列表数据
-    Response result = await HttpUtil.get(focusOnListDataUrl);
-    // 将获取到的数据转换为AttentionListModel对象
-    AttentionListModel focusOnListModel = AttentionListModel.fromJson(
-      result.data,
-    );
-    // 更新状态，将解析后的数据赋值给collectionDataItem
-    setState(() {
-      collectionDataItem = focusOnListModel.data;
-    });
+  Future<void> queryFocusOnList() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+      Response result = await HttpUtil.get(focusOnListDataUrl);
+      AttentionListModel focusOnListModel = AttentionListModel.fromJson(result.data);
+      if (!mounted) return;
+      setState(() {
+        attentionDataItem = focusOnListModel.data;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        attentionDataItem = [];
+        _isLoading = false;
+        _errorMessage = "加载失败，请重试";
+      });
+    }
   }
 
-  // 构建组件方法
+  Future<void> _clearAttention() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("清空关注"),
+        content: const Text("确定要清空全部关注吗？此操作不可恢复。"),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text("取消")),
+          TextButton(onPressed: () => Navigator.of(context).pop(true), child: const Text("确定")),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      setState(() { _isLoading = true; });
+      await HttpUtil.get(clearAttentionDataUrl);
+      if (!mounted) return;
+      queryFocusOnList();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { _isLoading = false; });
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("清空关注失败，请重试")));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // 返回一个Scaffold组件，包含AppBar和身体内容
     return Scaffold(
       appBar: AppBar(
-        // 设置AppBar的背景色、标题、标题样式和居中显示
         backgroundColor: Colors.white,
         title: const Text("我的关注"),
         titleTextStyle: const TextStyle(fontSize: 16, color: Colors.black),
         centerTitle: true,
+        actions: [
+          if (attentionDataItem.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.delete_sweep, color: Colors.grey),
+              onPressed: _clearAttention,
+              tooltip: "清空关注",
+            ),
+        ],
       ),
-      body: Container(
-        // 设置容器的背景色、宽度和子组件
-        color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
-        width: MediaQuery.of(context).size.width,
-        child: Column(children: buildBrandList(context)),
-      ),
+      body: _buildBody(),
     );
   }
 
-  // 构建关注的品牌列表
-  List<InkWell> buildBrandList(BuildContext context) {
-    // 遍历collectionDataItem列表，为每个项创建一个InkWell组件
-    return collectionDataItem.map((item) {
-      // 返回一个InkWell组件，包含品牌信息和点击事件
-      return InkWell(
-        onTap: () {
-          // 点击时导航到品牌详情页面
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => BrandDetail(brandId: item.brandId),
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_errorMessage != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 48, color: Colors.grey),
+            const SizedBox(height: 16),
+            Text(_errorMessage!, style: const TextStyle(fontSize: 14, color: Colors.grey)),
+            const SizedBox(height: 16),
+            ElevatedButton(onPressed: queryFocusOnList, child: const Text("重试")),
+          ],
+        ),
+      );
+    }
+    if (attentionDataItem.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.visibility_off, size: 48, color: Colors.grey),
+            const SizedBox(height: 16),
+            const Text("暂无关注", style: TextStyle(fontSize: 14, color: Colors.grey)),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text("去关注品牌"),
+            ),
+          ],
+        ),
+      );
+    }
+    return Container(
+      color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
+      width: MediaQuery.of(context).size.width,
+      child: ListView.builder(
+        itemCount: attentionDataItem.length,
+        itemBuilder: (BuildContext context, int index) {
+          AttentionListData item = attentionDataItem[index];
+          return Dismissible(
+            key: Key(item.brandId.toString()),
+            direction: DismissDirection.endToStart,
+            background: Container(
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: 20),
+              color: Colors.red,
+              child: const Icon(Icons.delete, color: Colors.white),
+            ),
+            confirmDismiss: (direction) async {
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text("取消关注"),
+                  content: Text("确定要取消关注「${item.brandName}」吗？"),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text("取消")),
+                    TextButton(onPressed: () => Navigator.of(context).pop(true), child: const Text("确定")),
+                  ],
+                ),
+              );
+              if (confirmed != true) return false;
+              try {
+                await HttpUtil.get("$deleteAttentionDataUrl?brandIds=${item.brandId}");
+                return true;
+              } catch (e) {
+                if (!mounted) return false;
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("取消关注失败，请重试")));
+                return false;
+              }
+            },
+            onDismissed: (direction) {
+              queryFocusOnList();
+            },
+            child: InkWell(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => BrandDetail(brandId: item.brandId),
+                  ),
+                );
+              },
+              child: Container(
+                color: Colors.white,
+                margin: const EdgeInsets.only(top: 5),
+                padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                child: Row(
+                  children: [
+                    CachedImageWidget(103, 85, item.brandLogo, fit: BoxFit.contain),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        item.brandName,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Color(int.parse('303133', radix: 16)).withAlpha(255),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           );
         },
-        child: Container(
-          // 设置容器的背景色、边距、内边距和子组件
-          color: Colors.white,
-          margin: const EdgeInsets.only(top: 5),
-          padding: const EdgeInsets.symmetric(horizontal: 15),
-          child: Row(
-            children: [
-              // 显示品牌logo
-              CachedImageWidget(103, 85, item.brandLogo, fit: BoxFit.contain),
-              const SizedBox(width: 8),
-              // 显示品牌名称
-              Text(
-                item.brandName,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Color(int.parse('303133', radix: 16)).withAlpha(255),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }).toList();
+      ),
+    );
   }
 }

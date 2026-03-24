@@ -58,10 +58,22 @@ const queryAddressDetailDataUrl = "$baseUrl/api/member/querAddressDetail";
 const updateAddressStatusDataUrl = "$baseUrl/api/member/updateAddressStatus";
 // 我的足迹
 const historyListDataUrl = "$baseUrl/api/member/queryReadHistoryList";
+// 删除足迹
+const deleteReadHistoryDataUrl = "$baseUrl/api/member/deleteReadHistory";
+// 清空足迹
+const clearReadHistoryDataUrl = "$baseUrl/api/member/clearReadHistory";
 // 我的收藏
 const collectionListDataUrl = "$baseUrl/api/member/queryCollectionList";
+// 删除收藏
+const deleteCollectionDataUrl = "$baseUrl/api/member/deleteCollection";
+// 清空收藏
+const clearCollectionDataUrl = "$baseUrl/api/member/clearCollection";
 // 我的关注
 const focusOnListDataUrl = "$baseUrl/api/member/queryAttentionList";
+// 删除关注
+const deleteAttentionDataUrl = "$baseUrl/api/member/deleteAttention";
+// 清空关注
+const clearAttentionDataUrl = "$baseUrl/api/member/clearAttention";
 // 登录
 const loginDataUrl = "$baseUrl/api/member/login";
 // 注册

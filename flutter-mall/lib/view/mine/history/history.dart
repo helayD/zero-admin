@@ -20,114 +20,229 @@ class History extends StatefulWidget {
   State<History> createState() => _HistoryState();
 }
 
-// 历史记录页面的状态类
 class _HistoryState extends State<History> {
-  // 初始化一个空的历史记录列表
   List<HistoryListDataItem> historyListDataItem = [];
+  bool _isLoading = true;
+  String? _errorMessage;
 
-  // 初始化状态，调用父类的initState方法
   @override
   void initState() {
     super.initState();
-    // 在初始化时查询历史记录列表
     queryHistoryList();
   }
 
-  // 查询历史记录列表的方法
-  void queryHistoryList() async {
-    // 发起获取历史记录列表的HTTP请求
-    Response result = await HttpUtil.get(historyListDataUrl);
-    // 将请求结果转换为历史记录模型对象
-    HistoryListModel historyListModel = HistoryListModel.fromJson(result.data);
-    // 更新状态，设置历史记录列表数据
-    setState(() {
-      historyListDataItem = historyListModel.data;
-    });
+  Future<void> queryHistoryList() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+      Response result = await HttpUtil.get(historyListDataUrl);
+      HistoryListModel historyListModel = HistoryListModel.fromJson(result.data);
+      if (!mounted) return;
+      setState(() {
+        historyListDataItem = historyListModel.data;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        historyListDataItem = [];
+        _isLoading = false;
+        _errorMessage = "加载失败，请重试";
+      });
+    }
   }
 
-  // 构建历史记录页面的UI
+  String _formatTime(String timeStr) {
+    try {
+      final dt = DateTime.parse(timeStr);
+      return "${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}";
+    } catch (e) {
+      return timeStr;
+    }
+  }
+
+  Future<void> _clearHistory() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("清空足迹"),
+        content: const Text("确定要清空全部浏览足迹吗？此操作不可恢复。"),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text("取消")),
+          TextButton(onPressed: () => Navigator.of(context).pop(true), child: const Text("确定")),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      setState(() { _isLoading = true; });
+      await HttpUtil.get(clearReadHistoryDataUrl);
+      if (!mounted) return;
+      queryHistoryList();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { _isLoading = false; });
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("清空足迹失败，请重试")));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // 返回一个带有AppBar和历史记录列表的Scaffold
     return Scaffold(
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          title: const Text("我的足迹"),
-          titleTextStyle: const TextStyle(fontSize: 16, color: Colors.black),
-          centerTitle: true,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        title: const Text("我的足迹"),
+        titleTextStyle: const TextStyle(fontSize: 16, color: Colors.black),
+        centerTitle: true,
+        actions: [
+          if (historyListDataItem.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.delete_sweep, color: Colors.grey),
+              onPressed: _clearHistory,
+              tooltip: "清空足迹",
+            ),
+        ],
+      ),
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_errorMessage != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 48, color: Colors.grey),
+            const SizedBox(height: 16),
+            Text(_errorMessage!, style: const TextStyle(fontSize: 14, color: Colors.grey)),
+            const SizedBox(height: 16),
+            ElevatedButton(onPressed: queryHistoryList, child: const Text("重试")),
+          ],
         ),
-        body: Container(
-            color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
-            width: MediaQuery.of(context).size.width,
-            child: Container(
-                color: Colors.white,
-                // height: 300,
-                margin: const EdgeInsets.only(top: 5),
-                padding: const EdgeInsets.all(15),
-                child: ListView.builder(
-                    itemCount: historyListDataItem.length,
-                    itemBuilder: (BuildContext context, int index) {
-                      HistoryListDataItem item = historyListDataItem[index];
-                      return InkWell(
-                          onTap: () {
-                            // 点击历史记录项时，导航到产品详情页面
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => ProductDetail(productId: historyListDataItem[index].productId),
-                              ),
-                            );
-                          },
-                          child: Container(
-                            margin: const EdgeInsets.only(bottom: 20),
-                            child: Row(
+      );
+    }
+    if (historyListDataItem.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.history, size: 48, color: Colors.grey),
+            const SizedBox(height: 16),
+            const Text("暂无足迹", style: TextStyle(fontSize: 14, color: Colors.grey)),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text("去逛逛"),
+            ),
+          ],
+        ),
+      );
+    }
+    return Container(
+      color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
+      width: MediaQuery.of(context).size.width,
+      child: Container(
+        color: Colors.white,
+        margin: const EdgeInsets.only(top: 5),
+        padding: const EdgeInsets.all(15),
+        child: ListView.builder(
+          itemCount: historyListDataItem.length,
+          itemBuilder: (BuildContext context, int index) {
+            HistoryListDataItem item = historyListDataItem[index];
+            return Dismissible(
+              key: Key(item.id),
+              direction: DismissDirection.endToStart,
+              background: Container(
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.only(right: 20),
+                color: Colors.red,
+                child: const Icon(Icons.delete, color: Colors.white),
+              ),
+              confirmDismiss: (direction) async {
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text("删除足迹"),
+                    content: Text("确定要删除「${item.productName}」的浏览记录吗？"),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text("取消")),
+                      TextButton(onPressed: () => Navigator.of(context).pop(true), child: const Text("确定")),
+                    ],
+                  ),
+                );
+                if (confirmed != true) return false;
+                try {
+                  await HttpUtil.get("$deleteReadHistoryDataUrl?ids=${item.id}");
+                  return true;
+                } catch (e) {
+                  if (!mounted) return false;
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("删除足迹失败，请重试")));
+                  return false;
+                }
+              },
+              onDismissed: (direction) {
+                queryHistoryList();
+              },
+              child: InkWell(
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => ProductDetail(productId: item.productId),
+                    ),
+                  );
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 20),
+                  child: Row(
+                    children: [
+                      CachedImageWidget(103, 125, item.productPic, fit: BoxFit.fill),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(item.productName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                    fontSize: 16, color: Color(int.parse('303133', radix: 16)).withAlpha(255))),
+                            const SizedBox(height: 6),
+                            Text(item.productSubTitle,
+                                maxLines: 2,
+                                style: TextStyle(
+                                    fontSize: 12, color: Color(int.parse('707070', radix: 16)).withAlpha(255))),
+                            const SizedBox(height: 6),
+                            Row(
                               children: [
-                                CachedImageWidget(
-                                  103,
-                                  125,
-                                  item.productPic,
-                                  fit: BoxFit.fill,
-                                ),
-                                const SizedBox(
-                                  width: 8,
-                                ),
                                 Expanded(
-                                    child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(item.productName,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                            fontSize: 16, color: Color(int.parse('303133', radix: 16)).withAlpha(255))),
-                                    const SizedBox(
-                                      height: 6,
-                                    ),
-                                    Text(item.productSubTitle,
-                                        maxLines: 2,
-                                        style: TextStyle(
-                                            fontSize: 12, color: Color(int.parse('707070', radix: 16)).withAlpha(255))),
-                                    const SizedBox(
-                                      height: 6,
-                                    ),
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text("￥${item.productPrice}",
-                                              style: TextStyle(
-                                                  fontSize: 16,
-                                                  color: Color(int.parse('fa436a', radix: 16)).withAlpha(255))),
-                                        ),
-                                        Text(item.createTime.toString(),
-                                            style: TextStyle(
-                                                fontSize: 12,
-                                                color: Color(int.parse('303133', radix: 16)).withAlpha(255))),
-                                      ],
-                                    )
-                                  ],
-                                ))
+                                  child: Text("￥${item.productPrice}",
+                                      style: TextStyle(
+                                          fontSize: 16,
+                                          color: Color(int.parse('fa436a', radix: 16)).withAlpha(255))),
+                                ),
+                                Text(_formatTime(item.createTime),
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        color: Color(int.parse('303133', radix: 16)).withAlpha(255))),
                               ],
                             ),
-                          ));
-                    }))));
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
   }
 }
