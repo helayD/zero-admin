@@ -1450,6 +1450,8 @@ type QueryCouponListData struct {
 	CreateTime    string  `json:"createTime"`    //创建时间
 	UpdateBy      int64   `json:"updateBy"`      //更新人ID
 	UpdateTime    string  `json:"updateTime"`    //更新时间
+	ScopeCount    int64   `json:"scopeCount"`    //关联scope数量
+	TypeName      string  `json:"typeName"`      //优惠券类型名称
 }
 
 type QueryCouponListReq struct {

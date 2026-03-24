@@ -111,20 +111,17 @@ export async function addCoupon(params: CouponFormPayload) {
   return request('/api/sms/coupon/addCoupon', {
     method: 'POST',
     data: {
-      typeId: Number(params.type || 0),
+      typeId: Number(params.typeId || params.type || 0),
       name: params.name,
       code: params.code || '',
       amount: Number(params.amount || 0),
-      minAmount: Number(params.minPoint || 0),
+      minAmount: Number(params.minAmount || params.minPoint || 0),
       startTime: formatDateTime(params.startTime?.[0]),
       endTime: formatDateTime(params.startTime?.[1]),
-      totalCount: Number(params.publishCount || 0),
-      receivedCount: Number(params.receiveCount || 0),
-      usedCount: Number(params.useCount || 0),
+      totalCount: Number(params.totalCount || params.publishCount || 0),
       perLimit: Number(params.perLimit || 0),
-      status: 1,
-      isEnabled: 1,
-      description: params.note || '',
+      isEnabled: params.isEnabled ?? 1,
+      description: params.description || params.note || '',
       couponScopeData: buildCouponScopeData(params),
       scopeType: params.scopeType,
       platformId: params.platformId,
@@ -139,26 +136,32 @@ export async function updateCoupon(params: CouponFormPayload) {
     method: 'POST',
     data: {
       id: params.id,
-      typeId: Number(params.type || 0),
+      typeId: Number(params.typeId || params.type || 0),
       name: params.name,
       code: params.code || '',
       amount: Number(params.amount || 0),
-      minAmount: Number(params.minPoint || 0),
+      minAmount: Number(params.minAmount || params.minPoint || 0),
       startTime: formatDateTime(params.startTime?.[0]),
       endTime: formatDateTime(params.startTime?.[1]),
-      totalCount: Number(params.publishCount || 0),
-      receivedCount: Number(params.receiveCount || 0),
-      usedCount: Number(params.useCount || 0),
+      totalCount: Number(params.totalCount || params.publishCount || 0),
+      receivedCount: Number(params.receivedCount || params.receiveCount || 0),
+      usedCount: Number(params.usedCount || params.useCount || 0),
       perLimit: Number(params.perLimit || 0),
-      status: params.status ?? 1,
       isEnabled: params.isEnabled ?? 1,
-      description: params.note || '',
+      description: params.description || params.note || '',
       couponScopeData: buildCouponScopeData(params),
       scopeType: params.scopeType,
       platformId: params.platformId,
       tenantId: params.tenantId,
       merchantId: params.merchantId,
     },
+  });
+}
+
+export async function updateCouponStatus(params: { ids: number[]; status: number } & GovernancePayload) {
+  return request('/api/sms/coupon/updateCouponStatus', {
+    method: 'POST',
+    data: params,
   });
 }
 

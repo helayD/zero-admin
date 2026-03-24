@@ -63,16 +63,57 @@ func (l *UpdateCouponLogic) UpdateCoupon(in *smsclient.UpdateCouponReq) (*smscli
 
 	if err != nil {
 		logc.Errorf(l.ctx, "更新优惠券失败,参数：%+v, 异常:%s", in, err.Error())
-		return nil, errors.New(fmt.Sprintf("更新优惠券失败"))
+		return nil, errors.New("更新优惠券失败")
 	}
 
 	if count > 0 {
-		return nil, errors.New(fmt.Sprintf("优惠券：%s,已存在", in.Name))
+		return nil, fmt.Errorf("优惠券：%s,已存在", in.Name)
 	}
 
-	startTime, _ := time.Parse("2006-01-02 15:04:05", in.StartTime)
-	endTime, _ := time.Parse("2006-01-02 15:04:05", in.EndTime)
+	startTime, err := time.Parse("2006-01-02 15:04:05", in.StartTime)
+	if err != nil {
+		return nil, fmt.Errorf("生效时间格式无效，请使用 yyyy-MM-dd HH:mm:ss 格式")
+	}
+	endTime, err := time.Parse("2006-01-02 15:04:05", in.EndTime)
+	if err != nil {
+		return nil, fmt.Errorf("失效时间格式无效，请使用 yyyy-MM-dd HH:mm:ss 格式")
+	}
+	if !startTime.Before(endTime) {
+		return nil, fmt.Errorf("生效时间必须早于失效时间")
+	}
+	if in.TotalCount <= 0 {
+		return nil, fmt.Errorf("发放总量必须大于0")
+	}
+	if in.PerLimit < 1 {
+		return nil, fmt.Errorf("每人限领数量至少为1")
+	}
+	if in.Amount <= 0 {
+		return nil, fmt.Errorf("优惠金额必须大于0")
+	}
+	if in.MinAmount < 0 {
+		return nil, fmt.Errorf("最低使用金额不能为负数")
+	}
 	now := time.Now()
+
+	// 已发布(1)的优惠券不允许修改核心字段，仅允许修改描述/启停/发放总量
+	if detail.Status == 1 {
+		if float64(in.Amount) != detail.Amount {
+			return nil, errors.New("已发布的优惠券不允许修改优惠金额")
+		}
+		if float64(in.MinAmount) != detail.MinAmount {
+			return nil, errors.New("已发布的优惠券不允许修改最低使用金额")
+		}
+		if in.TypeId != detail.TypeID {
+			return nil, errors.New("已发布的优惠券不允许修改优惠券类型")
+		}
+		if in.PerLimit != detail.PerLimit {
+			return nil, errors.New("已发布的优惠券不允许修改每人限领数量")
+		}
+		if in.Code != detail.Code {
+			return nil, errors.New("已发布的优惠券不允许修改优惠券码")
+		}
+	}
+
 	item := &model.SmsCoupon{
 		ID:            in.Id,                 // 优惠券ID
 		TypeID:        in.TypeId,             // 优惠券类型ID
@@ -86,7 +127,7 @@ func (l *UpdateCouponLogic) UpdateCoupon(in *smsclient.UpdateCouponReq) (*smscli
 		ReceivedCount: in.ReceivedCount,      // 已领取数量
 		UsedCount:     in.UsedCount,          // 已使用数量
 		PerLimit:      in.PerLimit,           // 每人限领数量
-		Status:        in.Status,             // 状态：0-未开始，1-进行中，2-已结束，3-已取消
+		Status:        detail.Status,         // 保持原状态，不允许通过update修改状态
 		IsEnabled:     in.IsEnabled,          // 是否启用
 		Description:   in.Description,        // 使用说明
 		CreateBy:      detail.CreateBy,       // 创建人ID

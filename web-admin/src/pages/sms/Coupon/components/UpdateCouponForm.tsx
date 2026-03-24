@@ -30,6 +30,7 @@ const UpdateCouponForm: React.FC<CreateFormProps> = (props) => {
   const [productList, setProductList] = useState<any[]>([]);
 
   const [value, setValue] = useState(0);
+  const [couponStatus, setCouponStatus] = useState(0);
 
   const {
     onSubmit,
@@ -38,6 +39,8 @@ const UpdateCouponForm: React.FC<CreateFormProps> = (props) => {
     id,
     scope,
   } = props;
+
+  const isPublished = couponStatus === 1;
 
   useEffect(() => {
     if (form && !updateModalVisible) {
@@ -49,6 +52,7 @@ const UpdateCouponForm: React.FC<CreateFormProps> = (props) => {
         setCategoryList(res.data.productCategoryRelationList)
         setProductList(res.data.productRelationList)
         setValue(Number(res.data.useType))
+        setCouponStatus(res.data.status ?? 0)
 
         form.setFieldsValue({
           ...res.data,
@@ -101,7 +105,7 @@ const UpdateCouponForm: React.FC<CreateFormProps> = (props) => {
               initialValue={0}
               rules={[{required: true, message: '请选择优惠券类型!'}]}
             >
-              <Select id="type" placeholder={'请选择优惠券类型'}>
+              <Select id="type" placeholder={'请选择优惠券类型'} disabled={isPublished}>
                 <Option value={0}>全场赠券</Option>
                 <Option value={1}>会员赠券</Option>
                 <Option value={2}>购物赠券</Option>
@@ -122,7 +126,7 @@ const UpdateCouponForm: React.FC<CreateFormProps> = (props) => {
               initialValue={100}
               rules={[{required: true, message: '请输入每人限领张数!'}]}
             >
-              <InputNumber addonAfter="张"/>
+              <InputNumber addonAfter="张" disabled={isPublished}/>
             </FormItem>
 
 
@@ -149,7 +153,7 @@ const UpdateCouponForm: React.FC<CreateFormProps> = (props) => {
               initialValue={100}
               rules={[{required: true, message: '请输入金额!'}]}
             >
-              <InputNumber prefix="￥" addonAfter="元" stringMode step="0.01"/>
+              <InputNumber prefix="￥" addonAfter="元" stringMode step="0.01" disabled={isPublished}/>
             </FormItem>
             <FormItem
               name="minPoint"
@@ -157,7 +161,7 @@ const UpdateCouponForm: React.FC<CreateFormProps> = (props) => {
               initialValue={10}
               rules={[{required: true, message: '请输入使用门槛!'}]}
             >
-              <InputNumber addonBefore={"满"} prefix="￥" addonAfter="元可用" stringMode step="0.01"/>
+              <InputNumber addonBefore={"满"} prefix="￥" addonAfter="元可用" stringMode step="0.01" disabled={isPublished}/>
             </FormItem>
             <FormItem
               name="memberLevel"
@@ -219,7 +223,7 @@ const UpdateCouponForm: React.FC<CreateFormProps> = (props) => {
     <Modal
       forceRender
       destroyOnClose
-      title="新建"
+      title="编辑优惠券"
       visible={updateModalVisible}
       {...modalFooter}
       width={820}

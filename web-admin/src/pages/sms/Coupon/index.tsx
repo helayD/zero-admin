@@ -2,7 +2,10 @@ import {
   PlusOutlined,
   ExclamationCircleOutlined,
   DeleteOutlined,
-  EditOutlined, EyeOutlined,
+  EditOutlined,
+  EyeOutlined,
+  CheckCircleOutlined,
+  StopOutlined,
 } from '@ant-design/icons';
 import {Alert, Button, Divider, message, Drawer, Modal} from 'antd';
 import React, {useState, useRef} from 'react';
@@ -14,7 +17,7 @@ import type {ProDescriptionsItemProps} from '@ant-design/pro-descriptions';
 import CreateCouponForm from './components/CreateCouponForm';
 import UpdateCouponForm from './components/UpdateCouponForm';
 import type {CouponListItem} from './data.d';
-import {queryCoupon, updateCoupon, addCoupon, removeCoupon} from './service';
+import {queryCoupon, updateCoupon, addCoupon, removeCoupon, updateCouponStatus} from './service';
 import moment from "moment";
 import CouponDetailForm from "@/pages/sms/Coupon/components/CouponDetailForm";
 import GovernanceScopeBar from '@/pages/system/components/GovernanceScopeBar';
@@ -113,6 +116,7 @@ const CouponList: React.FC = () => {
       title: '编号',
       dataIndex: 'id',
       hideInSearch: true,
+      width: 60,
     },
     {
       title: '优惠券名称',
@@ -132,116 +136,90 @@ const CouponList: React.FC = () => {
     },
     {
       title: '优惠券类型',
-      dataIndex: 'type',
-      valueEnum: {
-        0: {text: '全场赠券', status: 'Error'},
-        1: {text: '会员赠券', status: 'Success'},
-        2: {text: '购物赠券', status: 'Success'},
-        3: {text: '注册赠券', status: 'Success'},
-      },
-    },
-
-    {
-      title: '使用类型',
-      dataIndex: 'useType',
+      dataIndex: 'typeName',
       hideInSearch: true,
-      valueEnum: {
-        0: {text: '全场通用', status: 'Error'},
-        1: {text: '指定分类', status: 'Success'},
-        2: {text: '指定商品', status: 'Success'},
-      },
+      render: (_, record) => record.typeName || '-',
     },
     {
-      title: '数量',
-      dataIndex: 'count',
+      title: '优惠券码',
+      dataIndex: 'code',
       hideInSearch: true,
     },
     {
       title: '面值',
       dataIndex: 'amount',
       hideInSearch: true,
+      render: (_, record) => `¥${record.amount || 0}`,
     },
     {
-      title: '适用平台',
-      dataIndex: 'platform',
+      title: '使用门槛',
+      dataIndex: 'minAmount',
       hideInSearch: true,
-      valueEnum: {
-        0: {text: '全部', status: 'Error'},
-        1: {text: '移动', status: 'Success'},
-        2: {text: 'PC', status: 'Success'},
-      },
+      render: (_, record) => record.minAmount ? `满¥${record.minAmount}` : '无门槛',
     },
     {
-      title: '每人限领张数',
+      title: '发放总量',
+      dataIndex: 'totalCount',
+      hideInSearch: true,
+    },
+    {
+      title: '已领/已用',
+      hideInSearch: true,
+      render: (_, record) => `${record.receivedCount || 0}/${record.usedCount || 0}`,
+    },
+    {
+      title: '每人限领',
       dataIndex: 'perLimit',
       hideInSearch: true,
     },
     {
-      title: '使用门槛',
-      dataIndex: 'minPoint',
-      hideInSearch: true,
-    },
-    {
       title: '有效期',
-      valueType: 'dateTime',
-      dataIndex: 'startTime',
-      render: (dom, entity) => {
+      hideInSearch: true,
+      render: (_, entity) => {
         return (
           <>
             {moment(entity.startTime).format('YYYY-MM-DD')}
-            至{moment(entity.startTime).format('YYYY-MM-DD')}
+            {' ~ '}
+            {moment(entity.endTime).format('YYYY-MM-DD')}
           </>
         );
       },
     },
-
     {
-      title: '备注',
-      dataIndex: 'note',
+      title: '适用范围',
+      dataIndex: 'scopeCount',
       hideInSearch: true,
-      hideInTable: true,
+      render: (_, record) => {
+        if (!record.scopeCount || record.scopeCount === 0) {
+          return <span style={{color: '#ff4d4f'}}>未配置</span>;
+        }
+        return `${record.scopeCount}条`;
+      },
     },
     {
-      title: '发行数量',
-      dataIndex: 'publishCount',
-      hideInSearch: true,
-      hideInTable: true,
+      title: '状态',
+      dataIndex: 'status',
+      valueEnum: {
+        0: {text: '草稿', status: 'Default'},
+        1: {text: '进行中', status: 'Processing'},
+        2: {text: '已结束', status: 'Default'},
+        3: {text: '已取消', status: 'Error'},
+      },
     },
     {
-      title: '已使用数量',
-      dataIndex: 'useCount',
+      title: '启用',
+      dataIndex: 'isEnabled',
       hideInSearch: true,
-      hideInTable: true,
-    },
-    {
-      title: '领取数量',
-      dataIndex: 'receiveCount',
-      hideInSearch: true,
-      hideInTable: true,
-    },
-    {
-      title: '可领取的会员类型',
-      dataIndex: 'memberLevel',
-      hideInSearch: true,
-      hideInTable: true,
-    },
-    {
-      title: '可以领取的日期',
-      dataIndex: 'enableTime',
-      hideInSearch: true,
-      hideInTable: true,
-    },
-    {
-      title: '优惠码',
-      dataIndex: 'code',
-      hideInSearch: true,
-      hideInTable: true,
+      valueEnum: {
+        0: {text: '停用', status: 'Error'},
+        1: {text: '启用', status: 'Success'},
+      },
     },
     {
       title: '操作',
       dataIndex: 'option',
       valueType: 'option',
-      width: 220,
+      width: 280,
       render: (_, record) => (
         <>
           <a
@@ -255,7 +233,7 @@ const CouponList: React.FC = () => {
           </a>
           <Divider type="vertical"/>
           <a
-            key="sort"
+            key="edit"
             onClick={() => {
               handleUpdateModalVisible(true);
               setCurrentRow(record);
@@ -263,6 +241,68 @@ const CouponList: React.FC = () => {
           >
             <EditOutlined/> 编辑
           </a>
+          {record.status === 0 && (
+            <>
+              <Divider type="vertical"/>
+              <a
+                key="publish"
+                style={{color: '#52c41a'}}
+                onClick={() => {
+                  confirm({
+                    title: '确认发布此优惠券？',
+                    icon: <ExclamationCircleOutlined/>,
+                    content: `发布后核心字段将不可修改。当前主体：${buildGovernanceScopeLabel(scope)}`,
+                    onOk: async () => {
+                      try {
+                        await updateCouponStatus({
+                          ids: [record.id as number],
+                          status: 1,
+                          ...toGovernancePayload(scope),
+                        });
+                        message.success('发布成功');
+                        actionRef.current?.reload?.();
+                      } catch (e) {
+                        // 错误已由 request 拦截器处理
+                      }
+                    },
+                  });
+                }}
+              >
+                <CheckCircleOutlined/> 发布
+              </a>
+            </>
+          )}
+          {record.status === 1 && (
+            <>
+              <Divider type="vertical"/>
+              <a
+                key="cancel"
+                style={{color: '#faad14'}}
+                onClick={() => {
+                  confirm({
+                    title: '确认取消此优惠券？',
+                    icon: <ExclamationCircleOutlined/>,
+                    content: '取消后优惠券将不再可用。',
+                    onOk: async () => {
+                      try {
+                        await updateCouponStatus({
+                          ids: [record.id as number],
+                          status: 3,
+                          ...toGovernancePayload(scope),
+                        });
+                        message.success('已取消');
+                        actionRef.current?.reload?.();
+                      } catch (e) {
+                        // 错误已由 request 拦截器处理
+                      }
+                    },
+                  });
+                }}
+              >
+                <StopOutlined/> 取消
+              </a>
+            </>
+          )}
           <Divider type="vertical"/>
           <a
             key="delete"

@@ -87,7 +87,7 @@ func (l *QueryCouponDetailLogic) QueryCouponDetail(req *types.QueryCouponDetailR
 		ScopeType: 3,
 	})
 
-	if len(scopeRes.List) > 0 {
+	if scopeRes != nil && len(scopeRes.List) > 0 {
 		var one = scopeRes.List[0]
 		data.ScopeType = one.ScopeType
 

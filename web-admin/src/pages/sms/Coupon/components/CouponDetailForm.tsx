@@ -19,26 +19,39 @@ const CouponDetailForm: React.FC<CreateFormProps> = (props) => {
   const actionRef = useRef<ActionType>();
 
   const [flag, setFlag] = useState<boolean>(false)
+  const statusMap: Record<number, string> = {
+    0: '草稿',
+    1: '进行中',
+    2: '已结束',
+    3: '已取消',
+  };
+  const scopeTypeMap: Record<number, string> = {
+    0: '全场通用',
+    1: '指定分类',
+    2: '指定商品',
+  };
+
   const [couponDetail, setCouponDetail] = useState<CouponDetailData>({
     amount: 0,
     code: "",
-    count: 0,
-    enableTime: "",
     endTime: "",
     id: 0,
-    memberLevel: 0,
-    minPoint: 0,
+    minAmount: 0,
     name: "",
-    note: "",
+    description: "",
     perLimit: 0,
-    platform: 0,
-    publishCount: 0,
-    receiveCount: 0,
+    totalCount: 0,
+    receivedCount: 0,
     startTime: "",
-    type: 0,
-    useCount: 0,
-    useType: 0
-
+    typeId: 0,
+    usedCount: 0,
+    status: 0,
+    isEnabled: 0,
+    createBy: 0,
+    createTime: "",
+    updateBy: 0,
+    updateTime: "",
+    scopeType: 0,
   });
 
 
@@ -54,11 +67,8 @@ const CouponDetailForm: React.FC<CreateFormProps> = (props) => {
     if (detailModalVisible) {
       queryCouponDetail(id, scope).then((res) => {
         setCouponDetail(res.data)
-        let now = moment().format('YYYY-MM-DD HH+mm:ss')
-        let date = moment(res.data.endTime).format('YYYY-MM-DD HH+mm:ss')
-
         actionRef.current?.reloadAndRest?.();
-        setFlag(now <= date)
+        setFlag(moment().isBefore(moment(res.data.endTime)))
       });
     }
   }, [props.detailModalVisible]);
@@ -152,39 +162,50 @@ const CouponDetailForm: React.FC<CreateFormProps> = (props) => {
             {couponDetail.name}
           </Descriptions.Item>
           <Descriptions.Item label="优惠券类型">
-            {couponDetail.type}
+            {couponDetail.typeName || couponDetail.typeId}
           </Descriptions.Item>
-          <Descriptions.Item label="可使用商品">
-            {couponDetail.useType}
+          <Descriptions.Item label="优惠券码">
+            {couponDetail.code || '-'}
           </Descriptions.Item>
-          <Descriptions.Item label="使用门槛">
-            {couponDetail.minPoint}元
+          <Descriptions.Item label="适用范围">
+            {scopeTypeMap[couponDetail.scopeType] || '全场通用'}
           </Descriptions.Item>
           <Descriptions.Item label="面值">
-            {couponDetail.amount}元
+            ¥{couponDetail.amount}
+          </Descriptions.Item>
+          <Descriptions.Item label="使用门槛">
+            {couponDetail.minAmount ? `满¥${couponDetail.minAmount}` : '无门槛'}
           </Descriptions.Item>
           <Descriptions.Item label="状态">
-            {flag ? "未过期" : "已过期"}
+            {statusMap[couponDetail.status] || '未知'}
+            {flag ? '' : '（已过期）'}
+          </Descriptions.Item>
+          <Descriptions.Item label="启用">
+            {couponDetail.isEnabled === 1 ? '启用' : '停用'}
           </Descriptions.Item>
 
-          <Descriptions.Item label="总发行量">
-            {couponDetail.publishCount}
+          <Descriptions.Item label="发放总量">
+            {couponDetail.totalCount}
           </Descriptions.Item>
           <Descriptions.Item label="已领取">
-            {couponDetail.receiveCount}
+            {couponDetail.receivedCount}
           </Descriptions.Item>
           <Descriptions.Item label="待领取">
-            {couponDetail.publishCount - couponDetail.receiveCount}
+            {couponDetail.totalCount - couponDetail.receivedCount}
           </Descriptions.Item>
           <Descriptions.Item label="已使用">
-            {couponDetail.useCount}
+            {couponDetail.usedCount}
           </Descriptions.Item>
-          <Descriptions.Item label="未使用">
-            {couponDetail.publishCount - couponDetail.useCount}
+          <Descriptions.Item label="每人限领">
+            {couponDetail.perLimit}张
           </Descriptions.Item>
           <Descriptions.Item label="有效期">
             {moment(couponDetail.startTime).format('YYYY-MM-DD')}
-            至{moment(couponDetail.endTime).format('YYYY-MM-DD')}
+            {' ~ '}
+            {moment(couponDetail.endTime).format('YYYY-MM-DD')}
+          </Descriptions.Item>
+          <Descriptions.Item label="说明" span={2}>
+            {couponDetail.description || '-'}
           </Descriptions.Item>
         </Descriptions>
       </Card>
