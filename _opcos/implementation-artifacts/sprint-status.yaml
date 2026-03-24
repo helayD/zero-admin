@@ -62,8 +62,8 @@ development_status:
 
   epic-3: in-progress
   3-1-手机号注册与登录: done
-  3-2-个人资料与账户概览: backlog
-  3-3-收货地址管理: backlog
+  3-2-个人资料与账户概览: done
+  3-3-收货地址管理: done
   3-4-用户资产-收藏与足迹视图: backlog
   3-5-会员等级与权益规则管理: backlog
   epic-3-retrospective: optional

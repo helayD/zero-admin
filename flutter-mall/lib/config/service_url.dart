@@ -47,7 +47,15 @@ const orderDetailDataUrl = "$baseUrl/api/order/queryOrderDetail?orderId=";
 // 收货地址列表
 const addressListDataUrl = "$baseUrl/api/member/queryAddressList";
 // 添加会员地址
-const addAddressDataUrl = "$baseUrl/api/member/addAddress ";
+const addAddressDataUrl = "$baseUrl/api/member/addAddress";
+// 删除会员地址
+const deleteAddressDataUrl = "$baseUrl/api/member/deleteAddress";
+// 更新会员地址
+const updateAddressDataUrl = "$baseUrl/api/member/updateAddress";
+// 查询地址详情
+const queryAddressDetailDataUrl = "$baseUrl/api/member/querAddressDetail";
+// 更新地址默认状态
+const updateAddressStatusDataUrl = "$baseUrl/api/member/updateAddressStatus";
 // 我的足迹
 const historyListDataUrl = "$baseUrl/api/member/queryReadHistoryList";
 // 我的收藏
@@ -60,3 +68,5 @@ const loginDataUrl = "$baseUrl/api/member/login";
 const registerDataUrl = "$baseUrl/api/member/register";
 // 获取用户信息
 const memberInfoDataUrl = "$baseUrl/api/member/info";
+// 更新会员信息
+const updateMemberDataUrl = "$baseUrl/api/member/updateMember";
