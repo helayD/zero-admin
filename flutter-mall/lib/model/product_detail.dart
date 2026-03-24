@@ -221,6 +221,7 @@ class CouponList {
   int perLimit;
   int status;
   String description;
+  int receiveStatus;
 
   CouponList({
     required this.id,
@@ -234,6 +235,7 @@ class CouponList {
     required this.perLimit,
     required this.status,
     required this.description,
+    required this.receiveStatus,
   });
 
   factory CouponList.fromJson(Map<String, dynamic> json) => CouponList(
@@ -248,6 +250,7 @@ class CouponList {
         perLimit: json["perLimit"],
         status: json["status"],
         description: json["description"],
+        receiveStatus: json["receiveStatus"] ?? 0,
       );
 
   Map<String, dynamic> toJson() => {
@@ -262,6 +265,7 @@ class CouponList {
         "perLimit": perLimit,
         "status": status,
         "description": description,
+        "receiveStatus": receiveStatus,
       };
 }
 

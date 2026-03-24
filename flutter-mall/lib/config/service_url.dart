@@ -40,6 +40,10 @@ const productDetailDataUrl = "$baseUrl/api/product/queryProductDetail?productId=
 const messageListDataUrl = "$baseUrl/api/member/message/list/";
 // 优惠券
 const couponDataUrl = "$baseUrl/api/member/coupon/queryCouponList?useStatus=";
+// 可领取优惠券列表
+const availableCouponUrl = "$baseUrl/api/member/coupon/queryAvailableCoupons";
+// 领取优惠券
+const addCouponUrl = "$baseUrl/api/member/coupon/addCoupon";
 // 订单列表
 const orderListDataUrl = "$baseUrl/api/order/queryOrderList?status=";
 // 订单详情

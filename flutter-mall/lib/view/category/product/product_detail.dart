@@ -1275,6 +1275,37 @@ class _ProductDetailState extends State<ProductDetail> {
     );
   }
 
+  void _claimCoupon(int couponId) async {
+    try {
+      Response result = await HttpUtil.post(addCouponUrl, data: {"couponId": couponId});
+      Map<String, dynamic> resp = result.data;
+      if (resp["code"] == 0) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(resp["message"] ?? "领取成功"), backgroundColor: Colors.green),
+          );
+          queryCollectionList();
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(resp["message"] ?? "领取失败"), backgroundColor: Colors.red),
+          );
+        }
+      }
+    } on DioException catch (e) {
+      String msg = "领取失败";
+      if (e.response?.data != null && e.response!.data is Map) {
+        msg = e.response!.data["message"] ?? msg;
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(msg), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
   // 优惠券列表
   Widget buildCouponList(ScrollController controller) {
     if (couponList.isEmpty) {
@@ -1368,6 +1399,25 @@ class _ProductDetailState extends State<ProductDetail> {
                         ),
                       ),
                     ],
+                  ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    height: 28,
+                    child: ElevatedButton(
+                      onPressed: coupon.receiveStatus == 0 ? () => _claimCoupon(coupon.id) : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: coupon.receiveStatus == 0
+                            ? Color(int.parse('fa436a', radix: 16)).withAlpha(255)
+                            : Colors.grey[300],
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                      child: Text(
+                        coupon.receiveStatus == 0 ? '领取' : (coupon.receiveStatus == 2 ? '已领完' : '已领取'),
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
                   ),
                 ],
               ),

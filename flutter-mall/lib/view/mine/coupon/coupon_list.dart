@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mall/config/service_url.dart';
 import 'package:flutter_mall/utils/http_util.dart';
+import 'package:flutter_mall/view/mine/coupon/available_coupon_list.dart';
 
 import '../../../model/coupon_model.dart';
 
@@ -30,11 +31,21 @@ class _CouponListState extends State<CouponList> {
   }
 
   void queryCouponList(int status) async {
-    Response result = await HttpUtil.get(couponDataUrl + status.toString());
-    CouponModel couponModel = CouponModel.fromJson(result.data);
-    setState(() {
-      couponListData = couponModel.data;
-    });
+    try {
+      Response result = await HttpUtil.get(couponDataUrl + status.toString());
+      CouponModel couponModel = CouponModel.fromJson(result.data);
+      if (mounted) {
+        setState(() {
+          couponListData = couponModel.data;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('加载优惠券失败: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   @override
@@ -46,6 +57,19 @@ class _CouponListState extends State<CouponList> {
           title: const Text(' 优惠券列表 '),
           titleTextStyle: const TextStyle(fontSize: 16, color: Colors.black),
           centerTitle: true,
+          actions: [
+            TextButton(
+              onPressed: () async {
+                await Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const AvailableCouponList()),
+                );
+                queryCouponList(0);
+              },
+              child: Text('领券中心',
+                  style: TextStyle(
+                      fontSize: 14, color: Color(int.parse('fa436a', radix: 16)).withAlpha(255))),
+            ),
+          ],
           bottom: TabBar(
             indicatorColor: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
             labelColor: Color(int.parse('fa436a', radix: 16)).withAlpha(255),

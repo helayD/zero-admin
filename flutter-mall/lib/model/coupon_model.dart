@@ -45,6 +45,9 @@ class CouponData {
   int status;
   String description;
   int scopeType;
+  int receiveStatus;
+  int totalCount;
+  int receivedCount;
 
   CouponData({
     required this.id,
@@ -59,6 +62,9 @@ class CouponData {
     required this.status,
     required this.description,
     required this.scopeType,
+    this.receiveStatus = 0,
+    this.totalCount = 0,
+    this.receivedCount = 0,
   });
 
   factory CouponData.fromJson(Map<String, dynamic> json) => CouponData(
@@ -74,6 +80,9 @@ class CouponData {
     status: json["status"],
     description: json["description"],
     scopeType: json["scopeType"],
+    receiveStatus: json["receiveStatus"] ?? 0,
+    totalCount: json["totalCount"] ?? 0,
+    receivedCount: json["receivedCount"] ?? 0,
   );
 
   Map<String, dynamic> toJson() => {
@@ -89,5 +98,8 @@ class CouponData {
     "status": status,
     "description": description,
     "scopeType": scopeType,
+    "receiveStatus": receiveStatus,
+    "totalCount": totalCount,
+    "receivedCount": receivedCount,
   };
 }
