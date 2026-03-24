@@ -2,6 +2,8 @@ package coupon
 
 import (
 	"context"
+	"fmt"
+
 	"github.com/feihua/zero-admin/api/front/internal/logic/common"
 	"github.com/feihua/zero-admin/pkg/errorx"
 	"github.com/feihua/zero-admin/rpc/sms/smsclient"
@@ -51,8 +53,17 @@ func (l *AddCouponLogic) AddCoupon(req *types.AddCouponReq) (resp *types.AddCoup
 		return nil, errorx.NewDefaultError(s.Message())
 	}
 
+	// 查询优惠券详情，返回领取结果摘要
+	message := "领取优惠券成功"
+	couponDetail, detailErr := l.svcCtx.CouponService.QueryCouponDetail(l.ctx, &smsclient.QueryCouponDetailReq{
+		Id: req.CouponId,
+	})
+	if detailErr == nil && couponDetail != nil {
+		message = fmt.Sprintf("成功领取「%s」，面额%.2f元，有效期至%s", couponDetail.Name, couponDetail.Amount, couponDetail.EndTime)
+	}
+
 	return &types.AddCouponResp{
 		Code:    0,
-		Message: "领取优惠券成功",
+		Message: message,
 	}, nil
 }

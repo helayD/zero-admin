@@ -361,18 +361,21 @@ type ConfirmReceiveOrderResp struct {
 }
 
 type CouponData struct {
-	Id          int64   `json:"id"`          //优惠券ID
-	TypeId      int64   `json:"typeId"`      //优惠券类型ID
-	Name        string  `json:"name"`        //优惠券名称
-	Code        string  `json:"code"`        //优惠券码
-	Amount      float32 `json:"amount"`      //优惠金额/折扣率
-	MinAmount   float32 `json:"minAmount"`   //最低使用金额
-	StartTime   string  `json:"startTime"`   //生效时间
-	EndTime     string  `json:"endTime"`     //失效时间
-	PerLimit    int32   `json:"perLimit"`    //每人限领数量
-	Status      int32   `json:"status"`      //状态：0-未开始，1-进行中，2-已结束，3-已取消
-	Description string  `json:"description"` //使用说明
-	ScopeType   int32   `json:"scopeType"`   //范围类型：0-全场，1-分类，2-商品
+	Id            int64   `json:"id"`            //优惠券ID
+	TypeId        int64   `json:"typeId"`        //优惠券类型ID
+	Name          string  `json:"name"`          //优惠券名称
+	Code          string  `json:"code"`          //优惠券码
+	Amount        float32 `json:"amount"`        //优惠金额/折扣率
+	MinAmount     float32 `json:"minAmount"`     //最低使用金额
+	StartTime     string  `json:"startTime"`     //生效时间
+	EndTime       string  `json:"endTime"`       //失效时间
+	PerLimit      int32   `json:"perLimit"`      //每人限领数量
+	Status        int32   `json:"status"`        //状态：0-未开始，1-进行中，2-已结束，3-已取消
+	Description   string  `json:"description"`   //使用说明
+	ScopeType     int32   `json:"scopeType"`     //范围类型：0-全场，1-分类，2-商品
+	ReceiveStatus int32   `json:"receiveStatus"` //领取状态：0-可领取，1-已领取，2-已领完，3-未开始，4-已过期
+	TotalCount    int32   `json:"totalCount"`    //发放总量
+	ReceivedCount int32   `json:"receivedCount"` //已领取数量
 }
 
 type CouponListByCartData struct {
@@ -870,6 +873,17 @@ type QueryAddressListResp struct {
 	Total    int64                     `json:"total"`
 }
 
+type QueryAvailableCouponsReq struct {
+	PageNum  int32 `form:"pageNum,default=1"`
+	PageSize int32 `form:"pageSize,default=10"`
+}
+
+type QueryAvailableCouponsResp struct {
+	Code    int64         `json:"code"`
+	Message string        `json:"message"`
+	Data    []*CouponData `json:"data"`
+}
+
 type QueryBrandDetailReq struct {
 	BrandId  int64 `form:"brandId"`
 	Current  int32 `form:"current,default=1"`
@@ -1046,8 +1060,6 @@ type SkuStockList struct {
 	VerifyStatus       int32   `json:"verifyStatus"`       //审核状态：0-未审核，1-审核通过，2-审核不通过
 	Sort               int32   `json:"sort"`               //排序
 	Sales              int32   `json:"sales"`              //销量
-	Purchasable        bool    `json:"purchasable"`        //该SKU是否可购买
-	PurchaseReasonCode string  `json:"purchaseReasonCode"` //不可购买原因代码：sold_out/sku_off_shelf/sku_not_approved
 }
 
 type SubjectList struct {

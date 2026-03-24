@@ -61,6 +61,8 @@ type (
 	HandleExpirationCouponReq          = smsclient.HandleExpirationCouponReq
 	HandleExpirationCouponResp         = smsclient.HandleExpirationCouponResp
 	HomeAdvertiseListData              = smsclient.HomeAdvertiseListData
+	QueryAvailableCouponsReq           = smsclient.QueryAvailableCouponsReq
+	QueryAvailableCouponsResp          = smsclient.QueryAvailableCouponsResp
 	QueryCouponByCodeReq               = smsclient.QueryCouponByCodeReq
 	QueryCouponByCodeResp              = smsclient.QueryCouponByCodeResp
 	QueryCouponByScopeIdReq            = smsclient.QueryCouponByScopeIdReq
@@ -159,6 +161,8 @@ type (
 		QueryCouponRecordList(ctx context.Context, in *QueryCouponRecordListReq, opts ...grpc.CallOption) (*QueryCouponRecordListResp, error)
 		// 获取会员优惠券
 		QueryMemberCouponList(ctx context.Context, in *QueryMemberCouponListReq, opts ...grpc.CallOption) (*QueryMemberCouponListResp, error)
+		// 查询可领取的优惠券列表
+		QueryAvailableCoupons(ctx context.Context, in *QueryAvailableCouponsReq, opts ...grpc.CallOption) (*QueryAvailableCouponsResp, error)
 	}
 
 	defaultCouponRecordService struct {
@@ -206,4 +210,10 @@ func (m *defaultCouponRecordService) QueryCouponRecordList(ctx context.Context, 
 func (m *defaultCouponRecordService) QueryMemberCouponList(ctx context.Context, in *QueryMemberCouponListReq, opts ...grpc.CallOption) (*QueryMemberCouponListResp, error) {
 	client := smsclient.NewCouponRecordServiceClient(m.cli.Conn())
 	return client.QueryMemberCouponList(ctx, in, opts...)
+}
+
+// 查询可领取的优惠券列表
+func (m *defaultCouponRecordService) QueryAvailableCoupons(ctx context.Context, in *QueryAvailableCouponsReq, opts ...grpc.CallOption) (*QueryAvailableCouponsResp, error) {
+	client := smsclient.NewCouponRecordServiceClient(m.cli.Conn())
+	return client.QueryAvailableCoupons(ctx, in, opts...)
 }

@@ -61,6 +61,8 @@ type (
 	HandleExpirationCouponReq          = smsclient.HandleExpirationCouponReq
 	HandleExpirationCouponResp         = smsclient.HandleExpirationCouponResp
 	HomeAdvertiseListData              = smsclient.HomeAdvertiseListData
+	QueryAvailableCouponsReq           = smsclient.QueryAvailableCouponsReq
+	QueryAvailableCouponsResp          = smsclient.QueryAvailableCouponsResp
 	QueryCouponByCodeReq               = smsclient.QueryCouponByCodeReq
 	QueryCouponByCodeResp              = smsclient.QueryCouponByCodeResp
 	QueryCouponByScopeIdReq            = smsclient.QueryCouponByScopeIdReq

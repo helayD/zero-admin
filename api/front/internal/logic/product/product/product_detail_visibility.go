@@ -19,6 +19,7 @@ func buildProductDetailResponse(
 	detail *pmsclient.QueryProductSpuDetailResp,
 	couponList *smsclient.QueryCouponByScopeIdResp,
 	visibility frontcommon.ProductVisibilityResult,
+	claimCountMap map[int64]int64,
 ) *types.QueryProductDetailResp {
 	if !visibility.Visible {
 		return &types.QueryProductDetailResp{
@@ -52,7 +53,7 @@ func buildProductDetailResponse(
 			LadderList:         buildProductLadderListData(detail),
 			FullList:           buildProductFullReductionListData(detail),
 			MemberPriceList:    buildMemberPriceListData(detail),
-			CouponList:         buildCouponListData(couponData),
+			CouponList:         buildCouponListData(couponData, claimCountMap),
 			Visibility:         buildProductVisibilityData(visibility),
 		},
 	}

@@ -2,6 +2,7 @@ package product
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 
 	frontcommon "github.com/feihua/zero-admin/api/front/internal/logic/common"
@@ -54,23 +55,61 @@ func (l *QueryProductDetailLogic) QueryProductDetail(req *types.QueryProductDeta
 		logc.Errorf(l.ctx, "查询商品SPU详情失败,参数：%+v,响应：%s", req, err.Error())
 		s, _ := status.FromError(err)
 		if visibility, ok := mapProductDetailQueryError(s.Message()); ok {
-			return buildProductDetailResponse(nil, nil, visibility), nil
+			return buildProductDetailResponse(nil, nil, visibility, map[int64]int64{}), nil
 		}
 		return nil, errorx.NewDefaultError(s.Message())
 	}
 
 	visibility := frontcommon.BuildFrontProductVisibility(detail.Data)
 	if !visibility.Visible {
-		return buildProductDetailResponse(detail, nil, visibility), nil
+		return buildProductDetailResponse(detail, nil, visibility, map[int64]int64{}), nil
 	}
 
 	// 8.商品可用优惠券(根据商品id和分类id查询)
+	claimCountMap := map[int64]int64{}
 	couponList, _ := l.svcCtx.CouponService.QueryCouponByScopeId(l.ctx, &smsclient.QueryCouponByScopeIdReq{
 		ScopeIds: []int64{req.ProductId, detail.Data.CategoryId},
 		Scope:    frontcommon.SMSGovernanceScope(currentScope),
 	})
+	if couponList != nil && len(couponList.List) > 0 {
+		if memberId, ok := tryGetMemberID(l.ctx); ok {
+			claimCountMap = l.buildMemberCouponClaimCount(memberId)
+		}
+	}
 
-	return buildProductDetailResponse(detail, couponList, visibility), nil
+	return buildProductDetailResponse(detail, couponList, visibility, claimCountMap), nil
+}
+
+func (l *QueryProductDetailLogic) buildMemberCouponClaimCount(memberId int64) map[int64]int64 {
+	claimCountMap := make(map[int64]int64)
+	couponResp, err := l.svcCtx.CouponRecordService.QueryMemberCouponList(l.ctx, &smsclient.QueryMemberCouponListReq{
+		MemberId: memberId,
+		Status:   -1, // -1 表示查询所有状态的领取记录
+	})
+	if err != nil {
+		logc.Errorf(l.ctx, "聚合会员优惠券领取记录失败,memberId:%d,异常:%s", memberId, err.Error())
+		return claimCountMap
+	}
+	for _, item := range couponResp.List {
+		claimCountMap[item.Id]++
+	}
+	return claimCountMap
+}
+
+func tryGetMemberID(ctx context.Context) (int64, bool) {
+	rawMemberID := ctx.Value("memberId")
+	if rawMemberID == nil {
+		return 0, false
+	}
+	jsonNumber, ok := rawMemberID.(json.Number)
+	if !ok {
+		return 0, false
+	}
+	memberID, err := jsonNumber.Int64()
+	if err != nil {
+		return 0, false
+	}
+	return memberID, true
 }
 
 // 1.获取商品信息
@@ -248,23 +287,31 @@ func buildMemberPriceListData(resp *pmsclient.QueryProductSpuDetailResp) []types
 }
 
 // 9.商品优惠券
-func buildCouponListData(resp []*smsclient.CouponListData) []types.CouponData {
+func buildCouponListData(resp []*smsclient.CouponListData, claimCountMap map[int64]int64) []types.CouponData {
 	list := make([]types.CouponData, 0)
 	for _, detail := range resp {
+		receiveStatus := int32(0)
+		if detail.PerLimit > 0 && claimCountMap[detail.Id] >= int64(detail.PerLimit) {
+			receiveStatus = 1
+		} else if detail.TotalCount > 0 && detail.ReceivedCount >= detail.TotalCount {
+			receiveStatus = 2
+		}
 
 		list = append(list, types.CouponData{
-			Id:          detail.Id,          // 优惠券ID
-			TypeId:      detail.TypeId,      // 优惠券类型ID
-			Name:        detail.Name,        // 优惠券名称
-			Code:        detail.Code,        // 优惠券码
-			Amount:      detail.Amount,      // 优惠金额/折扣率
-			MinAmount:   detail.MinAmount,   // 最低使用金额
-			StartTime:   detail.StartTime,   // 生效时间
-			EndTime:     detail.EndTime,     // 失效时间
-			PerLimit:    detail.PerLimit,    // 每人限领数量
-			Status:      detail.Status,      // 状态：0-未开始，1-进行中，2-已结束，3-已取消
-			Description: detail.Description, // 使用说明
-
+			Id:            detail.Id,          // 优惠券ID
+			TypeId:        detail.TypeId,      // 优惠券类型ID
+			Name:          detail.Name,        // 优惠券名称
+			Code:          detail.Code,        // 优惠券码
+			Amount:        detail.Amount,      // 优惠金额/折扣率
+			MinAmount:     detail.MinAmount,   // 最低使用金额
+			StartTime:     detail.StartTime,   // 生效时间
+			EndTime:       detail.EndTime,     // 失效时间
+			PerLimit:      detail.PerLimit,    // 每人限领数量
+			Status:        detail.Status,      // 状态：0-未开始，1-进行中，2-已结束，3-已取消
+			Description:   detail.Description, // 使用说明
+			ReceiveStatus: receiveStatus,
+			TotalCount:    detail.TotalCount,    // 发放总量
+			ReceivedCount: detail.ReceivedCount, // 已领取数量
 		})
 	}
 	return list

@@ -136,6 +136,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			},
 			{
 				Method:  http.MethodGet,
+				Path:    "/queryAvailableCoupons",
+				Handler: membercoupon.QueryAvailableCouponsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
 				Path:    "/queryCouponList",
 				Handler: membercoupon.QueryCouponListHandler(serverCtx),
 			},

@@ -16,20 +16,32 @@ type (
 		UseStatus int32 `form:"useStatus,default=3"` // 使用状态：0->未使用；1->已使用；2->已过期
 	}
 	CouponData {
-		Id          int64   `json:"id"` //优惠券ID
-		TypeId      int64   `json:"typeId"` //优惠券类型ID
-		Name        string  `json:"name"` //优惠券名称
-		Code        string  `json:"code"` //优惠券码
-		Amount      float32 `json:"amount"` //优惠金额/折扣率
-		MinAmount   float32 `json:"minAmount"` //最低使用金额
-		StartTime   string  `json:"startTime"` //生效时间
-		EndTime     string  `json:"endTime"` //失效时间
-		PerLimit    int32   `json:"perLimit"` //每人限领数量
-		Status      int32   `json:"status"` //状态：0-未开始，1-进行中，2-已结束，3-已取消
-		Description string  `json:"description"` //使用说明
-		ScopeType   int32   `json:"scopeType"` //范围类型：0-全场，1-分类，2-商品
+		Id            int64   `json:"id"`            //优惠券ID
+		TypeId        int64   `json:"typeId"`        //优惠券类型ID
+		Name          string  `json:"name"`          //优惠券名称
+		Code          string  `json:"code"`          //优惠券码
+		Amount        float32 `json:"amount"`        //优惠金额/折扣率
+		MinAmount     float32 `json:"minAmount"`     //最低使用金额
+		StartTime     string  `json:"startTime"`     //生效时间
+		EndTime       string  `json:"endTime"`       //失效时间
+		PerLimit      int32   `json:"perLimit"`      //每人限领数量
+		Status        int32   `json:"status"`        //状态：0-未开始，1-进行中，2-已结束，3-已取消
+		Description   string  `json:"description"`   //使用说明
+		ScopeType     int32   `json:"scopeType"`     //范围类型：0-全场，1-分类，2-商品
+		ReceiveStatus int32   `json:"receiveStatus"` //领取状态：0-可领取，1-已领取，2-已领完，3-未开始，4-已过期
+		TotalCount    int32   `json:"totalCount"`    //发放总量
+		ReceivedCount int32   `json:"receivedCount"` //已领取数量
 	}
 	ListCouponResp {
+		Code    int64         `json:"code"`
+		Message string        `json:"message"`
+		Data    []*CouponData `json:"data"`
+	}
+	QueryAvailableCouponsReq {
+		PageNum  int32 `form:"pageNum,default=1"`
+		PageSize int32 `form:"pageSize,default=10"`
+	}
+	QueryAvailableCouponsResp {
 		Code    int64         `json:"code"`
 		Message string        `json:"message"`
 		Data    []*CouponData `json:"data"`
@@ -63,6 +75,10 @@ service front-api {
 	//获取会员优惠券列表
 	@handler QueryCouponList
 	get /queryCouponList (ListCouponReq) returns (ListCouponResp)
+
+	//获取可领取的优惠券列表
+	@handler QueryAvailableCoupons
+	get /queryAvailableCoupons (QueryAvailableCouponsReq) returns (QueryAvailableCouponsResp)
 
 	//获取登录会员购物车的相关优惠券
 	@handler QueryCouponListByCart

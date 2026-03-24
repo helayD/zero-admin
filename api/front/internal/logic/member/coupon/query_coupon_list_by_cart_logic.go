@@ -199,17 +199,19 @@ func couponUsableNow(startTime, endTime string) bool {
 
 func toCouponData(item *smsclient.CouponListData, scopeType int32) types.CouponData {
 	return types.CouponData{
-		Id:          item.Id,
-		TypeId:      item.TypeId,
-		Name:        item.Name,
-		Code:        item.Code,
-		Amount:      item.Amount,
-		MinAmount:   item.MinAmount,
-		StartTime:   item.StartTime,
-		EndTime:     item.EndTime,
-		PerLimit:    item.PerLimit,
-		Status:      item.Status,
-		Description: item.Description,
-		ScopeType:   scopeType,
+		Id:            item.Id,
+		TypeId:        item.TypeId,
+		Name:          item.Name,
+		Code:          item.Code,
+		Amount:        item.Amount,
+		MinAmount:     item.MinAmount,
+		StartTime:     item.StartTime,
+		EndTime:       item.EndTime,
+		PerLimit:      item.PerLimit,
+		Status:        item.Status,
+		Description:   item.Description,
+		ScopeType:     scopeType,
+		TotalCount:    item.TotalCount,
+		ReceivedCount: item.ReceivedCount,
 	}
 }
