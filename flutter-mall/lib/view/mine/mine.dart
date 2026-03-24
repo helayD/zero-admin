@@ -8,9 +8,12 @@ import 'package:flutter_mall/view/mine/login/login.dart';
 import 'package:flutter_mall/view/mine/message/message.dart';
 import 'package:flutter_mall/view/mine/order/order_list.dart';
 import 'package:flutter_mall/view/mine/ping_jia/ping_jia.dart';
+import 'package:flutter_mall/view/mine/profile/profile_edit.dart';
 import 'package:flutter_mall/view/mine/setting/settings.dart';
 import 'package:flutter_mall/utils/http_util.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../config/constant_param.dart';
 import '../../config/service_url.dart';
 import '../../model/member_info.dart';
 import 'address/address_list.dart';
@@ -29,44 +32,53 @@ class Mine extends StatefulWidget {
 }
 
 class _MineState extends State<Mine> {
-  // 没登录时的默认数据
-  MemberInfoData memberInfoData = MemberInfoData(
-      id: 1,
-      memberId: 1001,
-      levelId: 1,
-      nickname: "张三",
-      mobile: "13800138001",
-      source: 0,
-      avatar: "https://example.com/avatar/001.jpg",
-      signature: "生活就是购物~",
-      gender: 1,
-      birthday: "1990-01-15",
-      growthPoint: 100,
-      points: 500,
-      totalPoints: 1000,
-      spendAmount: 999.989990234375,
-      orderCount: 10,
-      couponCount: 5,
-      commentCount: 8,
-      returnCount: 1,
-      lotteryTimes: 2,
-      lastLogin: "2024-01-15 08:30:00"
-
-  );
+  bool _isLoggedIn = false;
+  MemberInfoData? _memberInfoData;
 
   @override
   void initState() {
     super.initState();
-    queryMemberInfo();
+    _checkLoginAndLoadData();
+  }
+
+  // 检查登录状态，已登录才请求会员信息
+  Future<void> _checkLoginAndLoadData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? savedToken = prefs.getString(token);
+    bool loggedIn = savedToken != null && savedToken.isNotEmpty;
+    if (mounted) {
+      setState(() {
+        _isLoggedIn = loggedIn;
+      });
+    }
+    if (loggedIn) {
+      await _queryMemberInfo();
+    }
   }
 
   // 请求用户个人信息
-  void queryMemberInfo() async {
-    Response result = await HttpUtil.get(memberInfoDataUrl);
-    MemberInfoModel memberInfoModel = MemberInfoModel.fromJson(result.data);
-    setState(() {
-      memberInfoData = memberInfoModel.data;
-    });
+  Future<void> _queryMemberInfo() async {
+    try {
+      Response result = await HttpUtil.get(memberInfoDataUrl);
+      MemberInfoModel memberInfoModel = MemberInfoModel.fromJson(result.data);
+      if (mounted) {
+        setState(() {
+          _memberInfoData = memberInfoModel.data;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('加载会员信息失败，请重试'),
+            action: SnackBarAction(
+              label: '重试',
+              onPressed: _queryMemberInfo,
+            ),
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -105,30 +117,54 @@ class _MineState extends State<Mine> {
                   child: Row(
                     children: [
                       InkWell(
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => const Login(),
-                            ),
-                          );
+                        onTap: () async {
+                          if (_isLoggedIn) {
+                            final result = await Navigator.of(context).push<bool>(
+                              MaterialPageRoute(
+                                builder: (context) => const ProfileEdit(),
+                              ),
+                            );
+                            if (result == true) {
+                              _queryMemberInfo();
+                            }
+                          } else {
+                            await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) => const Login(),
+                              ),
+                            );
+                            await _checkLoginAndLoadData();
+                          }
                         },
                         child: ClipOval(
-                          child: Container(
-                            width: 70,
-                            height: 70,
-                            color: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
-                            child: const Icon(
-                              Icons.person,
-                              size: 45,
-                              color: Colors.white,
-                            ),
-                          ),
+                          child: _isLoggedIn && _memberInfoData != null && _memberInfoData!.avatar.isNotEmpty
+                              ? Image.network(
+                                  proxyImageUrl(_memberInfoData!.avatar),
+                                  width: 70,
+                                  height: 70,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) => Container(
+                                    width: 70,
+                                    height: 70,
+                                    color: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
+                                    child: const Icon(Icons.person, size: 45, color: Colors.white),
+                                  ),
+                                )
+                              : Container(
+                                  width: 70,
+                                  height: 70,
+                                  color: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
+                                  child: const Icon(Icons.person, size: 45, color: Colors.white),
+                                ),
                         ),
                       ),
                       const SizedBox(
                         width: 10,
                       ),
-                      Text(memberInfoData.nickname,
+                      Text(
+                          _isLoggedIn && _memberInfoData != null
+                              ? _memberInfoData!.nickname
+                              : '点击登录',
                           style: TextStyle(fontSize: 25, color: Color(int.parse('303133', radix: 16)).withAlpha(255))),
                     ],
                   ),
@@ -156,12 +192,13 @@ class _MineState extends State<Mine> {
                         width: 15,
                       ),
                       InkWell(
-                        onTap: () {
-                          Navigator.of(context).push(
+                        onTap: () async {
+                          await Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (context) => const Settings(),
                             ),
                           );
+                          _checkLoginAndLoadData();
                         },
                         child: Image.asset(
                           "images/setting_white.png",
@@ -195,14 +232,14 @@ class _MineState extends State<Mine> {
                   Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(memberInfoData.points.toString(), style: numStyle),
+                      Text(_memberInfoData?.points.toString() ?? '0', style: numStyle),
                       Text("积分", style: txtStyle),
                     ],
                   ),
                   Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(memberInfoData.growthPoint.toString(), style: numStyle),
+                      Text(_memberInfoData?.growthPoint.toString() ?? '0', style: numStyle),
                       Text("成长值", style: txtStyle),
                     ],
                   ),
@@ -217,7 +254,7 @@ class _MineState extends State<Mine> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(memberInfoData.couponCount.toString(), style: numStyle),
+                        Text(_memberInfoData?.couponCount.toString() ?? '0', style: numStyle),
                         Text("优惠券", style: txtStyle),
                       ],
                     ),
@@ -344,7 +381,7 @@ class _MineState extends State<Mine> {
       const FocusOn(),
       const Collection(),
       const PinJia(),
-      const Settings()
+      const Settings(),
     ];
 
     var border = BorderSide(width: 1, color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255));
@@ -369,12 +406,13 @@ class _MineState extends State<Mine> {
                       itemCount: list.length,
                       itemBuilder: (BuildContext context, int index) {
                         return InkWell(
-                          onTap: () {
-                            Navigator.of(context).push(
+                          onTap: () async {
+                            await Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (context) => click[index],
                               ),
                             );
+                            _checkLoginAndLoadData();
                           },
                           child: Container(
                             decoration: boxDecoration,

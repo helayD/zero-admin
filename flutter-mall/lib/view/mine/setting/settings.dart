@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_mall/view/mine/profile/profile_edit.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../../config/constant_param.dart';
 
 ///
 /// 设置页面
@@ -37,7 +41,17 @@ class _SettingsState extends State<Settings> {
               child: ListView.builder(
                   itemCount: list.length,
                   itemBuilder: (BuildContext context, int index) {
-                    return Container(
+                    return InkWell(
+                      onTap: () {
+                        if (index == 0) {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const ProfileEdit(),
+                            ),
+                          );
+                        }
+                      },
+                      child: Container(
                       height: 51,
                       padding: const EdgeInsets.all(15),
                       decoration: boxDecoration,
@@ -76,12 +90,17 @@ class _SettingsState extends State<Settings> {
                           ),
                         ],
                       ),
+                    ),
                     );
                   }),
             ),
             InkWell(
-              onTap: () {
-                Navigator.of(context).pop();
+              onTap: () async {
+                SharedPreferences prefs = await SharedPreferences.getInstance();
+                await prefs.remove(token);
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                }
               },
               child: Container(
                 alignment: Alignment.center,
