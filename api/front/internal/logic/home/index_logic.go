@@ -47,7 +47,8 @@ func (l *IndexLogic) Index(req *types.HomeReq) (resp *types.HomeResp, err error)
 			HomeFlashPromotion: queryHomeFlashPromotion(l, req),
 			NewProductList:     queryNewProductList(l, req, currentScope),
 			HotProductList:     queryHotProductList(l, req, currentScope),
-			SubjectList:        querySubjectList(l, req, currentScope), // 推荐专题
+			SubjectList:        querySubjectList(l, req, currentScope),       // 推荐专题
+			PreferredAreaList:  queryPreferredAreaList(l, req, currentScope), // 优选专区
 		},
 	}, nil
 }
@@ -87,6 +88,34 @@ func querySubjectList(l *IndexLogic, req *types.HomeReq, currentScope pkgscope.G
 			ForwardCount:    item.ForwardCount,    // 转发数
 			CategoryName:    item.CategoryName,    // 专题分类名称
 			Sort:            1,
+		})
+	}
+	return list
+}
+
+// 优选专区
+func queryPreferredAreaList(l *IndexLogic, req *types.HomeReq, currentScope pkgscope.GovernanceScope) []types.PreferredAreaListData {
+	var list []types.PreferredAreaListData
+	res, err := l.svcCtx.PreferredAreaService.QueryPreferredAreaList(l.ctx, &cmsclient.QueryPreferredAreaListReq{
+		PageNum:    1,
+		PageSize:   int64(req.PreferredAreaNumber),
+		ShowStatus: 1, // 显示状态：1->显示
+		Scope:      frontcommon.CMSGovernanceScope(currentScope),
+	})
+
+	if err != nil || res == nil {
+		l.Errorf("queryPreferredAreaList failed: req=%+v scope=%+v err=%v", req, currentScope, err)
+		return list
+	}
+
+	for _, item := range res.List {
+		list = append(list, types.PreferredAreaListData{
+			Id:         item.Id,         // 专区id
+			Name:       item.Name,       // 专区名称
+			SubTitle:   item.SubTitle,   // 子标题
+			Pic:        item.Pic,        // 展示图片
+			Sort:       item.Sort,       // 排序
+			ShowStatus: item.ShowStatus, // 显示状态
 		})
 	}
 	return list

@@ -2,6 +2,8 @@ package prefrence_area
 
 import (
 	"context"
+
+	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
 	"github.com/feihua/zero-admin/api/admin/internal/types"
@@ -34,8 +36,19 @@ func NewQueryPreferredAreaDetailLogic(ctx context.Context, svcCtx *svc.ServiceCo
 // QueryPreferredAreaDetail 查询优选专区详情
 func (l *QueryPreferredAreaDetailLogic) QueryPreferredAreaDetail(req *types.QueryPreferredAreaDetailReq) (resp *types.QueryPreferredAreaDetailResp, err error) {
 
+	queryScope, err := admincommon.ResolveQueryGovernanceScope(l.ctx, admincommon.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
+
 	detail, err := l.svcCtx.PreferredAreaService.QueryPreferredAreaDetail(l.ctx, &cmsclient.QueryPreferredAreaDetailReq{
-		Id: req.Id,
+		Id:    req.Id,
+		Scope: admincommon.CMSGovernanceScope(queryScope),
 	})
 
 	if err != nil {

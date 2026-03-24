@@ -16,15 +16,15 @@ import type { ActionType, ProColumns } from '@ant-design/pro-table';
 import ProTable from '@ant-design/pro-table';
 import type { ProDescriptionsItemProps } from '@ant-design/pro-descriptions';
 import ProDescriptions from '@ant-design/pro-descriptions';
-import type { SubjectListItem } from './data.d';
-import CreatePostForm from './components/CreatePostForm';
-import UpdatePostForm from './components/UpdatePostForm';
+import type { SubjectCategoryListItem } from './data.d';
+import CreateSubjectCategoryForm from './components/CreateSubjectCategoryForm';
+import UpdateSubjectCategoryForm from './components/UpdateSubjectCategoryForm';
 import {
-  addSubject,
-  querySubjectList,
-  removeSubject,
-  updateSubject,
-  updateSubjectStatus,
+  addSubjectCategory,
+  querySubjectCategoryList,
+  removeSubjectCategory,
+  updateSubjectCategory,
+  updateSubjectCategoryStatus,
 } from './service';
 import GovernanceScopeBar from '@/pages/system/components/GovernanceScopeBar';
 import {
@@ -36,10 +36,10 @@ import {
 
 const { confirm } = Modal;
 
-const handleAdd = async (fields: SubjectListItem, scope: GovernanceScopeValue) => {
-  const hide = message.loading('正在新增专题');
+const handleAdd = async (fields: SubjectCategoryListItem, scope: GovernanceScopeValue) => {
+  const hide = message.loading('正在新增专题分类');
   try {
-    await addSubject({ ...fields, ...toGovernancePayload(scope) });
+    await addSubjectCategory({ ...fields, ...toGovernancePayload(scope) });
     hide();
     message.success('新增成功');
     return true;
@@ -49,10 +49,10 @@ const handleAdd = async (fields: SubjectListItem, scope: GovernanceScopeValue) =
   }
 };
 
-const handleUpdate = async (fields: SubjectListItem, scope: GovernanceScopeValue) => {
-  const hide = message.loading('正在更新专题');
+const handleUpdate = async (fields: SubjectCategoryListItem, scope: GovernanceScopeValue) => {
+  const hide = message.loading('正在更新专题分类');
   try {
-    await updateSubject({ ...fields, ...toGovernancePayload(scope) });
+    await updateSubjectCategory({ ...fields, ...toGovernancePayload(scope) });
     hide();
     message.success('更新成功');
     return true;
@@ -63,9 +63,9 @@ const handleUpdate = async (fields: SubjectListItem, scope: GovernanceScopeValue
 };
 
 const handleRemove = async (ids: number[], scope: GovernanceScopeValue) => {
-  const hide = message.loading('正在删除专题');
+  const hide = message.loading('正在删除专题分类');
   try {
-    await removeSubject(ids, toGovernancePayload(scope));
+    await removeSubjectCategory(ids, toGovernancePayload(scope));
     hide();
     message.success('删除成功');
     return true;
@@ -75,13 +75,12 @@ const handleRemove = async (ids: number[], scope: GovernanceScopeValue) => {
   }
 };
 
-const handleStatus = async (row: SubjectListItem, scope: GovernanceScopeValue) => {
-  const hide = message.loading('正在更新专题状态');
+const handleStatus = async (row: SubjectCategoryListItem, scope: GovernanceScopeValue) => {
+  const hide = message.loading('正在更新显示状态');
   try {
-    await updateSubjectStatus({
+    await updateSubjectCategoryStatus({
       ids: [row.id as number],
       showStatus: row.showStatus || 0,
-      recommendStatus: row.recommendStatus || 0,
       ...toGovernancePayload(scope),
     });
     hide();
@@ -93,17 +92,17 @@ const handleStatus = async (row: SubjectListItem, scope: GovernanceScopeValue) =
   }
 };
 
-const SubjectList: React.FC = () => {
+const SubjectCategoryList: React.FC = () => {
   const actionRef = useRef<ActionType>();
   const [showDetail, setShowDetail] = useState<boolean>(false);
   const [createVisible, setCreateVisible] = useState<boolean>(false);
   const [updateVisible, setUpdateVisible] = useState<boolean>(false);
-  const [currentRow, setCurrentRow] = useState<SubjectListItem>();
+  const [currentRow, setCurrentRow] = useState<SubjectCategoryListItem>();
   const [scope, setScope] = useState<GovernanceScopeValue>(defaultGovernanceScope);
 
-  const showDeleteConfirm = (record: SubjectListItem) => {
+  const showDeleteConfirm = (record: SubjectCategoryListItem) => {
     confirm({
-      title: '是否删除专题?',
+      title: '是否删除专题分类?',
       icon: <ExclamationCircleOutlined />,
       content: `当前主体：${buildGovernanceScopeLabel(scope)}。删除后不可恢复，请确认。`,
       onOk() {
@@ -114,26 +113,13 @@ const SubjectList: React.FC = () => {
     });
   };
 
-  const showStatusConfirm = (record: SubjectListItem, patch: Partial<SubjectListItem>, label: string) => {
-    if (label === '显示状态' && patch.showStatus === 1) {
-      const missing: string[] = [];
-      if (!record.title) missing.push('专题标题');
-      if (!record.categoryId) missing.push('专题分类');
-      if (!record.pic) missing.push('主图');
-      if (missing.length > 0) {
-        Modal.warning({
-          title: '发布校验未通过',
-          content: `以下必填字段缺失，无法发布：${missing.join('、')}。请先编辑补齐后再尝试发布。`,
-        });
-        return;
-      }
-    }
+  const showStatusConfirm = (record: SubjectCategoryListItem, newShowStatus: number) => {
     confirm({
-      title: `是否更新${label}?`,
+      title: '是否更新显示状态?',
       icon: <ExclamationCircleOutlined />,
-      content: `当前主体：${buildGovernanceScopeLabel(scope)}。将影响专题「${record.title || record.id}」。`,
+      content: `当前主体：${buildGovernanceScopeLabel(scope)}。将影响专题分类「${record.name || record.id}」。`,
       async onOk() {
-        const success = await handleStatus({ ...record, ...patch }, scope);
+        const success = await handleStatus({ ...record, showStatus: newShowStatus }, scope);
         if (success) {
           actionRef.current?.reload?.();
         }
@@ -141,15 +127,15 @@ const SubjectList: React.FC = () => {
     });
   };
 
-  const columns: ProColumns<SubjectListItem>[] = [
+  const columns: ProColumns<SubjectCategoryListItem>[] = [
     {
       title: '编号',
       dataIndex: 'id',
       hideInSearch: true,
     },
     {
-      title: '专题标题',
-      dataIndex: 'title',
+      title: '分类名称',
+      dataIndex: 'name',
       render: (dom, entity) => (
         <a
           onClick={() => {
@@ -162,8 +148,16 @@ const SubjectList: React.FC = () => {
       ),
     },
     {
-      title: '专题分类',
-      dataIndex: 'categoryName',
+      title: '图标',
+      dataIndex: 'icon',
+      hideInSearch: true,
+      render: (_, entity) =>
+        entity.icon ? <img src={entity.icon} alt="图标" style={{ maxWidth: 32 }} /> : '-',
+    },
+    {
+      title: '专题数量',
+      dataIndex: 'subjectCount',
+      hideInSearch: true,
     },
     {
       title: '显示状态',
@@ -181,36 +175,10 @@ const SubjectList: React.FC = () => {
         <Switch
           checked={entity.showStatus === 1}
           onChange={(checked) => {
-            showStatusConfirm(entity, { showStatus: checked ? 1 : 0 }, '显示状态');
+            showStatusConfirm(entity, checked ? 1 : 0);
           }}
         />
       ),
-    },
-    {
-      title: '推荐状态',
-      dataIndex: 'recommendStatus',
-      renderFormItem: (text, row) => (
-        <Select
-          value={row.value}
-          options={[
-            { value: 1, label: '推荐' },
-            { value: 0, label: '不推荐' },
-          ]}
-        />
-      ),
-      render: (_, entity) => (
-        <Switch
-          checked={entity.recommendStatus === 1}
-          onChange={(checked) => {
-            showStatusConfirm(entity, { recommendStatus: checked ? 1 : 0 }, '推荐状态');
-          }}
-        />
-      ),
-    },
-    {
-      title: '关联商品数',
-      dataIndex: 'productCount',
-      hideInSearch: true,
     },
     {
       title: '排序',
@@ -266,7 +234,7 @@ const SubjectList: React.FC = () => {
           setScope(nextScope);
           actionRef.current?.reload?.();
         }}
-        entityLabel="专题"
+        entityLabel="专题分类"
         style={{ marginBottom: 16 }}
       />
       <Alert
@@ -276,8 +244,8 @@ const SubjectList: React.FC = () => {
         message={`当前治理范围：${buildGovernanceScopeLabel(scope)}`}
         description="新增、编辑、上下线与删除都会带上当前主体范围，避免把内容错误写入其他租户或商户。"
       />
-      <ProTable<SubjectListItem>
-        headerTitle="专题管理"
+      <ProTable<SubjectCategoryListItem>
+        headerTitle="专题分类管理"
         actionRef={actionRef}
         rowKey="id"
         search={{
@@ -285,17 +253,17 @@ const SubjectList: React.FC = () => {
         }}
         toolBarRender={() => [
           <Button key="create" type="primary" onClick={() => setCreateVisible(true)}>
-            <PlusOutlined /> 新建专题
+            <PlusOutlined /> 新建专题分类
           </Button>,
         ]}
-        request={(params) => querySubjectList({ ...params, ...toGovernancePayload(scope) })}
+        request={(params) => querySubjectCategoryList({ ...params, ...toGovernancePayload(scope) })}
         columns={columns}
         rowSelection={false}
         pagination={{ pageSize: 10 }}
         tableAlertRender={false}
       />
 
-      <CreatePostForm
+      <CreateSubjectCategoryForm
         createModalVisible={createVisible}
         onCancel={() => setCreateVisible(false)}
         onSubmit={async (value) => {
@@ -307,7 +275,7 @@ const SubjectList: React.FC = () => {
         }}
       />
 
-      <UpdatePostForm
+      <UpdateSubjectCategoryForm
         updateModalVisible={updateVisible}
         currentData={currentRow || {}}
         onCancel={() => setUpdateVisible(false)}
@@ -331,9 +299,9 @@ const SubjectList: React.FC = () => {
         closable={false}
       >
         {currentRow?.id && (
-          <ProDescriptions<SubjectListItem>
+          <ProDescriptions<SubjectCategoryListItem>
             column={2}
-            title="专题详情"
+            title="专题分类详情"
             request={async () => ({
               data: currentRow || {},
             })}
@@ -341,58 +309,12 @@ const SubjectList: React.FC = () => {
               id: currentRow?.id,
             }}
             columns={[
-              ...(columns.filter((column) => column.dataIndex !== 'option') as ProDescriptionsItemProps<SubjectListItem>[]),
+              ...(columns.filter((column) => column.dataIndex !== 'option') as ProDescriptionsItemProps<SubjectCategoryListItem>[]),
               {
                 title: '显示标签',
                 dataIndex: 'showStatusLabel',
                 render: () =>
                   currentRow.showStatus === 1 ? <Tag color="success">显示</Tag> : <Tag>隐藏</Tag>,
-              },
-              {
-                title: '推荐标签',
-                dataIndex: 'recommendStatusLabel',
-                render: () =>
-                  currentRow.recommendStatus === 1 ? (
-                    <Tag color="processing">推荐</Tag>
-                  ) : (
-                    <Tag>普通</Tag>
-                  ),
-              },
-              {
-                title: '摘要',
-                dataIndex: 'description',
-                span: 2,
-                render: () => currentRow.description || '-',
-              },
-              {
-                title: '正文',
-                dataIndex: 'content',
-                span: 2,
-                render: () =>
-                  currentRow.content ? (
-                    <div
-                      style={{ maxHeight: 300, overflow: 'auto' }}
-                      dangerouslySetInnerHTML={{ __html: currentRow.content }}
-                    />
-                  ) : (
-                    '-'
-                  ),
-              },
-              {
-                title: '画册图片',
-                dataIndex: 'albumPics',
-                span: 2,
-                render: () =>
-                  currentRow.albumPics
-                    ? currentRow.albumPics.split(',').map((url, idx) => (
-                        <img
-                          key={idx}
-                          src={url.trim()}
-                          alt={`画册图片${idx + 1}`}
-                          style={{ maxWidth: 120, marginRight: 8, marginBottom: 8 }}
-                        />
-                      ))
-                    : '-',
               },
             ]}
           />
@@ -402,4 +324,4 @@ const SubjectList: React.FC = () => {
   );
 };
 
-export default SubjectList;
+export default SubjectCategoryList;

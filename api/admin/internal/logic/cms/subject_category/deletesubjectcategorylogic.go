@@ -2,6 +2,8 @@ package subject_category
 
 import (
 	"context"
+
+	"github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/common/res"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
@@ -34,8 +36,18 @@ func NewDeleteSubjectCategoryLogic(ctx context.Context, svcCtx *svc.ServiceConte
 
 // DeleteSubjectCategory 删除专题分类表
 func (l *DeleteSubjectCategoryLogic) DeleteSubjectCategory(req *types.DeleteSubjectCategoryReq) (resp *types.BaseResp, err error) {
+	writeScope, err := common.ResolveWriteGovernanceScope(l.ctx, common.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, err
+	}
 	_, err = l.svcCtx.SubjectCategoryService.DeleteSubjectCategory(l.ctx, &cmsclient.DeleteSubjectCategoryReq{
-		Ids: req.Ids,
+		Ids:   req.Ids,
+		Scope: common.CMSGovernanceScope(writeScope),
 	})
 
 	if err != nil {

@@ -14,10 +14,18 @@ type (
 		Pic        string `json:"pic"` //展示图片
 		Sort       int32  `json:"sort"` //排序
 		ShowStatus int32  `json:"showStatus,default=2"` //显示状态：0->不显示；1->显示
+		ScopeType  string `json:"scopeType,optional"` //治理范围(platform/tenant/merchant)
+		PlatformId int64  `json:"platformId,optional"` //平台ID
+		TenantId   int64  `json:"tenantId,optional"` //租户ID
+		MerchantId int64  `json:"merchantId,optional"` //商户ID
 	}
 	// 删除优选专区请求参数
 	DeletePreferredAreaReq {
-		Ids []int64 `form:"ids"`
+		Ids        []int64 `form:"ids"`
+		ScopeType  string  `form:"scopeType,optional"` //治理范围(platform/tenant/merchant)
+		PlatformId int64   `form:"platformId,optional"` //平台ID
+		TenantId   int64   `form:"tenantId,optional"` //租户ID
+		MerchantId int64   `form:"merchantId,optional"` //商户ID
 	}
 	// 更新优选专区请求参数
 	UpdatePreferredAreaReq {
@@ -27,15 +35,27 @@ type (
 		Pic        string `json:"pic"` //展示图片
 		Sort       int32  `json:"sort"` //排序
 		ShowStatus int32  `json:"showStatus,default=2"` //显示状态：0->不显示；1->显示
+		ScopeType  string `json:"scopeType,optional"` //治理范围(platform/tenant/merchant)
+		PlatformId int64  `json:"platformId,optional"` //平台ID
+		TenantId   int64  `json:"tenantId,optional"` //租户ID
+		MerchantId int64  `json:"merchantId,optional"` //商户ID
 	}
 	// 更新优选专区状态请求参数
 	UpdatePreferredAreaStatusReq {
 		Ids        []int64 `json:"ids"` //主键ID
 		ShowStatus int32   `json:"showStatus,default=2"` //显示状态：0->不显示；1->显示
+		ScopeType  string  `json:"scopeType,optional"` //治理范围(platform/tenant/merchant)
+		PlatformId int64   `json:"platformId,optional"` //平台ID
+		TenantId   int64   `json:"tenantId,optional"` //租户ID
+		MerchantId int64   `json:"merchantId,optional"` //商户ID
 	}
 	// 查询优选专区详情请求参数
 	QueryPreferredAreaDetailReq {
-		Id int64 `form:"id"`
+		Id         int64  `form:"id"`
+		ScopeType  string `form:"scopeType,optional"` //治理范围(platform/tenant/merchant)
+		PlatformId int64  `form:"platformId,optional"` //平台ID
+		TenantId   int64  `form:"tenantId,optional"` //租户ID
+		MerchantId int64  `form:"merchantId,optional"` //商户ID
 	}
 	QueryPreferredAreaDetailData {
 		Id         int64  `json:"id"` //主键ID
@@ -62,6 +82,10 @@ type (
 		SubTitle   string `json:"subTitle,optional"` //子标题
 		Pic        string `json:"pic,optional"` //展示图片
 		ShowStatus int32  `json:"showStatus,default=2"` //显示状态：0->不显示；1->显示
+		ScopeType  string `form:"scopeType,optional"` //治理范围(platform/tenant/merchant)
+		PlatformId int64  `form:"platformId,optional"` //平台ID
+		TenantId   int64  `form:"tenantId,optional"` //租户ID
+		MerchantId int64  `form:"merchantId,optional"` //商户ID
 	}
 	QueryPreferredAreaListData {
 		Id         int64  `json:"id"` //主键ID

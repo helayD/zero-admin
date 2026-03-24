@@ -368,6 +368,12 @@
         component: './cms/Subject',
       },
       {
+        name: '专题分类',
+        icon: 'table',
+        path: '/cms/subjectCategory/list',
+        component: './cms/SubjectCategory',
+      },
+      {
         name: '商品优选',
         icon: 'table',
         path: '/cms/preferredArea/list',

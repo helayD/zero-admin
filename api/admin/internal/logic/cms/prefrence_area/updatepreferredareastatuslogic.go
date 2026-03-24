@@ -2,6 +2,8 @@ package prefrence_area
 
 import (
 	"context"
+
+	"github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/common/res"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
@@ -35,10 +37,20 @@ func NewUpdatePreferredAreaStatusLogic(ctx context.Context, svcCtx *svc.ServiceC
 // UpdatePreferredAreaStatus 更新优选专区状态
 func (l *UpdatePreferredAreaStatusLogic) UpdatePreferredAreaStatus(req *types.UpdatePreferredAreaStatusReq) (resp *types.BaseResp, err error) {
 	updateBy := l.ctx.Value("userName").(string)
+	writeScope, err := common.ResolveWriteGovernanceScope(l.ctx, common.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, err
+	}
 	_, err = l.svcCtx.PreferredAreaService.UpdatePreferredAreaStatus(l.ctx, &cmsclient.UpdatePreferredAreaStatusReq{
 		Ids:        req.Ids,        // 主键ID
 		ShowStatus: req.ShowStatus, // 显示状态：0->不显示；1->显示
 		UpdateBy:   updateBy,       // 更新者
+		Scope:      common.CMSGovernanceScope(writeScope),
 	})
 
 	if err != nil {

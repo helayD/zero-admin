@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
 import { Form, Input, InputNumber, Modal, Radio } from 'antd';
-import type { PreferredAreaListItem } from '../data.d';
+import type { SubjectCategoryListItem } from '../data.d';
 
 export interface CreateFormProps {
   onCancel: () => void;
-  onSubmit: (values: PreferredAreaListItem) => void;
+  onSubmit: (values: SubjectCategoryListItem) => void;
   createModalVisible: boolean;
 }
 
@@ -15,7 +15,7 @@ const formLayout = {
   wrapperCol: { span: 16 },
 };
 
-const CreatePreferredAreaForm: React.FC<CreateFormProps> = (props) => {
+const CreateSubjectCategoryForm: React.FC<CreateFormProps> = (props) => {
   const [form] = Form.useForm();
   const { onSubmit, onCancel, createModalVisible } = props;
 
@@ -29,7 +29,7 @@ const CreatePreferredAreaForm: React.FC<CreateFormProps> = (props) => {
     <Modal
       forceRender
       destroyOnClose
-      title="新增优选专区"
+      title="新增专题分类"
       visible={createModalVisible}
       okText="保存"
       onOk={() => form.submit()}
@@ -37,14 +37,11 @@ const CreatePreferredAreaForm: React.FC<CreateFormProps> = (props) => {
       width={760}
     >
       <Form {...formLayout} form={form} onFinish={onSubmit}>
-        <FormItem name="name" label="专区名称" rules={[{ required: true, message: '请输入专区名称' }]}>
-          <Input placeholder="请输入专区名称" />
+        <FormItem name="name" label="分类名称" rules={[{ required: true, message: '请输入分类名称' }]}>
+          <Input placeholder="请输入分类名称" />
         </FormItem>
-        <FormItem name="subTitle" label="副标题">
-          <Input placeholder="请输入副标题" />
-        </FormItem>
-        <FormItem name="pic" label="图片链接">
-          <Input placeholder="请输入图片 URL" />
+        <FormItem name="icon" label="图标链接">
+          <Input placeholder="请输入图标 URL" />
         </FormItem>
         <FormItem name="sort" label="排序" initialValue={0}>
           <InputNumber style={{ width: '100%' }} min={0} />
@@ -60,4 +57,4 @@ const CreatePreferredAreaForm: React.FC<CreateFormProps> = (props) => {
   );
 };
 
-export default CreatePreferredAreaForm;
+export default CreateSubjectCategoryForm;

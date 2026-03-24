@@ -1,28 +1,28 @@
-export interface PreferredAreaListItem {
+export interface SubjectCategoryListItem {
   id?: number;
   name?: string;
-  subTitle?: string;
-  pic?: string;
-  sort?: number;
+  icon?: string;
+  subjectCount?: number;
   showStatus?: number;
+  sort?: number;
   createBy?: string;
   createTime?: string;
   updateBy?: string;
   updateTime?: string;
 }
 
-export interface PreferredAreaListPagination {
+export interface SubjectCategoryListPagination {
   total: number;
   pageSize: number;
   current: number;
 }
 
-export interface PreferredAreaListData {
-  list: PreferredAreaListItem[];
-  pagination: Partial<PreferredAreaListPagination>;
+export interface SubjectCategoryListData {
+  list: SubjectCategoryListItem[];
+  pagination: Partial<SubjectCategoryListPagination>;
 }
 
-export interface PreferredAreaListParams {
+export interface SubjectCategoryListParams {
   name?: string;
   showStatus?: number;
   scopeType?: 'platform' | 'tenant' | 'merchant';

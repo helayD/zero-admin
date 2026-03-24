@@ -391,12 +391,13 @@ type CouponListByCartResp struct {
 }
 
 type Data struct {
-	AdvertiseList      []AdvertiseList    `json:"advertiseList"`      //获取首页广告
-	BrandList          []IndexBrandData   `json:"brandList"`          //获取推荐品牌
-	HomeFlashPromotion HomeFlashPromotion `json:"homeFlashPromotion"` //获取秒杀信息
-	NewProductList     []IndexProductData `json:"newProductList"`     //获取新品推荐
-	HotProductList     []IndexProductData `json:"hotProductList"`     //获取人气推荐
-	SubjectList        []SubjectList      `json:"subjectList"`        //获取推荐专题
+	AdvertiseList      []AdvertiseList         `json:"advertiseList"`      //获取首页广告
+	BrandList          []IndexBrandData        `json:"brandList"`          //获取推荐品牌
+	HomeFlashPromotion HomeFlashPromotion      `json:"homeFlashPromotion"` //获取秒杀信息
+	NewProductList     []IndexProductData      `json:"newProductList"`     //获取新品推荐
+	HotProductList     []IndexProductData      `json:"hotProductList"`     //获取人气推荐
+	SubjectList        []SubjectList           `json:"subjectList"`        //获取推荐专题
+	PreferredAreaList  []PreferredAreaListData `json:"preferredAreaList"`  //获取优选专区
 }
 
 type DeleteAddressReq struct {
@@ -471,12 +472,13 @@ type HomeFlashPromotion struct {
 }
 
 type HomeReq struct {
-	AdvertiseType    string `form:"advertiseType,default=app"`  // app或者pc
-	BrandNumber      int32  `form:"brandNumber,default=6"`      //
-	HomeFlashNumber  int32  `form:"homeFlashNumber,default=4"`  //
-	NewProductNumber int32  `form:"newProductNumber,default=4"` //
-	HotProductNumber int32  `form:"hotProductNumber,default=4"` //
-	SubjectNumber    int32  `form:"subjectNumber,default=4"`    //
+	AdvertiseType       string `form:"advertiseType,default=app"`     // app或者pc
+	BrandNumber         int32  `form:"brandNumber,default=6"`         //
+	HomeFlashNumber     int32  `form:"homeFlashNumber,default=4"`     //
+	NewProductNumber    int32  `form:"newProductNumber,default=4"`    //
+	HotProductNumber    int32  `form:"hotProductNumber,default=4"`    //
+	SubjectNumber       int32  `form:"subjectNumber,default=4"`       //
+	PreferredAreaNumber int32  `form:"preferredAreaNumber,default=4"` //
 }
 
 type HomeResp struct {
@@ -714,6 +716,15 @@ type OrderPayResp struct {
 	Data    string `json:"data"`
 }
 
+type PreferredAreaListData struct {
+	Id         int64  `json:"id"`         //专区id
+	Name       string `json:"name"`       //专区名称
+	SubTitle   string `json:"subTitle"`   //子标题
+	Pic        string `json:"pic"`        //展示图片
+	Sort       int32  `json:"sort"`       //排序
+	ShowStatus int32  `json:"showStatus"` //显示状态：0->不显示；1->显示
+}
+
 type ProductAttributeList struct {
 	Id           int64  `json:"id"`           //主键id
 	GroupId      int64  `json:"groupId"`      //属性分组ID
@@ -811,7 +822,7 @@ type ProductVisibilityData struct {
 	ShowPrice      bool   `json:"showPrice"`      //是否展示价格
 	ShowStock      bool   `json:"showStock"`      //是否展示库存
 	Status         string `json:"status"`         //visible/hidden/not-saleable
-	ReasonCode     string `json:"reasonCode"`     //product_not_found/pending_review/review_rejected/off_shelf/preview_only/sold_out
+	ReasonCode     string `json:"reasonCode"`     //product_not_found/owner_disabled/pending_review/review_rejected/off_shelf/preview_only/sold_out
 	ReasonMessage  string `json:"reasonMessage"`  //给商城端展示的明确反馈
 	RecoveryHint   string `json:"recoveryHint"`   //下一步建议
 	FallbackAction string `json:"fallbackAction"` //browse_product_list/browse_similar/go_home
@@ -1035,6 +1046,8 @@ type SkuStockList struct {
 	VerifyStatus       int32   `json:"verifyStatus"`       //审核状态：0-未审核，1-审核通过，2-审核不通过
 	Sort               int32   `json:"sort"`               //排序
 	Sales              int32   `json:"sales"`              //销量
+	Purchasable        bool    `json:"purchasable"`        //该SKU是否可购买
+	PurchaseReasonCode string  `json:"purchaseReasonCode"` //不可购买原因代码：sold_out/sku_off_shelf/sku_not_approved
 }
 
 type SubjectList struct {

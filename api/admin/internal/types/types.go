@@ -251,6 +251,10 @@ type AddPreferredAreaReq struct {
 	Pic        string `json:"pic"`                  //展示图片
 	Sort       int32  `json:"sort"`                 //排序
 	ShowStatus int32  `json:"showStatus,default=2"` //显示状态：0->不显示；1->显示
+	ScopeType  string `json:"scopeType,optional"`   //治理范围(platform/tenant/merchant)
+	PlatformId int64  `json:"platformId,optional"`  //平台ID
+	TenantId   int64  `json:"tenantId,optional"`    //租户ID
+	MerchantId int64  `json:"merchantId,optional"`  //商户ID
 }
 
 type AddProductAttributeGroupReq struct {
@@ -434,6 +438,10 @@ type AddSubjectCategoryReq struct {
 	Icon       string `json:"icon"`                 //分类图标
 	ShowStatus int32  `json:"showStatus,default=2"` //显示状态：0->不显示；1->显示
 	Sort       int32  `json:"sort"`                 //排序
+	ScopeType  string `json:"scopeType,optional"`   //治理范围(platform/tenant/merchant)
+	PlatformId int64  `json:"platformId,optional"`  //平台ID
+	TenantId   int64  `json:"tenantId,optional"`    //租户ID
+	MerchantId int64  `json:"merchantId,optional"`  //商户ID
 }
 
 type AddSubjectReq struct {
@@ -709,7 +717,11 @@ type DeletePostReq struct {
 }
 
 type DeletePreferredAreaReq struct {
-	Ids []int64 `form:"ids"`
+	Ids        []int64 `form:"ids"`
+	ScopeType  string  `form:"scopeType,optional"`  //治理范围(platform/tenant/merchant)
+	PlatformId int64   `form:"platformId,optional"` //平台ID
+	TenantId   int64   `form:"tenantId,optional"`   //租户ID
+	MerchantId int64   `form:"merchantId,optional"` //商户ID
 }
 
 type DeleteProductAttributeGroupReq struct {
@@ -797,7 +809,11 @@ type DeleteSeckillSessionReq struct {
 }
 
 type DeleteSubjectCategoryReq struct {
-	Ids []int64 `form:"ids"`
+	Ids        []int64 `form:"ids"`
+	ScopeType  string  `form:"scopeType,optional"`  //治理范围(platform/tenant/merchant)
+	PlatformId int64   `form:"platformId,optional"` //平台ID
+	TenantId   int64   `form:"tenantId,optional"`   //租户ID
+	MerchantId int64   `form:"merchantId,optional"` //商户ID
 }
 
 type DeleteSubjectReq struct {
@@ -3332,7 +3348,11 @@ type QueryPreferredAreaDetailData struct {
 }
 
 type QueryPreferredAreaDetailReq struct {
-	Id int64 `form:"id"`
+	Id         int64  `form:"id"`
+	ScopeType  string `form:"scopeType,optional"`  //治理范围(platform/tenant/merchant)
+	PlatformId int64  `form:"platformId,optional"` //平台ID
+	TenantId   int64  `form:"tenantId,optional"`   //租户ID
+	MerchantId int64  `form:"merchantId,optional"` //商户ID
 }
 
 type QueryPreferredAreaDetailResp struct {
@@ -3361,6 +3381,10 @@ type QueryPreferredAreaListReq struct {
 	SubTitle   string `json:"subTitle,optional"`    //子标题
 	Pic        string `json:"pic,optional"`         //展示图片
 	ShowStatus int32  `json:"showStatus,default=2"` //显示状态：0->不显示；1->显示
+	ScopeType  string `form:"scopeType,optional"`   //治理范围(platform/tenant/merchant)
+	PlatformId int64  `form:"platformId,optional"`  //平台ID
+	TenantId   int64  `form:"tenantId,optional"`    //租户ID
+	MerchantId int64  `form:"merchantId,optional"`  //商户ID
 }
 
 type QueryPreferredAreaListResp struct {
@@ -4429,7 +4453,11 @@ type QuerySubjectCategoryDetailData struct {
 }
 
 type QuerySubjectCategoryDetailReq struct {
-	Id int64 `form:"id"`
+	Id         int64  `form:"id"`
+	ScopeType  string `form:"scopeType,optional"`  //治理范围(platform/tenant/merchant)
+	PlatformId int64  `form:"platformId,optional"` //平台ID
+	TenantId   int64  `form:"tenantId,optional"`   //租户ID
+	MerchantId int64  `form:"merchantId,optional"` //商户ID
 }
 
 type QuerySubjectCategoryDetailResp struct {
@@ -4456,6 +4484,10 @@ type QuerySubjectCategoryListReq struct {
 	PageSize   int32  `form:"pageSize,default=20"`  //每页的数量
 	Name       string `json:"form,optional"`        //专题分类名称
 	ShowStatus int32  `form:"showStatus,default=2"` //显示状态：0->不显示；1->显示
+	ScopeType  string `form:"scopeType,optional"`   //治理范围(platform/tenant/merchant)
+	PlatformId int64  `form:"platformId,optional"`  //平台ID
+	TenantId   int64  `form:"tenantId,optional"`    //租户ID
+	MerchantId int64  `form:"merchantId,optional"`  //商户ID
 }
 
 type QuerySubjectCategoryListResp struct {
@@ -5194,11 +5226,19 @@ type UpdatePreferredAreaReq struct {
 	Pic        string `json:"pic"`                  //展示图片
 	Sort       int32  `json:"sort"`                 //排序
 	ShowStatus int32  `json:"showStatus,default=2"` //显示状态：0->不显示；1->显示
+	ScopeType  string `json:"scopeType,optional"`   //治理范围(platform/tenant/merchant)
+	PlatformId int64  `json:"platformId,optional"`  //平台ID
+	TenantId   int64  `json:"tenantId,optional"`    //租户ID
+	MerchantId int64  `json:"merchantId,optional"`  //商户ID
 }
 
 type UpdatePreferredAreaStatusReq struct {
 	Ids        []int64 `json:"ids"`                  //主键ID
 	ShowStatus int32   `json:"showStatus,default=2"` //显示状态：0->不显示；1->显示
+	ScopeType  string  `json:"scopeType,optional"`   //治理范围(platform/tenant/merchant)
+	PlatformId int64   `json:"platformId,optional"`  //平台ID
+	TenantId   int64   `json:"tenantId,optional"`    //租户ID
+	MerchantId int64   `json:"merchantId,optional"`  //商户ID
 }
 
 type UpdateProductAttributeGroupReq struct {
@@ -5517,11 +5557,19 @@ type UpdateSubjectCategoryReq struct {
 	Icon       string `json:"icon"`                 //分类图标
 	ShowStatus int32  `json:"showStatus,default=2"` //显示状态：0->不显示；1->显示
 	Sort       int32  `json:"sort"`                 //排序
+	ScopeType  string `json:"scopeType,optional"`   //治理范围(platform/tenant/merchant)
+	PlatformId int64  `json:"platformId,optional"`  //平台ID
+	TenantId   int64  `json:"tenantId,optional"`    //租户ID
+	MerchantId int64  `json:"merchantId,optional"`  //商户ID
 }
 
 type UpdateSubjectCategoryStatusReq struct {
 	Ids        []int64 `json:"ids"`                  //主键ID
 	ShowStatus int32   `json:"showStatus,default=2"` //显示状态：0->不显示；1->显示
+	ScopeType  string  `json:"scopeType,optional"`   //治理范围(platform/tenant/merchant)
+	PlatformId int64   `json:"platformId,optional"`  //平台ID
+	TenantId   int64   `json:"tenantId,optional"`    //租户ID
+	MerchantId int64   `json:"merchantId,optional"`  //商户ID
 }
 
 type UpdateSubjectReq struct {

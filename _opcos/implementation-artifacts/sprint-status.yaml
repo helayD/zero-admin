@@ -56,8 +56,8 @@ development_status:
   2-2-商品规格-spu-sku-与库存建档: review
   2-3-商品上架审核与作用域可见性控制: in-progress
   2-4-首页-分类与品牌导购浏览: in-progress
-  2-5-商品详情与规格库存优惠摘要: backlog
-  2-6-专题与优选专区编排: backlog
+  2-5-商品详情与规格库存优惠摘要: done
+  2-6-专题与优选专区编排: in-progress
   epic-2-retrospective: optional
 
   epic-3: backlog

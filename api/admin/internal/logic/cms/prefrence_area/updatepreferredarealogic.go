@@ -2,6 +2,8 @@ package prefrence_area
 
 import (
 	"context"
+
+	"github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/common/res"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
@@ -36,6 +38,15 @@ func NewUpdatePreferredAreaLogic(ctx context.Context, svcCtx *svc.ServiceContext
 func (l *UpdatePreferredAreaLogic) UpdatePreferredArea(req *types.UpdatePreferredAreaReq) (resp *types.BaseResp, err error) {
 
 	updateBy := l.ctx.Value("userName").(string)
+	writeScope, err := common.ResolveWriteGovernanceScope(l.ctx, common.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, err
+	}
 	_, err = l.svcCtx.PreferredAreaService.UpdatePreferredArea(l.ctx, &cmsclient.UpdatePreferredAreaReq{
 		Id:         req.Id,         // 主键ID
 		Name:       req.Name,       // 专区名称
@@ -44,6 +55,7 @@ func (l *UpdatePreferredAreaLogic) UpdatePreferredArea(req *types.UpdatePreferre
 		Sort:       req.Sort,       // 排序
 		ShowStatus: req.ShowStatus, // 显示状态：0->不显示；1->显示
 		UpdateBy:   updateBy,       // 更新者
+		Scope:      common.CMSGovernanceScope(writeScope),
 	})
 
 	if err != nil {

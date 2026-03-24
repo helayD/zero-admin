@@ -2,6 +2,8 @@ package subject_category
 
 import (
 	"context"
+
+	"github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
 	"github.com/feihua/zero-admin/api/admin/internal/types"
@@ -34,8 +36,18 @@ func NewQuerySubjectCategoryDetailLogic(ctx context.Context, svcCtx *svc.Service
 // QuerySubjectCategoryDetail 查询专题分类表详情
 func (l *QuerySubjectCategoryDetailLogic) QuerySubjectCategoryDetail(req *types.QuerySubjectCategoryDetailReq) (resp *types.QuerySubjectCategoryDetailResp, err error) {
 
+	queryScope, err := common.ResolveQueryGovernanceScope(l.ctx, common.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
 	detail, err := l.svcCtx.SubjectCategoryService.QuerySubjectCategoryDetail(l.ctx, &cmsclient.QuerySubjectCategoryDetailReq{
-		Id: req.Id,
+		Id:    req.Id,
+		Scope: common.CMSGovernanceScope(queryScope),
 	})
 
 	if err != nil {

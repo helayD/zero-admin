@@ -1,171 +1,191 @@
-import {PlusOutlined, ExclamationCircleOutlined, EditOutlined, DeleteOutlined} from '@ant-design/icons';
-import {Button, Divider, message, Drawer, Modal, Tag, Select} from 'antd';
-import React, {useState, useRef} from 'react';
-import {PageContainer, FooterToolbar} from '@ant-design/pro-layout';
+import {
+  Alert,
+  Button,
+  Divider,
+  Drawer,
+  message,
+  Modal,
+  Select,
+  Switch,
+  Tag,
+} from 'antd';
+import { DeleteOutlined, EditOutlined, ExclamationCircleOutlined, PlusOutlined } from '@ant-design/icons';
+import React, { useRef, useState } from 'react';
+import { PageContainer } from '@ant-design/pro-layout';
+import type { ActionType, ProColumns } from '@ant-design/pro-table';
 import ProTable from '@ant-design/pro-table';
-import type {ProColumns, ActionType} from '@ant-design/pro-table';
+import type { ProDescriptionsItemProps } from '@ant-design/pro-descriptions';
 import ProDescriptions from '@ant-design/pro-descriptions';
-import type {ProDescriptionsItemProps} from '@ant-design/pro-descriptions';
-import CreatePostForm from './components/CreatePostForm';
-import UpdatePostForm from './components/UpdatePostForm';
-import type {PostListItem} from './data.d';
-import {queryPostList, updatePost, addPost, removePost} from './service';
+import type { PreferredAreaListItem } from './data.d';
+import CreatePreferredAreaForm from './components/CreatePostForm';
+import UpdatePreferredAreaForm from './components/UpdatePostForm';
+import {
+  addPreferredArea,
+  queryPreferredAreaList,
+  removePreferredArea,
+  updatePreferredArea,
+  updatePreferredAreaStatus,
+} from './service';
+import GovernanceScopeBar from '@/pages/system/components/GovernanceScopeBar';
+import {
+  buildGovernanceScopeLabel,
+  defaultGovernanceScope,
+  type GovernanceScopeValue,
+  toGovernancePayload,
+} from '@/pages/system/components/governance';
 
-const {confirm} = Modal;
+const { confirm } = Modal;
 
-/**
- * 添加节点
- * @param fields
- */
-const handleAdd = async (fields: PostListItem) => {
-  const hide = message.loading('正在添加');
+const handleAdd = async (fields: PreferredAreaListItem, scope: GovernanceScopeValue) => {
+  const hide = message.loading('正在新增优选专区');
   try {
-    await addPost({...fields});
+    await addPreferredArea({ ...fields, ...toGovernancePayload(scope) });
     hide();
-    message.success('添加成功');
+    message.success('新增成功');
     return true;
   } catch (error) {
     hide();
-    message.error('添加失败请重试！');
     return false;
   }
 };
 
-/**
- * 更新节点
- * @param fields
- */
-const handleUpdate = async (fields: PostListItem) => {
-  const hide = message.loading('正在更新');
+const handleUpdate = async (fields: PreferredAreaListItem, scope: GovernanceScopeValue) => {
+  const hide = message.loading('正在更新优选专区');
   try {
-    await updatePost(fields);
+    await updatePreferredArea({ ...fields, ...toGovernancePayload(scope) });
     hide();
-
     message.success('更新成功');
     return true;
   } catch (error) {
     hide();
-    message.error('更新失败请重试！');
     return false;
   }
 };
 
-/**
- *  删除节点
- * @param selectedRows
- */
-const handleRemove = async (selectedRows: PostListItem[]) => {
-  const hide = message.loading('正在删除');
-  if (!selectedRows) return true;
+const handleRemove = async (ids: number[], scope: GovernanceScopeValue) => {
+  const hide = message.loading('正在删除优选专区');
   try {
-    await removePost(selectedRows.map((row) => row.id));
+    await removePreferredArea(ids, toGovernancePayload(scope));
     hide();
-    message.success('删除成功，即将刷新');
+    message.success('删除成功');
     return true;
   } catch (error) {
     hide();
-    message.error('删除失败，请重试');
     return false;
   }
 };
 
-const PostList: React.FC = () => {
-  const [createModalVisible, handleModalVisible] = useState<boolean>(false);
-  const [updateModalVisible, handleUpdateModalVisible] = useState<boolean>(false);
-  const [showDetail, setShowDetail] = useState<boolean>(false);
-  const actionRef = useRef<ActionType>();
-  const [currentRow, setCurrentRow] = useState<PostListItem>();
-  const [selectedRowsState, setSelectedRows] = useState<PostListItem[]>([]);
+const handleStatus = async (row: PreferredAreaListItem, scope: GovernanceScopeValue) => {
+  const hide = message.loading('正在更新显示状态');
+  try {
+    await updatePreferredAreaStatus({
+      ids: [row.id as number],
+      showStatus: row.showStatus || 0,
+      ...toGovernancePayload(scope),
+    });
+    hide();
+    message.success('状态更新成功');
+    return true;
+  } catch (error) {
+    hide();
+    return false;
+  }
+};
 
-  const showDeleteConfirm = (item: PostListItem) => {
+const PreferredAreaList: React.FC = () => {
+  const actionRef = useRef<ActionType>();
+  const [showDetail, setShowDetail] = useState<boolean>(false);
+  const [createVisible, setCreateVisible] = useState<boolean>(false);
+  const [updateVisible, setUpdateVisible] = useState<boolean>(false);
+  const [currentRow, setCurrentRow] = useState<PreferredAreaListItem>();
+  const [scope, setScope] = useState<GovernanceScopeValue>(defaultGovernanceScope);
+
+  const showDeleteConfirm = (record: PreferredAreaListItem) => {
     confirm({
-      title: '是否删除记录?',
-      icon: <ExclamationCircleOutlined/>,
-      content: '删除的记录不能恢复,请确认!',
+      title: '是否删除优选专区?',
+      icon: <ExclamationCircleOutlined />,
+      content: `当前主体：${buildGovernanceScopeLabel(scope)}。删除后不可恢复，请确认。`,
       onOk() {
-        handleRemove([item]).then(() => {
+        return handleRemove([record.id as number], scope).then(() => {
           actionRef.current?.reloadAndRest?.();
         });
-      },
-      onCancel() {
       },
     });
   };
 
-  const columns: ProColumns<PostListItem>[] = [
+  const showStatusConfirm = (record: PreferredAreaListItem, newShowStatus: number) => {
+    confirm({
+      title: '是否更新显示状态?',
+      icon: <ExclamationCircleOutlined />,
+      content: `当前主体：${buildGovernanceScopeLabel(scope)}。将影响优选专区「${record.name || record.id}」。`,
+      async onOk() {
+        const success = await handleStatus({ ...record, showStatus: newShowStatus }, scope);
+        if (success) {
+          actionRef.current?.reload?.();
+        }
+      },
+    });
+  };
+
+  const columns: ProColumns<PreferredAreaListItem>[] = [
     {
-      title: '岗位编号',
+      title: '编号',
       dataIndex: 'id',
       hideInSearch: true,
     },
     {
-      title: '岗位编码',
-      dataIndex: 'postCode',
+      title: '专区名称',
+      dataIndex: 'name',
+      render: (dom, entity) => (
+        <a
+          onClick={() => {
+            setCurrentRow(entity);
+            setShowDetail(true);
+          }}
+        >
+          {dom}
+        </a>
+      ),
     },
     {
-      title: '岗位名称',
-      dataIndex: 'postName',
-      render: (dom, entity) => {
-        return <a onClick={() => {
-          setCurrentRow(entity);
-          setShowDetail(true);
-        }}>{dom}</a>;
-      },
-    },
-    {
-      title: '岗位排序',
-      dataIndex: 'postSort',
+      title: '副标题',
+      dataIndex: 'subTitle',
       hideInSearch: true,
     },
     {
-      title: '状态',
-      dataIndex: 'postStatus',
-      renderFormItem:(text, row, index) => {
-        return <Select
+      title: '显示状态',
+      dataIndex: 'showStatus',
+      renderFormItem: (text, row) => (
+        <Select
           value={row.value}
           options={[
-            { value: '1', label: '正常' },
-            { value: '0', label: '禁用' },
+            { value: 1, label: '显示' },
+            { value: 0, label: '隐藏' },
           ]}
         />
-
-      },
-      render: (dom, entity) => {
-        switch (entity.postStatus) {
-          case 1:
-            return <Tag color={'success'}>正常</Tag>;
-          case 0:
-            return <Tag>禁用</Tag>;
-        }
-        return <>未知{entity.postStatus }</>;
-      },
+      ),
+      render: (_, entity) => (
+        <Switch
+          checked={entity.showStatus === 1}
+          onChange={(checked) => {
+            showStatusConfirm(entity, checked ? 1 : 0);
+          }}
+        />
+      ),
     },
     {
-      title: '备注',
-      dataIndex: 'remark',
-      valueType: 'textarea',
-      hideInSearch: true,
-    },
-    {
-      title: '创建者',
-      dataIndex: 'createBy',
+      title: '排序',
+      dataIndex: 'sort',
       hideInSearch: true,
     },
     {
       title: '创建时间',
       dataIndex: 'createTime',
-      valueType: 'dateTime',
-      hideInSearch: true,
-    },
-    {
-      title: '更新者',
-      dataIndex: 'updateBy',
       hideInSearch: true,
     },
     {
       title: '更新时间',
       dataIndex: 'updateTime',
-      valueType: 'dateTime',
       hideInSearch: true,
     },
     {
@@ -173,138 +193,133 @@ const PostList: React.FC = () => {
       dataIndex: 'option',
       valueType: 'option',
       width: 220,
-        render: (_, record) => (
-          <>
-            <a
-              key="sort"
-              onClick={() => {
-                handleUpdateModalVisible(true);
-                setCurrentRow(record);
-              }}
-            >
-              <EditOutlined/> 编辑
-            </a>
-            <Divider type="vertical"/>
-            <a
-              key="delete"
-              style={{color: '#ff4d4f'}}
-              onClick={() => {
-                showDeleteConfirm(record);
-              }}
-            >
-              <DeleteOutlined/> 删除
-            </a>
-          </>
-        ),
+      render: (_, record) => (
+        <>
+          <a
+            key="edit"
+            onClick={() => {
+              setCurrentRow(record);
+              setUpdateVisible(true);
+            }}
+          >
+            <EditOutlined /> 编辑
+          </a>
+          <Divider type="vertical" />
+          <a
+            key="delete"
+            style={{ color: '#ff4d4f' }}
+            onClick={() => {
+              showDeleteConfirm(record);
+            }}
+          >
+            <DeleteOutlined /> 删除
+          </a>
+        </>
+      ),
     },
   ];
 
   return (
     <PageContainer>
-      <ProTable<PostListItem>
-        headerTitle="岗位管理"
+      <GovernanceScopeBar
+        value={scope}
+        onChange={(nextScope) => {
+          setScope(nextScope);
+          actionRef.current?.reload?.();
+        }}
+        entityLabel="优选专区"
+        style={{ marginBottom: 16 }}
+      />
+      <Alert
+        showIcon
+        type="info"
+        style={{ marginBottom: 16 }}
+        message={`当前治理范围：${buildGovernanceScopeLabel(scope)}`}
+        description="新增、编辑、上下线与删除都会带上当前主体范围，避免把内容错误写入其他租户或商户。"
+      />
+      <ProTable<PreferredAreaListItem>
+        headerTitle="优选专区管理"
         actionRef={actionRef}
         rowKey="id"
         search={{
           labelWidth: 120,
         }}
         toolBarRender={() => [
-          <Button type="primary" key="primary" onClick={() => handleModalVisible(true)}>
-            <PlusOutlined/> 新增
+          <Button key="create" type="primary" onClick={() => setCreateVisible(true)}>
+            <PlusOutlined /> 新建优选专区
           </Button>,
         ]}
-        request={queryPostList}
+        request={(params) => queryPreferredAreaList({ ...params, ...toGovernancePayload(scope) })}
         columns={columns}
-        rowSelection={{
-          onChange: (_, selectedRows) => setSelectedRows(selectedRows),
-        }}
-        pagination={{pageSize: 10}}
-      />
-      {selectedRowsState?.length > 0 && (
-        <FooterToolbar
-          extra={
-            <div>
-              已选择 <a style={{fontWeight: 600}}>{selectedRowsState.length}</a> 项&nbsp;&nbsp;
-            </div>
-          }
-        >
-          <Button
-            type="primary"
-            danger
-            onClick={async () => {
-              await handleRemove(selectedRowsState);
-              setSelectedRows([]);
-              actionRef.current?.reloadAndRest?.();
-            }}
-          >
-            批量删除
-          </Button>
-        </FooterToolbar>
-      )}
-
-      <CreatePostForm
-        key={'CreatePostForm'}
-        onSubmit={async (value) => {
-          const success = await handleAdd(value);
-          if (success) {
-            handleModalVisible(false);
-            setCurrentRow(undefined);
-            if (actionRef.current) {
-              actionRef.current.reload();
-            }
-          }
-        }}
-        onCancel={() => {
-          handleModalVisible(false);
-          if (!showDetail) {
-            setCurrentRow(undefined);
-          }
-        }}
-        createModalVisible={createModalVisible}
+        rowSelection={false}
+        pagination={{ pageSize: 10 }}
+        tableAlertRender={false}
       />
 
-      <UpdatePostForm
-        key={'UpdatePostForm'}
+      <CreatePreferredAreaForm
+        createModalVisible={createVisible}
+        onCancel={() => setCreateVisible(false)}
         onSubmit={async (value) => {
-          const success = await handleUpdate(value);
+          const success = await handleAdd(value, scope);
           if (success) {
-            handleUpdateModalVisible(false);
-            setCurrentRow(undefined);
-            if (actionRef.current) {
-              actionRef.current.reload();
-            }
+            setCreateVisible(false);
+            actionRef.current?.reload?.();
           }
         }}
-        onCancel={() => {
-          handleUpdateModalVisible(false);
-          if (!showDetail) {
-            setCurrentRow(undefined);
-          }
-        }}
-        updateModalVisible={updateModalVisible}
+      />
+
+      <UpdatePreferredAreaForm
+        updateModalVisible={updateVisible}
         currentData={currentRow || {}}
+        onCancel={() => setUpdateVisible(false)}
+        onSubmit={async (value) => {
+          const success = await handleUpdate(value, scope);
+          if (success) {
+            setUpdateVisible(false);
+            setCurrentRow(undefined);
+            actionRef.current?.reload?.();
+          }
+        }}
       />
 
       <Drawer
-        width={600}
+        width={720}
         visible={showDetail}
         onClose={() => {
           setCurrentRow(undefined);
-          setShowDetail(false)
+          setShowDetail(false);
         }}
         closable={false}
       >
         {currentRow?.id && (
-          <ProDescriptions<PostListItem>
+          <ProDescriptions<PreferredAreaListItem>
             column={2}
-            title={"岗位详情"}
+            title="优选专区详情"
             request={async () => ({
               data: currentRow || {},
             })}
             params={{
               id: currentRow?.id,
             }}
-            columns={columns as ProDescriptionsItemProps<PostListItem>[]}
+            columns={[
+              ...(columns.filter((column) => column.dataIndex !== 'option') as ProDescriptionsItemProps<PreferredAreaListItem>[]),
+              {
+                title: '显示标签',
+                dataIndex: 'showStatusLabel',
+                render: () =>
+                  currentRow.showStatus === 1 ? <Tag color="success">显示</Tag> : <Tag>隐藏</Tag>,
+              },
+              {
+                title: '图片',
+                dataIndex: 'pic',
+                render: () =>
+                  currentRow.pic ? (
+                    <img src={currentRow.pic} alt="专区图片" style={{ maxWidth: 200 }} />
+                  ) : (
+                    '-'
+                  ),
+              },
+            ]}
           />
         )}
       </Drawer>
@@ -312,4 +327,4 @@ const PostList: React.FC = () => {
   );
 };
 
-export default PostList;
+export default PreferredAreaList;

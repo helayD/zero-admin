@@ -1,12 +1,12 @@
 import React, { useEffect } from 'react';
 import { Form, Input, InputNumber, Modal, Radio } from 'antd';
-import type { PreferredAreaListItem } from '../data.d';
+import type { SubjectCategoryListItem } from '../data.d';
 
 export interface UpdateFormProps {
   onCancel: () => void;
-  onSubmit: (values: PreferredAreaListItem) => void;
+  onSubmit: (values: SubjectCategoryListItem) => void;
   updateModalVisible: boolean;
-  currentData: Partial<PreferredAreaListItem>;
+  currentData: Partial<SubjectCategoryListItem>;
 }
 
 const FormItem = Form.Item;
@@ -16,7 +16,7 @@ const formLayout = {
   wrapperCol: { span: 16 },
 };
 
-const UpdatePreferredAreaForm: React.FC<UpdateFormProps> = (props) => {
+const UpdateSubjectCategoryForm: React.FC<UpdateFormProps> = (props) => {
   const [form] = Form.useForm();
   const { onSubmit, onCancel, updateModalVisible, currentData } = props;
 
@@ -38,7 +38,7 @@ const UpdatePreferredAreaForm: React.FC<UpdateFormProps> = (props) => {
     <Modal
       forceRender
       destroyOnClose
-      title="编辑优选专区"
+      title="编辑专题分类"
       visible={updateModalVisible}
       okText="保存"
       onOk={() => form.submit()}
@@ -49,14 +49,11 @@ const UpdatePreferredAreaForm: React.FC<UpdateFormProps> = (props) => {
         <FormItem name="id" hidden>
           <Input />
         </FormItem>
-        <FormItem name="name" label="专区名称" rules={[{ required: true, message: '请输入专区名称' }]}>
-          <Input placeholder="请输入专区名称" />
+        <FormItem name="name" label="分类名称" rules={[{ required: true, message: '请输入分类名称' }]}>
+          <Input placeholder="请输入分类名称" />
         </FormItem>
-        <FormItem name="subTitle" label="副标题">
-          <Input placeholder="请输入副标题" />
-        </FormItem>
-        <FormItem name="pic" label="图片链接">
-          <Input placeholder="请输入图片 URL" />
+        <FormItem name="icon" label="图标链接">
+          <Input placeholder="请输入图标 URL" />
         </FormItem>
         <FormItem name="sort" label="排序" initialValue={0}>
           <InputNumber style={{ width: '100%' }} min={0} />
@@ -72,4 +69,4 @@ const UpdatePreferredAreaForm: React.FC<UpdateFormProps> = (props) => {
   );
 };
 
-export default UpdatePreferredAreaForm;
+export default UpdateSubjectCategoryForm;

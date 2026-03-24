@@ -1,0 +1,16 @@
+info (
+	desc:   "首页优选专区"
+	author: "koobe"
+	email:  "1002219331@qq.com"
+)
+
+type (
+	PreferredAreaListData {
+		Id         int64  `json:"id"` //专区id
+		Name       string `json:"name"` //专区名称
+		SubTitle   string `json:"subTitle"` //子标题
+		Pic        string `json:"pic"` //展示图片
+		Sort       int32  `json:"sort"` //排序
+		ShowStatus int32  `json:"showStatus"` //显示状态：0->不显示；1->显示
+	}
+)

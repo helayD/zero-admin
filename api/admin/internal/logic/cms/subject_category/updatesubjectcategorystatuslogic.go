@@ -2,6 +2,8 @@ package subject_category
 
 import (
 	"context"
+
+	"github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/common/res"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
@@ -34,10 +36,20 @@ func NewUpdateSubjectCategoryStatusLogic(ctx context.Context, svcCtx *svc.Servic
 
 // UpdateSubjectCategoryStatus 更新专题分类表状态
 func (l *UpdateSubjectCategoryStatusLogic) UpdateSubjectCategoryStatus(req *types.UpdateSubjectCategoryStatusReq) (resp *types.BaseResp, err error) {
+	writeScope, err := common.ResolveWriteGovernanceScope(l.ctx, common.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, err
+	}
 	_, err = l.svcCtx.SubjectCategoryService.UpdateSubjectCategoryStatus(l.ctx, &cmsclient.UpdateSubjectCategoryStatusReq{
 		Ids:        req.Ids,        // 主键ID
 		ShowStatus: req.ShowStatus, // 显示状态：0->不显示；1->显示
 		UpdateBy:   l.ctx.Value("userName").(string),
+		Scope:      common.CMSGovernanceScope(writeScope),
 	})
 
 	if err != nil {

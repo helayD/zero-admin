@@ -13,10 +13,18 @@ type (
 		Icon       string `json:"icon"` //分类图标
 		ShowStatus int32  `json:"showStatus,default=2"` //显示状态：0->不显示；1->显示
 		Sort       int32  `json:"sort"` //排序
+		ScopeType  string `json:"scopeType,optional"` //治理范围(platform/tenant/merchant)
+		PlatformId int64  `json:"platformId,optional"` //平台ID
+		TenantId   int64  `json:"tenantId,optional"` //租户ID
+		MerchantId int64  `json:"merchantId,optional"` //商户ID
 	}
 	// 删除专题分类表请求参数
 	DeleteSubjectCategoryReq {
-		Ids []int64 `form:"ids"`
+		Ids        []int64 `form:"ids"`
+		ScopeType  string  `form:"scopeType,optional"` //治理范围(platform/tenant/merchant)
+		PlatformId int64   `form:"platformId,optional"` //平台ID
+		TenantId   int64   `form:"tenantId,optional"` //租户ID
+		MerchantId int64   `form:"merchantId,optional"` //商户ID
 	}
 	// 更新专题分类表请求参数
 	UpdateSubjectCategoryReq {
@@ -25,15 +33,27 @@ type (
 		Icon       string `json:"icon"` //分类图标
 		ShowStatus int32  `json:"showStatus,default=2"` //显示状态：0->不显示；1->显示
 		Sort       int32  `json:"sort"` //排序
+		ScopeType  string `json:"scopeType,optional"` //治理范围(platform/tenant/merchant)
+		PlatformId int64  `json:"platformId,optional"` //平台ID
+		TenantId   int64  `json:"tenantId,optional"` //租户ID
+		MerchantId int64  `json:"merchantId,optional"` //商户ID
 	}
 	// 更新专题分类表状态请求参数
 	UpdateSubjectCategoryStatusReq {
 		Ids        []int64 `json:"ids"` //主键ID
 		ShowStatus int32   `json:"showStatus,default=2"` //显示状态：0->不显示；1->显示
+		ScopeType  string  `json:"scopeType,optional"` //治理范围(platform/tenant/merchant)
+		PlatformId int64   `json:"platformId,optional"` //平台ID
+		TenantId   int64   `json:"tenantId,optional"` //租户ID
+		MerchantId int64   `json:"merchantId,optional"` //商户ID
 	}
 	// 查询专题分类表详情请求参数
 	QuerySubjectCategoryDetailReq {
-		Id int64 `form:"id"`
+		Id         int64  `form:"id"`
+		ScopeType  string `form:"scopeType,optional"` //治理范围(platform/tenant/merchant)
+		PlatformId int64  `form:"platformId,optional"` //平台ID
+		TenantId   int64  `form:"tenantId,optional"` //租户ID
+		MerchantId int64  `form:"merchantId,optional"` //商户ID
 	}
 	QuerySubjectCategoryDetailData {
 		Id           int64  `json:"id"` //主键ID
@@ -58,6 +78,10 @@ type (
 		PageSize   int32  `form:"pageSize,default=20"` //每页的数量
 		Name       string `json:"form,optional"` //专题分类名称
 		ShowStatus int32  `form:"showStatus,default=2"` //显示状态：0->不显示；1->显示
+		ScopeType  string `form:"scopeType,optional"` //治理范围(platform/tenant/merchant)
+		PlatformId int64  `form:"platformId,optional"` //平台ID
+		TenantId   int64  `form:"tenantId,optional"` //租户ID
+		MerchantId int64  `form:"merchantId,optional"` //商户ID
 	}
 	QuerySubjectCategoryListData {
 		Id           int64  `json:"id"` //主键ID

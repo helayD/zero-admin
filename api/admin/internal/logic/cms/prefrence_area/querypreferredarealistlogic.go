@@ -2,10 +2,12 @@ package prefrence_area
 
 import (
 	"context"
+	"strings"
+
+	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/rpc/cms/cmsclient"
 	"github.com/zeromicro/go-zero/core/logc"
-	"strings"
 
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
 	"github.com/feihua/zero-admin/api/admin/internal/types"
@@ -34,12 +36,23 @@ func NewQueryPreferredAreaListLogic(ctx context.Context, svcCtx *svc.ServiceCont
 
 // QueryPreferredAreaList 查询优选专区列表
 func (l *QueryPreferredAreaListLogic) QueryPreferredAreaList(req *types.QueryPreferredAreaListReq) (resp *types.QueryPreferredAreaListResp, err error) {
+	queryScope, err := admincommon.ResolveQueryGovernanceScope(l.ctx, admincommon.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
+
 	result, err := l.svcCtx.PreferredAreaService.QueryPreferredAreaList(l.ctx, &cmsclient.QueryPreferredAreaListReq{
 		PageNum:    req.Current,
 		PageSize:   req.PageSize,
 		Name:       strings.TrimSpace(req.Name),     // 专区名称
 		SubTitle:   strings.TrimSpace(req.SubTitle), // 子标题
 		ShowStatus: req.ShowStatus,                  // 显示状态：0->不显示；1->显示
+		Scope:      admincommon.CMSGovernanceScope(queryScope),
 	})
 
 	if err != nil {

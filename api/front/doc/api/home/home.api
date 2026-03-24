@@ -1,5 +1,6 @@
 import "./home_advertise.api"
 import "./home_recommend_subject.api"
+import "./home_preferred_area.api"
 
 info (
 	desc:        "首页数据"
@@ -14,7 +15,8 @@ type HomeReq {
 	HomeFlashNumber  int32  `form:"homeFlashNumber,default=4"` //
 	NewProductNumber int32  `form:"newProductNumber,default=4"` //
 	HotProductNumber int32  `form:"hotProductNumber,default=4"` //
-	SubjectNumber    int32  `form:"subjectNumber,default=4"` //
+	SubjectNumber         int32  `form:"subjectNumber,default=4"` //
+	PreferredAreaNumber   int32  `form:"preferredAreaNumber,default=4"` //
 }
 
 type HomeResp {
@@ -29,7 +31,8 @@ type Data {
 	HomeFlashPromotion HomeFlashPromotion `json:"homeFlashPromotion"` //获取秒杀信息
 	NewProductList     []IndexProductData `json:"newProductList"` //获取新品推荐
 	HotProductList     []IndexProductData `json:"hotProductList"` //获取人气推荐
-	SubjectList        []SubjectList      `json:"subjectList"` //获取推荐专题
+	SubjectList        []SubjectList             `json:"subjectList"` //获取推荐专题
+	PreferredAreaList  []PreferredAreaListData   `json:"preferredAreaList"` //获取优选专区
 }
 
 type HomeFlashPromotion {
