@@ -4,11 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/feihua/zero-admin/rpc/sys/client/operatelogservice"
-	"github.com/feihua/zero-admin/rpc/sys/sysclient"
-	"github.com/ua-parser/uap-go/uaparser"
-	"github.com/zeromicro/go-zero/core/logx"
-	"github.com/zeromicro/go-zero/rest/httpx"
 	"io/ioutil"
 	"net/http"
 	"path"
@@ -16,6 +11,12 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/feihua/zero-admin/rpc/sys/client/operatelogservice"
+	"github.com/feihua/zero-admin/rpc/sys/sysclient"
+	"github.com/ua-parser/uap-go/uaparser"
+	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/rest/httpx"
 
 	"github.com/feihua/zero-admin/pkg/audit"
 	"github.com/feihua/zero-admin/pkg/scope"
@@ -292,6 +293,16 @@ func deriveOperateActionAndResource(uri string) (string, string) {
 		resourceType = "coupon"
 	case strings.Contains(cleanURI, "/api/cms/subject"):
 		resourceType = "subject"
+	case strings.Contains(cleanURI, "/api/ums/level"):
+		resourceType = "member_level"
+	case strings.Contains(cleanURI, "/api/ums/tag"):
+		resourceType = "member_tag"
+	case strings.Contains(cleanURI, "/api/ums/task"):
+		resourceType = "member_task"
+	case strings.Contains(cleanURI, "/api/ums/ruleSetting"):
+		resourceType = "member_rule_setting"
+	case strings.Contains(cleanURI, "/api/ums/consumeSetting"):
+		resourceType = "member_consume_setting"
 	}
 
 	return action, resourceType
