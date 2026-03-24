@@ -76,9 +76,12 @@ class HttpUtil {
             print("\n");
           }
           if (e.response?.statusCode == 401) {
-            Navigator.of(NavKey.navKey.currentState!.context).push(
+            final navContext = NavKey.navKey.currentState!.context;
+            // 保存当前路由用于登录后恢复
+            final currentRoute = ModalRoute.of(navContext)?.settings.name;
+            Navigator.of(navContext).push(
               MaterialPageRoute(
-                builder: (context) => const Login(),
+                builder: (context) => Login(redirectRoute: currentRoute),
               ),
             );
             return;

@@ -21,11 +21,11 @@ class _WelcomeState extends State<Welcome> {
   @override
   void initState() {
     super.initState();
-    //延迟3秒执行
-    Future.delayed(const Duration(seconds: 3), () {
+    //延迟1秒执行
+    Future.delayed(const Duration(seconds: 1), () {
+      if (!mounted) return;
       //跳转至应用首页
-      Navigator.of(context).pop();
-      Navigator.of(context).push(
+      Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (context) => const MainTab(),
         ),

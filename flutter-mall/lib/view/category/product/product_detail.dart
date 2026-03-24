@@ -33,8 +33,13 @@ class _ProductDetailState extends State<ProductDetail> {
   List<ProductAttributeValueList> productAttributeValueList = [];
   List<SkuStockList> skuStockList = [];
   List<CouponList> couponList = [];
+  List<ProductLadderList> productLadderList = [];
+  List<ProductFullReductionList> productFullReductionList = [];
+  List<MemberPriceList> memberPriceList = [];
   ProductVisibility visibility = ProductVisibility.fromJson({});
   bool loading = true;
+  SkuStockList? selectedSku;
+  final Map<String, String> _specSelection = {};
 
   @override
   void initState() {
@@ -65,12 +70,18 @@ class _ProductDetailState extends State<ProductDetail> {
               productDetailData.productAttributeValueList;
           skuStockList = productDetailData.skuStockList;
           couponList = productDetailData.couponList;
+          productLadderList = productDetailData.productLadderList;
+          productFullReductionList = productDetailData.productFullReductionList;
+          memberPriceList = productDetailData.memberPriceList;
         } else {
           product = null;
           productAttributeList = [];
           productAttributeValueList = [];
           skuStockList = [];
           couponList = [];
+          productLadderList = [];
+          productFullReductionList = [];
+          memberPriceList = [];
         }
       });
     } catch (_) {
@@ -84,6 +95,9 @@ class _ProductDetailState extends State<ProductDetail> {
         productAttributeValueList = [];
         skuStockList = [];
         couponList = [];
+        productLadderList = [];
+        productFullReductionList = [];
+        memberPriceList = [];
         visibility = ProductVisibility(
           visible: false,
           purchasable: false,
@@ -223,12 +237,20 @@ class _ProductDetailState extends State<ProductDetail> {
                   ),
                 ),
                 Text(
-                  product!.price.toString(),
+                  selectedSku != null ? '${selectedSku!.price}' : product!.price.toString(),
                   style: TextStyle(
                     fontSize: 17,
                     color: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
                   ),
                 ),
+                if (selectedSku == null && product!.priceRange.contains('-'))
+                  Text(
+                    " (${product!.priceRange})",
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Color(int.parse('909399', radix: 16)).withAlpha(255),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -236,14 +258,14 @@ class _ProductDetailState extends State<ProductDetail> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                "销量: ${product!.sales}",
+                "销量: ${selectedSku != null ? selectedSku!.sales : product!.sales}",
                 style: TextStyle(
                   fontSize: 14,
                   color: Color(int.parse('909399', radix: 16)).withAlpha(255),
                 ),
               ),
               Text(
-                "库存: ${product!.stock}",
+                "库存: ${selectedSku != null ? selectedSku!.stock : product!.stock}",
                 style: TextStyle(
                   fontSize: 14,
                   color: Color(int.parse('909399', radix: 16)).withAlpha(255),
@@ -327,10 +349,10 @@ class _ProductDetailState extends State<ProductDetail> {
       color: Colors.white,
       child: Column(
         children: [
-          buildTxt("购买类型", "银色 64G", 1, context),
+          buildTxt("购买类型", _selectedSkuSummary(), 1, context),
           buildTxt("商品参数", "查看", 2, context),
-          buildTxt("优惠券   ", "领取优惠券", 3, context),
-          buildTxt("促销活动", "暂无优惠", 4, context),
+          buildTxt("优惠券   ", _couponSummary(), 3, context),
+          buildTxt("促销活动", _promotionSummary(), 4, context),
           buildTxt("商家服务", "无忧退货 · 快速退款 · 免费包邮 ·", 5, context),
         ],
       ),
@@ -519,11 +541,48 @@ class _ProductDetailState extends State<ProductDetail> {
 
   // 图文详情
   Column buildImageDetailInfo() {
-    List<String> imageUrls = [
-      'https://img12.360buyimg.com/cms/jfs/t1/75040/28/21026/295081/634ed154E981e4d10/2ceef91d6f2b2273.jpg!q70.dpg.webp',
-      'https://img13.360buyimg.com/cms/jfs/t1/191028/1/28802/401291/634ed15eEb234dc40/5ab89f83531e1023.jpg!q70.dpg.webp',
-      'https://img14.360buyimg.com/cms/jfs/t1/32758/24/18599/330590/634ed15eEc3db173c/c52953dc8008a576.jpg!q70.dpg.webp',
-    ];
+    List<String> imageUrls = [];
+    final detailContent = product?.detailMobileHtml ?? product?.detailHtml ?? '';
+    if (detailContent.isNotEmpty) {
+      final urlPattern = RegExp(r'(https?://[^\s"<>]+\.(?:jpg|jpeg|png|gif|webp)[^\s"<>]*)');
+      imageUrls = urlPattern.allMatches(detailContent).map((m) => m.group(0)!).toList();
+    }
+    if (imageUrls.isEmpty && product != null && product!.albumPics.isNotEmpty) {
+      imageUrls = product!.albumPics.split(",").where((s) => s.isNotEmpty).toList();
+    }
+
+    if (imageUrls.isEmpty) {
+      return Column(
+        children: [
+          Container(
+            width: MediaQuery.of(context).size.width,
+            alignment: Alignment.center,
+            height: 40,
+            color: Colors.white,
+            child: Text(
+              "图文详情",
+              style: TextStyle(
+                fontSize: 15,
+                color: Color(int.parse('303133', radix: 16)).withAlpha(255),
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(20),
+            color: Colors.white,
+            alignment: Alignment.center,
+            child: Text(
+              '暂无图文详情',
+              style: TextStyle(
+                fontSize: 14,
+                color: Color(int.parse('909399', radix: 16)).withAlpha(255),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
     return Column(
       children: [
         Container(
@@ -550,7 +609,27 @@ class _ProductDetailState extends State<ProductDetail> {
 
   // 底部悬浮
   Positioned buildFooter(BuildContext context) {
-    bool disabled = !visibility.purchasable;
+    final bool spuDisabled = !visibility.purchasable;
+    final bool skuDisabled = selectedSku != null && !selectedSku!.purchasable;
+    final bool disabled = spuDisabled || skuDisabled;
+
+    String buttonLabel;
+    if (spuDisabled) {
+      buttonLabel = visibility.reasonMessage.isNotEmpty
+          ? visibility.reasonMessage
+          : '暂不可购买';
+    } else if (skuDisabled) {
+      buttonLabel = selectedSku!.purchaseReasonLabel.isNotEmpty
+          ? selectedSku!.purchaseReasonLabel
+          : '暂不可购买';
+    } else if (selectedSku == null && skuStockList.length > 1) {
+      buttonLabel = '请先选规格';
+    } else {
+      buttonLabel = '加入购物车';
+    }
+
+    final bool needSelectSku = !spuDisabled && selectedSku == null && skuStockList.length > 1;
+
     return Positioned(
       bottom: 0,
       width: MediaQuery.of(context).size.width,
@@ -591,7 +670,7 @@ class _ProductDetailState extends State<ProductDetail> {
               height: 40,
               width: 100,
               decoration: BoxDecoration(
-                color: disabled
+                color: (disabled || needSelectSku)
                     ? Color(int.parse('c0c4cc', radix: 16)).withAlpha(255)
                     : Color(int.parse('fa436a', radix: 16)).withAlpha(255),
                 borderRadius: const BorderRadius.all(Radius.circular(50)),
@@ -606,15 +685,15 @@ class _ProductDetailState extends State<ProductDetail> {
               child: TextButton(
                 onPressed: disabled
                     ? null
-                    : () {
-                        _addCart(product!);
-                      },
+                    : needSelectSku
+                        ? () {
+                            _openBottomSheetWithInfo(context, "购买类型");
+                          }
+                        : () {
+                            _addCart(product!);
+                          },
                 child: Text(
-                  disabled
-                      ? (visibility.reasonMessage.isNotEmpty
-                          ? visibility.reasonMessage
-                          : '暂不可购买')
-                      : '加入购物车',
+                  buttonLabel,
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 12,
@@ -798,203 +877,395 @@ class _ProductDetailState extends State<ProductDetail> {
     );
   }
 
-  // 购买类型
-  ListView buildBuyType(
+  String _promotionSummary() {
+    final parts = <String>[];
+    if (productFullReductionList.isNotEmpty) {
+      final fr = productFullReductionList.first;
+      parts.add('满${fr.fullPrice}减${fr.reducePrice}');
+    }
+    if (productLadderList.isNotEmpty) {
+      final ld = productLadderList.first;
+      parts.add('满${ld.count}件打折');
+    }
+    if (memberPriceList.isNotEmpty) {
+      parts.add('会员价');
+    }
+    if (parts.isEmpty) return '暂无优惠';
+    return parts.join(' · ');
+  }
+
+  String _couponSummary() {
+    if (couponList.isEmpty) return '暂无优惠券';
+    final first = couponList.first;
+    final prefix = first.amount > 0 ? '满${first.minAmount}减${first.amount}' : first.name;
+    if (couponList.length > 1) {
+      return '$prefix 等${couponList.length}张券';
+    }
+    return prefix;
+  }
+
+  String _selectedSkuSummary() {
+    if (selectedSku != null) {
+      final specs = selectedSku!.parsedSpecData;
+      if (specs.isNotEmpty) {
+        return specs.values.join(' ');
+      }
+      return selectedSku!.name.isNotEmpty ? selectedSku!.name : '已选规格';
+    }
+    if (skuStockList.length == 1) {
+      return '默认规格';
+    }
+    return '请选择规格';
+  }
+
+  Map<String, List<String>> _buildSpecOptions() {
+    final map = <String, List<String>>{};
+    for (final sku in skuStockList) {
+      final specs = sku.parsedSpecData;
+      for (final entry in specs.entries) {
+        map.putIfAbsent(entry.key, () => []);
+        if (!map[entry.key]!.contains(entry.value)) {
+          map[entry.key]!.add(entry.value);
+        }
+      }
+    }
+    return map;
+  }
+
+  SkuStockList? _findExactMatchingSku(Map<String, String> selection) {
+    for (final sku in skuStockList) {
+      final specs = sku.parsedSpecData;
+      if (specs.length != selection.length) continue;
+      bool match = true;
+      for (final entry in selection.entries) {
+        if (specs[entry.key] != entry.value) {
+          match = false;
+          break;
+        }
+      }
+      if (match) return sku;
+    }
+    return null;
+  }
+
+  bool _isOptionAvailable(Map<String, String> testSelection) {
+    for (final sku in skuStockList) {
+      final specs = sku.parsedSpecData;
+      bool match = true;
+      for (final entry in testSelection.entries) {
+        if (specs[entry.key] != entry.value) {
+          match = false;
+          break;
+        }
+      }
+      if (match && sku.purchasable) return true;
+    }
+    return false;
+  }
+
+  // 购买类型（规格选择器）
+  Widget buildBuyType(
     String title,
     String value,
     ScrollController controller,
   ) {
-    return ListView.builder(
-      controller: controller,
-      shrinkWrap: true,
-      itemCount: 5,
-      itemBuilder: (context, index) {
-        return Container(
-          padding: const EdgeInsets.all(15),
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(
-                width: 5,
-                color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
-              ),
+    final specOptions = _buildSpecOptions();
+
+    if (specOptions.isEmpty) {
+      return ListView(
+        controller: controller,
+        shrinkWrap: true,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                if (product != null) _buildSkuPriceHeader(selectedSku),
+                const SizedBox(height: 16),
+                Text(
+                  '该商品无可选规格',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color(int.parse('909399', radix: 16)).withAlpha(255),
+                  ),
+                ),
+              ],
             ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+        ],
+      );
+    }
+
+    return StatefulBuilder(
+      builder: (context, setSheetState) {
+        return ListView(
+          controller: controller,
+          shrinkWrap: true,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(15),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
+                  _buildSkuPriceHeader(selectedSku),
+                  const SizedBox(height: 16),
+                  ...specOptions.entries.map((entry) {
+                    return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          "全品类通用券",
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Color(
-                              int.parse('303133', radix: 16),
-                            ).withAlpha(255),
-                          ),
-                        ),
-                        Text(
-                          "有效期至2023-11-30 00:00:00",
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Color(
-                              int.parse('909399', radix: 16),
-                            ).withAlpha(255),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Column(
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            "￥",
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8, top: 12),
+                          child: Text(
+                            entry.key,
                             style: TextStyle(
-                              fontSize: 17,
-                              color: Color(
-                                int.parse('fa436a', radix: 16),
-                              ).withAlpha(255),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Color(int.parse('303133', radix: 16))
+                                  .withAlpha(255),
                             ),
                           ),
+                        ),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: entry.value.map((val) {
+                            final isSelected =
+                                _specSelection[entry.key] == val;
+
+                            final testSelection =
+                                Map<String, String>.from(_specSelection);
+                            testSelection[entry.key] = val;
+                            final isAvailable =
+                                _isOptionAvailable(testSelection);
+
+                            return ChoiceChip(
+                              label: Text(val),
+                              selected: isSelected,
+                              selectedColor:
+                                  Color(int.parse('fa436a', radix: 16))
+                                      .withAlpha(40),
+                              backgroundColor: !isAvailable
+                                  ? Color(int.parse('f5f5f5', radix: 16))
+                                      .withAlpha(255)
+                                  : null,
+                              labelStyle: TextStyle(
+                                color: isSelected
+                                    ? Color(int.parse('fa436a', radix: 16))
+                                        .withAlpha(255)
+                                    : !isAvailable
+                                        ? Color(
+                                                int.parse('c0c4cc', radix: 16))
+                                            .withAlpha(255)
+                                        : Color(
+                                                int.parse('303133', radix: 16))
+                                            .withAlpha(255),
+                                fontSize: 13,
+                              ),
+                              side: isSelected
+                                  ? BorderSide(
+                                      color:
+                                          Color(int.parse('fa436a', radix: 16))
+                                              .withAlpha(255))
+                                  : null,
+                              onSelected: (selected) {
+                                setSheetState(() {
+                                  if (selected) {
+                                    _specSelection[entry.key] = val;
+                                  } else {
+                                    _specSelection.remove(entry.key);
+                                  }
+                                });
+                                final matched =
+                                    _findExactMatchingSku(_specSelection);
+                                if (_specSelection.length ==
+                                    specOptions.length) {
+                                  setState(() {
+                                    selectedSku = matched;
+                                  });
+                                }
+                              },
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    );
+                  }),
+                  if (selectedSku != null && !selectedSku!.purchasable)
+                    Container(
+                      margin: const EdgeInsets.only(top: 16),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Color(int.parse('fff5f5', radix: 16))
+                            .withAlpha(255),
+                        borderRadius:
+                            const BorderRadius.all(Radius.circular(8)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline,
+                              size: 16,
+                              color: Color(int.parse('fa436a', radix: 16))
+                                  .withAlpha(255)),
+                          const SizedBox(width: 6),
                           Text(
-                            "10",
+                            selectedSku!.purchaseReasonLabel,
                             style: TextStyle(
-                              fontSize: 22,
-                              color: Color(
-                                int.parse('fa436a', radix: 16),
-                              ).withAlpha(255),
+                              fontSize: 13,
+                              color: Color(int.parse('fa436a', radix: 16))
+                                  .withAlpha(255),
                             ),
                           ),
                         ],
                       ),
-                      Text(
-                        "满100可用",
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Color(
-                            int.parse('707070', radix: 16),
-                          ).withAlpha(255),
+                    ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: (selectedSku != null && selectedSku!.purchasable)
+                          ? () {
+                              Navigator.of(context).pop();
+                            }
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            Color(int.parse('fa436a', radix: 16)).withAlpha(255),
+                        disabledBackgroundColor:
+                            Color(int.parse('c0c4cc', radix: 16)).withAlpha(255),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(25),
                         ),
                       ),
-                    ],
+                      child: Text(
+                        selectedSku == null
+                            ? '请选择完整规格'
+                            : selectedSku!.purchasable
+                                ? '确定'
+                                : selectedSku!.purchaseReasonLabel,
+                        style: const TextStyle(
+                            fontSize: 15, fontWeight: FontWeight.bold),
+                      ),
+                    ),
                   ),
                 ],
               ),
-              Container(height: 5),
-              Text(
-                "全场通用",
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Color(int.parse('909399', radix: 16)).withAlpha(255),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         );
       },
     );
   }
 
+  Widget _buildSkuPriceHeader(SkuStockList? sku) {
+    final displayPrice = sku != null ? '${sku.price}' : (product?.price ?? '');
+    final displayStock = sku != null ? sku.stock : (product?.stock ?? 0);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          '¥',
+          style: TextStyle(
+            fontSize: 16,
+            color: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          displayPrice,
+          style: TextStyle(
+            fontSize: 24,
+            color: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          '库存: $displayStock',
+          style: TextStyle(
+            fontSize: 13,
+            color: Color(int.parse('909399', radix: 16)).withAlpha(255),
+          ),
+        ),
+      ],
+    );
+  }
+
   // 商品参数
-  ListView buildProductParams(
+  Widget buildProductParams(
     String title,
     String value,
     ScrollController controller,
   ) {
+    final attrMap = <int, String>{};
+    for (final attr in productAttributeList) {
+      attrMap[attr.id] = attr.name;
+    }
+
+    final paramRows = <MapEntry<String, String>>[];
+    for (final av in productAttributeValueList) {
+      final attrName = attrMap[av.attributeId] ?? '属性${av.attributeId}';
+      paramRows.add(MapEntry(attrName, av.value));
+    }
+
+    if (paramRows.isEmpty) {
+      return ListView(
+        controller: controller,
+        shrinkWrap: true,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            alignment: Alignment.center,
+            child: Text(
+              '暂无商品参数',
+              style: TextStyle(
+                fontSize: 14,
+                color: Color(int.parse('909399', radix: 16)).withAlpha(255),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
     return ListView.builder(
       controller: controller,
       shrinkWrap: true,
-      itemCount: 10,
+      itemCount: paramRows.length,
       itemBuilder: (context, index) {
+        final entry = paramRows[index];
         return Container(
-          padding: const EdgeInsets.all(15),
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
-                width: 5,
+                width: 1,
                 color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
               ),
             ),
           ),
-          child: Column(
+          child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "全品类通用券",
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Color(
-                              int.parse('303133', radix: 16),
-                            ).withAlpha(255),
-                          ),
-                        ),
-                        Text(
-                          "有效期至2023-11-30 00:00:00",
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Color(
-                              int.parse('909399', radix: 16),
-                            ).withAlpha(255),
-                          ),
-                        ),
-                      ],
-                    ),
+              SizedBox(
+                width: 100,
+                child: Text(
+                  entry.key,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color(int.parse('909399', radix: 16)).withAlpha(255),
                   ),
-                  Column(
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            "￥",
-                            style: TextStyle(
-                              fontSize: 17,
-                              color: Color(
-                                int.parse('fa436a', radix: 16),
-                              ).withAlpha(255),
-                            ),
-                          ),
-                          Text(
-                            "10",
-                            style: TextStyle(
-                              fontSize: 22,
-                              color: Color(
-                                int.parse('fa436a', radix: 16),
-                              ).withAlpha(255),
-                            ),
-                          ),
-                        ],
-                      ),
-                      Text(
-                        "满100可用",
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Color(
-                            int.parse('707070', radix: 16),
-                          ).withAlpha(255),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                ),
               ),
-              Container(height: 5),
-              Text(
-                "全场通用",
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Color(int.parse('909399', radix: 16)).withAlpha(255),
+              Expanded(
+                child: Text(
+                  entry.value,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color(int.parse('303133', radix: 16)).withAlpha(255),
+                  ),
                 ),
               ),
             ],
@@ -1005,18 +1276,40 @@ class _ProductDetailState extends State<ProductDetail> {
   }
 
   // 优惠券列表
-  ListView buildCouponList(ScrollController controller) {
+  Widget buildCouponList(ScrollController controller) {
+    if (couponList.isEmpty) {
+      return ListView(
+        controller: controller,
+        shrinkWrap: true,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            alignment: Alignment.center,
+            child: Text(
+              '暂无可用优惠券',
+              style: TextStyle(
+                fontSize: 14,
+                color: Color(int.parse('909399', radix: 16)).withAlpha(255),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
     return ListView.builder(
       controller: controller,
       shrinkWrap: true,
-      itemCount: 10,
+      itemCount: couponList.length,
       itemBuilder: (context, index) {
+        final coupon = couponList[index];
+        final endStr = '${coupon.endTime.year}-${coupon.endTime.month.toString().padLeft(2, '0')}-${coupon.endTime.day.toString().padLeft(2, '0')}';
         return Container(
           padding: const EdgeInsets.all(15),
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
-                width: 5,
+                width: 1,
                 color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
               ),
             ),
@@ -1031,21 +1324,17 @@ class _ProductDetailState extends State<ProductDetail> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "全品类通用券",
+                          coupon.name,
                           style: TextStyle(
                             fontSize: 16,
-                            color: Color(
-                              int.parse('303133', radix: 16),
-                            ).withAlpha(255),
+                            color: Color(int.parse('303133', radix: 16)).withAlpha(255),
                           ),
                         ),
                         Text(
-                          "有效期至2023-11-30 00:00:00",
+                          '有效期至$endStr',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Color(
-                              int.parse('909399', radix: 16),
-                            ).withAlpha(255),
+                            color: Color(int.parse('909399', radix: 16)).withAlpha(255),
                           ),
                         ),
                       ],
@@ -1059,43 +1348,39 @@ class _ProductDetailState extends State<ProductDetail> {
                             "￥",
                             style: TextStyle(
                               fontSize: 17,
-                              color: Color(
-                                int.parse('fa436a', radix: 16),
-                              ).withAlpha(255),
+                              color: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
                             ),
                           ),
                           Text(
-                            "10",
+                            '${coupon.amount}',
                             style: TextStyle(
                               fontSize: 22,
-                              color: Color(
-                                int.parse('fa436a', radix: 16),
-                              ).withAlpha(255),
+                              color: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
                             ),
                           ),
                         ],
                       ),
                       Text(
-                        "满100可用",
+                        coupon.minAmount > 0 ? '满${coupon.minAmount}可用' : '无门槛',
                         style: TextStyle(
                           fontSize: 13,
-                          color: Color(
-                            int.parse('707070', radix: 16),
-                          ).withAlpha(255),
+                          color: Color(int.parse('707070', radix: 16)).withAlpha(255),
                         ),
                       ),
                     ],
                   ),
                 ],
               ),
-              Container(height: 5),
-              Text(
-                "全场通用",
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Color(int.parse('909399', radix: 16)).withAlpha(255),
+              if (coupon.description.isNotEmpty) ...[
+                Container(height: 5),
+                Text(
+                  coupon.description,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Color(int.parse('909399', radix: 16)).withAlpha(255),
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         );
@@ -1104,105 +1389,100 @@ class _ProductDetailState extends State<ProductDetail> {
   }
 
   // 促销活动
-  ListView buildPromotion(
+  Widget buildPromotion(
     String title,
     String value,
     ScrollController controller,
   ) {
-    return ListView.builder(
-      controller: controller,
-      shrinkWrap: true,
-      itemCount: 10,
-      itemBuilder: (context, index) {
-        return Container(
-          padding: const EdgeInsets.all(15),
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(
-                width: 5,
-                color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
+    final items = <Widget>[];
+
+    if (productFullReductionList.isNotEmpty) {
+      items.add(_buildPromotionSection('满减优惠', productFullReductionList.map((fr) {
+        return '满${fr.fullPrice}元减${fr.reducePrice}元';
+      }).toList()));
+    }
+
+    if (productLadderList.isNotEmpty) {
+      items.add(_buildPromotionSection('阶梯价格', productLadderList.map((ld) {
+        return '满${ld.count}件，折后¥${ld.price}';
+      }).toList()));
+    }
+
+    if (memberPriceList.isNotEmpty) {
+      items.add(_buildPromotionSection('会员专享', memberPriceList.map((mp) {
+        return '${mp.memberLevelName}：¥${mp.memberPrice}';
+      }).toList()));
+    }
+
+    if (items.isEmpty) {
+      return ListView(
+        controller: controller,
+        shrinkWrap: true,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            alignment: Alignment.center,
+            child: Text(
+              '暂无促销活动',
+              style: TextStyle(
+                fontSize: 14,
+                color: Color(int.parse('909399', radix: 16)).withAlpha(255),
               ),
             ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "全品类通用券",
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Color(
-                              int.parse('303133', radix: 16),
-                            ).withAlpha(255),
-                          ),
-                        ),
-                        Text(
-                          "有效期至2023-11-30 00:00:00",
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Color(
-                              int.parse('909399', radix: 16),
-                            ).withAlpha(255),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Column(
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            "￥",
-                            style: TextStyle(
-                              fontSize: 17,
-                              color: Color(
-                                int.parse('fa436a', radix: 16),
-                              ).withAlpha(255),
-                            ),
-                          ),
-                          Text(
-                            "10",
-                            style: TextStyle(
-                              fontSize: 22,
-                              color: Color(
-                                int.parse('fa436a', radix: 16),
-                              ).withAlpha(255),
-                            ),
-                          ),
-                        ],
-                      ),
-                      Text(
-                        "满100可用",
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Color(
-                            int.parse('707070', radix: 16),
-                          ).withAlpha(255),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              Container(height: 5),
-              Text(
-                "全场通用",
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Color(int.parse('909399', radix: 16)).withAlpha(255),
-                ),
-              ),
-            ],
+        ],
+      );
+    }
+
+    return ListView(
+      controller: controller,
+      shrinkWrap: true,
+      children: items,
+    );
+  }
+
+  Widget _buildPromotionSection(String title, List<String> details) {
+    return Container(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            width: 1,
+            color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
           ),
-        );
-      },
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: Color(int.parse('fa436a', radix: 16)).withAlpha(25),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          ...details.map((d) => Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Text(
+              d,
+              style: TextStyle(
+                fontSize: 14,
+                color: Color(int.parse('303133', radix: 16)).withAlpha(255),
+              ),
+            ),
+          )),
+        ],
+      ),
     );
   }
 
@@ -1234,26 +1514,43 @@ class _ProductDetailState extends State<ProductDetail> {
 
   //添加商品到购物车
   void _addCart(Product product) async {
-    Map<String, dynamic> addCartParams = <String, dynamic>{};
-    addCartParams["productId"] = product.id;
-    addCartParams["productSkuId"] = 221;
-    addCartParams["quantity"] = 1;
-    addCartParams["price"] = double.parse(product.price);
-    addCartParams["productPic"] = product.mainPic;
-    addCartParams["productName"] = product.name;
-    addCartParams["productSubTitle"] = product.subTitle;
-    addCartParams["productSkuCode"] = "202211040040001";
-    addCartParams["productCategoryId"] = product.categoryId;
-    addCartParams["productBrand"] = product.brandName;
-    addCartParams["productSn"] = product.productSn;
-    addCartParams["memberNickname"] = "test";
-    addCartParams["productAttr"] =
-        "[{\"key\":\"颜色\",\"value\":\"黑色\"},{\"key\":\"容量\",\"value\":\"128G\"}]";
-    await HttpUtil.post(cartAddUrl, data: addCartParams);
+    final sku = selectedSku ?? (skuStockList.isNotEmpty ? skuStockList.first : null);
 
-    // LoginModel loginModel = LoginModel.fromJson(result.data);
-    //
-    // //保存登录凭证token
-    // SharedPreferencesUtil.saveString(token, "${loginModel.data.tokenHead} ${loginModel.data.token}");
+    if (sku != null && !sku.purchasable) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(sku.purchaseReasonLabel.isNotEmpty ? sku.purchaseReasonLabel : '该规格暂不可购买')),
+      );
+      return;
+    }
+
+    try {
+      Map<String, dynamic> addCartParams = <String, dynamic>{};
+      addCartParams["productId"] = product.id;
+      addCartParams["productSkuId"] = sku?.id ?? 0;
+      addCartParams["quantity"] = 1;
+      addCartParams["price"] = sku != null ? sku.price.toDouble() : double.parse(product.price);
+      addCartParams["productPic"] = sku?.mainPic.isNotEmpty == true ? sku!.mainPic : product.mainPic;
+      addCartParams["productName"] = product.name;
+      addCartParams["productSubTitle"] = product.subTitle;
+      addCartParams["productSkuCode"] = sku?.skuCode ?? "";
+      addCartParams["productCategoryId"] = product.categoryId;
+      addCartParams["productBrand"] = product.brandName;
+      addCartParams["productSn"] = product.productSn;
+      addCartParams["memberNickname"] = "test";
+      addCartParams["productAttr"] = sku?.specData ?? "[]";
+      await HttpUtil.post(cartAddUrl, data: addCartParams);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('已加入购物车'), duration: Duration(seconds: 1)),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('加入购物车失败: $e'), duration: const Duration(seconds: 2)),
+        );
+      }
+    }
   }
 }

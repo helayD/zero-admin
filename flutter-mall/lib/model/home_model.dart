@@ -41,6 +41,7 @@ class Data {
   List<ProductList> newProductList;
   List<ProductList> hotProductList;
   List<SubjectList> subjectList;
+  List<PreferredAreaListData> preferredAreaList;
 
   Data({
     required this.advertiseList,
@@ -49,6 +50,7 @@ class Data {
     required this.newProductList,
     required this.hotProductList,
     required this.subjectList,
+    required this.preferredAreaList,
   });
 
   factory Data.fromJson(Map<String, dynamic> json) => Data(
@@ -58,6 +60,9 @@ class Data {
     newProductList: List<ProductList>.from(json["newProductList"].map((x) => ProductList.fromJson(x))),
     hotProductList: List<ProductList>.from(json["hotProductList"].map((x) => ProductList.fromJson(x))),
     subjectList: List<SubjectList>.from(json["subjectList"].map((x) => SubjectList.fromJson(x))),
+    preferredAreaList: json["preferredAreaList"] != null
+        ? List<PreferredAreaListData>.from(json["preferredAreaList"].map((x) => PreferredAreaListData.fromJson(x)))
+        : [],
   );
 
   Map<String, dynamic> toJson() => {
@@ -67,6 +72,7 @@ class Data {
     "newProductList": List<dynamic>.from(newProductList.map((x) => x.toJson())),
     "hotProductList": List<dynamic>.from(hotProductList.map((x) => x.toJson())),
     "subjectList": List<dynamic>.from(subjectList.map((x) => x.toJson())),
+    "preferredAreaList": List<dynamic>.from(preferredAreaList.map((x) => x.toJson())),
   };
 }
 
@@ -367,5 +373,41 @@ class SubjectList {
     "forwardCount": forwardCount,
     "categoryName": categoryName,
     "sort": sort,
+  };
+}
+
+class PreferredAreaListData {
+  int id;
+  String name;
+  String subTitle;
+  String pic;
+  int sort;
+  int showStatus;
+
+  PreferredAreaListData({
+    required this.id,
+    required this.name,
+    required this.subTitle,
+    required this.pic,
+    required this.sort,
+    required this.showStatus,
+  });
+
+  factory PreferredAreaListData.fromJson(Map<String, dynamic> json) => PreferredAreaListData(
+    id: json["id"] ?? 0,
+    name: json["name"] ?? "",
+    subTitle: json["subTitle"] ?? "",
+    pic: json["pic"] ?? "",
+    sort: json["sort"] ?? 0,
+    showStatus: json["showStatus"] ?? 0,
+  );
+
+  Map<String, dynamic> toJson() => {
+    "id": id,
+    "name": name,
+    "subTitle": subTitle,
+    "pic": pic,
+    "sort": sort,
+    "showStatus": showStatus,
   };
 }

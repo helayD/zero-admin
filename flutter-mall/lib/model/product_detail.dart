@@ -597,6 +597,8 @@ class SkuStockList {
   int verifyStatus;
   int sort;
   int sales;
+  bool purchasable;
+  String purchaseReasonCode;
 
   SkuStockList({
     required this.id,
@@ -617,6 +619,8 @@ class SkuStockList {
     required this.verifyStatus,
     required this.sort,
     required this.sales,
+    required this.purchasable,
+    required this.purchaseReasonCode,
   });
 
   factory SkuStockList.fromJson(Map<String, dynamic> json) => SkuStockList(
@@ -638,6 +642,8 @@ class SkuStockList {
         verifyStatus: json["verifyStatus"],
         sort: json["sort"],
         sales: json["sales"],
+        purchasable: json["purchasable"] ?? true,
+        purchaseReasonCode: json["purchaseReasonCode"] ?? "",
       );
 
   Map<String, dynamic> toJson() => {
@@ -659,5 +665,39 @@ class SkuStockList {
         "verifyStatus": verifyStatus,
         "sort": sort,
         "sales": sales,
+        "purchasable": purchasable,
+        "purchaseReasonCode": purchaseReasonCode,
       };
+
+  Map<String, String> get parsedSpecData {
+    if (specData.isEmpty) return {};
+    try {
+      final decoded = json.decode(specData);
+      if (decoded is List) {
+        final map = <String, String>{};
+        for (final item in decoded) {
+          if (item is Map<String, dynamic>) {
+            map[item["key"] ?? ""] = item["value"] ?? "";
+          }
+        }
+        return map;
+      }
+      return {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  String get purchaseReasonLabel {
+    switch (purchaseReasonCode) {
+      case 'sold_out':
+        return '该规格已售罄';
+      case 'sku_off_shelf':
+        return '该规格已下架';
+      case 'sku_not_approved':
+        return '该规格暂不可售';
+      default:
+        return '';
+    }
+  }
 }

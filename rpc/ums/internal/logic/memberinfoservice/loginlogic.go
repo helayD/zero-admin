@@ -2,13 +2,16 @@ package memberinfoservicelogic
 
 import (
 	"context"
+	"strings"
+	"time"
+
 	"github.com/bytedance/sonic"
 	"github.com/feihua/zero-admin/rpc/ums/gen/model"
 	"github.com/feihua/zero-admin/rpc/ums/gen/query"
 	"github.com/pkg/errors"
 	"github.com/zeromicro/go-zero/core/logc"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
-	"time"
 
 	"github.com/feihua/zero-admin/rpc/ums/internal/svc"
 	"github.com/feihua/zero-admin/rpc/ums/umsclient"
@@ -43,22 +46,41 @@ func (l *LoginLogic) Login(in *umsclient.LoginReq) (*umsclient.LoginResp, error)
 
 	switch {
 	case errors.Is(err, gorm.ErrRecordNotFound):
-		logc.Errorf(l.ctx, "账号不存在, 请求参数：%+v, 异常信息: %s", in, err.Error())
+		logc.Errorf(l.ctx, "账号不存在, 手机号: %s, 异常信息: %s", in.Mobile, err.Error())
 		return nil, errors.New("账号不存在")
 	case err != nil:
-		logc.Errorf(l.ctx, "查询会员异常, 请求参数：%+v, 异常信息: %s", in, err.Error())
+		logc.Errorf(l.ctx, "查询会员异常, 手机号: %s, 异常信息: %s", in.Mobile, err.Error())
 		return nil, errors.New("查询会员异常")
 	}
 
-	// 判断密码
-	if member.Password != in.Password {
-		logc.Errorf(l.ctx, "账号密码不对,请求参数：%+v", in)
-		return nil, errors.New("账号密码不对")
+	// 校验账号状态
+	if member.IsEnabled == 0 {
+		logc.Errorf(l.ctx, "账号已被禁用,手机号: %s", in.Mobile)
+		return nil, errors.New("账号已被禁用，请联系客服")
+	}
+
+	// 判断密码（兼容明文密码：如果密码非 bcrypt 哈希格式，则明文比较后自动升级）
+	if strings.HasPrefix(member.Password, "$2a$") || strings.HasPrefix(member.Password, "$2b$") {
+		// bcrypt 哈希比较
+		if err := bcrypt.CompareHashAndPassword([]byte(member.Password), []byte(in.Password)); err != nil {
+			logc.Errorf(l.ctx, "账号密码不对,手机号: %s", in.Mobile)
+			return nil, errors.New("账号密码不对")
+		}
+	} else {
+		// 明文密码比较
+		if member.Password != in.Password {
+			logc.Errorf(l.ctx, "账号密码不对,手机号: %s", in.Mobile)
+			return nil, errors.New("账号密码不对")
+		}
+		// 登录成功后自动升级为 bcrypt 哈希
+		if hashed, hashErr := bcrypt.GenerateFromPassword([]byte(in.Password), bcrypt.DefaultCost); hashErr == nil {
+			_, _ = query.UmsMemberInfo.WithContext(l.ctx).Where(query.UmsMemberInfo.ID.Eq(member.ID)).Update(query.UmsMemberInfo.Password, string(hashed))
+		}
 	}
 
 	// 2.添加登录日志
 	log := &model.UmsMemberLoginLog{
-		MemberID:   member.ID,
+		MemberID:   member.MemberID,
 		CreateTime: time.Now(),
 		MemberIP:   in.Ip,
 		City:       "todo",

@@ -2,6 +2,7 @@ package member
 
 import (
 	"context"
+
 	"github.com/feihua/zero-admin/pkg/errorx"
 	"github.com/feihua/zero-admin/rpc/ums/umsclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -34,6 +35,14 @@ func NewLoginLogic(ctx context.Context, svcCtx *svc.ServiceContext) *LoginLogic 
 
 // Login 会员登录
 func (l *LoginLogic) Login(req *types.LoginReq, ip string) (resp *types.LoginResp, err error) {
+	// 手机号格式校验
+	if !mobileRegexp.MatchString(req.Mobile) {
+		return nil, errorx.NewDefaultError("手机号格式不正确")
+	}
+	// 密码长度校验
+	if len(req.Password) < 6 {
+		return nil, errorx.NewDefaultError("密码长度不能少于6位")
+	}
 	// 根据用户名,密码和手机号调用rpc会员登录方法
 	result, err := l.svcCtx.MemberService.Login(l.ctx, &umsclient.LoginReq{
 		Mobile:   req.Mobile,
@@ -43,7 +52,7 @@ func (l *LoginLogic) Login(req *types.LoginReq, ip string) (resp *types.LoginRes
 	})
 
 	if err != nil {
-		logc.Errorf(l.ctx, "会员登录失败,参数: %+v,异常：%s", req, err.Error())
+		logc.Errorf(l.ctx, "会员登录失败,手机号: %s,异常：%s", req.Mobile, err.Error())
 		s, _ := status.FromError(err)
 		return nil, errorx.NewDefaultError(s.Message())
 	}

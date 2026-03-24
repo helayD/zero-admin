@@ -42,6 +42,9 @@ class _HomePageState extends State<HomePage> {
   // 人气推荐商品
   List<ProductList> hotProductList = [];
 
+  // 优选专区
+  List<PreferredAreaListData> preferredAreaList = [];
+
   int _count = 4;
   late EasyRefreshController _controller;
 
@@ -67,6 +70,7 @@ class _HomePageState extends State<HomePage> {
         flashProductList = homeModel.data.homeFlashPromotion.productList;
         newProductList = homeModel.data.newProductList;
         hotProductList = homeModel.data.hotProductList;
+        preferredAreaList = homeModel.data.preferredAreaList;
       });
     } catch (e) {
       // 首页数据加载失败时保持现有数据，不清空
@@ -109,6 +113,8 @@ class _HomePageState extends State<HomePage> {
               buildHeader(),
               if (advertiseList.isNotEmpty) buildBanner(),
               buildSubject(),
+              if (preferredAreaList.isNotEmpty) buildPreferredAreaTitle(),
+              if (preferredAreaList.isNotEmpty) buildPreferredAreaContent(),
               if (brandList.isNotEmpty) buildBrandTitle(),
               if (brandList.isNotEmpty) buildBrandContent(),
               if (flashProductList.isNotEmpty) buildFlashSaleTitle(),
@@ -257,6 +263,94 @@ class _HomePageState extends State<HomePage> {
           ),
         ]),
       ),
+    );
+  }
+
+  SliverPadding buildPreferredAreaTitle() {
+    return SliverPadding(
+      padding: const EdgeInsets.all(0.0),
+      sliver: SliverList(
+        delegate: SliverChildListDelegate(<Widget>[
+          Container(
+            color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
+            height: 8,
+          ),
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: SizedBox(
+              height: 50,
+              child: Row(
+                children: [
+                  Image.asset("images/c6.png", height: 30, width: 30),
+                  const SizedBox(width: 10),
+                  Text(
+                    "优选专区",
+                    style: TextStyle(
+                      fontSize: 17,
+                      color: Color(int.parse('303133', radix: 16)).withAlpha(255),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  SliverGrid buildPreferredAreaContent() {
+    return SliverGrid.builder(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 1.2,
+      ),
+      itemCount: preferredAreaList.length,
+      itemBuilder: (BuildContext context, int index) {
+        final item = preferredAreaList[index];
+        return Container(
+          color: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: CachedImageWidget(
+                    double.infinity,
+                    double.infinity,
+                    item.pic,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                item.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Color(int.parse('303133', radix: 16)).withAlpha(255),
+                ),
+              ),
+              if (item.subTitle.isNotEmpty)
+                Text(
+                  item.subTitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Color(int.parse('909399', radix: 16)).withAlpha(255),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 

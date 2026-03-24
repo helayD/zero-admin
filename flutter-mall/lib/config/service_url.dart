@@ -56,5 +56,7 @@ const collectionListDataUrl = "$baseUrl/api/member/queryCollectionList";
 const focusOnListDataUrl = "$baseUrl/api/member/queryAttentionList";
 // 登录
 const loginDataUrl = "$baseUrl/api/member/login";
+// 注册
+const registerDataUrl = "$baseUrl/api/member/register";
 // 获取用户信息
 const memberInfoDataUrl = "$baseUrl/api/member/info";

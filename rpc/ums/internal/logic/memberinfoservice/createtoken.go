@@ -1,20 +1,21 @@
 package memberinfoservicelogic
 
 import (
-	"github.com/dgrijalva/jwt-go"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 // 创建token
 func createJwtToken(secretKey, name, mobile string, seconds, memberId int64) (string, error) {
 	iat := time.Now().Unix()
-	claims := make(jwt.MapClaims)
-	claims["exp"] = iat + seconds
-	claims["iat"] = iat
-	claims["memberId"] = memberId
-	claims["memberName"] = name
-	claims["mobile"] = mobile
-	token := jwt.New(jwt.SigningMethodHS256)
-	token.Claims = claims
+	claims := jwt.MapClaims{
+		"exp":        iat + seconds,
+		"iat":        iat,
+		"memberId":   memberId,
+		"memberName": name,
+		"mobile":     mobile,
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString([]byte(secretKey))
 }
