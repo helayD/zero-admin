@@ -63,6 +63,11 @@ func (l *HomeRecommendSubjectListLogic) HomeRecommendSubjectList(req *types.List
 	var list []*types.ListHomeRecommendSubjectData
 
 	for _, item := range subjectList.List {
+		effectiveStatus := "未推荐"
+		if item.RecommendStatus == 1 {
+			effectiveStatus = "已推荐"
+		}
+
 		list = append(list, &types.ListHomeRecommendSubjectData{
 			Id:              item.Id,              // 专题id
 			CategoryId:      item.CategoryId,      // 专题分类id
@@ -84,6 +89,7 @@ func (l *HomeRecommendSubjectListLogic) HomeRecommendSubjectList(req *types.List
 			UpdateBy:        item.UpdateBy,        // 更新者
 			UpdateTime:      item.UpdateTime,      // 更新时间
 			Sort:            item.Sort,            // 排序
+			EffectiveStatus: effectiveStatus,
 		})
 	}
 

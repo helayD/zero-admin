@@ -63,6 +63,11 @@ func (l *QuerySubjectListLogic) QuerySubjectList(req *types.QuerySubjectListReq)
 	var list []*types.QuerySubjectListData
 
 	for _, item := range subjectList.List {
+		effectiveStatus := "未发布"
+		if item.ShowStatus == 1 {
+			effectiveStatus = "已发布"
+		}
+
 		list = append(list, &types.QuerySubjectListData{
 			Id:              item.Id,              // 专题id
 			CategoryId:      item.CategoryId,      // 专题分类id
@@ -84,6 +89,7 @@ func (l *QuerySubjectListLogic) QuerySubjectList(req *types.QuerySubjectListReq)
 			UpdateBy:        item.UpdateBy,        // 更新者
 			UpdateTime:      item.UpdateTime,      // 更新时间
 			Sort:            item.Sort,            // 排序
+			EffectiveStatus: effectiveStatus,
 		})
 	}
 

@@ -19,6 +19,7 @@ export interface SubjectListItem {
   updateBy?: string;
   updateTime?: string;
   sort?: number;
+  effectiveStatus?: string;
 }
 
 export interface SubjectListPagination {

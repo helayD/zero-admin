@@ -7,7 +7,7 @@ import {
   CheckCircleOutlined,
   StopOutlined,
 } from '@ant-design/icons';
-import {Alert, Button, Divider, message, Drawer, Modal} from 'antd';
+import {Alert, Button, Divider, message, Drawer, Modal, Tag, Tooltip} from 'antd';
 import React, {useState, useRef} from 'react';
 import {PageContainer, FooterToolbar} from '@ant-design/pro-layout';
 import ProTable from '@ant-design/pro-table';
@@ -194,6 +194,31 @@ const CouponList: React.FC = () => {
           return <span style={{color: '#ff4d4f'}}>未配置</span>;
         }
         return `${record.scopeCount}条`;
+      },
+    },
+    {
+      title: '生效状态',
+      dataIndex: 'effectiveStatus',
+      hideInSearch: true,
+      render: (_, record) => {
+        const colorMap: Record<string, string> = {
+          '生效中': 'green',
+          '未开始': 'blue',
+          '已过期': 'orange',
+          '已结束': 'default',
+          '已取消': 'red',
+        };
+        const color = colorMap[record.effectiveStatus || ''] || 'default';
+        return <Tag color={color}>{record.effectiveStatus || '-'}</Tag>;
+      },
+    },
+    {
+      title: '适用范围摘要',
+      dataIndex: 'scopeSummary',
+      hideInSearch: true,
+      render: (_, record) => {
+        if (!record.scopeSummary) return '-';
+        return <Tooltip title={record.affectedPaths || '无影响链路'}>{record.scopeSummary}</Tooltip>;
       },
     },
     {

@@ -3,6 +3,7 @@ export interface RecommendSubjectListItem {
   subjectId: number;
   subjectName: string;
   recommendStatus: number;
+  effectiveStatus?: string;
 }
 
 export interface SubjectListItem {

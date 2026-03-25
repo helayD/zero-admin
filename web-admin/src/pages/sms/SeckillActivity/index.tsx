@@ -219,6 +219,21 @@ const SeckillActivityList: React.FC = () => {
       hideInSearch: true,
     },
     {
+      title: '生效状态',
+      dataIndex: 'effectiveStatus',
+      hideInSearch: true,
+      render: (_, record) => {
+        const colorMap: Record<string, string> = {
+          '已上线': 'green',
+          '已下线': 'default',
+          '已过期': 'orange',
+          '未启用': 'red',
+        };
+        const color = colorMap[record.effectiveStatus || ''] || 'default';
+        return <Tag color={color}>{record.effectiveStatus || '-'}</Tag>;
+      },
+    },
+    {
       title: '创建人ID',
       dataIndex: 'createBy',
       hideInSearch: true,

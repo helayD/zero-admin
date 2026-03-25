@@ -1,5 +1,5 @@
 import {ExclamationCircleOutlined, PlusOutlined,} from '@ant-design/icons';
-import {Alert, Button, Drawer, message, Modal, Select, Switch} from 'antd';
+import {Alert, Button, Drawer, message, Modal, Select, Switch, Tag} from 'antd';
 import React, {useRef, useState} from 'react';
 import {PageContainer} from '@ant-design/pro-layout';
 import type {ActionType, ProColumns} from '@ant-design/pro-table';
@@ -144,6 +144,19 @@ const HomeBrandList: React.FC = () => {
             showStatusConfirm(entity, flag ? 1 : 0, [entity.brandId])
           }}/>
         );
+      },
+    },
+    {
+      title: '生效状态',
+      dataIndex: 'effectiveStatus',
+      hideInSearch: true,
+      render: (_, record) => {
+        const colorMap: Record<string, string> = {
+          '已推荐': 'green',
+          '未推荐': 'default',
+        };
+        const text = record.effectiveStatus || '-';
+        return <Tag color={colorMap[text] || 'default'}>{text}</Tag>;
       },
     },
     {

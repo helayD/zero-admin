@@ -13,6 +13,7 @@ export interface HomeAdvertiseListItem {
   orderCount: number;
   createTime: string;
   updateTime: string;
+  effectiveStatus?: string;
 }
 
 export interface HomeAdvertiseListPagination {

@@ -13,6 +13,8 @@ export interface SeckillActivityListItem {
     isDeleted: number; //是否删除
     productCount: number; //关联已上架秒杀商品数量
     sessionCount: number; //关联场次数量
+    effectiveStatus?: string; //综合生效状态
+    affectedPaths?: string; //影响链路
 
 }
 

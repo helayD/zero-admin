@@ -34,6 +34,9 @@ export interface CouponListItem {
   couponScopeData?: any[];
   productCategoryRelationList?: any[];
   productRelationList?: any[];
+  effectiveStatus?: string;
+  scopeSummary?: string;
+  affectedPaths?: string;
 }
 
 export interface CouponListPagination {
@@ -131,6 +134,9 @@ export interface CouponDetailData {
   scopeType: number;
   couponScopeData?: any[];
   scopeCount?: number;
+  effectiveStatus?: string;
+  scopeSummary?: string;
+  affectedPaths?: string;
   // 兼容老字段
   type?: number;
   platform?: number;

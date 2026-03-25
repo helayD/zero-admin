@@ -105,23 +105,6 @@ const handleStatus = async (ids: number[], status: number) => {
   }
 };
 
-// 计算广告生效状态
-const getEffectiveStatus = (record: HomeAdvertiseListItem): { text: string; color: string } => {
-  if (record.status === 0) {
-    return { text: '已下线', color: 'default' };
-  }
-  const now = moment();
-  const start = moment(record.startTime);
-  const end = moment(record.endTime);
-  if (now.isBefore(start)) {
-    return { text: '未开始', color: 'blue' };
-  }
-  if (now.isAfter(end)) {
-    return { text: '已结束', color: 'default' };
-  }
-  return { text: '进行中', color: 'green' };
-};
-
 const HomeAdvertiseList: React.FC = () => {
   const [createModalVisible, handleModalVisible] = useState<boolean>(false);
   const [updateModalVisible, handleUpdateModalVisible] = useState<boolean>(false);
@@ -253,15 +236,15 @@ const HomeAdvertiseList: React.FC = () => {
     {
       title: '生效状态',
       dataIndex: 'effectiveStatus',
-      valueEnum: {
-        all: { text: '全部' },
-        offline: { text: '已下线' },
-        notStarted: { text: '未开始' },
-        active: { text: '进行中' },
-        ended: { text: '已结束' },
-      },
+      hideInSearch: true,
       render: (_: any, record: HomeAdvertiseListItem) => {
-        const { text, color } = getEffectiveStatus(record);
+        const colorMap: Record<string, string> = {
+          '已上线': 'green',
+          '已下线': 'default',
+          '已过期': 'orange',
+        };
+        const text = record.effectiveStatus || '-';
+        const color = colorMap[text] || 'default';
         return <Tag color={color}>{text}</Tag>;
       },
     },

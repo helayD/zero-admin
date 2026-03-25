@@ -2,6 +2,7 @@ package seckill_activity
 
 import (
 	"context"
+	"time"
 
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
@@ -52,22 +53,33 @@ func (l *QuerySeckillActivityListLogic) QuerySeckillActivityList(req *types.Quer
 
 	var list []*types.QuerySeckillActivityListData
 
+	now := time.Now()
 	for _, detail := range result.List {
-		list = append(list, &types.QuerySeckillActivityListData{
-			Id:           detail.Id,           // 编号
-			Name:         detail.Name,         // 活动名称
-			Description:  detail.Description,  // 活动描述
-			StartTime:    detail.StartTime,    // 开始时间
-			EndTime:      detail.EndTime,      // 结束时间
-			Status:       detail.Status,       // 状态:0-上线,1-下线
-			IsEnabled:    detail.IsEnabled,    // 是否启用
-			CreateBy:     detail.CreateBy,     // 创建人ID
-			CreateTime:   detail.CreateTime,   // 创建时间
-			UpdateBy:     detail.UpdateBy,     // 更新人ID
-			UpdateTime:   detail.UpdateTime,   // 更新时间
-			ProductCount: detail.ProductCount, // 关联已上架秒杀商品数量
-			SessionCount: detail.SessionCount, // 关联场次数量
+		// 计算综合生效状态
+		effectiveStatus := computeSeckillEffectiveStatus(detail.Status, detail.IsEnabled, detail.EndTime, now)
 
+		// 影响链路：已上线秒杀活动
+		affectedPaths := ""
+		if detail.Status == 0 && detail.IsEnabled == 1 {
+			affectedPaths = "前台限时购展示, 购物车促销试算"
+		}
+
+		list = append(list, &types.QuerySeckillActivityListData{
+			Id:              detail.Id,           // 编号
+			Name:            detail.Name,         // 活动名称
+			Description:     detail.Description,  // 活动描述
+			StartTime:       detail.StartTime,    // 开始时间
+			EndTime:         detail.EndTime,      // 结束时间
+			Status:          detail.Status,       // 状态:0-上线,1-下线
+			IsEnabled:       detail.IsEnabled,    // 是否启用
+			CreateBy:        detail.CreateBy,     // 创建人ID
+			CreateTime:      detail.CreateTime,   // 创建时间
+			UpdateBy:        detail.UpdateBy,     // 更新人ID
+			UpdateTime:      detail.UpdateTime,   // 更新时间
+			ProductCount:    detail.ProductCount, // 关联已上架秒杀商品数量
+			SessionCount:    detail.SessionCount, // 关联场次数量
+			EffectiveStatus: effectiveStatus,
+			AffectedPaths:   affectedPaths,
 		})
 	}
 

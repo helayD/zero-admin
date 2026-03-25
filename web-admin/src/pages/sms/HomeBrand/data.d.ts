@@ -3,6 +3,7 @@ export interface HomeBrandListItem {
   brandId: number;
   name: string;
   recommendStatus: number;
+  effectiveStatus?: string;
 }
 
 export interface BrandListItem {

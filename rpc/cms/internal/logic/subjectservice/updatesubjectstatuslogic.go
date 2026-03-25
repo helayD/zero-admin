@@ -3,6 +3,9 @@ package subjectservicelogic
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
+
 	"github.com/feihua/zero-admin/rpc/cms/cmsclient"
 	"github.com/feihua/zero-admin/rpc/cms/gen/query"
 	logiccommon "github.com/feihua/zero-admin/rpc/cms/internal/logic/common"
@@ -39,6 +42,31 @@ func (l *UpdateSubjectStatusLogic) UpdateSubjectStatus(in *cmsclient.UpdateSubje
 	}
 	if _, err := logiccommon.EnsureSubjectScope(l.ctx, l.svcCtx.DB, currentScope, in.Ids, "cms.subject.status", in.UpdateBy, "update subject status"); err != nil {
 		return nil, err
+	}
+
+	// 发布校验：当目标状态为1（显示/发布）时，对每个专题执行发布前置校验
+	if in.ShowStatus == 1 {
+		for _, id := range in.Ids {
+			detail, qErr := q.WithContext(l.ctx).Where(q.ID.Eq(id)).First()
+			if qErr != nil {
+				logc.Errorf(l.ctx, "查询专题失败,id:%d,异常:%s", id, qErr.Error())
+				return nil, fmt.Errorf("专题(ID:%d)不存在", id)
+			}
+
+			var missing []string
+			if strings.TrimSpace(detail.Title) == "" {
+				missing = append(missing, "标题")
+			}
+			if detail.CategoryID == 0 {
+				missing = append(missing, "专题分类")
+			}
+			if strings.TrimSpace(detail.Pic) == "" {
+				missing = append(missing, "专题主图")
+			}
+			if len(missing) > 0 {
+				return nil, fmt.Errorf("专题「%s」发布校验未通过：缺少%s", detail.Title, strings.Join(missing, "、"))
+			}
+		}
 	}
 
 	_, err = q.WithContext(l.ctx).Where(q.ID.In(in.Ids...)).Update(q.ShowStatus, in.ShowStatus)

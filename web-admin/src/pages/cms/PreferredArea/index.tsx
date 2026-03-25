@@ -185,6 +185,19 @@ const PreferredAreaList: React.FC = () => {
       ),
     },
     {
+      title: '生效状态',
+      dataIndex: 'effectiveStatus',
+      hideInSearch: true,
+      render: (_, record) => {
+        const colorMap: Record<string, string> = {
+          '已发布': 'green',
+          '未发布': 'default',
+        };
+        const text = record.effectiveStatus || '-';
+        return <Tag color={colorMap[text] || 'default'}>{text}</Tag>;
+      },
+    },
+    {
       title: '排序',
       dataIndex: 'sort',
       hideInSearch: true,

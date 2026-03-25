@@ -9,6 +9,7 @@ export interface PreferredAreaListItem {
   createTime?: string;
   updateBy?: string;
   updateTime?: string;
+  effectiveStatus?: string;
 }
 
 export interface PreferredAreaListPagination {

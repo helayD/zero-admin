@@ -51,6 +51,11 @@ func (l *QueryHomeBrandListLogic) QueryHomeBrandList(req *types.QueryHomeBrandLi
 	var list []*types.QueryHomeBrandListData
 
 	for _, detail := range result.List {
+		effectiveStatus := "未推荐"
+		if detail.RecommendStatus == 1 {
+			effectiveStatus = "已推荐"
+		}
+
 		list = append(list, &types.QueryHomeBrandListData{
 			Id:                  detail.Id,                  //
 			Name:                detail.Name,                // 品牌名称
@@ -67,7 +72,7 @@ func (l *QueryHomeBrandListLogic) QueryHomeBrandList(req *types.QueryHomeBrandLi
 			CreateTime:          detail.CreateTime,          // 创建时间
 			UpdateBy:            detail.UpdateBy,            // 更新人ID
 			UpdateTime:          detail.UpdateTime,          // 更新时间
-
+			EffectiveStatus:     effectiveStatus,
 		})
 	}
 
