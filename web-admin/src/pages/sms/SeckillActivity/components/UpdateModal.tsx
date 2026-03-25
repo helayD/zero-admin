@@ -1,5 +1,5 @@
 import React, {useEffect} from 'react';
-import { DatePicker, Form, Input, Modal, Radio } from 'antd';
+import { DatePicker, Form, Input, Modal } from 'antd';
 import type { SeckillActivityListItem} from '../data.d';
 import moment from 'moment';
 
@@ -64,6 +64,12 @@ const UpdateModal: React.FC<UpdateModalProps> = (props) => {
         >
           <Input id="update-id"/>
         </FormItem>
+        <FormItem name="status" hidden>
+          <Input/>
+        </FormItem>
+        <FormItem name="isEnabled" hidden>
+          <Input/>
+        </FormItem>
 
 
         <FormItem
@@ -76,9 +82,9 @@ const UpdateModal: React.FC<UpdateModalProps> = (props) => {
         <FormItem
           name="description"
           label="活动描述"
-          rules={[{required: true, message: '请输入活动描述!'}]}
+          rules={[{required: false}, {max: 500, message: '活动描述不能超过500个字符'}]}
         >
-          <Input id="update-description" placeholder={'请输入活动描述!'}/>
+          <Input id="update-description" placeholder={'请输入活动描述'}/>
         </FormItem>
         <FormItem
           name="startTime"
@@ -94,16 +100,7 @@ const UpdateModal: React.FC<UpdateModalProps> = (props) => {
         >
           <DatePicker showTime placeholder={'请输入结束时间'}/>
         </FormItem>
-        <FormItem
-          name="status"
-          label="活动状态"
-          rules={[{required: true, message: '请输入活动状态!'}]}
-        >
-          <Radio.Group>
-            <Radio value={0}>下线</Radio>
-            <Radio value={1}>上线</Radio>
-          </Radio.Group>
-        </FormItem>
+        {/* 状态通过列表页 Switch 操作，编辑表单不直接修改 */}
       </>
     );
   };

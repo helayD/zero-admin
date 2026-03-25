@@ -40,6 +40,11 @@ class _AvailableCouponListState extends State<AvailableCouponList> {
       setState(() {
         isLoading = false;
       });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('加载优惠券失败: $e'), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 

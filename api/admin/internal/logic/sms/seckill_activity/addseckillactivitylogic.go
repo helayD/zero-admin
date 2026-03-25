@@ -2,6 +2,7 @@ package seckill_activity
 
 import (
 	"context"
+
 	"github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
@@ -43,8 +44,9 @@ func (l *AddSeckillActivityLogic) AddSeckillActivity(req *types.AddSeckillActivi
 		Description: req.Description, // 活动描述
 		StartTime:   req.StartTime,   // 开始时间
 		EndTime:     req.EndTime,     // 结束时间
-		Status:      req.Status,      // 状态:0-上线,1-下线
+		IsEnabled:   req.IsEnabled,   // 是否启用
 		CreateBy:    userId,          // 创建人ID
+		// Status 不从前端传入，由 RPC 层强制设为 1(下线/草稿)
 	})
 
 	if err != nil {

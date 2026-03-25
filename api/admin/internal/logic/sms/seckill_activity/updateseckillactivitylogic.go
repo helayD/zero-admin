@@ -2,6 +2,7 @@ package seckill_activity
 
 import (
 	"context"
+
 	"github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
@@ -45,6 +46,7 @@ func (l *UpdateSeckillActivityLogic) UpdateSeckillActivity(req *types.UpdateSeck
 		StartTime:   req.StartTime,   // 开始时间
 		EndTime:     req.EndTime,     // 结束时间
 		Status:      req.Status,      // 状态:0-上线,1-下线
+		IsEnabled:   req.IsEnabled,   // 是否启用
 		UpdateBy:    userId,          // 更新人ID
 	})
 

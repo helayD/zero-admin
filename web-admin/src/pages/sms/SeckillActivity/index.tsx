@@ -115,7 +115,7 @@ const SeckillActivityList: React.FC = () => {
 
   const showStatusConfirm = (ids: number[], status: number) => {
     confirm({
-      title: `确定${status == 1 ? "启用" : "禁用"}吗？`,
+      title: `确定${status == 0 ? "上线" : "下线"}吗？`,
       icon: <ExclamationCircleOutlined/>,
       async onOk() {
         await handleStatus(ids, status)
@@ -165,14 +165,14 @@ const SeckillActivityList: React.FC = () => {
       dataIndex: 'status',
       hideInSearch: true,
       render: (dom, entity) => {
-        let now = moment().format('YYYY-MM-DD')
-        let startDate = moment(entity.startTime).format('YYYY-MM-DD')
-        let endDate = moment(entity.endTime).format('YYYY-MM-DD')
+        const now = moment()
+        const startDate = moment(entity.startTime)
+        const endDate = moment(entity.endTime)
 
         let status
-        if (now < startDate) {
+        if (now.isBefore(startDate)) {
           status = '活动未开始'
-        } else if (now > endDate) {
+        } else if (now.isAfter(endDate)) {
           status = '活动已结束'
         } else {
           status = '活动进行中'
@@ -189,19 +189,37 @@ const SeckillActivityList: React.FC = () => {
         return <Select
           value={row.value}
           options={[
-            {value: 1, label: '上线'},
-            {value: 0, label: '下线'},
+            {value: 0, label: '上线'},
+            {value: 1, label: '下线'},
           ]}
         />
 
       },
       render: (dom, entity) => {
         return (
-          <Switch checked={entity.status == 1} onChange={(flag) => {
-            showStatusConfirm([entity.id], flag ? 1 : 0)
+          <Switch checked={entity.status == 0} onChange={(flag) => {
+            showStatusConfirm([entity.id], flag ? 0 : 1)
           }}/>
         );
       },
+    },
+    {
+      title: '是否启用',
+      dataIndex: 'isEnabled',
+      hideInSearch: true,
+      render: (dom, entity) => {
+        return entity.isEnabled === 1 ? '已启用' : '未启用';
+      },
+    },
+    {
+      title: '秒杀商品数',
+      dataIndex: 'productCount',
+      hideInSearch: true,
+    },
+    {
+      title: '场次数',
+      dataIndex: 'sessionCount',
+      hideInSearch: true,
     },
     {
       title: '创建人ID',

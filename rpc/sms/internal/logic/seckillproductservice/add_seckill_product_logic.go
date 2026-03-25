@@ -3,6 +3,8 @@ package seckillproductservicelogic
 import (
 	"context"
 	"errors"
+	"fmt"
+
 	"github.com/feihua/zero-admin/rpc/sms/gen/model"
 	"github.com/feihua/zero-admin/rpc/sms/gen/query"
 	"github.com/feihua/zero-admin/rpc/sms/internal/svc"
@@ -35,7 +37,21 @@ func (l *AddSeckillProductLogic) AddSeckillProduct(in *smsclient.AddSeckillProdu
 	q := query.SmsSeckillProduct
 
 	var data []*model.SmsSeckillProduct
-	for _, x := range in.Data {
+	for i, x := range in.Data {
+		// 7.2 秒杀价格、库存、限购校验
+		if x.SeckillPrice <= 0 {
+			return nil, fmt.Errorf("第%d条商品秒杀价格必须大于0", i+1)
+		}
+		if x.SeckillStock <= 0 {
+			return nil, fmt.Errorf("第%d条商品秒杀库存必须大于0", i+1)
+		}
+		if x.PerLimit < 1 {
+			return nil, fmt.Errorf("第%d条商品每人限购数量至少为1", i+1)
+		}
+		// 7.3 SKU 有效性校验（当前仅校验 sku_id > 0）
+		if x.SkuId <= 0 {
+			return nil, fmt.Errorf("第%d条商品SKU ID无效", i+1)
+		}
 		data = append(data, &model.SmsSeckillProduct{
 			ActivityID:   x.ActivityId,            // 活动ID
 			SessionID:    x.SessionId,             // 秒杀场次ID

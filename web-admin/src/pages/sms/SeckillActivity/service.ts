@@ -4,12 +4,13 @@ import moment from 'moment/moment';
 
 // 添加秒杀活动
 export async function addSeckillActivity(params: SeckillActivityListItem) {
-  params.startTime = moment(params.startTime).format('YYYY-MM-DD HH:mm:ss');
-  params.endTime = moment(params.endTime).format('YYYY-MM-DD HH:mm:ss');
   return request('/api/sms/seckillActivity/addSeckillActivity', {
     method: 'POST',
     data: {
-      ...params,
+      name: params.name,
+      description: params.description,
+      startTime: moment(params.startTime).format('YYYY-MM-DD HH:mm:ss'),
+      endTime: moment(params.endTime).format('YYYY-MM-DD HH:mm:ss'),
     },
   });
 }
@@ -24,12 +25,16 @@ export async function removeSeckillActivity(ids: number[]) {
 
 // 更新秒杀活动
 export async function updateSeckillActivity(params: SeckillActivityListItem) {
-  params.startTime = moment(params.startTime).format('YYYY-MM-DD HH:mm:ss');
-  params.endTime = moment(params.endTime).format('YYYY-MM-DD HH:mm:ss');
   return request('/api/sms/seckillActivity/updateSeckillActivity', {
     method: 'POST',
     data: {
-      ...params,
+      id: params.id,
+      name: params.name,
+      description: params.description,
+      startTime: moment(params.startTime).format('YYYY-MM-DD HH:mm:ss'),
+      endTime: moment(params.endTime).format('YYYY-MM-DD HH:mm:ss'),
+      status: params.status,
+      isEnabled: params.isEnabled,
     },
   });
 }

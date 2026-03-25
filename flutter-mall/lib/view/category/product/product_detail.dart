@@ -1275,6 +1275,23 @@ class _ProductDetailState extends State<ProductDetail> {
     );
   }
 
+  String _receiveStatusText(int status) {
+    switch (status) {
+      case 0:
+        return '领取';
+      case 1:
+        return '已领取';
+      case 2:
+        return '已领完';
+      case 3:
+        return '未开始';
+      case 4:
+        return '已过期';
+      default:
+        return '已领取';
+    }
+  }
+
   void _claimCoupon(int couponId) async {
     try {
       Response result = await HttpUtil.post(addCouponUrl, data: {"couponId": couponId});
@@ -1414,7 +1431,7 @@ class _ProductDetailState extends State<ProductDetail> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                       ),
                       child: Text(
-                        coupon.receiveStatus == 0 ? '领取' : (coupon.receiveStatus == 2 ? '已领完' : '已领取'),
+                        _receiveStatusText(coupon.receiveStatus),
                         style: const TextStyle(fontSize: 12),
                       ),
                     ),

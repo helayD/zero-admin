@@ -1,5 +1,5 @@
 import React, {useEffect} from 'react';
-import { DatePicker, Form, Input, Modal, Radio } from 'antd';
+import { DatePicker, Form, Input, Modal } from 'antd';
 import type { SeckillActivityListItem} from '../data.d';
 
 export interface AddModalProps {
@@ -56,9 +56,9 @@ const AddModal: React.FC<AddModalProps> = (props) => {
         <FormItem
           name="description"
           label="活动描述"
-          rules={[{required: true, message: '请输入活动描述!'}]}
+          rules={[{required: false}, {max: 500, message: '活动描述不能超过500个字符'}]}
         >
-            <Input id="create-description" placeholder={'请输入活动描述!'}/>
+            <Input id="create-description" placeholder={'请输入活动描述'}/>
          </FormItem>
         <FormItem
           name="startTime"
@@ -74,16 +74,7 @@ const AddModal: React.FC<AddModalProps> = (props) => {
         >
           <DatePicker showTime placeholder={'请输入结束时间'}/>
          </FormItem>
-        <FormItem
-          name="status"
-          label="活动状态"
-          rules={[{required: true, message: '请输入活动状态!'}]}
-        >
-              <Radio.Group>
-                <Radio value={0}>下线</Radio>
-                <Radio value={1}>上线</Radio>
-              </Radio.Group>
-        </FormItem>
+        {/* 新建活动默认下线/草稿(status=1)，需通过上线操作显式发布 */}
 
       </>
     );

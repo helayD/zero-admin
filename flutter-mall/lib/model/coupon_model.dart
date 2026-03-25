@@ -37,8 +37,8 @@ class CouponData {
   int typeId;
   String name;
   String code;
-  int amount;
-  int minAmount;
+  num amount;
+  num minAmount;
   String startTime;
   String endTime;
   int perLimit;
@@ -72,8 +72,8 @@ class CouponData {
     typeId: json["typeId"],
     name: json["name"],
     code: json["code"],
-    amount: json["amount"],
-    minAmount: json["minAmount"],
+    amount: json["amount"] ?? 0,
+    minAmount: json["minAmount"] ?? 0,
     startTime: json["startTime"],
     endTime: json["endTime"],
     perLimit: json["perLimit"],

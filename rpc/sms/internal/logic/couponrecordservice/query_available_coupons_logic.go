@@ -2,10 +2,12 @@ package couponrecordservicelogic
 
 import (
 	"context"
+	"errors"
 
 	"github.com/feihua/zero-admin/pkg/time_util"
 	"github.com/feihua/zero-admin/rpc/sms/gen/model"
 	"github.com/feihua/zero-admin/rpc/sms/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/sms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/sms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/sms/smsclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -28,9 +30,16 @@ func NewQueryAvailableCouponsLogic(ctx context.Context, svcCtx *svc.ServiceConte
 }
 
 // QueryAvailableCoupons 查询可领取的优惠券列表
-// 条件：status=1（进行中） + is_enabled=1 + 在有效期内 + received_count < total_count
+// 条件：status=1（进行中） + is_enabled=1 + 在有效期内 + received_count < total_count + 作用域匹配
 func (l *QueryAvailableCouponsLogic) QueryAvailableCoupons(in *smsclient.QueryAvailableCouponsReq) (*smsclient.QueryAvailableCouponsResp, error) {
-	// 1.查询可领取的优惠券（status=1 + is_enabled=1 + 在有效期内 + 未领完）
+	// 0.解析作用域
+	current, scopeErr := logiccommon.NormalizeProtoScope(in.Scope)
+	if scopeErr != nil {
+		logc.Errorf(l.ctx, "查询可领取优惠券列表scope非法,参数:%+v,异常:%s", in, scopeErr.Error())
+		return nil, errors.New("查询可领取优惠券列表失败")
+	}
+
+	// 1.查询可领取的优惠券（status=1 + is_enabled=1 + 在有效期内 + 未领完 + 作用域匹配）
 	var result []model.SmsCoupon
 	pageNum := in.PageNum
 	pageSize := in.PageSize
@@ -48,10 +57,13 @@ func (l *QueryAvailableCouponsLogic) QueryAvailableCoupons(in *smsclient.QueryAv
 			  AND NOW() BETWEEN start_time AND end_time 
 			  AND received_count < total_count 
 			  AND is_deleted = 0
+			  AND platform_id = ?
+			  AND tenant_id = ?
+			  AND merchant_id = ?
 			ORDER BY create_time DESC
 			LIMIT ? OFFSET ?`
 	db := l.svcCtx.DB
-	err := db.WithContext(l.ctx).Raw(sql, pageSize, offset).Find(&result).Error
+	err := db.WithContext(l.ctx).Raw(sql, current.PlatformID, current.TenantID, current.MerchantID, pageSize, offset).Find(&result).Error
 	if err != nil {
 		logc.Errorf(l.ctx, "查询可领取优惠券列表失败,参数:%+v,异常:%s", in, err.Error())
 		return nil, err

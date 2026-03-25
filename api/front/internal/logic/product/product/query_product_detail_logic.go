@@ -290,11 +290,16 @@ func buildMemberPriceListData(resp *pmsclient.QueryProductSpuDetailResp) []types
 func buildCouponListData(resp []*smsclient.CouponListData, claimCountMap map[int64]int64) []types.CouponData {
 	list := make([]types.CouponData, 0)
 	for _, detail := range resp {
+		// receiveStatus: 0=可领取, 1=已领取(达限领上限), 2=已领完, 3=未开始, 4=已过期
 		receiveStatus := int32(0)
 		if detail.PerLimit > 0 && claimCountMap[detail.Id] >= int64(detail.PerLimit) {
 			receiveStatus = 1
 		} else if detail.TotalCount > 0 && detail.ReceivedCount >= detail.TotalCount {
 			receiveStatus = 2
+		} else if detail.Status == 0 {
+			receiveStatus = 3 // 未开始（草稿/待发布）
+		} else if detail.Status == 2 || detail.Status == 3 {
+			receiveStatus = 4 // 已过期/已取消
 		}
 
 		list = append(list, types.CouponData{

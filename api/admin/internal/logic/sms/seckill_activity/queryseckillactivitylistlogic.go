@@ -2,6 +2,7 @@ package seckill_activity
 
 import (
 	"context"
+
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
 	"github.com/feihua/zero-admin/api/admin/internal/types"
@@ -53,17 +54,19 @@ func (l *QuerySeckillActivityListLogic) QuerySeckillActivityList(req *types.Quer
 
 	for _, detail := range result.List {
 		list = append(list, &types.QuerySeckillActivityListData{
-			Id:          detail.Id,          // 编号
-			Name:        detail.Name,        // 活动名称
-			Description: detail.Description, // 活动描述
-			StartTime:   detail.StartTime,   // 开始时间
-			EndTime:     detail.EndTime,     // 结束时间
-			Status:      detail.Status,      // 状态:0-上线,1-下线
-			IsEnabled:   detail.IsEnabled,   // 是否启用
-			CreateBy:    detail.CreateBy,    // 创建人ID
-			CreateTime:  detail.CreateTime,  // 创建时间
-			UpdateBy:    detail.UpdateBy,    // 更新人ID
-			UpdateTime:  detail.UpdateTime,  // 更新时间
+			Id:           detail.Id,           // 编号
+			Name:         detail.Name,         // 活动名称
+			Description:  detail.Description,  // 活动描述
+			StartTime:    detail.StartTime,    // 开始时间
+			EndTime:      detail.EndTime,      // 结束时间
+			Status:       detail.Status,       // 状态:0-上线,1-下线
+			IsEnabled:    detail.IsEnabled,    // 是否启用
+			CreateBy:     detail.CreateBy,     // 创建人ID
+			CreateTime:   detail.CreateTime,   // 创建时间
+			UpdateBy:     detail.UpdateBy,     // 更新人ID
+			UpdateTime:   detail.UpdateTime,   // 更新时间
+			ProductCount: detail.ProductCount, // 关联已上架秒杀商品数量
+			SessionCount: detail.SessionCount, // 关联场次数量
 
 		})
 	}

@@ -406,6 +406,7 @@ type AddSeckillActivityReq struct {
 	StartTime   string `json:"startTime"`            //开始时间
 	EndTime     string `json:"endTime"`              //结束时间
 	Status      int32  `json:"status"`               //状态:0-上线,1-下线
+	IsEnabled   int32  `json:"isEnabled,default=1"`  //是否启用
 }
 
 type AddSeckillProductData struct {
@@ -4237,18 +4238,20 @@ type QuerySeckillActivityDetailResp struct {
 }
 
 type QuerySeckillActivityListData struct {
-	Id          int64  `json:"id"`          //编号
-	Name        string `json:"name"`        //活动名称
-	Description string `json:"description"` //活动描述
-	StartTime   string `json:"startTime"`   //开始时间
-	EndTime     string `json:"endTime"`     //结束时间
-	Status      int32  `json:"status"`      //状态:0-上线,1-下线
-	IsEnabled   int32  `json:"isEnabled"`   //是否启用
-	CreateBy    int64  `json:"createBy"`    //创建人ID
-	CreateTime  string `json:"createTime"`  //创建时间
-	UpdateBy    int64  `json:"updateBy"`    //更新人ID
-	UpdateTime  string `json:"updateTime"`  //更新时间
-	IsDeleted   int32  `json:"isDeleted"`   //是否删除
+	Id           int64  `json:"id"`           //编号
+	Name         string `json:"name"`         //活动名称
+	Description  string `json:"description"`  //活动描述
+	StartTime    string `json:"startTime"`    //开始时间
+	EndTime      string `json:"endTime"`      //结束时间
+	Status       int32  `json:"status"`       //状态:0-上线,1-下线
+	IsEnabled    int32  `json:"isEnabled"`    //是否启用
+	CreateBy     int64  `json:"createBy"`     //创建人ID
+	CreateTime   string `json:"createTime"`   //创建时间
+	UpdateBy     int64  `json:"updateBy"`     //更新人ID
+	UpdateTime   string `json:"updateTime"`   //更新时间
+	IsDeleted    int32  `json:"isDeleted"`    //是否删除
+	ProductCount int64  `json:"productCount"` //关联已上架秒杀商品数量
+	SessionCount int64  `json:"sessionCount"` //关联场次数量
 }
 
 type QuerySeckillActivityListReq struct {
@@ -5499,6 +5502,7 @@ type UpdateSeckillActivityReq struct {
 	StartTime   string `json:"startTime"`            //开始时间
 	EndTime     string `json:"endTime"`              //结束时间
 	Status      int32  `json:"status"`               //状态:0-上线,1-下线
+	IsEnabled   int32  `json:"isEnabled"`            //是否启用
 }
 
 type UpdateSeckillActivityStatusReq struct {

@@ -80,13 +80,9 @@ func (l *QueryMemberCouponListLogic) QueryMemberCouponList(in *smsclient.QueryMe
 	var list []*smsclient.QueryCouponData
 
 	for _, item := range result {
-		isExpired := item.EndTime.Before(time.Now())
-		if in.Status == 0 && isExpired {
-			record := query.SmsCouponRecord
-			_, updateErr := record.WithContext(l.ctx).Where(record.CouponID.Eq(item.ID), record.Status.Eq(0)).Update(record.Status, 2)
-			if updateErr != nil {
-				logc.Errorf(l.ctx, "自动更新过期优惠券记录状态失败,couponId:%d,异常:%s", item.ID, updateErr.Error())
-			}
+		// 过期记录状态更新已移至定时Job处理，查询接口不再执行写操作
+		// 此处仅跳过过期的未使用优惠券（不在列表中展示）
+		if in.Status == 0 && item.EndTime.Before(time.Now()) {
 			continue
 		}
 

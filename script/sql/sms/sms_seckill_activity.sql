@@ -3,6 +3,9 @@ create table sms_seckill_activity
 (
     id          bigint auto_increment comment '编号'
         primary key,
+    platform_id bigint       default 1                 not null comment '平台ID',
+    tenant_id   bigint       default 0                 not null comment '租户ID',
+    merchant_id bigint       default 0                 not null comment '商户ID',
     name        varchar(100)                           not null comment '活动名称',
     description varchar(500) default ''                not null comment '活动描述',
     start_time  datetime                               not null comment '开始时间',
@@ -16,6 +19,9 @@ create table sms_seckill_activity
     is_deleted  tinyint      default 0                 not null comment '是否删除'
 )
     comment '秒杀活动表';
+
+create index idx_seckill_activity_scope_status
+    on sms_seckill_activity (platform_id, tenant_id, merchant_id, status, is_enabled, id);
 
 -- 插入秒杀活动数据
 insert into sms_seckill_activity (id, name, description, start_time, end_time, status, is_enabled, create_by, is_deleted)

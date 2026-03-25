@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/feihua/zero-admin/rpc/sms/gen/model"
 	"github.com/feihua/zero-admin/rpc/sms/gen/query"
 	"github.com/feihua/zero-admin/rpc/sms/internal/svc"
@@ -11,7 +13,6 @@ import (
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
-	"time"
 )
 
 // UpdateSeckillSessionLogic 更新秒杀场次
@@ -59,6 +60,21 @@ func (l *UpdateSeckillSessionLogic) UpdateSeckillSession(in *smsclient.UpdateSec
 
 	if count > 0 {
 		return nil, errors.New(fmt.Sprintf("秒杀场次：%s,已存在", in.Name))
+	}
+
+	// 6.2 时间段冲突校验（排除自身）
+	if in.StartTime >= in.EndTime {
+		return nil, fmt.Errorf("场次开始时间必须早于结束时间")
+	}
+	existingSessions, err := session.WithContext(l.ctx).Where(session.Status.Eq(1), session.ID.Neq(in.Id)).Find()
+	if err != nil {
+		logc.Errorf(l.ctx, "查询已有场次失败,异常:%s", err.Error())
+		return nil, errors.New("查询已有场次失败")
+	}
+	for _, s := range existingSessions {
+		if in.StartTime < s.EndTime && s.StartTime < in.EndTime {
+			return nil, fmt.Errorf("场次时间段与已有启用场次「%s」(%s~%s)冲突", s.Name, s.StartTime, s.EndTime)
+		}
 	}
 
 	now := time.Now()

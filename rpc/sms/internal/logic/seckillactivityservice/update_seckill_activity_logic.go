@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
+	"time"
+
 	"github.com/feihua/zero-admin/rpc/sms/gen/model"
 	"github.com/feihua/zero-admin/rpc/sms/gen/query"
 	"github.com/feihua/zero-admin/rpc/sms/internal/svc"
@@ -11,7 +14,6 @@ import (
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
-	"time"
 )
 
 // UpdateSeckillActivityLogic 更新秒杀活动
@@ -35,6 +37,30 @@ func NewUpdateSeckillActivityLogic(ctx context.Context, svcCtx *svc.ServiceConte
 
 // UpdateSeckillActivity 更新秒杀活动
 func (l *UpdateSeckillActivityLogic) UpdateSeckillActivity(in *smsclient.UpdateSeckillActivityReq) (*smsclient.UpdateSeckillActivityResp, error) {
+	// 2.3 基本字段校验
+	if strings.TrimSpace(in.Name) == "" {
+		return nil, fmt.Errorf("活动名称不能为空")
+	}
+	if len([]rune(in.Name)) > 100 {
+		return nil, fmt.Errorf("活动名称不能超过100个字符")
+	}
+	if len([]rune(in.Description)) > 500 {
+		return nil, fmt.Errorf("活动描述不能超过500个字符")
+	}
+
+	// 2.2 时间解析——不再吞掉错误
+	startTime, err := time.Parse("2006-01-02 15:04:05", in.StartTime)
+	if err != nil {
+		return nil, fmt.Errorf("开始时间格式无效，请使用 yyyy-MM-dd HH:mm:ss 格式")
+	}
+	endTime, err := time.Parse("2006-01-02 15:04:05", in.EndTime)
+	if err != nil {
+		return nil, fmt.Errorf("结束时间格式无效，请使用 yyyy-MM-dd HH:mm:ss 格式")
+	}
+	if !startTime.Before(endTime) {
+		return nil, fmt.Errorf("开始时间必须早于结束时间")
+	}
+
 	q := query.SmsSeckillActivity.WithContext(l.ctx)
 
 	// 1.根据秒杀活动id查询秒杀活动是否已存在
@@ -49,6 +75,13 @@ func (l *UpdateSeckillActivityLogic) UpdateSeckillActivity(in *smsclient.UpdateS
 		return nil, errors.New("查询秒杀活动异常")
 	}
 
+	// 2.1 状态流转约束：已上线(status=0)的活动不允许修改时间段
+	if detail.Status == 0 {
+		if startTime != detail.StartTime || endTime != detail.EndTime {
+			return nil, fmt.Errorf("已上线的活动不允许修改时间段，仅允许修改描述和启停")
+		}
+	}
+
 	count, err := q.Where(query.SmsSeckillActivity.Name.Eq(in.Name), query.SmsSeckillActivity.ID.Neq(in.Id)).Count()
 
 	if err != nil {
@@ -60,8 +93,6 @@ func (l *UpdateSeckillActivityLogic) UpdateSeckillActivity(in *smsclient.UpdateS
 		return nil, errors.New(fmt.Sprintf("活动名称：%s,已存在", in.Name))
 	}
 
-	startTime, _ := time.Parse("2006-01-02 15:04:05", in.StartTime)
-	endTime, _ := time.Parse("2006-01-02 15:04:05", in.EndTime)
 	now := time.Now()
 	item := &model.SmsSeckillActivity{
 		ID:          in.Id,             // 编号
