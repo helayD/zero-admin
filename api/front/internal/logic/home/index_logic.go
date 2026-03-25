@@ -251,64 +251,132 @@ func queryNewProductList(l *IndexLogic, req *types.HomeReq, currentScope pkgscop
 // 当前秒杀场次
 func queryHomeFlashPromotion(l *IndexLogic, req *types.HomeReq) types.HomeFlashPromotion {
 	var resp types.HomeFlashPromotion
-	// currentDate := time.Now().Format("2006-01-02")
-	// flashPromotionList, _ := l.svcCtx.FlashPromotionService.QueryFlashPromotionListByDate(l.ctx, &smsclient.QueryFlashPromotionListByDateReq{
-	// 	CurrentDate: currentDate,
-	// })
-	//
-	// // 获取今天是否有活动
-	// if len(flashPromotionList.List) > 0 {
-	// 	currentTime := time.Now().Format("2006-01-02 15:04:05")
-	// 	sessionByTimeResp, _ := l.svcCtx.FlashPromotionSessionService.QueryFlashPromotionSessionListByTime(l.ctx, &smsclient.QueryFlashPromotionSessionListByTimeReq{CurrentTIme: currentTime})
-	//
-	// 	// 如果今天有活动,则查询今天是否有场次
-	// 	sessionListData := sessionByTimeResp.List
-	// 	if len(sessionListData) > 0 {
-	// 		date := sessionListData[0]
-	// 		resp.StartTime = date.StartTime
-	// 		resp.EndTime = date.EndTime
-	//
-	// 		// 查询当前次的下一场时间
-	// 		nextSessionByTimeResp, _ := l.svcCtx.FlashPromotionSessionService.QueryFlashPromotionSessionListByTime(l.ctx, &smsclient.QueryFlashPromotionSessionListByTimeReq{CurrentTIme: date.StartTime})
-	// 		if len(nextSessionByTimeResp.List) > 0 {
-	// 			nextDate := nextSessionByTimeResp.List[0]
-	// 			resp.NextStartTime = nextDate.StartTime
-	// 			resp.NextEndTime = nextDate.EndTime
-	// 		}
-	//
-	// 		// 查询关联
-	// 		_, _ = l.svcCtx.FlashPromotionProductRelationService.QueryFlashPromotionProductRelationList(l.ctx, &smsclient.QueryFlashPromotionProductRelationListReq{
-	// 			PageNum:                 1,
-	// 			PageSize:                100,
-	// 			FlashPromotionId:        flashPromotionList.List[0].Id,
-	// 			FlashPromotionSessionId: sessionListData[0].Id,
-	// 		})
-	//
-	// 		// todo 为了测试有数据,这里先注释,用下面模拟的数据
-	// 		// todo =====================开始==========================
-	// 		// var productIdLists []int64
-	// 		// for _, item := range listResp.List {
-	// 		//	productIdLists = append(productIdLists, item.ProductId)
-	// 		// }
-	//
-	// 		var productIdLists []int64
-	// 		productIdLists = append(productIdLists, 27)
-	// 		productIdLists = append(productIdLists, 28)
-	// 		productIdLists = append(productIdLists, 29)
-	// 		productIdLists = append(productIdLists, 32)
-	// 		// todo =====================结束==========================
-	// 		// 设置商品
-	// 		resp.ProductList = queryProductList(l.svcCtx.ProductService, productIdLists, l.ctx)
-	// 	}
-	// }
-	// var productIdLists []int64
-	// productIdLists = append(productIdLists, 27)
-	// productIdLists = append(productIdLists, 28)
-	// productIdLists = append(productIdLists, 29)
-	// productIdLists = append(productIdLists, 32)
-	//
-	// // 设置商品
-	resp.ProductList = queryNewProductList(l, req, frontcommon.ResolveEffectiveGovernanceScope(l.ctx))
+	currentScope := frontcommon.ResolveEffectiveGovernanceScope(l.ctx)
+
+	// 1. 查询当天是否有秒杀活动
+	currentDate := time.Now().Format("2006-01-02")
+	activityResp, err := l.svcCtx.SeckillActivityService.QuerySeckillActivityListByDate(l.ctx, &smsclient.QuerySeckillActivityListByDateReq{
+		CurrentDate: currentDate,
+	})
+	if err != nil || activityResp == nil || len(activityResp.List) == 0 {
+		// 无秒杀活动时降级展示新品推荐
+		resp.ProductList = queryNewProductList(l, req, currentScope)
+		return resp
+	}
+
+	// 2. 查询当前时间是否有秒杀场次
+	currentTime := time.Now().Format("2006-01-02 15:04:05")
+	sessionResp, err := l.svcCtx.SeckillSessionService.QuerySeckillSessionListByTime(l.ctx, &smsclient.QuerySeckillSessionListByTimeReq{
+		CurrentTIme: currentTime,
+	})
+	if err != nil || sessionResp == nil || len(sessionResp.List) == 0 {
+		// 无当前场次时降级展示新品推荐
+		resp.ProductList = queryNewProductList(l, req, currentScope)
+		return resp
+	}
+
+	currentSession := sessionResp.List[0]
+	resp.StartTime = currentSession.StartTime
+	resp.EndTime = currentSession.EndTime
+
+	// 查询下一场次时间
+	nextSessionResp, _ := l.svcCtx.SeckillSessionService.QuerySeckillSessionListByTime(l.ctx, &smsclient.QuerySeckillSessionListByTimeReq{
+		CurrentTIme: currentSession.EndTime,
+	})
+	if nextSessionResp != nil && len(nextSessionResp.List) > 0 {
+		nextSession := nextSessionResp.List[0]
+		resp.NextStartTime = nextSession.StartTime
+		resp.NextEndTime = nextSession.EndTime
+	}
+
+	// 3. 查询秒杀商品列表
+	seckillProductResp, err := l.svcCtx.SeckillProductService.QuerySeckillProductList(l.ctx, &smsclient.QuerySeckillProductListReq{
+		ActivityId: activityResp.List[0].Id,
+		SessionId:  currentSession.Id,
+		Status:     1,
+		PageNum:    1,
+		PageSize:   100,
+	})
+	if err != nil || seckillProductResp == nil || len(seckillProductResp.List) == 0 {
+		resp.ProductList = queryNewProductList(l, req, currentScope)
+		return resp
+	}
+
+	// 4. 通过 SKU ID 查询对应的 SPU ID，再批量查询 SPU 商品详情
+	// TODO(perf): 此处为 N+1 查询——每个秒杀商品单独调一次 QueryProductSkuDetail RPC。
+	// 应在 pms-rpc 新增 QueryProductSkuListByIds 批量接口后改为一次批量调用。
+	spuIdSet := make(map[int64]bool)
+	for _, item := range seckillProductResp.List {
+		skuDetail, skuErr := l.svcCtx.ProductSkuService.QueryProductSkuDetail(l.ctx, &pmsclient.QueryProductSkuDetailReq{
+			Id: item.SkuId,
+		})
+		if skuErr != nil || skuDetail == nil {
+			continue
+		}
+		if skuDetail.SpuId > 0 {
+			spuIdSet[skuDetail.SpuId] = true
+		}
+	}
+
+	var spuIds []int64
+	for id := range spuIdSet {
+		spuIds = append(spuIds, id)
+	}
+
+	if len(spuIds) == 0 {
+		resp.ProductList = queryNewProductList(l, req, currentScope)
+		return resp
+	}
+
+	spuResp, err := l.svcCtx.ProductSpuService.QueryProductSpuListByIds(l.ctx, &pmsclient.QueryProductSpuByIdsReq{
+		Ids:   spuIds,
+		Scope: frontcommon.PMSGovernanceScope(currentScope),
+	})
+	if err != nil || spuResp == nil || len(spuResp.List) == 0 {
+		resp.ProductList = queryNewProductList(l, req, currentScope)
+		return resp
+	}
+
+	var productList []types.IndexProductData
+	for _, detail := range spuResp.List {
+		if err := frontcommon.EnsureFrontProductVisible(detail); err != nil {
+			continue
+		}
+		price := strings.Split(detail.PriceRange, "-")[0]
+		productList = append(productList, types.IndexProductData{
+			Id:                  detail.Id,
+			Name:                detail.Name,
+			ProductSn:           detail.ProductSn,
+			CategoryId:          detail.CategoryId,
+			CategoryIds:         detail.CategoryIds,
+			CategoryName:        detail.CategoryName,
+			BrandId:             detail.BrandId,
+			BrandName:           detail.BrandName,
+			Unit:                detail.Unit,
+			Weight:              detail.Weight,
+			Keywords:            detail.Keywords,
+			AlbumPics:           detail.AlbumPics,
+			MainPic:             detail.MainPic,
+			Price:               price,
+			PriceRange:          detail.PriceRange,
+			PublishStatus:       detail.PublishStatus,
+			NewStatus:           detail.NewStatus,
+			RecommendStatus:     detail.RecommendStatus,
+			VerifyStatus:        detail.VerifyStatus,
+			PreviewStatus:       detail.PreviewStatus,
+			Sort:                detail.Sort,
+			NewStatusSort:       detail.NewStatusSort,
+			RecommendStatusSort: detail.RecommendStatusSort,
+			Sales:               detail.Sales,
+			Stock:               detail.Stock,
+			LowStock:            detail.LowStock,
+			PromotionType:       5, // 秒杀
+			SubTitle:            detail.SubTitle,
+			DetailHtml:          detail.DetailHtml,
+			DetailMobileHtml:    detail.DetailMobileHtml,
+		})
+	}
+	resp.ProductList = productList
 	return resp
 }
 

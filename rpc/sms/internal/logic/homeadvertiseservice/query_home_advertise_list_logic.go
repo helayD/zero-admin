@@ -3,13 +3,14 @@ package homeadvertiseservicelogic
 import (
 	"context"
 	"errors"
+	"time"
+
 	"github.com/feihua/zero-admin/pkg/time_util"
 	"github.com/feihua/zero-admin/rpc/sms/gen/query"
 	"github.com/feihua/zero-admin/rpc/sms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/sms/smsclient"
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
-	"time"
 )
 
 // QueryHomeAdvertiseListLogic 查询首页轮播广告列表
@@ -54,7 +55,7 @@ func (l *QueryHomeAdvertiseListLogic) QueryHomeAdvertiseList(in *smsclient.Query
 		q = q.Where(homeAdvertise.Status.Eq(in.Status))
 	}
 
-	result, count, err := q.FindByPage(int((in.PageNum-1)*in.PageSize), int(in.PageSize))
+	result, count, err := q.Order(homeAdvertise.Sort).FindByPage(int((in.PageNum-1)*in.PageSize), int(in.PageSize))
 
 	if err != nil {
 		logc.Errorf(l.ctx, "查询首页轮播广告列表失败,参数:%+v,异常:%s", in, err.Error())

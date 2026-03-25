@@ -56,16 +56,8 @@ const AddAdvertiseModal: React.FC<CreateFormProps> = (props) => {
           <DatePicker showTime placeholder={'请输入结束日期'}/>
         </FormItem>
 
-        <FormItem
-          name="status"
-          label="上线/下线"
-          initialValue={1}
-          rules={[{required: true}]}
-        >
-          <Radio.Group id="status">
-            <Radio value={0}>下线</Radio>
-            <Radio value={1}>上线</Radio>
-          </Radio.Group>
+        <FormItem name="status" initialValue={0} hidden>
+          <Input type="hidden" />
         </FormItem>
         <FormItem
           name="pic"
@@ -73,7 +65,7 @@ const AddAdvertiseModal: React.FC<CreateFormProps> = (props) => {
           rules={[{required: true}]}
         >
           <UploadFileComponents
-            backApi={'http://127.0.0.1:8000/api/sys/upload'}
+            backApi={'/api/sys/upload'}
             count={1}
             onSubmit={(url) => {
               form.setFieldValue("pic", url);
@@ -93,7 +85,7 @@ const AddAdvertiseModal: React.FC<CreateFormProps> = (props) => {
           <Input id="update-url" placeholder={'请输入链接'}/>
         </FormItem>
         <FormItem
-          name="note"
+          name="remark"
           label="广告备注"
         >
           <Input.TextArea rows={2}/>

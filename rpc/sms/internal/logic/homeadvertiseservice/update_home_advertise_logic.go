@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/feihua/zero-admin/rpc/sms/gen/model"
 	"github.com/feihua/zero-admin/rpc/sms/gen/query"
 	"github.com/feihua/zero-admin/rpc/sms/internal/svc"
@@ -11,7 +13,6 @@ import (
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
-	"time"
 )
 
 // UpdateHomeAdvertiseLogic 更新首页轮播广告
@@ -35,6 +36,35 @@ func NewUpdateHomeAdvertiseLogic(ctx context.Context, svcCtx *svc.ServiceContext
 
 // UpdateHomeAdvertise 更新首页轮播广告
 func (l *UpdateHomeAdvertiseLogic) UpdateHomeAdvertise(in *smsclient.UpdateHomeAdvertiseReq) (*smsclient.UpdateHomeAdvertiseResp, error) {
+	// 字段校验
+	if len(in.Name) == 0 {
+		return nil, errors.New("广告名称不能为空")
+	}
+	if len(in.Name) > 100 {
+		return nil, errors.New("广告名称长度不能超过100个字符")
+	}
+	if len(in.Pic) == 0 {
+		return nil, errors.New("请先上传图片")
+	}
+	if len(in.Url) == 0 {
+		return nil, errors.New("请填写链接地址")
+	}
+
+	// 时间解析与校验
+	startTime, err := time.Parse("2006-01-02 15:04:05", in.StartTime)
+	if err != nil {
+		logc.Errorf(l.ctx, "更新首页轮播广告开始时间解析失败,参数：%+v, 异常:%s", in, err.Error())
+		return nil, errors.New("开始时间格式不正确")
+	}
+	endTime, err := time.Parse("2006-01-02 15:04:05", in.EndTime)
+	if err != nil {
+		logc.Errorf(l.ctx, "更新首页轮播广告结束时间解析失败,参数：%+v, 异常:%s", in, err.Error())
+		return nil, errors.New("结束时间格式不正确")
+	}
+	if !startTime.Before(endTime) {
+		return nil, errors.New("开始时间必须早于结束时间")
+	}
+
 	advertise := query.SmsHomeAdvertise
 	q := advertise.WithContext(l.ctx)
 
@@ -50,6 +80,11 @@ func (l *UpdateHomeAdvertiseLogic) UpdateHomeAdvertise(in *smsclient.UpdateHomeA
 		return nil, errors.New("查询首页轮播广告异常")
 	}
 
+	// 已上线广告不允许修改轮播位置
+	if ad.Status == 1 && in.Type != ad.Type {
+		return nil, errors.New("已上线广告不允许修改轮播位置，请先下线")
+	}
+
 	count, err := advertise.WithContext(l.ctx).Where(advertise.Name.Eq(in.Name), advertise.ID.Neq(in.Id)).Count()
 
 	if err != nil {
@@ -61,8 +96,6 @@ func (l *UpdateHomeAdvertiseLogic) UpdateHomeAdvertise(in *smsclient.UpdateHomeA
 		return nil, errors.New(fmt.Sprintf("首页轮播广告：%s,已存在", in.Name))
 	}
 
-	startTime, _ := time.Parse("2006-01-02 15:04:05", in.StartTime)
-	endTime, _ := time.Parse("2006-01-02 15:04:05", in.EndTime)
 	now := time.Now()
 	item := &model.SmsHomeAdvertise{
 		ID:         in.Id,         // 编号

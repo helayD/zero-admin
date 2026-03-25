@@ -59,7 +59,7 @@ const UpdateAdvertiseModal: React.FC<UpdateFormProps> = (props) => {
           <Input id="update-name" placeholder={'请输入广告名'}/>
         </FormItem>
         <FormItem name="type" label="广告位置" rules={[{required: true, message: '请选择轮播位置!'}]}>
-          <Radio.Group id="type">
+          <Radio.Group id="type" disabled={values.status === 1}>
             <Radio value={0}>PC首页轮播</Radio>
             <Radio value={1}>APP首页轮播</Radio>
           </Radio.Group>
@@ -97,7 +97,7 @@ const UpdateAdvertiseModal: React.FC<UpdateFormProps> = (props) => {
           rules={[{required: true}]}
         >
           <UploadFileComponents
-            backApi={'http://127.0.0.1:8000/api/sys/upload'} count={1}
+            backApi={'/api/sys/upload'} count={1}
             onSubmit={(url) => {
               form.setFieldValue("pic", url);
             }}
@@ -114,7 +114,7 @@ const UpdateAdvertiseModal: React.FC<UpdateFormProps> = (props) => {
           <Input id="update-url" placeholder={'请输入链接'}/>
         </FormItem>
         <FormItem
-          name="note"
+          name="remark"
           label="广告备注"
         >
           <Input.TextArea rows={2}/>

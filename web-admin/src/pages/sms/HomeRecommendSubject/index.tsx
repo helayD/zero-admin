@@ -77,7 +77,7 @@ const handleStatus = async (subjectIds: number[]) => {
   try {
     await removeRecommendSubject(subjectIds);
     hide();
-    message.success('更新品牌推荐状态成功');
+    message.success('更新专题推荐状态成功');
     return true;
   } catch (error) {
     hide();

@@ -1,5 +1,5 @@
 import {ExclamationCircleOutlined, PlusOutlined,} from '@ant-design/icons';
-import {Button, Drawer, message, Modal, Select, Switch} from 'antd';
+import {Alert, Button, Drawer, message, Modal, Select, Switch} from 'antd';
 import React, {useRef, useState} from 'react';
 import {PageContainer} from '@ant-design/pro-layout';
 import type {ActionType, ProColumns} from '@ant-design/pro-table';
@@ -9,6 +9,13 @@ import CreateHomeBrandForm from './components/CreateHomeBrandForm';
 import SetSortForm from './components/SetSortForm';
 import type {HomeBrandListItem} from './data.d';
 import {addHomeBrand, queryHomeBrandList, removeHomeBrand, updateHomeBrandSort} from './service';
+import GovernanceScopeBar from '@/pages/system/components/GovernanceScopeBar';
+import {
+  buildGovernanceScopeLabel,
+  defaultGovernanceScope,
+  type GovernanceScopeValue,
+  toGovernancePayload,
+} from '@/pages/system/components/governance';
 
 const {confirm} = Modal;
 
@@ -80,6 +87,7 @@ const HomeBrandList: React.FC = () => {
   const [showDetail, setShowDetail] = useState<boolean>(false);
   const actionRef = useRef<ActionType>();
   const [currentRow, setCurrentRow] = useState<HomeBrandListItem>();
+  const [scope, setScope] = useState<GovernanceScopeValue>(defaultGovernanceScope);
 
   const showStatusConfirm = (item: HomeBrandListItem, status: number, brandIds: number[]) => {
     confirm({
@@ -166,6 +174,22 @@ const HomeBrandList: React.FC = () => {
 
   return (
     <PageContainer>
+      <GovernanceScopeBar
+        value={scope}
+        onChange={(nextScope) => {
+          setScope(nextScope);
+          actionRef.current?.reload?.();
+        }}
+        entityLabel="品牌推荐"
+        style={{ marginBottom: 16 }}
+      />
+      <Alert
+        showIcon
+        type="info"
+        style={{ marginBottom: 16 }}
+        message={`当前查询范围：${buildGovernanceScopeLabel(scope)}`}
+        description="品牌推荐列表和“选择品牌”弹窗共享同一治理范围，只显示当前主体可推荐的品牌。"
+      />
       <ProTable<HomeBrandListItem>
         headerTitle="品牌推荐列表"
         actionRef={actionRef}
@@ -178,7 +202,7 @@ const HomeBrandList: React.FC = () => {
             <PlusOutlined/> 选择品牌
           </Button>,
         ]}
-        request={queryHomeBrandList}
+        request={(params) => queryHomeBrandList({ ...params, ...toGovernancePayload(scope) })}
         columns={columns}
         rowSelection={{}}
         pagination={{pageSize: 10}}

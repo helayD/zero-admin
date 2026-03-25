@@ -5,6 +5,14 @@ export interface HomeAdvertiseListItem {
   startTime: string;
   endTime: string;
   pic: string;
+  type: number;
+  url: string;
+  remark: string;
+  sort: number;
+  clickCount: number;
+  orderCount: number;
+  createTime: string;
+  updateTime: string;
 }
 
 export interface HomeAdvertiseListPagination {

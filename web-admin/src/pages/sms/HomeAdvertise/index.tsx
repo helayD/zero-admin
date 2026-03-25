@@ -4,8 +4,9 @@ import {
   DeleteOutlined,
   EditOutlined,
 } from '@ant-design/icons';
-import {Button, Divider, message, Drawer, Modal, Switch, Space} from 'antd';
+import {Button, Divider, message, Drawer, Modal, Switch, Space, Tag} from 'antd';
 import React, {useState, useRef} from 'react';
+import moment from 'moment';
 import {PageContainer, FooterToolbar} from '@ant-design/pro-layout';
 import ProTable from '@ant-design/pro-table';
 import type {ProColumns, ActionType} from '@ant-design/pro-table';
@@ -34,8 +35,10 @@ const handleAdd = async (fields: HomeAdvertiseListItem) => {
     hide();
     message.success('添加成功');
     return true;
-  } catch (error) {
+  } catch (error: any) {
     hide();
+    const errorMsg = error?.data?.message || error?.message || '添加失败';
+    message.error(errorMsg);
     return false;
   }
 };
@@ -52,8 +55,10 @@ const handleUpdate = async (fields: HomeAdvertiseListItem) => {
 
     message.success('更新成功');
     return true;
-  } catch (error) {
+  } catch (error: any) {
     hide();
+    const errorMsg = error?.data?.message || error?.message || '更新失败';
+    message.error(errorMsg);
     return false;
   }
 };
@@ -92,10 +97,29 @@ const handleStatus = async (ids: number[], status: number) => {
     hide();
     message.success('更新状态成功');
     return true;
-  } catch (error) {
+  } catch (error: any) {
     hide();
+    const errorMsg = error?.data?.message || error?.message || '更新状态失败';
+    message.error(errorMsg);
     return false;
   }
+};
+
+// 计算广告生效状态
+const getEffectiveStatus = (record: HomeAdvertiseListItem): { text: string; color: string } => {
+  if (record.status === 0) {
+    return { text: '已下线', color: 'default' };
+  }
+  const now = moment();
+  const start = moment(record.startTime);
+  const end = moment(record.endTime);
+  if (now.isBefore(start)) {
+    return { text: '未开始', color: 'blue' };
+  }
+  if (now.isAfter(end)) {
+    return { text: '已结束', color: 'default' };
+  }
+  return { text: '进行中', color: 'green' };
 };
 
 const HomeAdvertiseList: React.FC = () => {
@@ -214,8 +238,8 @@ const HomeAdvertiseList: React.FC = () => {
       title: '上下线状态',
       dataIndex: 'status',
       valueEnum: {
-        0: {text: '禁用', status: 'Error'},
-        1: {text: '正常', status: 'Success'},
+        0: {text: '下线', status: 'Error'},
+        1: {text: '上线', status: 'Success'},
       },
       hideInSearch: true,
       render: (dom, entity) => {
@@ -224,6 +248,21 @@ const HomeAdvertiseList: React.FC = () => {
             showStatusConfirm([entity], flag ? 1 : 0)
           }}/>
         );
+      },
+    },
+    {
+      title: '生效状态',
+      dataIndex: 'effectiveStatus',
+      valueEnum: {
+        all: { text: '全部' },
+        offline: { text: '已下线' },
+        notStarted: { text: '未开始' },
+        active: { text: '进行中' },
+        ended: { text: '已结束' },
+      },
+      render: (_: any, record: HomeAdvertiseListItem) => {
+        const { text, color } = getEffectiveStatus(record);
+        return <Tag color={color}>{text}</Tag>;
       },
     },
     {
@@ -256,8 +295,12 @@ const HomeAdvertiseList: React.FC = () => {
           <Divider type="vertical"/>
           <a
             key="delete"
-            style={{color: '#ff4d4f'}}
+            style={{color: record.status === 1 && !moment(record.startTime).isAfter(moment()) && moment(record.endTime).isAfter(moment()) ? '#d9d9d9' : '#ff4d4f'}}
             onClick={() => {
+              if (record.status === 1 && !moment(record.startTime).isAfter(moment()) && moment(record.endTime).isAfter(moment())) {
+                message.warning('已上线且在有效期内的广告不允许删除，请先下线');
+                return;
+              }
               showDeleteConfirm([record]);
             }}
           >
@@ -282,7 +325,24 @@ const HomeAdvertiseList: React.FC = () => {
             <PlusOutlined/> 新建广告
           </Button>,
         ]}
-        request={queryHomeAdvertiseList}
+        request={(params) => {
+          const { effectiveStatus, ...rest } = params as any;
+          const now = moment().format('YYYY-MM-DD HH:mm:ss');
+          if (effectiveStatus === 'offline') {
+            rest.status = 0;
+          } else if (effectiveStatus === 'notStarted') {
+            rest.status = 1;
+            rest.startTime = now; // startTime >= now means not started yet
+          } else if (effectiveStatus === 'active') {
+            rest.status = 1;
+            // active: start <= now <= end, use endTime filter (endTime >= now)
+            rest.endTime = now;
+          } else if (effectiveStatus === 'ended') {
+            rest.status = 1;
+            rest.endTime = now; // endTime < now handled by backend lte filter
+          }
+          return queryHomeAdvertiseList(rest);
+        }}
         columns={columns}
         rowSelection={{}}
         pagination={{pageSize: 10}}

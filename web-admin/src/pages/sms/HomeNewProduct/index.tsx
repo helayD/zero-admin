@@ -77,7 +77,7 @@ const handleStatus = async (productIds: number[]) => {
   try {
     await removeHomeNewProduct(productIds);
     hide();
-    message.success('更新品牌推荐状态成功');
+    message.success('更新新品推荐状态成功');
     return true;
   } catch (error) {
     hide();
