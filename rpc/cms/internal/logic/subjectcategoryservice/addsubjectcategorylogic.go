@@ -4,12 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
+	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/rpc/cms/cmsclient"
 	"github.com/feihua/zero-admin/rpc/cms/gen/model"
 	"github.com/feihua/zero-admin/rpc/cms/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/cms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/cms/internal/svc"
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
 )
 
 // AddSubjectCategoryLogic 添加专题分类
@@ -33,14 +37,21 @@ func NewAddSubjectCategoryLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 
 // AddSubjectCategory 添加专题分类
 func (l *AddSubjectCategoryLogic) AddSubjectCategory(in *cmsclient.AddSubjectCategoryReq) (*cmsclient.AddSubjectCategoryResp, error) {
-	q := query.CmsSubjectCategory
-
-	count, err := q.WithContext(l.ctx).Where(q.Name.Eq(in.Name)).Count()
+	currentScope, err := logiccommon.ResolveWriteScope(l.ctx, l.svcCtx.DB, in.Scope, in.CreateBy)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("添加专题分类失败"))
+		return nil, err
 	}
 
-	if count > 0 {
+	var dupCount int64
+	err = pkgscope.ApplyGovernanceScope(
+		l.svcCtx.DB.WithContext(l.ctx).Model(&model.CmsSubjectCategory{}).Where("name = ?", in.Name),
+		currentScope,
+		"",
+	).Count(&dupCount).Error
+	if err != nil {
+		return nil, errors.New("添加专题分类失败")
+	}
+	if dupCount > 0 {
 		return nil, errors.New(fmt.Sprintf("专题分类名称：%s,已存在", in.Name))
 	}
 
@@ -53,7 +64,12 @@ func (l *AddSubjectCategoryLogic) AddSubjectCategory(in *cmsclient.AddSubjectCat
 		CreateBy:     in.CreateBy,     // 创建者
 	}
 
-	err = q.WithContext(l.ctx).Create(item)
+	err = l.svcCtx.DB.WithContext(l.ctx).Transaction(func(tx *gorm.DB) error {
+		if err := query.Use(tx).CmsSubjectCategory.WithContext(l.ctx).Create(item); err != nil {
+			return err
+		}
+		return logiccommon.ApplySubjectCategoryScope(l.ctx, tx, item.ID, currentScope)
+	})
 	if err != nil {
 		logc.Errorf(l.ctx, "添加专题分类失败,参数:%+v,异常:%s", item, err.Error())
 		return nil, errors.New("添加专题分类失败")

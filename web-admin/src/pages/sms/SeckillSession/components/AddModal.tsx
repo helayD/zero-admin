@@ -1,6 +1,7 @@
 import React, {useEffect} from 'react';
-import { Form, Input, InputNumber, Modal, Radio, TimePicker } from 'antd';
+import { Form, Input, InputNumber, Modal, Radio, TimePicker, message } from 'antd';
 import type { SeckillSessionListItem} from '../data.d';
+import moment from 'moment';
 
 export interface AddModalProps {
   onCancel: () => void;
@@ -37,6 +38,10 @@ const AddModal: React.FC<AddModalProps> = (props) => {
   };
 
   const handleFinish = (values: SeckillSessionListItem) => {
+    if (values.startTime && values.endTime && moment(values.startTime).isSameOrAfter(moment(values.endTime))) {
+      message.error('开始时间必须早于结束时间');
+      return;
+    }
     if (onSubmit) {
       onSubmit(values);
     }

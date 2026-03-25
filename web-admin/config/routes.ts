@@ -307,10 +307,8 @@
     icon: 'crown',
     routes: [
       {
-        name: '秒杀活动',
-        icon: 'table',
         path: '/sms/flashPromotion/list',
-        component: './sms/FlashPromotion',
+        redirect: '/sms/seckillActivity/list',
       },
       {
         name: '品牌推荐',
@@ -349,7 +347,7 @@
         component: './sms/Coupon',
       },
       {
-        name: '限时购场次',
+        name: '秒杀活动',
         icon: 'table',
         path: '/sms/seckillActivity/list',
         component: './sms/SeckillActivity',

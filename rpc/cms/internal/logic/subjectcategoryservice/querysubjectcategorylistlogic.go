@@ -2,13 +2,16 @@ package subjectcategoryservicelogic
 
 import (
 	"context"
-	"errors"
+
+	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/pkg/time_util"
 	"github.com/feihua/zero-admin/rpc/cms/cmsclient"
-	"github.com/feihua/zero-admin/rpc/cms/gen/query"
+	"github.com/feihua/zero-admin/rpc/cms/gen/model"
+	logiccommon "github.com/feihua/zero-admin/rpc/cms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/cms/internal/svc"
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
 )
 
 // QuerySubjectCategoryListLogic 查询专题分类列表
@@ -32,26 +35,42 @@ func NewQuerySubjectCategoryListLogic(ctx context.Context, svcCtx *svc.ServiceCo
 
 // QuerySubjectCategoryList 查询专题分类列表
 func (l *QuerySubjectCategoryListLogic) QuerySubjectCategoryList(in *cmsclient.QuerySubjectCategoryListReq) (*cmsclient.QuerySubjectCategoryListResp, error) {
-	subjectCategory := query.CmsSubjectCategory
-	q := subjectCategory.WithContext(l.ctx)
-	if len(in.Name) > 0 {
-		q = q.Where(subjectCategory.Name.Like("%" + in.Name + "%"))
-	}
-	if len(in.Icon) > 0 {
-		q = q.Where(subjectCategory.Icon.Like("%" + in.Icon + "%"))
-	}
-	if in.SubjectCount != 2 {
-		q = q.Where(subjectCategory.SubjectCount.Eq(in.SubjectCount))
-	}
-	if in.ShowStatus != 2 {
-		q = q.Where(subjectCategory.ShowStatus.Eq(in.ShowStatus))
+	current, err := logiccommon.NormalizeProtoScope(in.Scope)
+	if err != nil {
+		logc.Errorf(l.ctx, "查询专题分类列表scope非法,参数:%+v,异常:%s", in, err.Error())
+		return nil, err
 	}
 
-	result, count, err := q.FindByPage(int((in.PageNum-1)*in.PageSize), int(in.PageSize))
+	q := pkgscope.ApplyGovernanceScope(
+		l.svcCtx.DB.WithContext(l.ctx).Model(&model.CmsSubjectCategory{}),
+		current,
+		"",
+	)
+	if len(in.Name) > 0 {
+		q = q.Where("name LIKE ?", "%"+in.Name+"%")
+	}
+	if len(in.Icon) > 0 {
+		q = q.Where("icon LIKE ?", "%"+in.Icon+"%")
+	}
+	if in.SubjectCount != 2 {
+		q = q.Where("subject_count = ?", in.SubjectCount)
+	}
+	if in.ShowStatus != 2 {
+		q = q.Where("show_status = ?", in.ShowStatus)
+	}
+
+	var (
+		result []model.CmsSubjectCategory
+		count  int64
+	)
+	err = q.Session(&gorm.Session{}).Count(&count).Error
+	if err == nil {
+		err = q.Order("sort ASC, id DESC").Offset(int((in.PageNum - 1) * in.PageSize)).Limit(int(in.PageSize)).Find(&result).Error
+	}
 
 	if err != nil {
 		logc.Errorf(l.ctx, "查询专题分类列表失败,参数:%+v,异常:%s", in, err.Error())
-		return nil, errors.New("查询专题分类列表失败")
+		return nil, err
 	}
 
 	var list []*cmsclient.SubjectCategoryListData
@@ -68,7 +87,6 @@ func (l *QuerySubjectCategoryListLogic) QuerySubjectCategoryList(in *cmsclient.Q
 			CreateTime:   time_util.TimeToStr(item.CreateTime),    // 创建时间
 			UpdateBy:     item.UpdateBy,                           // 更新者
 			UpdateTime:   time_util.TimeToString(item.UpdateTime), // 更新时间
-
 		})
 	}
 

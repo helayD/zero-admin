@@ -2,14 +2,16 @@ package preferredareaservicelogic
 
 import (
 	"context"
+
+	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/pkg/time_util"
-	"github.com/feihua/zero-admin/rpc/cms/gen/query"
-	"github.com/zeromicro/go-zero/core/logc"
-
 	"github.com/feihua/zero-admin/rpc/cms/cmsclient"
+	"github.com/feihua/zero-admin/rpc/cms/gen/model"
+	logiccommon "github.com/feihua/zero-admin/rpc/cms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/cms/internal/svc"
-
+	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
 )
 
 // QueryPreferredAreaListLogic 查询优选专区列表
@@ -33,19 +35,35 @@ func NewQueryPreferredAreaListLogic(ctx context.Context, svcCtx *svc.ServiceCont
 
 // QueryPreferredAreaList 查询优选专区列表
 func (l *QueryPreferredAreaListLogic) QueryPreferredAreaList(in *cmsclient.QueryPreferredAreaListReq) (*cmsclient.QueryPreferredAreaListResp, error) {
-	q := query.CmsPreferredArea.WithContext(l.ctx)
+	current, err := logiccommon.NormalizeProtoScope(in.Scope)
+	if err != nil {
+		logc.Errorf(l.ctx, "查询优选专区列表scope非法,参数:%+v,异常:%s", in, err.Error())
+		return nil, err
+	}
 
+	q := pkgscope.ApplyGovernanceScope(
+		l.svcCtx.DB.WithContext(l.ctx).Model(&model.CmsPreferredArea{}),
+		current,
+		"",
+	)
 	if len(in.Name) > 0 {
-		q = q.Where(query.CmsPreferredArea.Name.Like("%" + in.Name + "%"))
+		q = q.Where("name LIKE ?", "%"+in.Name+"%")
 	}
 	if len(in.SubTitle) > 0 {
-		q = q.Where(query.CmsPreferredArea.SubTitle.Like("%" + in.SubTitle + "%"))
+		q = q.Where("sub_title LIKE ?", "%"+in.SubTitle+"%")
 	}
 	if in.ShowStatus != 2 {
-		q = q.Where(query.CmsPreferredArea.ShowStatus.Eq(in.ShowStatus))
+		q = q.Where("show_status = ?", in.ShowStatus)
 	}
 
-	result, count, err := q.FindByPage(int((in.PageNum-1)*in.PageSize), int(in.PageSize))
+	var (
+		result []model.CmsPreferredArea
+		count  int64
+	)
+	err = q.Session(&gorm.Session{}).Count(&count).Error
+	if err == nil {
+		err = q.Order("sort ASC, id DESC").Offset(int((in.PageNum - 1) * in.PageSize)).Limit(int(in.PageSize)).Find(&result).Error
+	}
 
 	if err != nil {
 		logc.Errorf(l.ctx, "查询商品优选列表信息失败,参数:%+v,异常:%s", in, err.Error())
@@ -66,7 +84,6 @@ func (l *QueryPreferredAreaListLogic) QueryPreferredAreaList(in *cmsclient.Query
 			CreateTime: time_util.TimeToStr(item.CreateTime),    // 创建时间
 			UpdateBy:   item.UpdateBy,                           // 更新者
 			UpdateTime: time_util.TimeToString(item.UpdateTime), // 更新时间
-
 		})
 	}
 
@@ -74,5 +91,4 @@ func (l *QueryPreferredAreaListLogic) QueryPreferredAreaList(in *cmsclient.Query
 		Total: count,
 		List:  list,
 	}, nil
-
 }

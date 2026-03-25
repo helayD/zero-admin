@@ -1,5 +1,5 @@
 import {DeleteOutlined, EditOutlined, ExclamationCircleOutlined, PlusOutlined} from '@ant-design/icons';
-import {Button, Divider, Drawer, message, Modal, Select, Switch} from 'antd';
+import {Button, Divider, Drawer, message, Modal, Select, Switch, Tag, Tooltip} from 'antd';
 import React, {useRef, useState} from 'react';
 import {PageContainer} from '@ant-design/pro-layout';
 import type {ActionType, ProColumns} from '@ant-design/pro-table';
@@ -84,8 +84,9 @@ const handleStatus = async (ids: number[], status: number) => {
     hide();
     message.success('更新状态成功');
     return true;
-  } catch (error) {
+  } catch (error: any) {
     hide();
+    message.error(error?.data?.message || error?.message || '更新状态失败');
     return false;
   }
 };
@@ -169,17 +170,13 @@ const SeckillActivityList: React.FC = () => {
         const startDate = moment(entity.startTime)
         const endDate = moment(entity.endTime)
 
-        let status
         if (now.isBefore(startDate)) {
-          status = '活动未开始'
+          return <Tag color="blue">未开始</Tag>;
         } else if (now.isAfter(endDate)) {
-          status = '活动已结束'
+          return <Tag color="default">已结束</Tag>;
         } else {
-          status = '活动进行中'
+          return <Tag color="green">进行中</Tag>;
         }
-        return <>
-          {status}
-        </>;
       },
     },
     {
@@ -263,15 +260,23 @@ const SeckillActivityList: React.FC = () => {
             <EditOutlined/> 编辑
           </a>
           <Divider type="vertical"/>
-          <a
-            key="delete"
-            style={ {color: '#ff4d4f'} }
-            onClick={() => {
-              showDeleteConfirm( [record.id]);
-            }}
-          >
-            <DeleteOutlined/> 删除
-          </a>
+          {record.status === 0 && moment().isBefore(moment(record.endTime)) ? (
+            <Tooltip title="请先下线再删除">
+              <span style={{color: '#d9d9d9', cursor: 'not-allowed'}}>
+                <DeleteOutlined/> 删除
+              </span>
+            </Tooltip>
+          ) : (
+            <a
+              key="delete"
+              style={ {color: '#ff4d4f'} }
+              onClick={() => {
+                showDeleteConfirm( [record.id]);
+              }}
+            >
+              <DeleteOutlined/> 删除
+            </a>
+          )}
         </>
       ),
     },

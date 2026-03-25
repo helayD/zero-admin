@@ -3,9 +3,12 @@ package preferredareaservicelogic
 import (
 	"context"
 	"errors"
+
+	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/pkg/time_util"
 	"github.com/feihua/zero-admin/rpc/cms/cmsclient"
-	"github.com/feihua/zero-admin/rpc/cms/gen/query"
+	"github.com/feihua/zero-admin/rpc/cms/gen/model"
+	logiccommon "github.com/feihua/zero-admin/rpc/cms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/cms/internal/svc"
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -33,8 +36,18 @@ func NewQueryPreferredAreaDetailLogic(ctx context.Context, svcCtx *svc.ServiceCo
 
 // QueryPreferredAreaDetail 查询优选专区详情
 func (l *QueryPreferredAreaDetailLogic) QueryPreferredAreaDetail(in *cmsclient.QueryPreferredAreaDetailReq) (*cmsclient.QueryPreferredAreaDetailResp, error) {
-	q := query.CmsPreferredArea
-	item, err := q.WithContext(l.ctx).Where(q.ID.Eq(in.Id)).First()
+	current, err := logiccommon.NormalizeProtoScope(in.Scope)
+	if err != nil {
+		logc.Errorf(l.ctx, "查询优选专区详情scope非法,参数:%+v,异常:%s", in, err.Error())
+		return nil, err
+	}
+
+	var item model.CmsPreferredArea
+	err = pkgscope.ApplyGovernanceScope(
+		l.svcCtx.DB.WithContext(l.ctx).Model(&model.CmsPreferredArea{}),
+		current,
+		"",
+	).Where("id = ?", in.Id).First(&item).Error
 
 	switch {
 	case errors.Is(err, gorm.ErrRecordNotFound):

@@ -17,8 +17,8 @@ import ProTable from '@ant-design/pro-table';
 import type { ProDescriptionsItemProps } from '@ant-design/pro-descriptions';
 import ProDescriptions from '@ant-design/pro-descriptions';
 import type { PreferredAreaListItem } from './data.d';
-import CreatePreferredAreaForm from './components/CreatePostForm';
-import UpdatePreferredAreaForm from './components/UpdatePostForm';
+import CreatePreferredAreaForm from './components/CreatePreferredAreaForm';
+import UpdatePreferredAreaForm from './components/UpdatePreferredAreaForm';
 import {
   addPreferredArea,
   queryPreferredAreaList,
@@ -151,6 +151,17 @@ const PreferredAreaList: React.FC = () => {
       title: '副标题',
       dataIndex: 'subTitle',
       hideInSearch: true,
+    },
+    {
+      title: '图片',
+      dataIndex: 'pic',
+      hideInSearch: true,
+      render: (_, entity) =>
+        entity.pic ? (
+          <img src={entity.pic} alt="专区图片" style={{ maxWidth: 80, maxHeight: 60 }} />
+        ) : (
+          '-'
+        ),
     },
     {
       title: '显示状态',

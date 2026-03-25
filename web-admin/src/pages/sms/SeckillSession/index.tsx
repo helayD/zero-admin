@@ -77,12 +77,13 @@ const handleStatus = async (ids: number[], status: number) => {
     return true;
   }
   try {
-    await updateSeckillSessionStatus({ ids: ids, status: status});
+    await updateSeckillSessionStatus({ seckillSessionIds: ids, seckillSessionStatus: status});
     hide();
     message.success('更新状态成功');
     return true;
-  } catch (error) {
+  } catch (error: any) {
     hide();
+    message.error(error?.data?.message || error?.message || '更新状态失败');
     return false;
   }
 };

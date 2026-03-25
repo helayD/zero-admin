@@ -3,13 +3,14 @@ package preferredareaservicelogic
 import (
 	"context"
 	"errors"
+	"strconv"
+
 	"github.com/feihua/zero-admin/rpc/cms/cmsclient"
 	"github.com/feihua/zero-admin/rpc/cms/gen/query"
 	logiccommon "github.com/feihua/zero-admin/rpc/cms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/cms/internal/svc"
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
-	"strconv"
 )
 
 // UpdatePreferredAreaStatusLogic 更新优选专区
@@ -34,7 +35,7 @@ func NewUpdatePreferredAreaStatusLogic(ctx context.Context, svcCtx *svc.ServiceC
 // UpdatePreferredAreaStatus 更新优选专区状态
 func (l *UpdatePreferredAreaStatusLogic) UpdatePreferredAreaStatus(in *cmsclient.UpdatePreferredAreaStatusReq) (*cmsclient.UpdatePreferredAreaStatusResp, error) {
 	q := query.CmsPreferredArea
-	currentScope, err := logiccommon.ResolveWriteScope(l.ctx, l.svcCtx.DB, nil, in.UpdateBy)
+	currentScope, err := logiccommon.ResolveWriteScope(l.ctx, l.svcCtx.DB, in.Scope, in.UpdateBy)
 	if err != nil {
 		return nil, err
 	}

@@ -1,5 +1,5 @@
 import React, {useEffect} from 'react';
-import { DatePicker, Form, Input, Modal } from 'antd';
+import { DatePicker, Form, Input, Modal, message } from 'antd';
 import type { SeckillActivityListItem} from '../data.d';
 import moment from 'moment';
 
@@ -49,10 +49,16 @@ const UpdateModal: React.FC<UpdateModalProps> = (props) => {
   };
 
   const handleFinish = (values: { [key: string]: any }) => {
+    if (values.startTime && values.endTime && moment(values.startTime).isSameOrAfter(moment(values.endTime))) {
+      message.error('开始时间必须早于结束时间');
+      return;
+    }
     if (onSubmit) {
       onSubmit(values as SeckillActivityListItem);
     }
   };
+
+  const isOnline = currentData.status === 0;
 
   const renderContent = () => {
     return (
@@ -90,15 +96,17 @@ const UpdateModal: React.FC<UpdateModalProps> = (props) => {
           name="startTime"
           label="开始时间"
           rules={[{required: true, message: '请输入开始时间!'}]}
+          extra={isOnline ? '已上线活动不可修改时间' : undefined}
         >
-          <DatePicker showTime placeholder={'请输入开始时间'}/>
+          <DatePicker showTime placeholder={'请输入开始时间'} disabled={isOnline}/>
         </FormItem>
         <FormItem
           name="endTime"
           label="结束时间"
           rules={[{required: true, message: '请输入结束时间!'}]}
+          extra={isOnline ? '已上线活动不可修改时间' : undefined}
         >
-          <DatePicker showTime placeholder={'请输入结束时间'}/>
+          <DatePicker showTime placeholder={'请输入结束时间'} disabled={isOnline}/>
         </FormItem>
         {/* 状态通过列表页 Switch 操作，编辑表单不直接修改 */}
       </>

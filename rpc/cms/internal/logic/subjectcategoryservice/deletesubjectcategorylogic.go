@@ -3,8 +3,10 @@ package subjectcategoryservicelogic
 import (
 	"context"
 	"errors"
+
 	"github.com/feihua/zero-admin/rpc/cms/cmsclient"
 	"github.com/feihua/zero-admin/rpc/cms/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/cms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/cms/internal/svc"
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -32,8 +34,15 @@ func NewDeleteSubjectCategoryLogic(ctx context.Context, svcCtx *svc.ServiceConte
 // DeleteSubjectCategory 删除专题分类
 func (l *DeleteSubjectCategoryLogic) DeleteSubjectCategory(in *cmsclient.DeleteSubjectCategoryReq) (*cmsclient.DeleteSubjectCategoryResp, error) {
 	q := query.CmsSubjectCategory
+	currentScope, err := logiccommon.ResolveWriteScope(l.ctx, l.svcCtx.DB, in.Scope, "")
+	if err != nil {
+		return nil, err
+	}
+	if _, err := logiccommon.EnsureSubjectCategoryScope(l.ctx, l.svcCtx.DB, currentScope, in.Ids, "cms.subject_category.delete", "", "delete subject_category"); err != nil {
+		return nil, err
+	}
 
-	_, err := q.WithContext(l.ctx).Where(q.ID.In(in.Ids...)).Delete()
+	_, err = q.WithContext(l.ctx).Where(q.ID.In(in.Ids...)).Delete()
 
 	if err != nil {
 		logc.Errorf(l.ctx, "删除专题分类失败,参数:%+v,异常:%s", in, err.Error())

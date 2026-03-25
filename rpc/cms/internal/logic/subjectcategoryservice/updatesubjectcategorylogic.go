@@ -3,14 +3,17 @@ package subjectcategoryservicelogic
 import (
 	"context"
 	"errors"
+	"fmt"
+	"time"
+
 	"github.com/feihua/zero-admin/rpc/cms/cmsclient"
 	"github.com/feihua/zero-admin/rpc/cms/gen/model"
 	"github.com/feihua/zero-admin/rpc/cms/gen/query"
+	logiccommon "github.com/feihua/zero-admin/rpc/cms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/cms/internal/svc"
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
-	"time"
 )
 
 // UpdateSubjectCategoryLogic 更新专题分类
@@ -35,6 +38,13 @@ func NewUpdateSubjectCategoryLogic(ctx context.Context, svcCtx *svc.ServiceConte
 // UpdateSubjectCategory 更新专题分类
 func (l *UpdateSubjectCategoryLogic) UpdateSubjectCategory(in *cmsclient.UpdateSubjectCategoryReq) (*cmsclient.UpdateSubjectCategoryResp, error) {
 	q := query.CmsSubjectCategory.WithContext(l.ctx)
+	currentScope, err := logiccommon.ResolveWriteScope(l.ctx, l.svcCtx.DB, in.Scope, in.UpdateBy)
+	if err != nil {
+		return nil, err
+	}
+	if _, err := logiccommon.EnsureSubjectCategoryScope(l.ctx, l.svcCtx.DB, currentScope, []int64{in.Id}, "cms.subject_category.update", in.UpdateBy, fmt.Sprintf("subjectCategoryId=%d", in.Id)); err != nil {
+		return nil, err
+	}
 
 	s, err := q.Where(query.CmsSubjectCategory.ID.Eq(in.Id)).First()
 

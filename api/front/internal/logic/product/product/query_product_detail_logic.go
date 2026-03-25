@@ -73,14 +73,19 @@ func (l *QueryProductDetailLogic) QueryProductDetail(req *types.QueryProductDeta
 	})
 	if couponList != nil && len(couponList.List) > 0 {
 		if memberId, ok := tryGetMemberID(l.ctx); ok {
-			claimCountMap = l.buildMemberCouponClaimCount(memberId)
+			// 只收集当前页面优惠券ID，避免查询全量领取记录
+			pageCouponIDs := make(map[int64]struct{}, len(couponList.List))
+			for _, c := range couponList.List {
+				pageCouponIDs[c.Id] = struct{}{}
+			}
+			claimCountMap = l.buildMemberCouponClaimCount(memberId, pageCouponIDs)
 		}
 	}
 
 	return buildProductDetailResponse(detail, couponList, visibility, claimCountMap), nil
 }
 
-func (l *QueryProductDetailLogic) buildMemberCouponClaimCount(memberId int64) map[int64]int64 {
+func (l *QueryProductDetailLogic) buildMemberCouponClaimCount(memberId int64, pageCouponIDs map[int64]struct{}) map[int64]int64 {
 	claimCountMap := make(map[int64]int64)
 	couponResp, err := l.svcCtx.CouponRecordService.QueryMemberCouponList(l.ctx, &smsclient.QueryMemberCouponListReq{
 		MemberId: memberId,
@@ -91,7 +96,10 @@ func (l *QueryProductDetailLogic) buildMemberCouponClaimCount(memberId int64) ma
 		return claimCountMap
 	}
 	for _, item := range couponResp.List {
-		claimCountMap[item.Id]++
+		// 只统计当前页面涉及的优惠券ID，减少无效聚合
+		if _, ok := pageCouponIDs[item.Id]; ok {
+			claimCountMap[item.Id]++
+		}
 	}
 	return claimCountMap
 }

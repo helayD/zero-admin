@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
+	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/rpc/cms/cmsclient"
 	"github.com/feihua/zero-admin/rpc/cms/gen/model"
 	"github.com/feihua/zero-admin/rpc/cms/gen/query"
@@ -35,20 +37,22 @@ func NewAddPreferredAreaLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 
 // AddPreferredArea 添加优选专区
 func (l *AddPreferredAreaLogic) AddPreferredArea(in *cmsclient.AddPreferredAreaReq) (*cmsclient.AddPreferredAreaResp, error) {
-	q := query.CmsPreferredArea
-
-	count, err := q.WithContext(l.ctx).Where(q.Name.Eq(in.Name)).Count()
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("添加优选专区失败"))
-	}
-
-	if count > 0 {
-		return nil, errors.New(fmt.Sprintf("优选专区名称：%s,已存在", in.Name))
-	}
-
-	currentScope, err := logiccommon.ResolveWriteScope(l.ctx, l.svcCtx.DB, nil, in.CreateBy)
+	currentScope, err := logiccommon.ResolveWriteScope(l.ctx, l.svcCtx.DB, in.Scope, in.CreateBy)
 	if err != nil {
 		return nil, err
+	}
+
+	var dupCount int64
+	err = pkgscope.ApplyGovernanceScope(
+		l.svcCtx.DB.WithContext(l.ctx).Model(&model.CmsPreferredArea{}).Where("name = ?", in.Name),
+		currentScope,
+		"",
+	).Count(&dupCount).Error
+	if err != nil {
+		return nil, errors.New("添加优选专区失败")
+	}
+	if dupCount > 0 {
+		return nil, errors.New(fmt.Sprintf("优选专区名称：%s,已存在", in.Name))
 	}
 
 	area := &model.CmsPreferredArea{

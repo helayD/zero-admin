@@ -1,6 +1,7 @@
 import React, {useEffect} from 'react';
-import { DatePicker, Form, Input, Modal } from 'antd';
+import { DatePicker, Form, Input, Modal, message } from 'antd';
 import type { SeckillActivityListItem} from '../data.d';
+import moment from 'moment';
 
 export interface AddModalProps {
   onCancel: () => void;
@@ -37,6 +38,10 @@ const AddModal: React.FC<AddModalProps> = (props) => {
   };
 
   const handleFinish = (values: SeckillActivityListItem) => {
+    if (values.startTime && values.endTime && moment(values.startTime).isSameOrAfter(moment(values.endTime))) {
+      message.error('开始时间必须早于结束时间');
+      return;
+    }
     if (onSubmit) {
       onSubmit(values);
     }

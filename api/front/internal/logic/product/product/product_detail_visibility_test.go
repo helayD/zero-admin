@@ -9,7 +9,7 @@ import (
 func TestBuildProductDetailResponseForHiddenProduct(t *testing.T) {
 	visibility := frontcommon.BuildFrontProductVisibility(nil)
 
-	resp := buildProductDetailResponse(nil, nil, visibility)
+	resp := buildProductDetailResponse(nil, nil, visibility, map[int64]int64{})
 	if resp.Code != productDetailCodeHidden {
 		t.Fatalf("expected hidden code %d, got %d", productDetailCodeHidden, resp.Code)
 	}

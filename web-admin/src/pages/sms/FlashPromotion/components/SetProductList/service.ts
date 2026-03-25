@@ -29,7 +29,7 @@ export async function removeProductRelationList(ids: number[], flashPromotionId:
 
 // 更新场次关联及商品信息
 export async function updateProductRelationList(params: ProductRelationListListItem) {
-  return request('/api/sys/user/updateProductRelationList', {
+  return request('/api/sms/flashPromotionProductRelation/updateFlashPromotionProductRelation', {
     method: 'POST',
     data: {
       ...params,
@@ -39,8 +39,8 @@ export async function updateProductRelationList(params: ProductRelationListListI
 
 
 // 查询场次关联及商品信息详情
-export async function queryProductRelationListDetail(userId: number) {
-  return request('/api/sys/user/queryProductRelationListDetail?id=' + userId, {
+export async function queryProductRelationListDetail(id: number) {
+  return request('/api/sms/flashPromotionProductRelation/queryFlashPromotionProductRelationDetail?id=' + id, {
     method: 'GET',
 
   });

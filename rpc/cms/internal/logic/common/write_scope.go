@@ -64,6 +64,40 @@ func ApplyPreferredAreaScope(ctx context.Context, db *gorm.DB, preferredAreaID i
 		}).Error
 }
 
+func ApplySubjectCategoryScope(ctx context.Context, db *gorm.DB, subjectCategoryID int64, current pkgscope.GovernanceScope) error {
+	return db.WithContext(ctx).
+		Table("cms_subject_category").
+		Where("id = ?", subjectCategoryID).
+		Updates(map[string]interface{}{
+			"platform_id": current.PlatformID,
+			"tenant_id":   current.TenantID,
+			"merchant_id": current.MerchantID,
+		}).Error
+}
+
+func EnsureSubjectCategoryScope(ctx context.Context, db *gorm.DB, current pkgscope.GovernanceScope, ids []int64, action string, operatorName, requestSummary string) ([]pkgscope.ResourceScopeRow, error) {
+	uniqueIDs := pkgscope.UniquePositiveIDs(ids)
+	if len(uniqueIDs) == 0 {
+		return nil, errors.New("缺少有效资源ID")
+	}
+
+	rows, err := pkgscope.LoadResourceScopeRows(ctx, db, "cms_subject_category", "id", uniqueIDs)
+	if err != nil {
+		return nil, err
+	}
+	if missing := pkgscope.MissingResourceIDs(rows, uniqueIDs); len(missing) > 0 {
+		return nil, errors.New("专题分类不存在")
+	}
+
+	authorized, unauthorized := pkgscope.SplitResourceScopeRows(rows, current)
+	if len(unauthorized) > 0 {
+		recordDeniedSecurityEvents(ctx, db, current, action, "subject_category", unauthorized, operatorName, requestSummary)
+		return nil, errors.New("当前主体无权修改所选专题分类")
+	}
+
+	return authorized, nil
+}
+
 func EnsureSubjectScope(ctx context.Context, db *gorm.DB, current pkgscope.GovernanceScope, ids []int64, action string, operatorName, requestSummary string) ([]pkgscope.ResourceScopeRow, error) {
 	uniqueIDs := pkgscope.UniquePositiveIDs(ids)
 	if len(uniqueIDs) == 0 {
