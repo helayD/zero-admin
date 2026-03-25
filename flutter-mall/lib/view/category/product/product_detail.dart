@@ -44,10 +44,10 @@ class _ProductDetailState extends State<ProductDetail> {
   @override
   void initState() {
     super.initState();
-    queryCollectionList();
+    refreshProductDetail();
   }
 
-  void queryCollectionList() async {
+  void refreshProductDetail() async {
     try {
       Response result = await HttpUtil.get(
         productDetailDataUrl + widget.productId.toString(),
@@ -1301,7 +1301,7 @@ class _ProductDetailState extends State<ProductDetail> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(resp["message"] ?? "领取成功"), backgroundColor: Colors.green),
           );
-          queryCollectionList();
+          refreshProductDetail();
         }
       } else {
         if (mounted) {

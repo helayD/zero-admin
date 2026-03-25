@@ -2,6 +2,7 @@ package coupon
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	frontcommon "github.com/feihua/zero-admin/api/front/internal/logic/common"
@@ -114,10 +115,17 @@ func QueryCouponList(svcCtx *svc.ServiceContext, ctx context.Context, cartPromot
 		}
 
 		couponData := toCouponData(available, item.ScopeType)
-		if couponSubtotal(couponData.ScopeType, scopeResp.List, cartPromotionItemList) >= float64(couponData.MinAmount) &&
-			couponUsableNow(couponData.StartTime, couponData.EndTime) {
+		subtotal := couponSubtotal(couponData.ScopeType, scopeResp.List, cartPromotionItemList)
+		usableNow := couponUsableNow(couponData.StartTime, couponData.EndTime)
+		minAmount := int64(couponData.MinAmount)
+		if subtotal >= minAmount && usableNow {
 			enableList = append(enableList, couponData)
 		} else {
+			if !usableNow {
+				couponData.DisableReason = "优惠券不在有效期内"
+			} else if subtotal < minAmount {
+				couponData.DisableReason = fmt.Sprintf("订单金额未满 ¥%.2f", couponData.MinAmount)
+			}
 			disableList = append(disableList, couponData)
 		}
 	}
@@ -143,9 +151,9 @@ func buildCouponScopeIDs(cartPromotionItemList []types.CarItemtPromotionListData
 	return ids
 }
 
-func couponSubtotal(scopeType int32, scopeRows []*smsclient.CouponScopeListData, cartPromotionItemList []types.CarItemtPromotionListData) float64 {
+func couponSubtotal(scopeType int32, scopeRows []*smsclient.CouponScopeListData, cartPromotionItemList []types.CarItemtPromotionListData) int64 {
 	if scopeType == 0 {
-		total := 0.0
+		var total int64
 		for _, item := range cartPromotionItemList {
 			total += cartItemAmount(item)
 		}
@@ -160,7 +168,7 @@ func couponSubtotal(scopeType int32, scopeRows []*smsclient.CouponScopeListData,
 		scopeIDs[row.ScopeId] = struct{}{}
 	}
 
-	total := 0.0
+	var total int64
 	for _, item := range cartPromotionItemList {
 		switch scopeType {
 		case 1:
@@ -176,12 +184,12 @@ func couponSubtotal(scopeType int32, scopeRows []*smsclient.CouponScopeListData,
 	return total
 }
 
-func cartItemAmount(item types.CarItemtPromotionListData) float64 {
-	price := float64(item.Price) - float64(item.ReduceAmount)
+func cartItemAmount(item types.CarItemtPromotionListData) int64 {
+	price := item.Price - item.ReduceAmount
 	if price < 0 {
 		price = 0
 	}
-	return price * float64(item.Quantity)
+	return price * int64(item.Quantity)
 }
 
 func couponUsableNow(startTime, endTime string) bool {

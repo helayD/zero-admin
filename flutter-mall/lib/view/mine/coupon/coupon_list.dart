@@ -22,7 +22,8 @@ class CouponList extends StatefulWidget {
 class _CouponListState extends State<CouponList> {
   final List<String> couponStatus = ['未使用', '已使用', '已过期'];
 
-  List<CouponData> couponListData = [];
+  // 每个 Tab 独立数据，避免切换时短暂展示旧 Tab 数据
+  final Map<int, List<CouponData>> _tabData = {0: [], 1: [], 2: []};
 
   @override
   void initState() {
@@ -36,7 +37,7 @@ class _CouponListState extends State<CouponList> {
       CouponModel couponModel = CouponModel.fromJson(result.data);
       if (mounted) {
         setState(() {
-          couponListData = couponModel.data;
+          _tabData[status] = couponModel.data;
         });
       }
     } catch (e) {
@@ -80,12 +81,12 @@ class _CouponListState extends State<CouponList> {
           ),
         ),
         body: TabBarView(
-          children: couponStatus.map((status) {
+          children: List.generate(couponStatus.length, (index) {
             return CouponListInfo(
-              status: status,
-              couponListData: couponListData,
+              status: couponStatus[index],
+              couponListData: _tabData[index] ?? [],
             );
-          }).toList(),
+          }),
         ),
       ),
     );

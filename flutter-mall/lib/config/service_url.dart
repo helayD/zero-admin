@@ -30,6 +30,10 @@ const brandDetailDataUrl = "$baseUrl/api/product/queryBrandDetail?brandId=";
 const categoriesDataUrl = "$baseUrl/api/product/queryProductCateList";
 // 购物车
 const cartDataUrl = "$baseUrl/api/order/queryCarItemList";
+// 购物车促销试算
+const cartPromotionUrl = "$baseUrl/api/order/queryPromotionList";
+// 生成确认单
+const generateConfirmOrderUrl = "$baseUrl/api/order/generateConfirmOrder";
 // 添加商品进购物车
 const cartAddUrl = "$baseUrl/api/order/addCart";
 // 商品列表

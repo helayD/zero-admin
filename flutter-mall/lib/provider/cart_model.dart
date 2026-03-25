@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../model/cart_list.dart';
+import '../model/cart_promotion.dart';
 
 ///
 /// 购物车的状态
@@ -9,30 +10,33 @@ import '../model/cart_list.dart';
 /// 日期：2023/11/21 17:17
 ///
 class CartModel with ChangeNotifier, DiagnosticableTreeMixin {
-  // 购物车所有商品
+  // 购物车所有商品（key 为购物车记录 id）
   Map<int, CartData> allCartProduct = <int, CartData>{};
 
-  // 购物车选中的商品
+  // 购物车选中的商品（key 为购物车记录 id）
   Map<int, CartData> checkCartProduct = <int, CartData>{};
 
+  // 促销信息（按商品ID索引）
+  Map<int, CartPromotionData> promotionMap = <int, CartPromotionData>{};
+
   // 选择商品的价格总和
-  double allProductPrice = 0;
+  int allProductPrice = 0;
 
   // 初始化购物车商品数据到状态管理中
   void setCartListData(List<CartData> cartListData) {
     for (var cart in cartListData) {
-      allCartProduct[cart.productId] = cart;
-      checkCartProduct[cart.productId] = cart;
+      allCartProduct[cart.id] = cart;
+      checkCartProduct[cart.id] = cart;
     }
     notifyListeners();
   }
 
   // 设置商品选择是否选择的状态
-  void setCartItemStatus(int productId) {
-    if (checkCartProduct[productId] != null) {
-      checkCartProduct.remove(productId);
+  void setCartItemStatus(int cartItemId) {
+    if (checkCartProduct[cartItemId] != null) {
+      checkCartProduct.remove(cartItemId);
     } else {
-      checkCartProduct[productId] = allCartProduct[productId]!;
+      checkCartProduct[cartItemId] = allCartProduct[cartItemId]!;
     }
     notifyListeners();
   }
@@ -53,8 +57,8 @@ class CartModel with ChangeNotifier, DiagnosticableTreeMixin {
   }
 
   // 判断购物车中商品前面的图标是否被选择
-  bool getProductIsCheck(int productId) {
-    return checkCartProduct[productId] != null;
+  bool getProductIsCheck(int cartItemId) {
+    return checkCartProduct[cartItemId] != null;
   }
 
   // 获取所有商品
@@ -75,12 +79,30 @@ class CartModel with ChangeNotifier, DiagnosticableTreeMixin {
     return list;
   }
 
-  // 计算所选中的商品的价格
-  double getProductAllPrice() {
+  // 设置促销信息
+  void setPromotionData(List<CartPromotionData> promotionList) {
+    promotionMap.clear();
+    for (var item in promotionList) {
+      promotionMap[item.productId] = item;
+    }
+    notifyListeners();
+  }
+
+  // 获取商品的促销信息
+  CartPromotionData? getPromotion(int productId) {
+    return promotionMap[productId];
+  }
+
+  // 计算所选中的商品的价格（扣除促销优惠）
+  int getProductAllPrice() {
     allProductPrice = 0;
     checkCartProduct.forEach((key, value) {
-      // 商品价格总和
-      allProductPrice = allProductPrice + value.price;
+      final promo = promotionMap[value.productId];
+      if (promo != null) {
+        allProductPrice += (promo.price - promo.reduceAmount) * promo.quantity;
+      } else {
+        allProductPrice += value.price * value.quantity;
+      }
     });
 
     return allProductPrice;
@@ -92,6 +114,6 @@ class CartModel with ChangeNotifier, DiagnosticableTreeMixin {
     super.debugFillProperties(properties);
     properties.add(DiagnosticsProperty<Map<int, CartData>>('allCartProduct', allCartProduct));
     properties.add(DiagnosticsProperty<Map<int, CartData>>('checkCartProduct', checkCartProduct));
-    properties.add(DoubleProperty('allProductPrice', allProductPrice));
+    properties.add(IntProperty('allProductPrice', allProductPrice));
   }
 }

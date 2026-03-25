@@ -1,9 +1,12 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_mall/config/service_url.dart';
+import 'package:flutter_mall/model/confirm_order.dart';
 import 'package:flutter_mall/provider/cart_model.dart';
+import 'package:flutter_mall/utils/http_util.dart';
 import 'package:flutter_mall/widgets/cached_image_widget.dart';
 import 'package:provider/provider.dart';
 
-import '../../../model/cart_list.dart';
 import 'order_pay.dart';
 
 ///
@@ -36,8 +39,56 @@ class Product {
 }
 
 class _OrderSubmitState extends State<OrderSubmit> {
+  ConfirmOrderData? _orderData;
+  bool _loading = true;
+  int _selectedAddressIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadConfirmOrder();
+  }
+
+  void _loadConfirmOrder() async {
+    try {
+      final cartModel = context.read<CartModel>();
+      final ids = cartModel.getCheckProduct().map((e) => e.id).toList();
+      Response result = await HttpUtil.post(generateConfirmOrderUrl, data: {"ids": ids});
+      ConfirmOrderModel model = ConfirmOrderModel.fromJson(result.data);
+      if (mounted) {
+        setState(() {
+          _orderData = model.data;
+          _loading = false;
+          // 自动选择默认地址
+          for (int i = 0; i < model.data.memberReceiveAddressList.length; i++) {
+            if (model.data.memberReceiveAddressList[i].isDefault == 1) {
+              _selectedAddressIndex = i;
+              break;
+            }
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint("加载确认单失败: $e");
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return Scaffold(
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          title: const Text("创建订单"),
+          titleTextStyle: const TextStyle(fontSize: 16, color: Colors.black),
+          centerTitle: true,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -79,6 +130,10 @@ class _OrderSubmitState extends State<OrderSubmit> {
       color: Colors.white,
       border: Border(bottom: border),
     );
+    final addresses = _orderData?.memberReceiveAddressList ?? [];
+    final addr = addresses.isNotEmpty && _selectedAddressIndex < addresses.length
+        ? addresses[_selectedAddressIndex]
+        : null;
     return SliverPadding(
         padding: const EdgeInsets.all(0),
         sliver: SliverList(
@@ -98,19 +153,20 @@ class _OrderSubmitState extends State<OrderSubmit> {
                   width: 10,
                 ),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text("小李 18613030352",
-                          style: TextStyle(fontSize: 17, color: Color(int.parse('303133', radix: 16)).withAlpha(255))),
-                      const SizedBox(
-                        height: 5,
-                      ),
-                      Text("广东省 深圳市 福田区	东晓街道",
-                          style: TextStyle(fontSize: 14, color: Color(int.parse('909399', radix: 16)).withAlpha(255))),
-                    ],
-                  ),
+                  child: addr != null
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text("${addr.receiverName} ${addr.receiverPhone}",
+                                style: TextStyle(fontSize: 17, color: Color(int.parse('303133', radix: 16)).withAlpha(255))),
+                            const SizedBox(height: 5),
+                            Text("${addr.province} ${addr.city} ${addr.district} ${addr.detailAddress}",
+                                style: TextStyle(fontSize: 14, color: Color(int.parse('909399', radix: 16)).withAlpha(255))),
+                          ],
+                        )
+                      : Text("请添加收货地址",
+                          style: TextStyle(fontSize: 15, color: Color(int.parse('909399', radix: 16)).withAlpha(255))),
                 ),
                 Image.asset(
                   "images/right_arrow1.png",
@@ -146,10 +202,11 @@ class _OrderSubmitState extends State<OrderSubmit> {
 
   // 商品列表
   SliverList buildProductList(int count) {
-    List<CartData> products = Provider.of<CartModel>(context, listen: true).getCheckProduct();
+    final products = _orderData?.cartPromotionItemList ?? [];
     return SliverList.builder(
         itemCount: products.length,
         itemBuilder: (BuildContext context, int index) {
+          final item = products[index];
           return Container(
             color: Colors.white,
             padding: const EdgeInsets.all(15),
@@ -158,7 +215,7 @@ class _OrderSubmitState extends State<OrderSubmit> {
                 CachedImageWidget(
                   70,
                   70,
-                  products[index].productPic,
+                  item.productPic,
                   fit: BoxFit.cover,
                 ),
                 const SizedBox(
@@ -168,21 +225,45 @@ class _OrderSubmitState extends State<OrderSubmit> {
                     child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(products[index].productName,
+                    Text(item.productName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(fontSize: 15, color: Color(int.parse('303133', radix: 16)).withAlpha(255))),
-                    const SizedBox(
-                      height: 6,
-                    ),
-                    Text(products[index].productSubTitle,
+                    const SizedBox(height: 6),
+                    Text(item.productSubTitle,
                         maxLines: 1,
                         style: TextStyle(fontSize: 13, color: Color(int.parse('909399', radix: 16)).withAlpha(255))),
-                    const SizedBox(
-                      height: 6,
+                    const SizedBox(height: 4),
+                    if (item.promotionMessage.isNotEmpty && item.reduceAmount > 0)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        margin: const EdgeInsets.only(bottom: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF0F0),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(item.promotionMessage,
+                            style: const TextStyle(fontSize: 11, color: Color(0xFFFA436A))),
+                      ),
+                    Row(
+                      children: [
+                        Text("￥${item.price - item.reduceAmount}",
+                            style: TextStyle(
+                                fontSize: 16,
+                                color: Color(int.parse('303133', radix: 16)).withAlpha(255),
+                                fontWeight: FontWeight.bold)),
+                        Text(" x${item.quantity}",
+                            style: TextStyle(fontSize: 13, color: Color(int.parse('909399', radix: 16)).withAlpha(255))),
+                        if (item.reduceAmount > 0) ...[
+                          const SizedBox(width: 6),
+                          Text("￥${item.price}",
+                              style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                  decoration: TextDecoration.lineThrough)),
+                        ],
+                      ],
                     ),
-                    Text("￥${products[index].price}x1",
-                        style: TextStyle(fontSize: 16, color: Color(int.parse('303133', radix: 16)).withAlpha(255))),
                   ],
                 ))
               ],
@@ -260,7 +341,7 @@ class _OrderSubmitState extends State<OrderSubmit> {
                   child: Text("积分抵扣",
                       style: TextStyle(fontSize: 13, color: Color(int.parse('707070', radix: 16)).withAlpha(255))),
                 ),
-                Text("0", style: TextStyle(fontSize: 13, color: Color(int.parse('fa436a', radix: 16)).withAlpha(255))),
+                Text("${_orderData?.memberIntegration ?? 0}", style: TextStyle(fontSize: 13, color: Color(int.parse('fa436a', radix: 16)).withAlpha(255))),
               ],
             ),
           )
@@ -273,6 +354,11 @@ class _OrderSubmitState extends State<OrderSubmit> {
       color: Colors.white,
       border: Border(top: border),
     );
+    final calc = _orderData?.calcAmount;
+    final totalAmount = calc?.totalAmount ?? 0;
+    final freightAmount = calc?.freightAmount ?? 0;
+    final promotionAmount = calc?.promotionAmount ?? 0;
+    final enableCoupons = _orderData?.couponHistoryDetailList.enableList ?? [];
     return SliverPadding(
         padding: const EdgeInsets.all(0),
         sliver: SliverList(
@@ -290,7 +376,7 @@ class _OrderSubmitState extends State<OrderSubmit> {
                           child: Text("商品合计",
                               style: TextStyle(
                                   fontSize: 13, color: Color(int.parse('909399', radix: 16)).withAlpha(255)))),
-                      Text("￥${Provider.of<CartModel>(context, listen: true).getProductAllPrice()}",
+                      Text("￥$totalAmount",
                           style: TextStyle(fontSize: 13, color: Color(int.parse('303133', radix: 16)).withAlpha(255))),
                     ],
                   ),
@@ -307,7 +393,7 @@ class _OrderSubmitState extends State<OrderSubmit> {
                           child: Text("运费",
                               style: TextStyle(
                                   fontSize: 13, color: Color(int.parse('909399', radix: 16)).withAlpha(255)))),
-                      Text("￥0",
+                      Text("￥$freightAmount",
                           style: TextStyle(fontSize: 13, color: Color(int.parse('303133', radix: 16)).withAlpha(255))),
                     ],
                   ),
@@ -324,7 +410,7 @@ class _OrderSubmitState extends State<OrderSubmit> {
                           child: Text("活动优惠",
                               style: TextStyle(
                                   fontSize: 13, color: Color(int.parse('909399', radix: 16)).withAlpha(255)))),
-                      Text("-￥200",
+                      Text("-￥$promotionAmount",
                           style: TextStyle(fontSize: 13, color: Color(int.parse('fa436a', radix: 16)).withAlpha(255))),
                     ],
                   ),
@@ -341,7 +427,9 @@ class _OrderSubmitState extends State<OrderSubmit> {
                           child: Text("优惠券",
                               style: TextStyle(
                                   fontSize: 13, color: Color(int.parse('909399', radix: 16)).withAlpha(255)))),
-                      Text("-￥0",
+                      Text(enableCoupons.isNotEmpty
+                              ? "${enableCoupons.length}张可用"
+                              : "无可用优惠券",
                           style: TextStyle(fontSize: 13, color: Color(int.parse('fa436a', radix: 16)).withAlpha(255))),
                     ],
                   ),
@@ -358,7 +446,7 @@ class _OrderSubmitState extends State<OrderSubmit> {
                           child: Text("积分抵扣",
                               style: TextStyle(
                                   fontSize: 13, color: Color(int.parse('909399', radix: 16)).withAlpha(255)))),
-                      Text("-￥0",
+                      Text("可用${_orderData?.memberIntegration ?? 0}积分",
                           style: TextStyle(fontSize: 13, color: Color(int.parse('fa436a', radix: 16)).withAlpha(255))),
                     ],
                   ),
@@ -401,8 +489,7 @@ class _OrderSubmitState extends State<OrderSubmit> {
 
   // 底部提交订单部分
   Container buildSubmit() {
-    double price = Provider.of<CartModel>(context, listen: true).getProductAllPrice();
-    price = price - 200 - 50;
+    final payAmount = _orderData?.calcAmount.payAmount ?? 0;
     return Container(
       padding: const EdgeInsets.only(left: 15),
       decoration: const BoxDecoration(
@@ -432,7 +519,7 @@ class _OrderSubmitState extends State<OrderSubmit> {
                 Text("实付款 ",
                     style: TextStyle(fontSize: 15, color: Color(int.parse('606266', radix: 16)).withAlpha(255))),
                 Text("￥", style: TextStyle(fontSize: 15, color: Color(int.parse('fa436a', radix: 16)).withAlpha(255))),
-                Text(price.toString(),
+                Text("$payAmount",
                     style: TextStyle(fontSize: 18, color: Color(int.parse('fa436a', radix: 16)).withAlpha(255))),
               ],
             ),
@@ -444,7 +531,7 @@ class _OrderSubmitState extends State<OrderSubmit> {
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (context) => OrderPay(
-                        amount: price,
+                        amount: payAmount.toDouble(),
                       ),
                     ),
                   );
