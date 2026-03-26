@@ -4263,6 +4263,7 @@ type QuerySeckillActivityListData struct {
 	ProductCount   int64  `json:"productCount"`   //关联已上架秒杀商品数量
 	SessionCount   int64  `json:"sessionCount"`   //关联场次数量
 	EffectiveStatus string `json:"effectiveStatus"` //生效状态
+	AffectedPaths   string `json:"affectedPaths"`  //影响路径
 }
 
 type QuerySeckillActivityListReq struct {
