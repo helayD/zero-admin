@@ -1,4 +1,5 @@
 #!/bin/bash
+# API_TYPE: front
 # =============================================================================
 # Story 4-5: 购物车与确认单促销试算 API 测试
 # 覆盖：促销试算 queryPromotionList、确认单生成 generateConfirmOrder、

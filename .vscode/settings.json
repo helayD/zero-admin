@@ -4,5 +4,6 @@
   "go.toolsEnvVars": {
     "GOPROXY": "https://goproxy.cn,direct"
   },
-  "cmake.sourceDirectory": "/Users/helay/Documents/GitHub/zero-admin/flutter-mall/linux"
+  "cmake.sourceDirectory": "/Users/helay/Documents/GitHub/zero-admin/flutter-mall/linux",
+  "editor.fontSize": 14
 }

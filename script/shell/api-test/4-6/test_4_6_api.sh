@@ -1,4 +1,5 @@
 #!/bin/bash
+# API_TYPE: admin
 # =============================================================================
 # Story 4-6: 配置生效状态与作用域下发校验 API 测试
 # 覆盖：广告管理 effectiveStatus、优惠券 effectiveStatus、秒杀 effectiveStatus、

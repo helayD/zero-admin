@@ -46,6 +46,8 @@ DEFAULT_SERVICES="all"
 SERVICES_CSV="${ZERO_ADMIN_DEPLOY_SERVICES:-$DEFAULT_SERVICES}"
 SKIP_SERVICES_CSV=""
 RUN_SMOKE=1
+RUN_API_TEST=1
+AUTO_MIGRATION=0
 MIGRATION_PATH=""
 
 ALL_SERVICES=(
@@ -75,6 +77,10 @@ Options:
   --services <csv|all>         Deploy the given services. Default: all
   --skip-services <csv>        Remove services from the deploy set after --services is applied
   --migration <repo-sql>       Apply a repo SQL migration after backing up the remote DB
+  --auto-migration             Auto-discover and apply all script/sql/migration_*.sql files
+  --skip-api-test              Skip post-deploy Story API tests
+  --api-test                   Force run Story API tests (default: on)
+  --stories <csv>              Only run specified story tests, e.g. "4-5,4-6,5-1"
   --git-remote <name>          Local git remote used to resolve the fetch URL. Default: origin
   --git-push-remote <target>   Local git push target used before deploy. Default: same as --git-remote
   --git-remote-url <url>       Explicit git URL to fetch on the remote host
@@ -388,7 +394,7 @@ consumer/etc/consumer-api.yaml
 job/etc/job-api.yaml
 CFG
 
-git fetch --depth=1 "$git_remote_url" "$git_ref"
+git -c http.version=HTTP/1.1 fetch --depth=1 "$git_remote_url" "$git_ref"
 git checkout -f FETCH_HEAD
 
 while IFS= read -r rel; do
@@ -469,6 +475,22 @@ while [[ $# -gt 0 ]]; do
       RUN_SMOKE=0
       shift
       ;;
+    --api-test)
+      RUN_API_TEST=1
+      shift
+      ;;
+    --skip-api-test)
+      RUN_API_TEST=0
+      shift
+      ;;
+    --auto-migration)
+      AUTO_MIGRATION=1
+      shift
+      ;;
+    --stories)
+      API_TEST_STORIES="$2"
+      shift 2
+      ;;
     -h|--help)
       usage
       exit 0
@@ -514,38 +536,66 @@ fi
 
 cd "$REPO_ROOT"
 
-if [[ -n "$MIGRATION_PATH" && "$MIGRATION_PATH" != /* ]]; then
-  MIGRATION_PATH="$REPO_ROOT/$MIGRATION_PATH"
+# Collect migration files
+MIGRATION_FILES=()
+
+if [[ -n "$MIGRATION_PATH" ]]; then
+  if [[ "$MIGRATION_PATH" != /* ]]; then
+    MIGRATION_PATH="$REPO_ROOT/$MIGRATION_PATH"
+  fi
+  if [[ ! -f "$MIGRATION_PATH" ]]; then
+    echo "Migration file not found: $MIGRATION_PATH" >&2
+    exit 1
+  fi
+  MIGRATION_FILES+=("$MIGRATION_PATH")
 fi
 
-if [[ -n "$MIGRATION_PATH" && ! -f "$MIGRATION_PATH" ]]; then
-  echo "Migration file not found: $MIGRATION_PATH" >&2
-  exit 1
+if [[ "$AUTO_MIGRATION" -eq 1 ]]; then
+  MIGRATION_SCAN_DIR="$REPO_ROOT/script/sql"
+  if [[ -d "$MIGRATION_SCAN_DIR" ]]; then
+    while IFS= read -r f; do
+      # Deduplicate against explicitly provided --migration
+      already=0
+      for existing in "${MIGRATION_FILES[@]-}"; do
+        [[ "$existing" == "$f" ]] && already=1 && break
+      done
+      [[ "$already" -eq 0 ]] && MIGRATION_FILES+=("$f")
+    done < <(find "$MIGRATION_SCAN_DIR" -maxdepth 1 -name 'migration_*.sql' -type f | sort)
+  fi
 fi
 
-echo "[1/7] Verifying SSH access: $SSH_TARGET"
+echo "[1/8] Verifying SSH access: $SSH_TARGET"
 ssh -o BatchMode=yes -o StrictHostKeyChecking=no "$SSH_TARGET" "test -d '$REMOTE_ROOT'"
 
-echo "[2/7] Preparing build artifacts"
+echo "[2/8] Preparing build artifacts"
 echo "  - remote host will build artifacts from git-synced source"
 
 sync_source_with_git "$RESOLVED_GIT_REMOTE_URL" "$RESOLVED_GIT_REF"
 
-if [[ -n "$MIGRATION_PATH" ]]; then
-  echo "[4/7] Uploading and applying migration: ${MIGRATION_PATH#$REPO_ROOT/}"
-  REMOTE_MIGRATION="$REMOTE_ROOT/deploy-backup/$TS/$(basename "$MIGRATION_PATH")"
+if [[ ${#MIGRATION_FILES[@]} -gt 0 ]]; then
+  echo "[4/8] Uploading and applying ${#MIGRATION_FILES[@]} migration(s)"
   ssh -o BatchMode=yes -o StrictHostKeyChecking=no "$SSH_TARGET" \
     "mkdir -p '$REMOTE_ROOT/deploy-backup/$TS/db' '$REMOTE_ROOT/deploy-backup/$TS/artifacts'"
-  scp -o BatchMode=yes -o StrictHostKeyChecking=no "$MIGRATION_PATH" "$SSH_TARGET:$REMOTE_MIGRATION"
+
+  # Backup DB before any migration
+  echo "  - backing up database before migration"
   ssh -o BatchMode=yes -o StrictHostKeyChecking=no "$SSH_TARGET" \
-    "mysqldump -h '$MYSQL_HOST' -P '$MYSQL_PORT' -u '$MYSQL_USER' '-p$MYSQL_PASSWORD' '$MYSQL_DB' > '$REMOTE_ROOT/deploy-backup/$TS/db/${MYSQL_DB}.pre-migration.sql'"
-  ssh -o BatchMode=yes -o StrictHostKeyChecking=no "$SSH_TARGET" \
-    "mysql -h '$MYSQL_HOST' -P '$MYSQL_PORT' -u '$MYSQL_USER' '-p$MYSQL_PASSWORD' '$MYSQL_DB' < '$REMOTE_MIGRATION'"
+    "mysqldump -h '$MYSQL_HOST' -P '$MYSQL_PORT' -u '$MYSQL_USER' '-p$MYSQL_PASSWORD' '$MYSQL_DB' > '$REMOTE_ROOT/deploy-backup/$TS/db/${MYSQL_DB}.pre-migration.sql' 2>/dev/null"
+
+  for mig_file in "${MIGRATION_FILES[@]}"; do
+    mig_basename="$(basename "$mig_file")"
+    REMOTE_MIGRATION="$REMOTE_ROOT/deploy-backup/$TS/$mig_basename"
+    echo "  - applying: $mig_basename"
+    scp -o BatchMode=yes -o StrictHostKeyChecking=no "$mig_file" "$SSH_TARGET:$REMOTE_MIGRATION"
+    ssh -o BatchMode=yes -o StrictHostKeyChecking=no "$SSH_TARGET" \
+      "mysql -h '$MYSQL_HOST' -P '$MYSQL_PORT' -u '$MYSQL_USER' '-p$MYSQL_PASSWORD' '$MYSQL_DB' < '$REMOTE_MIGRATION' 2>/dev/null"
+  done
+  echo "  - all migrations applied successfully"
 else
-  echo "[4/7] No migration requested"
+  echo "[4/8] No migration requested"
 fi
 
-echo "[5/7] Uploading deployable artifacts"
+echo "[5/8] Uploading deployable artifacts"
 ssh -o BatchMode=yes -o StrictHostKeyChecking=no "$SSH_TARGET" \
   "mkdir -p '$REMOTE_ROOT/deploy-backup/$TS/artifacts' '$REMOTE_ROOT/web-admin'"
 
@@ -664,7 +714,7 @@ for service in "${services[@]}"; do
 done
 EOF
 
-echo "[6/7] Backing up and swapping remote services"
+echo "[6/8] Backing up and swapping remote services"
 SERVICE_LIST="$(join_by , "${SELECTED_SERVICES[@]}")"
 ssh -o BatchMode=yes -o StrictHostKeyChecking=no "$SSH_TARGET" \
   "bash -s" -- "$REMOTE_ROOT" "$TS" "$SERVICE_LIST" <<'EOF'
@@ -798,7 +848,7 @@ ps -ef | egrep '(admin-api|front-api|sys-rpc|ums-rpc|pms-rpc|oms-rpc|sms-rpc|cms
 EOF
 
 if [[ "$RUN_SMOKE" -eq 1 ]]; then
-  echo "[7/7] Running smoke checks"
+  echo "[7/8] Running smoke checks"
   SMOKE_ARGS=(
     --base-url "$SMOKE_BASE_URL"
     --account "$ADMIN_ACCOUNT"
@@ -810,7 +860,25 @@ if [[ "$RUN_SMOKE" -eq 1 ]]; then
 
   python3 "$SCRIPT_DIR/smoke_remote.py" "${SMOKE_ARGS[@]}"
 else
-  echo "[7/7] Smoke checks skipped"
+  echo "[7/8] Smoke checks skipped"
+fi
+
+if [[ "$RUN_API_TEST" -eq 1 ]]; then
+  echo "[8/8] Running Story API tests (100% pass required)"
+  API_TEST_ARGS=(
+    --admin-url "$SMOKE_BASE_URL"
+    --front-url "$FRONT_SMOKE_BASE_URL"
+  )
+  if [[ -n "${API_TEST_STORIES:-}" ]]; then
+    API_TEST_ARGS+=(--stories "$API_TEST_STORIES")
+  fi
+
+  if ! bash "$SCRIPT_DIR/run_api_tests.sh" "${API_TEST_ARGS[@]}"; then
+    echo "Story API tests FAILED. Deployment verification incomplete." >&2
+    exit 1
+  fi
+else
+  echo "[8/8] Story API tests skipped"
 fi
 
 echo "Deployment complete."

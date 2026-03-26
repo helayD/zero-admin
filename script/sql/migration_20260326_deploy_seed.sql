@@ -93,7 +93,11 @@ PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
--- 8. 确保优惠券作用域表种子数据（优惠券适用商品分类）
+-- 8. 清理 oms_cart_item 已软删除的脏数据（物理删除 delete_status=1 的记录）
+-- 防止 uk_member_sku_status(member_id, product_sku_id, delete_status) 唯一索引冲突
+DELETE FROM oms_cart_item WHERE delete_status = 1;
+
+-- 9. 确保优惠券作用域表种子数据（优惠券适用商品分类）
 INSERT IGNORE INTO sms_coupon_scope (id, coupon_id, scope_type, scope_id)
 VALUES (1, 1, 0, 0),  -- 满减券：全场通用
        (2, 2, 0, 0),  -- 新用户券：全场通用

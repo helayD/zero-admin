@@ -54,11 +54,22 @@ The deploy script now understands the real service layout of this repo:
 
 The default deploy scope is the full project. Use `--services <csv>` when you intentionally want a partial rollout.
 
+## Deploy Pipeline (8 Steps)
+
+1. **Verify SSH** — confirm remote host is reachable
+2. **Prepare** — identify build scope
+3. **Sync source** — push to GitHub, then `git fetch` on remote (with `http.version=HTTP/1.1`)
+4. **Migration** — upload & execute DDL/seed SQL (manual `--migration` or `--auto-migration`)
+5. **Build** — compile Go services and/or build web-admin on the remote host
+6. **Swap** — backup old binaries, install new, restart services
+7. **Smoke test** — basic admin + front API health checks
+8. **Story API test** — run all `script/shell/api-test/` story tests, **require 100% pass rate**
+
 ## Workflow
 
 1. Inspect changed files and choose a safe deploy scope.
 2. Let the script publish the current branch to GitHub first, unless you are intentionally deploying an already-pushed ref with `--git-ref`.
-3. Run `deploy_remote.sh` with the right `--services`, optional `--migration`, and optional `--git-ref`.
+3. Run `deploy_remote.sh` with the right `--services`, optional `--migration` / `--auto-migration`.
 4. Read the script output for:
    - deploy source
    - pushed branch/commit
@@ -66,7 +77,8 @@ The default deploy scope is the full project. Use `--services <csv>` when you in
    - backup path
    - restarted processes
    - smoke results
-5. If smoke fails, inspect the failing endpoint or remote process before retrying another rollout.
+   - **Story API test results (must be 100% pass)**
+5. If smoke or API tests fail, inspect the failing endpoint or remote process before retrying another rollout.
 
 ## Recommended Commands
 
@@ -97,11 +109,40 @@ bash .agents/skills/zero-admin-remote-deploy/scripts/deploy_remote.sh \
   --services all
 ```
 
-Deploy with migration:
+Deploy with explicit migration:
 
 ```bash
 bash .agents/skills/zero-admin-remote-deploy/scripts/deploy_remote.sh \
-  --migration script/sql/<domain>/<migration-file>.sql
+  --migration script/sql/migration_20260326_deploy_seed.sql
+```
+
+Deploy with auto-migration (scans all `script/sql/migration_*.sql`):
+
+```bash
+bash .agents/skills/zero-admin-remote-deploy/scripts/deploy_remote.sh \
+  --auto-migration
+```
+
+Deploy with specific story API tests only:
+
+```bash
+bash .agents/skills/zero-admin-remote-deploy/scripts/deploy_remote.sh \
+  --stories 4-5,4-6,5-1,5-2
+```
+
+Skip API tests (smoke only):
+
+```bash
+bash .agents/skills/zero-admin-remote-deploy/scripts/deploy_remote.sh \
+  --skip-api-test
+```
+
+Run Story API tests standalone:
+
+```bash
+bash .agents/skills/zero-admin-remote-deploy/scripts/run_api_tests.sh \
+  --admin-url http://47.107.224.56:8000 \
+  --front-url http://47.107.224.56:9999
 ```
 
 Smoke test only:
@@ -128,5 +169,21 @@ python3 .agents/skills/zero-admin-remote-deploy/scripts/smoke_remote.py \
 
 ### scripts/
 
-- `deploy_remote.sh`: main deployment entrypoint with push-first GitHub sync, service scoping, migration, backup, restart, and smoke hooks.
+- `deploy_remote.sh`: main deployment entrypoint with push-first GitHub sync, service scoping, migration (manual + auto-discovery), backup, restart, smoke hooks, and Story API test gate.
 - `smoke_remote.py`: admin smoke plus optional front smoke with clearer invalid-response diagnostics.
+- `run_api_tests.sh`: Story API test runner. Auto-discovers test scripts under `script/shell/api-test/<story-id>/test_*.sh`. Maps story prefixes to correct base URLs (4-* → admin, 5-* → front). Requires 100% pass rate.
+
+### Story API Tests (`script/shell/api-test/`)
+
+Each story has its own directory with shell test scripts:
+
+- `4-5/test_4_5_api.sh` — 购物车与确认单促销试算 (front-api)
+- `4-6/test_4_6_api.sh` — 配置生效状态与作用域下发校验 (admin-api)
+- `5-1/test_5_1_api.sh` — 商品加购与商户归属校验 (front-api)
+- `5-2/test_5_2_api.sh` — 购物车编辑、删除与批量结算 (front-api)
+
+To add a new story test: create `script/shell/api-test/<story-id>/test_<story-id>_api.sh`. It will be auto-discovered on the next deploy.
+
+### Migration SQL (`script/sql/`)
+
+Files matching `migration_*.sql` are auto-discovered by `--auto-migration`. Naming convention: `migration_<YYYYMMDD>_<description>.sql`.
