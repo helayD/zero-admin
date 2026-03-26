@@ -99,6 +99,14 @@ def run_admin_smoke(base_url: str, account: str, password: str) -> Tuple[Dict[st
         "role_list": "/api/sys/role/queryRoleList?current=1&pageSize=10",
         "tenant_list": "/api/sys/tenant/queryTenantList?current=1&pageSize=10",
         "menu_template_list": "/api/sys/menuTemplate/queryMenuTemplateList?current=1&pageSize=10",
+        "coupon_list": "/api/sms/coupon/queryCouponList?current=1&pageSize=10",
+        "home_advertise_list": "/api/sms/homeAdvertise/queryHomeAdvertiseList?current=1&pageSize=10",
+        "home_brand_list": "/api/sms/homeBrand/queryHomeBrandList?current=1&pageSize=10",
+        "seckill_activity_list": "/api/sms/seckillActivity/querySeckillActivityList?current=1&pageSize=10",
+        "subject_list": "/api/cms/subject/querySubjectList?current=1&pageSize=10",
+        "preferred_area_list": "/api/cms/prefrenceArea/queryPreferredAreaList?current=1&pageSize=10",
+        "subject_category_list": "/api/cms/subjectCategory/querySubjectCategoryList?current=1&pageSize=10",
+        "home_recommend_subject_list": "/api/sms/homeRecommendSubject/queryHomeRecommendSubjectList?current=1&pageSize=10",
     }
 
     for name, path in checks.items():
@@ -115,6 +123,7 @@ def run_front_smoke(base_url: str) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     checks = {
         "home_index": "/api/home/index",
         "product_list": "/api/product/queryProductList?productCategoryId=1&current=1&pageSize=10",
+        "product_detail": "/api/product/queryProductDetail?id=1",
     }
 
     for name, path in checks.items():
