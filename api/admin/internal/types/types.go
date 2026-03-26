@@ -889,6 +889,7 @@ type ListHomeRecommendSubjectData struct {
 	UpdateBy        string `json:"updateBy"`        //更新者
 	UpdateTime      string `json:"updateTime"`      //更新时间
 	Sort            int32  `json:"sort"`            //排序
+	EffectiveStatus string `json:"effectiveStatus"` //综合生效状态
 }
 
 type ListHomeRecommendSubjectReq struct {
@@ -1415,6 +1416,9 @@ type QueryCouponDetailData struct {
 	UpdateTime      string             `json:"updateTime"`      //更新时间
 	ScopeType       int32              `json:"scopeType"`       //范围类型：0-全场，1-分类，2-商品
 	CouponScopeData []*CouponScopeData `json:"couponScopeData"` //使用范围
+	EffectiveStatus  string            `json:"effectiveStatus"`  //综合生效状态
+	ScopeSummary    string            `json:"scopeSummary"`    //适用范围摘要
+	AffectedPaths    string            `json:"affectedPaths"`    //影响链路
 }
 
 type QueryCouponDetailReq struct {
@@ -1453,6 +1457,9 @@ type QueryCouponListData struct {
 	UpdateTime    string  `json:"updateTime"`    //更新时间
 	ScopeCount    int64   `json:"scopeCount"`    //关联scope数量
 	TypeName      string  `json:"typeName"`      //优惠券类型名称
+	EffectiveStatus string `json:"effectiveStatus"` //综合生效状态
+	ScopeSummary   string  `json:"scopeSummary"`   //适用范围摘要
+	AffectedPaths  string  `json:"affectedPaths"`  //影响链路
 }
 
 type QueryCouponListReq struct {
@@ -1896,6 +1903,7 @@ type QueryHomeAdvertiseListData struct {
 	Sort       int32  `json:"sort"`       //排序
 	CreateTime string `json:"createTime"` //创建时间
 	UpdateTime string `json:"updateTime"` //更新时间
+	EffectiveStatus string `json:"effectiveStatus"` //综合生效状态
 }
 
 type QueryHomeAdvertiseListReq struct {
@@ -1934,6 +1942,7 @@ type QueryHomeBrandDetailData struct {
 	CreateTime          string `json:"createTime"`          //创建时间
 	UpdateBy            int64  `json:"updateBy"`            //更新人ID
 	UpdateTime          string `json:"updateTime"`          //更新时间
+	EffectiveStatus     string `json:"effectiveStatus"`     //综合生效状态
 }
 
 type QueryHomeBrandDetailReq struct {
@@ -1962,6 +1971,7 @@ type QueryHomeBrandListData struct {
 	CreateTime          string `json:"createTime"`          //创建时间
 	UpdateBy            int64  `json:"updateBy"`            //更新人ID
 	UpdateTime          string `json:"updateTime"`          //更新时间
+	EffectiveStatus     string `json:"effectiveStatus"`     //综合生效状态
 }
 
 type QueryHomeBrandListReq struct {
@@ -3375,6 +3385,7 @@ type QueryPreferredAreaListData struct {
 	CreateTime string `json:"createTime"` //创建时间
 	UpdateBy   string `json:"updateBy"`   //更新者
 	UpdateTime string `json:"updateTime"` //更新时间
+	EffectiveStatus string `json:"effectiveStatus"` //综合生效状态
 }
 
 type QueryPreferredAreaListReq struct {
@@ -4252,6 +4263,8 @@ type QuerySeckillActivityListData struct {
 	IsDeleted    int32  `json:"isDeleted"`    //是否删除
 	ProductCount int64  `json:"productCount"` //关联已上架秒杀商品数量
 	SessionCount int64  `json:"sessionCount"` //关联场次数量
+	EffectiveStatus string `json:"effectiveStatus"` //综合生效状态
+	AffectedPaths    string `json:"affectedPaths"`    //影响链路
 }
 
 type QuerySeckillActivityListReq struct {
@@ -4563,6 +4576,7 @@ type QuerySubjectListData struct {
 	UpdateBy        string `json:"updateBy"`        //更新者
 	UpdateTime      string `json:"updateTime"`      //更新时间
 	Sort            int32  `json:"sort"`            // 排序
+	EffectiveStatus string `json:"effectiveStatus"` //综合生效状态
 }
 
 type QuerySubjectListReq struct {
