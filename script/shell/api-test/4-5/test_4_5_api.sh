@@ -25,7 +25,14 @@ log_fail() { ((FAIL++)); ((TOTAL++)); echo -e "  ${RED}❌ FAIL${NC} $1"; }
 log_info() { echo -e "${YELLOW}▶${NC} $1"; }
 
 json_val() {
-  python3 -c "import sys,json; d=json.load(sys.stdin); print($1)" 2>/dev/null <<< "$2"
+  python3 -c "
+import sys,json
+try:
+    d=json.load(sys.stdin)
+    print($1)
+except (json.JSONDecodeError, ValueError):
+    print('')
+" 2>/dev/null <<< "$2" || echo ''
 }
 
 echo "============================================="
@@ -111,11 +118,14 @@ CART_COUPON_RESP=$(curl -s --max-time $TIMEOUT \
   -H "$AUTH")
 CC_CODE=$(json_val "d.get('code','')" "$CART_COUPON_RESP")
 if [ "$CC_CODE" = "0" ]; then
-  CC_COUNT=$(json_val "len(d.get('data',[]) or [])" "$CART_COUPON_RESP")
-  log_pass "购物车优惠券列表成功，$CC_COUNT 条"
-  # 检查是否有 disableReason 字段（新增功能）
-  if [ "$CC_COUNT" -gt 0 ] 2>/dev/null; then
-    HAS_DISABLE=$(json_val "'disableReason' in (d.get('data',[])[0] if d.get('data') else {})" "$CART_COUPON_RESP")
+  # data 结构为 {enableList: [...], disableList: [...]}
+  CC_ENABLE=$(json_val "len(d.get('data',{}).get('enableList',[]) or [])" "$CART_COUPON_RESP")
+  CC_DISABLE=$(json_val "len(d.get('data',{}).get('disableList',[]) or [])" "$CART_COUPON_RESP")
+  CC_COUNT=$((${CC_ENABLE:-0} + ${CC_DISABLE:-0}))
+  log_pass "购物车优惠券列表成功，可用${CC_ENABLE:-0}条 不可用${CC_DISABLE:-0}条"
+  # 检查 enableList 中是否有 disableReason 字段（新增功能）
+  if [ "${CC_ENABLE:-0}" -gt 0 ] 2>/dev/null; then
+    HAS_DISABLE=$(json_val "'disableReason' in (d.get('data',{}).get('enableList',[])[0])" "$CART_COUPON_RESP")
     if [ "$HAS_DISABLE" = "True" ]; then
       log_pass "优惠券包含 disableReason 字段"
     else

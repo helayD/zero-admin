@@ -24,7 +24,14 @@ log_fail() { ((FAIL++)); ((TOTAL++)); echo -e "  ${RED}❌ FAIL${NC} $1"; }
 log_info() { echo -e "${YELLOW}▶${NC} $1"; }
 
 json_val() {
-  python3 -c "import sys,json; d=json.load(sys.stdin); print($1)" 2>/dev/null <<< "$2"
+  python3 -c "
+import sys,json
+try:
+    d=json.load(sys.stdin)
+    print($1)
+except (json.JSONDecodeError, ValueError):
+    print('')
+" 2>/dev/null <<< "$2" || echo ''
 }
 
 echo "============================================="
@@ -83,11 +90,12 @@ log_info "3. 加购不存在的商品 - productId=999999"
 BAD_RESP=$(curl -s --max-time $TIMEOUT -X POST "$BASE_URL/api/order/addCart" \
   -H "$AUTH" \
   -H 'Content-Type: application/json' \
-  -d '{"productId":999999,"productSkuId":999999,"quantity":1,"price":100,"productName":"不存在商品","productSubTitle":"","productPic":"","productSkuCode":"FAKE","productSn":"FAKE","productBrand":"","productCategoryId":1,"productAttr":"[]","memberNickname":"张三"}')
+  -d '{"productId":999999,"productSkuId":999999,"quantity":1,"price":100,"productName":"不存在商品","productSubTitle":"","productPic":"","productSkuCode":"FAKE","productSn":"FAKE","productBrand":"","productCategoryId":1,"productAttr":"[]","memberNickname":"张三"}' || true)
 BAD_CODE=$(json_val "d.get('code','')" "$BAD_RESP")
 BAD_MSG=$(json_val "d.get('message',d.get('msg',''))" "$BAD_RESP")
-if [ "$BAD_CODE" != "0" ]; then
-  log_pass "不存在商品加购被拒绝: $BAD_MSG"
+# 非 JSON 响应（纯文本错误码如 OMS_CART_PRODUCT_NOT_FOUND）也视为拒绝
+if [ "$BAD_CODE" != "0" ] || echo "$BAD_RESP" | grep -qi 'NOT_FOUND\|error\|OFFLINE\|SYSTEM_ERROR'; then
+  log_pass "不存在商品加购被拒绝: ${BAD_MSG:-$BAD_RESP}"
 else
   log_fail "不存在商品加购应被拒绝但返回成功"
 fi

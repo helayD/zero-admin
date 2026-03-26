@@ -24,7 +24,14 @@ log_fail() { ((FAIL++)); ((TOTAL++)); echo -e "  ${RED}❌ FAIL${NC} $1"; }
 log_info() { echo -e "${YELLOW}▶${NC} $1"; }
 
 json_val() {
-  python3 -c "import sys,json; d=json.load(sys.stdin); print($1)" 2>/dev/null <<< "$2"
+  python3 -c "
+import sys,json
+try:
+    d=json.load(sys.stdin)
+    print($1)
+except (json.JSONDecodeError, ValueError):
+    print('')
+" 2>/dev/null <<< "$2" || echo ''
 }
 
 echo "============================================="
