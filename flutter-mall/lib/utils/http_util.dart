@@ -130,6 +130,27 @@ class HttpUtil {
     }
   }
 
+  // 封装POST请求，支持自定义请求头（用于幂等键等场景）
+  static Future<Response> postWithHeaders(String path, {Map<String, dynamic>? data, Map<String, String>? headers}) async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      Map<String, dynamic> header = <String, dynamic>{};
+      header["Authorization"] = prefs.getString(token) ?? "";
+      if (headers != null) {
+        header.addAll(headers);
+      }
+
+      Response response = await dio.post(
+        path,
+        data: jsonEncode(data),
+        options: Options(contentType: 'application/json', headers: header.cast<String, dynamic>()),
+      );
+      return response;
+    } catch (e) {
+      throw e;
+    }
+  }
+
   // 封装POST请求，数据以form表单格式发送
   static Future<Response> postForm(String path, {Map<String, dynamic>? data}) async {
     try {

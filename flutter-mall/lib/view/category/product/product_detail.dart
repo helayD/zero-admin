@@ -38,6 +38,7 @@ class _ProductDetailState extends State<ProductDetail> {
   List<MemberPriceList> memberPriceList = [];
   ProductVisibility visibility = ProductVisibility.fromJson({});
   bool loading = true;
+  bool _isAdding = false; // 加购按钮防抖
   SkuStockList? selectedSku;
   final Map<String, String> _specSelection = {};
 
@@ -613,8 +614,12 @@ class _ProductDetailState extends State<ProductDetail> {
     final bool skuDisabled = selectedSku != null && !selectedSku!.purchasable;
     final bool disabled = spuDisabled || skuDisabled;
 
+    final bool isAddingNow = _isAdding;
+
     String buttonLabel;
-    if (spuDisabled) {
+    if (isAddingNow) {
+      buttonLabel = '添加中...';
+    } else if (spuDisabled) {
       buttonLabel = visibility.reasonMessage.isNotEmpty
           ? visibility.reasonMessage
           : '暂不可购买';
@@ -683,7 +688,7 @@ class _ProductDetailState extends State<ProductDetail> {
                 ],
               ),
               child: TextButton(
-                onPressed: disabled
+                onPressed: (isAddingNow || disabled)
                     ? null
                     : needSelectSku
                         ? () {
@@ -692,14 +697,23 @@ class _ProductDetailState extends State<ProductDetail> {
                         : () {
                             _addCart(product!);
                           },
-                child: Text(
-                  buttonLabel,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                child: isAddingNow
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : Text(
+                        buttonLabel,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
               ),
             ),
           ],
@@ -1579,7 +1593,7 @@ class _ProductDetailState extends State<ProductDetail> {
     );
   }
 
-  //添加商品到购物车
+  //添加商品到购物车（带幂等键 + 按钮防抖 + 错误码映射）
   void _addCart(Product product) async {
     final sku = selectedSku ?? (skuStockList.isNotEmpty ? skuStockList.first : null);
 
@@ -1590,10 +1604,21 @@ class _ProductDetailState extends State<ProductDetail> {
       return;
     }
 
+    // 按钮防抖：防止快速双击
+    if (_isAdding) return;
+    setState(() => _isAdding = true);
+
     try {
+      final skuId = sku?.id ?? 0;
+      // 幂等键：productSkuId + 时间戳
+      final idempotencyKey = '${skuId}_${DateTime.now().millisecondsSinceEpoch}';
+      final Map<String, String> headers = {
+        'X-Idempotency-Key': idempotencyKey,
+      };
+
       Map<String, dynamic> addCartParams = <String, dynamic>{};
       addCartParams["productId"] = product.id;
-      addCartParams["productSkuId"] = sku?.id ?? 0;
+      addCartParams["productSkuId"] = skuId;
       addCartParams["quantity"] = 1;
       addCartParams["price"] = sku != null ? sku.price.toDouble() : double.parse(product.price);
       addCartParams["productPic"] = sku?.mainPic.isNotEmpty == true ? sku!.mainPic : product.mainPic;
@@ -1605,19 +1630,79 @@ class _ProductDetailState extends State<ProductDetail> {
       addCartParams["productSn"] = product.productSn;
       addCartParams["memberNickname"] = "test";
       addCartParams["productAttr"] = sku?.specData ?? "[]";
-      await HttpUtil.post(cartAddUrl, data: addCartParams);
 
-      if (mounted) {
+      final result = await HttpUtil.postWithHeaders(
+        cartAddUrl,
+        data: addCartParams,
+        headers: headers,
+      );
+
+      if (!mounted) return;
+      final resp = result.data as Map<String, dynamic>;
+      if (resp["code"] == 0) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('已加入购物车'), duration: Duration(seconds: 1)),
+          SnackBar(
+            content: const Text('已加入购物车'),
+            duration: const Duration(seconds: 1),
+            action: SnackBarAction(
+              label: '查看',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const Cart()),
+                );
+              },
+            ),
+          ),
+        );
+      } else {
+        // 后端返回错误码，映射为用户可理解文案
+        final errorCode = resp["code"]?.toString() ?? '';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_mapCartErrorCode(errorCode, resp)), backgroundColor: Colors.red),
         );
       }
+    } on DioException catch (e) {
+      if (!mounted) return;
+      // Dio 网络层错误（如 500/网络不可达）
+      String msg = '添加失败，请稍后重试';
+      if (e.response?.data != null && e.response!.data is Map) {
+        msg = _mapCartErrorCode(e.response!.data["code"]?.toString() ?? '', e.response!.data);
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg), backgroundColor: Colors.red),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('加入购物车失败: $e'), duration: const Duration(seconds: 2)),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('添加失败，请稍后重试'), backgroundColor: Colors.red),
+      );
+    } finally {
+      if (mounted) setState(() => _isAdding = false);
+    }
+  }
+
+  // 后端错误码 → 用户可理解文案
+  // 优先使用后端返回的具体 message（如库存不足时后端已含具体数量），
+  // code 仅用于兜底未知错误和日志追踪
+  String _mapCartErrorCode(String code, Map<String, dynamic> resp) {
+    // 优先用后端 message（有具体库存数量等上下文信息）
+    final backendMsg = resp["message"] ?? '';
+    if (backendMsg.isNotEmpty) {
+      return backendMsg;
+    }
+
+    // 兜底：根据 code 映射
+    switch (code) {
+      case 'OMS_CART_PRODUCT_OFFLINE':
+        return '该商品已下架';
+      case 'OMS_CART_PRODUCT_UNVERIFIED':
+        return '商品还在审核中，暂不支持购买';
+      case 'OMS_CART_STOCK_INSUFFICIENT':
+        return '库存不足，请选择其他规格或减少数量';
+      case 'OMS_CART_PRODUCT_NOT_FOUND':
+        return '商品不存在或已下架';
+      default:
+        return '添加失败，请稍后重试';
     }
   }
 }

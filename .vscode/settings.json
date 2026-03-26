@@ -3,5 +3,6 @@
 //  "go.toolsGopath": "/root/go/pkg/tool/linux_amd64/",
   "go.toolsEnvVars": {
     "GOPROXY": "https://goproxy.cn,direct"
-  }
+  },
+  "cmake.sourceDirectory": "/Users/helay/Documents/GitHub/zero-admin/flutter-mall/linux"
 }

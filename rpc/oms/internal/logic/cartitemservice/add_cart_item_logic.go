@@ -3,14 +3,16 @@ package cartitemservicelogic
 import (
 	"context"
 	"errors"
+	"time"
+
 	"github.com/feihua/zero-admin/rpc/oms/gen/model"
 	"github.com/feihua/zero-admin/rpc/oms/gen/query"
 	"github.com/feihua/zero-admin/rpc/oms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/oms/omsclient"
 	"github.com/zeromicro/go-zero/core/logc"
-	"time"
-
 	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // AddCartItemLogic 添加购物车
@@ -32,45 +34,59 @@ func NewAddCartItemLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AddCa
 	}
 }
 
-// AddCartItem 添加购物车
-// 1.购物车是否已经存在商品
-// 2.如果有,则更新数量
-// 3.如果没有,插入数据
+// AddCartItem 添加购物车（幂等化改造）
+// 使用 MySQL 原生 INSERT ... ON DUPLICATE KEY UPDATE 替代"先查后改"并发不安全模式
+// 唯一索引: uk_member_sku_status(member_id, product_sku_id, delete_status)
+// - 若记录不存在：INSERT 新记录（quantity = req.Quantity）
+// - 若记录存在（同一 member_id + product_sku_id + delete_status=0）：UPDATE 累加数量（quantity = quantity + req.Quantity）
 func (l *AddCartItemLogic) AddCartItem(in *omsclient.AddCartItemReq) (*omsclient.CartItemResp, error) {
 	q := query.OmsCartItem
-	// 1.购物车是否已经存在商品
-	item, _ := q.WithContext(l.ctx).Where(q.ProductID.Eq(in.ProductId), q.MemberID.Eq(in.MemberId)).First()
 
 	now := time.Now()
-	expireTime := now.AddDate(0, 0, l.svcCtx.C.Cart.Timeout)
-	var err error
-	if item != nil {
-		// 2.如果有,则更新数量
-		item.Quantity = item.Quantity + in.Quantity
-		_, err = q.WithContext(l.ctx).Where(q.ID.Eq(item.ID)).Update(q.Quantity, item.Quantity)
-	} else {
-		// 3.插入数据
-		err = q.WithContext(l.ctx).Create(&model.OmsCartItem{
-			MemberID:          in.MemberId,          // 会员ID
-			ProductID:         in.ProductId,         // 商品ID
-			ProductSkuID:      in.ProductSkuId,      // 商品SKU ID
-			Quantity:          in.Quantity,          // 购买数量
-			Price:             float64(in.Price),    // 添加到购物车时的价格
-			Selected:          in.Selected,          // 是否选中 0-未选中 1-选中
-			ProductName:       in.ProductName,       // 商品名称
-			ProductSubTitle:   in.ProductSubTitle,   // 商品副标题
-			ProductPic:        in.ProductPic,        // 商品主图URL
-			ProductSkuCode:    in.ProductSkuCode,    // 商品SKU编码
-			ProductSn:         in.ProductSn,         // 商品货号
-			ProductBrand:      in.ProductBrand,      // 商品品牌
-			ProductCategoryID: in.ProductCategoryId, // 商品分类ID
-			ProductAttr:       in.ProductAttr,       // 商品销售属性JSON
-			MemberNickname:    in.MemberNickname,    // 会员昵称
-			Source:            in.Source,            // 来源 1-PC 2-H5 3-小程序 4-APP
-			ExpireTime:        expireTime,           // 过期时间
-		})
-
+	nowPtr := now
+	timeoutDays := l.svcCtx.C.Cart.Timeout
+	if timeoutDays <= 0 {
+		timeoutDays = 30 // 默认30天，防止配置缺失时购物车立即过期
 	}
+	expireTime := now.AddDate(0, 0, timeoutDays)
+
+	newItem := &model.OmsCartItem{
+		MemberID:          in.MemberId,
+		ProductID:         in.ProductId,
+		ProductSkuID:      in.ProductSkuId,
+		Quantity:          in.Quantity,
+		Price:             float64(in.Price),
+		Selected:          in.Selected,
+		ProductName:       in.ProductName,
+		ProductSubTitle:   in.ProductSubTitle,
+		ProductPic:        in.ProductPic,
+		ProductSkuCode:    in.ProductSkuCode,
+		ProductSn:         in.ProductSn,
+		ProductBrand:      in.ProductBrand,
+		ProductCategoryID: in.ProductCategoryId,
+		ProductAttr:       in.ProductAttr,
+		MemberNickname:    in.MemberNickname,
+		Source:            in.Source,
+		DeleteStatus:      0,
+		ExpireTime:        expireTime,
+		CreateTime:        now,
+		UpdateTime:        &nowPtr,
+	}
+
+	// 幂等化 upsert：INSERT ... ON DUPLICATE KEY UPDATE
+	// 无竞态条件，并发重复加购同一商品不会产生 duplicate key 错误
+	err := q.WithContext(l.ctx).Clauses(clause.OnConflict{
+		Columns: []clause.Column{
+			{Name: "member_id"},
+			{Name: "product_sku_id"},
+			{Name: "delete_status"},
+		},
+		DoUpdates: clause.Assignments(map[string]interface{}{
+			"quantity":     gorm.Expr("quantity + ?", in.Quantity),
+			"selected":    in.Selected,
+			"update_time": now,
+		}),
+	}).Create(newItem)
 	if err != nil {
 		logc.Errorf(l.ctx, "添加购物车失败,参数:%+v,异常:%s", in, err.Error())
 		return nil, errors.New("添加购物车失败")
