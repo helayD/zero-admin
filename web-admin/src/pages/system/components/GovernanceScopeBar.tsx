@@ -1,7 +1,12 @@
 import { Alert, Col, InputNumber, Row, Select, Space, Tag } from 'antd';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import type { GovernanceScopeValue, GovernanceScopeType } from './governance';
-import { governanceImpactText, governanceScopeColor, normalizeGovernanceScope } from './governance';
+import {
+  governanceImpactText,
+  governanceScopeColor,
+  normalizeGovernanceScope,
+  buildGovernanceScopeLabel,
+} from './governance';
 
 interface GovernanceScopeBarProps {
   value: GovernanceScopeValue;
@@ -16,22 +21,41 @@ const scopeOptions: { label: string; value: GovernanceScopeType }[] = [
   { label: '商户级', value: 'merchant' },
 ];
 
+/** 当前 draft 是否满足后端最低要求（tenant 需 tenantId>0，merchant 需 merchantId>0） */
+const isScopeReady = (s: GovernanceScopeValue): boolean => {
+  if (s.scopeType === 'tenant') return (s.tenantId ?? 0) > 0;
+  if (s.scopeType === 'merchant') return (s.merchantId ?? 0) > 0;
+  return true; // platform 无额外要求
+};
+
 const GovernanceScopeBar: React.FC<GovernanceScopeBarProps> = ({
   value,
   onChange,
   entityLabel = '治理元数据',
   style,
 }) => {
-  const scope = normalizeGovernanceScope(value);
+  // draft: 内部编辑态，允许不完整；只有 ready 时才通知父组件
+  const [draft, setDraft] = useState<GovernanceScopeValue>(() => normalizeGovernanceScope(value));
 
-  const updateScope = (patch: Partial<GovernanceScopeValue>) => {
-    onChange(normalizeGovernanceScope({ ...scope, ...patch }));
+  // 外部 value 变化时同步 draft
+  useEffect(() => {
+    setDraft(normalizeGovernanceScope(value));
+  }, [value.scopeType, value.platformId, value.tenantId, value.merchantId]);
+
+  const updateDraft = (patch: Partial<GovernanceScopeValue>) => {
+    const next = normalizeGovernanceScope({ ...draft, ...patch });
+    setDraft(next);
+    if (isScopeReady(next)) {
+      onChange(next);
+    }
   };
+
+  const pending = !isScopeReady(draft);
 
   return (
     <Alert
       showIcon
-      type="info"
+      type={pending ? 'warning' : 'info'}
       message="Scope Context Bar"
       style={style}
       description={
@@ -40,42 +64,44 @@ const GovernanceScopeBar: React.FC<GovernanceScopeBarProps> = ({
             <Col xs={24} sm={8}>
               <Select
                 style={{ width: '100%' }}
-                value={scope.scopeType}
+                value={draft.scopeType}
                 options={scopeOptions}
                 onChange={(nextScopeType) => {
                   if (nextScopeType === 'platform') {
-                    updateScope({ scopeType: nextScopeType, tenantId: 0, merchantId: 0 });
+                    updateDraft({ scopeType: nextScopeType, tenantId: 0, merchantId: 0 });
                     return;
                   }
                   if (nextScopeType === 'tenant') {
-                    updateScope({ scopeType: nextScopeType, merchantId: 0 });
+                    updateDraft({ scopeType: nextScopeType, merchantId: 0 });
                     return;
                   }
-                  updateScope({ scopeType: nextScopeType });
+                  updateDraft({ scopeType: nextScopeType });
                 }}
               />
             </Col>
-            <Col xs={24} sm={scope.scopeType === 'merchant' ? 8 : 16}>
+            <Col xs={24} sm={draft.scopeType === 'merchant' ? 8 : 16}>
               <InputNumber
                 style={{ width: '100%' }}
                 min={1}
-                disabled={scope.scopeType === 'platform'}
+                disabled={draft.scopeType === 'platform'}
                 placeholder={
-                  scope.scopeType === 'merchant' ? '请输入租户 ID（可选）' : '请输入租户 ID'
+                  draft.scopeType === 'merchant' ? '请输入租户 ID（可选）' : '请输入租户 ID'
                 }
-                value={scope.scopeType === 'platform' ? undefined : scope.tenantId || undefined}
-                onChange={(nextTenantId) => updateScope({ tenantId: Number(nextTenantId || 0) })}
+                status={draft.scopeType === 'tenant' && !draft.tenantId ? 'warning' : undefined}
+                value={draft.scopeType === 'platform' ? undefined : draft.tenantId || undefined}
+                onChange={(nextTenantId) => updateDraft({ tenantId: Number(nextTenantId || 0) })}
               />
             </Col>
-            {scope.scopeType === 'merchant' && (
+            {draft.scopeType === 'merchant' && (
               <Col xs={24} sm={8}>
                 <InputNumber
                   style={{ width: '100%' }}
                   min={1}
                   placeholder="请输入商户 ID"
-                  value={scope.merchantId || undefined}
+                  status={!draft.merchantId ? 'warning' : undefined}
+                  value={draft.merchantId || undefined}
                   onChange={(nextMerchantId) =>
-                    updateScope({ merchantId: Number(nextMerchantId || 0) })
+                    updateDraft({ merchantId: Number(nextMerchantId || 0) })
                   }
                 />
               </Col>
@@ -83,8 +109,15 @@ const GovernanceScopeBar: React.FC<GovernanceScopeBarProps> = ({
           </Row>
 
           <Space wrap size={[8, 8]}>
-            <Tag color={governanceScopeColor(scope.scopeType)}>{scope.scopeLabel}</Tag>
-            <span>{governanceImpactText(scope, entityLabel)}</span>
+            <Tag color={governanceScopeColor(draft.scopeType)}>
+              {buildGovernanceScopeLabel(draft)}
+            </Tag>
+            {pending && (
+              <Tag color="orange">
+                请先填写{draft.scopeType === 'tenant' ? '租户' : '商户'} ID 后生效
+              </Tag>
+            )}
+            <span>{governanceImpactText(draft, entityLabel)}</span>
           </Space>
         </Space>
       }
