@@ -396,6 +396,7 @@ type CouponData struct {
 	ReceiveStatus int32   `json:"receiveStatus"` //领取状态：0-可领取，1-已领取，2-已领完，3-未开始，4-已过期
 	TotalCount    int32   `json:"totalCount"`    //发放总量
 	ReceivedCount int32   `json:"receivedCount"` //已领取数量
+	DisableReason string  `json:"disableReason"` //不可用原因
 }
 
 type CouponListByCartData struct {
