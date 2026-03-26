@@ -185,11 +185,11 @@ func couponSubtotal(scopeType int32, scopeRows []*smsclient.CouponScopeListData,
 }
 
 func cartItemAmount(item types.CarItemtPromotionListData) int64 {
-	price := item.Price - item.ReduceAmount
+	price := float64(item.Price) - float64(item.ReduceAmount)
 	if price < 0 {
 		price = 0
 	}
-	return price * int64(item.Quantity)
+	return int64(price) * int64(item.Quantity)
 }
 
 func couponUsableNow(startTime, endTime string) bool {
