@@ -33,6 +33,7 @@ func NewDeleteCartItemLogic(ctx context.Context, svcCtx *svc.ServiceContext) *De
 }
 
 // DeleteCartItem 删除/清空购物车
+// MEDIUM-8: Where 条件强制包含 MemberID，防止跨会员越权删除
 func (l *DeleteCartItemLogic) DeleteCartItem(in *omsclient.DeleteCartItemReq) (*omsclient.CartItemResp, error) {
 	item := query.OmsCartItem
 	q := item.WithContext(l.ctx).Where(item.MemberID.Eq(in.MemberId))

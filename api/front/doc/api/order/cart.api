@@ -116,17 +116,20 @@ type CartValidateReq {
 
 // 批量结算前商品有效性校验响应
 type CartValidateResp {
-	Code    int64                 `json:"code"`
-	Message string                `json:"message"`
-	Data    []CartValidateResult `json:"data"`
+	Code       int64                 `json:"code"`
+	Message    string                `json:"message"`
+	RequestId  string                `json:"requestId"`  // MEDIUM-7: 请求链路追踪ID
+	ServerTime int64                 `json:"serverTime"` // MEDIUM-7: 服务器时间戳（毫秒）
+	Data       []CartValidateResult `json:"data"`
 }
 
 // 单项商品校验结果
 type CartValidateResult {
-	Id          int64  `json:"id"`          // 购物车项ID
-	Valid       bool   `json:"valid"`       // 是否有效
-	ErrorCode   string `json:"errorCode"`   // 错误码，无效时返回具体错误码
-	ErrorMessage string `json:"errorMessage"` // 错误信息
+	Id           int64  `json:"id"`            // 购物车项ID
+	Valid        bool   `json:"valid"`         // 是否有效
+	ErrorCode    string `json:"errorCode"`     // 错误码，无效时返回具体错误码
+	ErrorMessage string `json:"errorMessage"`  // 错误信息
+	TraceId      string `json:"traceId"`       // MEDIUM-7: 该项校验的链路ID
 }
 
 type CartProductResp {

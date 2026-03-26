@@ -79,7 +79,7 @@ development_status:
 
   epic-5: in-progress
   5-1-商品加购与商户归属校验: done
-  5-2-购物车编辑-删除与批量结算: review
+  5-2-购物车编辑-删除与批量结算: done
   5-3-确认订单地址权益与支付方式选择: backlog
   5-4-创建订单与金额一致性保护: backlog
   5-5-支付发起-结果页与恢复入口: backlog

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/feihua/zero-admin/api/front/internal/logic/common"
 	"github.com/feihua/zero-admin/api/front/internal/svc"
@@ -17,6 +18,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/trace"
 )
 
 type ValidateCartItemsLogic struct {
@@ -93,10 +95,13 @@ func (l *ValidateCartItemsLogic) ValidateCartItems(req *types.CartValidateReq) (
 	results := make([]types.CartValidateResult, len(ids))
 	resultMu := sync.Mutex{}
 
-	eg, ctx := errgroup.WithContext(l.ctx)
+		eg, ctx := errgroup.WithContext(l.ctx)
 	for i, id := range ids {
 		idx, cartItemId := i, id
 		eg.Go(func() error {
+			// MEDIUM-7: 每个 goroutine 携带子 traceId
+			traceId := trace.TraceIDFromContext(ctx)
+
 			cartItem, ok := cartItemMap[cartItemId]
 			if !ok {
 				result := types.CartValidateResult{
@@ -104,6 +109,7 @@ func (l *ValidateCartItemsLogic) ValidateCartItems(req *types.CartValidateReq) (
 					Valid:        false,
 					ErrorCode:    ErrCodeCartProductNotFound,
 					ErrorMessage: "商品不存在",
+					TraceId:      traceId,
 				}
 				resultMu.Lock()
 				results[idx] = result
@@ -112,6 +118,7 @@ func (l *ValidateCartItemsLogic) ValidateCartItems(req *types.CartValidateReq) (
 			}
 
 			result := l.validateSingleItem(ctx, cartItem, pmsScope)
+			result.TraceId = traceId // MEDIUM-7: 补填 traceId
 			resultMu.Lock()
 			results[idx] = result
 			resultMu.Unlock()
@@ -123,10 +130,16 @@ func (l *ValidateCartItemsLogic) ValidateCartItems(req *types.CartValidateReq) (
 		return nil, errorx.NewDefaultError(ErrCodeCartSystemError)
 	}
 
+	// MEDIUM-7: 填充链路追踪字段
+	requestId := trace.TraceIDFromContext(l.ctx)
+	serverTime := time.Now().UnixMilli()
+
 	return &types.CartValidateResp{
-		Code:    0,
-		Message: "操作成功",
-		Data:    results,
+		Code:       0,
+		Message:    "操作成功",
+		RequestId:  requestId,
+		ServerTime: serverTime,
+		Data:       results,
 	}, nil
 }
 

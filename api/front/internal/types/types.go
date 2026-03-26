@@ -320,9 +320,11 @@ type CartValidateReq struct {
 }
 
 type CartValidateResp struct {
-	Code    int64                `json:"code"`
-	Message string               `json:"message"`
-	Data    []CartValidateResult `json:"data"`
+	Code       int64                `json:"code"`
+	Message    string               `json:"message"`
+	RequestId  string               `json:"requestId"`  // MEDIUM-7: 请求链路追踪ID
+	ServerTime int64                `json:"serverTime"` // MEDIUM-7: 服务器时间戳（毫秒）
+	Data       []CartValidateResult `json:"data"`
 }
 
 type CartValidateResult struct {
@@ -330,6 +332,7 @@ type CartValidateResult struct {
 	Valid        bool   `json:"valid"`        // 是否有效
 	ErrorCode    string `json:"errorCode"`    // 错误码，无效时返回具体错误码
 	ErrorMessage string `json:"errorMessage"` // 错误信息
+	TraceId      string `json:"traceId"`      // MEDIUM-7: 该项校验的链路ID
 }
 
 type CollectionDeleteReq struct {
@@ -393,7 +396,6 @@ type CouponData struct {
 	ReceiveStatus int32   `json:"receiveStatus"` //领取状态：0-可领取，1-已领取，2-已领完，3-未开始，4-已过期
 	TotalCount    int32   `json:"totalCount"`    //发放总量
 	ReceivedCount int32   `json:"receivedCount"` //已领取数量
-	DisableReason string  `json:"disableReason"` //不可用原因
 }
 
 type CouponListByCartData struct {

@@ -29,6 +29,7 @@ func NewClearCarItemLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Clea
 }
 
 // ClearCarItem 清空购物车
+// MEDIUM-9: DeleteCartItemReq 必须携带 MemberId，OMS 层以 MemberID.Eq 原子过滤，防止越权清空他人购物车
 func (l *ClearCarItemLogic) ClearCarItem() (resp *types.CartItemResp, err error) {
 	memberId, err := common.GetMemberId(l.ctx)
 	if err != nil {
