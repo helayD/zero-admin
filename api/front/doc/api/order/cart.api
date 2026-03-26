@@ -109,6 +109,26 @@ type CartProductReq {
 	ProductId int64 `path:"productId"`
 }
 
+// 批量结算前商品有效性校验请求
+type CartValidateReq {
+	Ids []int64 `json:"ids"` // 购物车项ID列表（前端传已选商品的购物车ID）
+}
+
+// 批量结算前商品有效性校验响应
+type CartValidateResp {
+	Code    int64                 `json:"code"`
+	Message string                `json:"message"`
+	Data    []CartValidateResult `json:"data"`
+}
+
+// 单项商品校验结果
+type CartValidateResult {
+	Id          int64  `json:"id"`          // 购物车项ID
+	Valid       bool   `json:"valid"`       // 是否有效
+	ErrorCode   string `json:"errorCode"`   // 错误码，无效时返回具体错误码
+	ErrorMessage string `json:"errorMessage"` // 错误信息
+}
+
 type CartProductResp {
 	Code    int64           `json:"code"`
 	Message string          `json:"message"`
@@ -202,5 +222,9 @@ service front-api {
 	//清空购物车
 	@handler ClearCarItem
 	get /clear returns (CartItemResp)
+
+	//批量结算前校验商品有效性
+	@handler ValidateCartItems
+	post /validateCartItems (CartValidateReq) returns (CartValidateResp)
 }
 

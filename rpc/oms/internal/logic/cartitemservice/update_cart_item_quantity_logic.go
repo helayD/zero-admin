@@ -33,7 +33,15 @@ func NewUpdateCartItemQuantityLogic(ctx context.Context, svcCtx *svc.ServiceCont
 }
 
 // UpdateCartItemQuantity 修改购物车中某个商品的数量
+// Task 5.1: UpdateSimple 条件已包含 MemberID.Eq(in.MemberId)，防止跨会员越权修改
+// Task 5.4: 数量必须 > 0，否则拒绝
 func (l *UpdateCartItemQuantityLogic) UpdateCartItemQuantity(in *omsclient.UpdateCartItemQuantityReq) (*omsclient.CartItemResp, error) {
+	// Task 5.4: 数量边界保护
+	if in.Quantity <= 0 {
+		logc.Errorf(l.ctx, "修改购物车数量非法, quantity=%d", in.Quantity)
+		return nil, errors.New("数量必须大于0")
+	}
+
 	q := query.OmsCartItem
 	now := time.Now()
 	expireTime := now.AddDate(0, 0, l.svcCtx.C.Cart.Timeout)

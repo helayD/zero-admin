@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../model/cart_list.dart';
 import '../model/cart_promotion.dart';
+import '../model/cart_validate.dart';
 
 ///
 /// 购物车的状态
@@ -18,6 +19,9 @@ class CartModel with ChangeNotifier, DiagnosticableTreeMixin {
 
   // 促销信息（按商品ID索引）
   Map<int, CartPromotionData> promotionMap = <int, CartPromotionData>{};
+
+  // 无效购物车项（key: cartItemId, value: errorMessage）
+  Map<int, String> invalidCartItems = <int, String>{};
 
   // 选择商品的价格总和
   int allProductPrice = 0;
@@ -97,6 +101,8 @@ class CartModel with ChangeNotifier, DiagnosticableTreeMixin {
   int getProductAllPrice() {
     allProductPrice = 0;
     checkCartProduct.forEach((key, value) {
+      // 跳过无效商品
+      if (invalidCartItems.containsKey(key)) return;
       final promo = promotionMap[value.productId];
       if (promo != null) {
         allProductPrice += (promo.price - promo.reduceAmount) * promo.quantity;
@@ -108,12 +114,99 @@ class CartModel with ChangeNotifier, DiagnosticableTreeMixin {
     return allProductPrice;
   }
 
+  // 获取有效（未被标记为无效）的已选商品
+  List<CartData> getValidCheckProduct() {
+    return checkCartProduct.values
+        .where((item) => !invalidCartItems.containsKey(item.id))
+        .toList();
+  }
+
+  // 设置校验结果（标记无效商品）
+  void setValidationResults(List<CartValidateResult> results) {
+    invalidCartItems.clear();
+    for (var result in results) {
+      if (!result.valid) {
+        invalidCartItems[result.id] = result.errorMessage;
+      }
+    }
+    notifyListeners();
+  }
+
+  // 清除无效标记
+  void clearInvalidItems() {
+    invalidCartItems.clear();
+    notifyListeners();
+  }
+
+  // 获取商品无效原因
+  String? getInvalidReason(int cartItemId) {
+    return invalidCartItems[cartItemId];
+  }
+
+  // 判断商品是否无效
+  bool isInvalid(int cartItemId) {
+    return invalidCartItems.containsKey(cartItemId);
+  }
+
+  // 清空所有购物车数据（清空购物车成功后调用）
+  void clearAll() {
+    allCartProduct.clear();
+    checkCartProduct.clear();
+    promotionMap.clear();
+    invalidCartItems.clear();
+    allProductPrice = 0;
+    notifyListeners();
+  }
+
+  // 删除单个商品（删除成功后调用）
+  void removeItem(int cartItemId) {
+    allCartProduct.remove(cartItemId);
+    checkCartProduct.remove(cartItemId);
+    invalidCartItems.remove(cartItemId);
+    notifyListeners();
+  }
+
+  // 更新单个商品数量
+  void updateQuantity(int cartItemId, int newQuantity) {
+    if (allCartProduct[cartItemId] != null) {
+      final updated = allCartProduct[cartItemId]!;
+      allCartProduct[cartItemId] = CartData(
+        id: updated.id,
+        memberId: updated.memberId,
+        productId: updated.productId,
+        productSkuId: updated.productSkuId,
+        quantity: newQuantity,
+        price: updated.price,
+        selected: updated.selected,
+        productName: updated.productName,
+        productSubTitle: updated.productSubTitle,
+        productPic: updated.productPic,
+        productSkuCode: updated.productSkuCode,
+        productSn: updated.productSn,
+        productBrand: updated.productBrand,
+        productCategoryId: updated.productCategoryId,
+        productAttr: updated.productAttr,
+        memberNickname: updated.memberNickname,
+        source: updated.source,
+        expireTime: updated.expireTime,
+        createTime: updated.createTime,
+        updateTime: updated.updateTime,
+      );
+      if (checkCartProduct.containsKey(cartItemId)) {
+        checkCartProduct[cartItemId] = allCartProduct[cartItemId]!;
+      }
+      notifyListeners();
+    }
+  }
+
   /// Makes `cartListData` readable inside the devtools by listing all of its properties
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
     properties.add(DiagnosticsProperty<Map<int, CartData>>('allCartProduct', allCartProduct));
     properties.add(DiagnosticsProperty<Map<int, CartData>>('checkCartProduct', checkCartProduct));
+    properties.add(DiagnosticsProperty<Map<int, CartPromotionData>>('promotionMap', promotionMap));
+    properties.add(DiagnosticsProperty<Map<int, String>>('invalidCartItems', invalidCartItems));
     properties.add(IntProperty('allProductPrice', allProductPrice));
   }
 }

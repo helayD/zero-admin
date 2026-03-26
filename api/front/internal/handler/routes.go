@@ -261,6 +261,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Path:    "/updateCartItemQuantity",
 				Handler: ordercart.UpdateCartItemQuantityHandler(serverCtx),
 			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/validateCartItems",
+				Handler: ordercart.ValidateCartItemsHandler(serverCtx),
+			},
 		},
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
 		rest.WithPrefix("/api/order"),

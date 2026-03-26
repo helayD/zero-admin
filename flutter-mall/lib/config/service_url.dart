@@ -32,6 +32,14 @@ const categoriesDataUrl = "$baseUrl/api/product/queryProductCateList";
 const cartDataUrl = "$baseUrl/api/order/queryCarItemList";
 // 购物车促销试算
 const cartPromotionUrl = "$baseUrl/api/order/queryPromotionList";
+// 清空购物车
+const clearCartUrl = "$baseUrl/api/order/clear";
+// 删除购物车商品
+const deleteCartUrl = "$baseUrl/api/order/deleteCartItem";
+// 修改购物车商品数量
+const updateCartQuantityUrl = "$baseUrl/api/order/updateCartItemQuantity";
+// 批量结算前商品有效性校验
+const validateCartItemsUrl = "$baseUrl/api/order/validateCartItems";
 // 生成确认单
 const generateConfirmOrderUrl = "$baseUrl/api/order/generateConfirmOrder";
 // 添加商品进购物车

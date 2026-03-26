@@ -160,7 +160,7 @@ func QueryCartListPromotion(ids []int64, ctx context.Context, svcCtx *svc.Servic
 				skuStock := getSkuStock(skuStockList, item.ProductSkuId)
 				cartPromotionItem := types.CarItemtPromotionListData{}
 				_ = copier.Copy(&cartPromotionItem, &item)
-				cartPromotionItem.Price = int64(skuStock.Price) // 单品促销使用原价
+				cartPromotionItem.Price = float32(skuStock.Price) // 单品促销使用原价
 				cartPromotionItem.PromotionMessage = "单品促销"
 				cartPromotionItem.ReduceAmount = int64(skuStock.Price - skuStock.PromotionPrice) // 商品原价-促销价
 				cartPromotionItem.RealStock = skuStock.Stock                                     // TODO: proto SkuStockData 缺少 LockStock 字段，应为 Stock - LockStock
@@ -187,7 +187,7 @@ func QueryCartListPromotion(ids []int64, ctx context.Context, svcCtx *svc.Servic
 				skuStock := getSkuStock(skuStockList, item.ProductSkuId)
 				cartPromotionItem := types.CarItemtPromotionListData{}
 				_ = copier.Copy(&cartPromotionItem, &item)
-				cartPromotionItem.Price = int64(skuStock.Price) // 单品促销使用原价
+				cartPromotionItem.Price = float32(skuStock.Price) // 单品促销使用原价
 				cartPromotionItem.PromotionMessage = "会员价格"
 				cartPromotionItem.ReduceAmount = memberPrice // 会员价
 				cartPromotionItem.RealStock = skuStock.Stock // TODO: proto 缺 LockStock
@@ -217,12 +217,12 @@ func QueryCartListPromotion(ids []int64, ctx context.Context, svcCtx *svc.Servic
 					skuStock := getSkuStock(skuStockList, item.ProductSkuId)
 					cartPromotionItem := types.CarItemtPromotionListData{}
 					_ = copier.Copy(&cartPromotionItem, &item)
-					cartPromotionItem.Price = int64(skuStock.Price)
+					cartPromotionItem.Price = float32(skuStock.Price)
 					c := strconv.FormatInt(int64(productLadder.Count), 10)
 					d := fmt.Sprintf("%1.0f", productLadder.Discount*10)
 					cartPromotionItem.PromotionMessage = "打折优惠：满" + c + "件,打" + d + "折"
 					// 商品原价-折扣*商品原价
-					cartPromotionItem.ReduceAmount = int64(skuStock.Price) - productLadder.Price
+					cartPromotionItem.ReduceAmount = int64(float32(skuStock.Price)) - productLadder.Price
 					cartPromotionItem.RealStock = skuStock.Stock // TODO: proto 缺 LockStock
 					cartPromotionItem.Integration = 0            // TODO: proto 缺 GiftPoint
 					cartPromotionItem.Growth = 0                 // TODO: proto 缺 GiftGrowth
@@ -254,7 +254,7 @@ func QueryCartListPromotion(ids []int64, ctx context.Context, svcCtx *svc.Servic
 					skuStock := getSkuStock(skuStockList, item.ProductSkuId)
 					cartPromotionItem := types.CarItemtPromotionListData{}
 					_ = copier.Copy(&cartPromotionItem, &item)
-					cartPromotionItem.Price = int64(skuStock.Price)
+					cartPromotionItem.Price = float32(skuStock.Price)
 					f := fmt.Sprintf("%d", productFull.FullPrice)
 					r := fmt.Sprintf("%d", productFull.ReducePrice)
 					cartPromotionItem.PromotionMessage = "满减优惠：满" + f + "元,减" + r + "元"
@@ -281,10 +281,10 @@ func QueryCartListPromotion(ids []int64, ctx context.Context, svcCtx *svc.Servic
 				skuStock := getSkuStock(skuStockList, item.ProductSkuId)
 				cartPromotionItem := types.CarItemtPromotionListData{}
 				_ = copier.Copy(&cartPromotionItem, &item)
-				cartPromotionItem.Price = int64(skuStock.Price)
+				cartPromotionItem.Price = float32(skuStock.Price)
 				cartPromotionItem.PromotionMessage = "限时购"
 				if promotionByProduct != nil {
-					cartPromotionItem.ReduceAmount = int64(skuStock.Price) - int64(promotionByProduct.SeckillPrice)
+					cartPromotionItem.ReduceAmount = int64(float32(skuStock.Price) - promotionByProduct.SeckillPrice)
 				}
 				cartPromotionItem.RealStock = skuStock.Stock // TODO: proto 缺 LockStock
 				cartPromotionItem.Integration = 0            // TODO: proto 缺 GiftPoint
@@ -306,7 +306,7 @@ func handleNoReduce(itemList []*omsclient.CartItemData, skuStockList []*pmsclien
 		}
 		cartPromotionItem := types.CarItemtPromotionListData{}
 		_ = copier.Copy(&cartPromotionItem, &item)
-		cartPromotionItem.Price = int64(skuStock.Price)
+		cartPromotionItem.Price = float32(skuStock.Price)
 		cartPromotionItem.PromotionMessage = "无优惠"
 		cartPromotionItem.ReduceAmount = 0
 		cartPromotionItem.RealStock = skuStock.Stock // TODO: proto 缺 LockStock
