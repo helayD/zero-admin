@@ -78,7 +78,22 @@ VALUES
      '小米 REDMI Note15 Pro 256GB', '256GB版', 'http://example.com/pic1b.jpg', 'SKU002', 'SN001B', '小米',
      1, '[]', '张三', 4, 0, '2029-12-31 23:59:59');
 
--- 7. 确保优惠券作用域表种子数据（优惠券适用商品分类）
+-- 7. 补齐 pms_product_spu 操作元数据字段（operation_metadata.go 需要）
+SET @col_exists2 = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='pms_product_spu' AND COLUMN_NAME='publish_man');
+SET @sql2 = IF(@col_exists2 = 0, 'ALTER TABLE pms_product_spu ADD COLUMN publish_man varchar(100) NOT NULL DEFAULT '''' COMMENT ''上架操作人'' AFTER publish_status, ADD COLUMN publish_time datetime NULL COMMENT ''上架时间'' AFTER publish_man, ADD COLUMN publish_detail varchar(500) NOT NULL DEFAULT '''' COMMENT ''上架说明'' AFTER publish_time, ADD COLUMN recommend_man varchar(100) NOT NULL DEFAULT '''' COMMENT ''推荐操作人'' AFTER recommend_status, ADD COLUMN recommend_time datetime NULL COMMENT ''推荐时间'' AFTER recommend_man, ADD COLUMN recommend_detail varchar(500) NOT NULL DEFAULT '''' COMMENT ''推荐说明'' AFTER recommend_time', 'SELECT 1');
+PREPARE stmt2 FROM @sql2;
+EXECUTE stmt2;
+DEALLOCATE PREPARE stmt2;
+
+-- 8. 补齐 cms_subject_category 的 scope 字段
+-- 如果字段不存在则添加（MySQL 不支持 IF NOT EXISTS for ADD COLUMN，用存储过程替代）
+SET @col_exists = (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='cms_subject_category' AND COLUMN_NAME='platform_id');
+SET @sql = IF(@col_exists = 0, 'ALTER TABLE cms_subject_category ADD COLUMN platform_id bigint NOT NULL DEFAULT 1 COMMENT ''平台ID'' AFTER id, ADD COLUMN tenant_id bigint NOT NULL DEFAULT 0 COMMENT ''租户ID'' AFTER platform_id, ADD COLUMN merchant_id bigint NOT NULL DEFAULT 0 COMMENT ''商户ID'' AFTER tenant_id', 'SELECT 1');
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- 8. 确保优惠券作用域表种子数据（优惠券适用商品分类）
 INSERT IGNORE INTO sms_coupon_scope (id, coupon_id, scope_type, scope_id)
 VALUES (1, 1, 0, 0),  -- 满减券：全场通用
        (2, 2, 0, 0),  -- 新用户券：全场通用

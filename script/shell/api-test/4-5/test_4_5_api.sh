@@ -54,10 +54,10 @@ AUTH="Authorization: Bearer $FRONT_TOKEN"
 log_info "准备: 确保购物车有测试商品"
 curl -s --max-time $TIMEOUT -X POST "$BASE_URL/api/order/addCart" \
   -H "$AUTH" -H 'Content-Type: application/json' \
-  -d '{"productId":1,"productSkuId":1,"quantity":1}' > /dev/null
+  -d '{"productId":1,"productSkuId":1,"quantity":1,"price":7999,"productName":"小米手机 金色 128GB","productSubTitle":"全网通版","productPic":"http://example.com/pic1.jpg","productSkuCode":"SKU001","productSn":"SN001","productBrand":"小米","productCategoryId":1,"productAttr":"[]","memberNickname":"张三"}' > /dev/null
 curl -s --max-time $TIMEOUT -X POST "$BASE_URL/api/order/addCart" \
   -H "$AUTH" -H 'Content-Type: application/json' \
-  -d '{"productId":2,"productSkuId":3,"quantity":2}' > /dev/null
+  -d '{"productId":2,"productSkuId":3,"quantity":2,"price":7999,"productName":"苹果手机 金色 128GB","productSubTitle":"全网通版","productPic":"http://example.com/pic2.jpg","productSkuCode":"SKU003","productSn":"SN002","productBrand":"Apple","productCategoryId":1,"productAttr":"[]","memberNickname":"张三"}' > /dev/null
 echo "  准备完成"
 
 # 1. 促销试算 - queryPromotionList

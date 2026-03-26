@@ -54,7 +54,7 @@ log_info "1. 正常加购 - productId=1, skuId=1, quantity=1"
 ADD_RESP=$(curl -s --max-time $TIMEOUT -X POST "$BASE_URL/api/order/addCart" \
   -H "$AUTH" \
   -H 'Content-Type: application/json' \
-  -d '{"productId":1,"productSkuId":1,"quantity":1}')
+  -d '{"productId":1,"productSkuId":1,"quantity":1,"price":7999,"productName":"小米手机 金色 128GB","productSubTitle":"全网通版","productPic":"http://example.com/pic1.jpg","productSkuCode":"SKU001","productSn":"SN001","productBrand":"小米","productCategoryId":1,"productAttr":"[]","memberNickname":"张三"}')
 ADD_CODE=$(json_val "d.get('code','')" "$ADD_RESP")
 ADD_MSG=$(json_val "d.get('message',d.get('msg',''))" "$ADD_RESP")
 if [ "$ADD_CODE" = "0" ]; then
@@ -83,7 +83,7 @@ log_info "3. 加购不存在的商品 - productId=999999"
 BAD_RESP=$(curl -s --max-time $TIMEOUT -X POST "$BASE_URL/api/order/addCart" \
   -H "$AUTH" \
   -H 'Content-Type: application/json' \
-  -d '{"productId":999999,"productSkuId":999999,"quantity":1}')
+  -d '{"productId":999999,"productSkuId":999999,"quantity":1,"price":100,"productName":"不存在商品","productSubTitle":"","productPic":"","productSkuCode":"FAKE","productSn":"FAKE","productBrand":"","productCategoryId":1,"productAttr":"[]","memberNickname":"张三"}')
 BAD_CODE=$(json_val "d.get('code','')" "$BAD_RESP")
 BAD_MSG=$(json_val "d.get('message',d.get('msg',''))" "$BAD_RESP")
 if [ "$BAD_CODE" != "0" ]; then
@@ -97,7 +97,7 @@ log_info "4. 幂等加购 - 再次加购 skuId=1"
 IDEMPOTENT_RESP=$(curl -s --max-time $TIMEOUT -X POST "$BASE_URL/api/order/addCart" \
   -H "$AUTH" \
   -H 'Content-Type: application/json' \
-  -d '{"productId":1,"productSkuId":1,"quantity":1}')
+  -d '{"productId":1,"productSkuId":1,"quantity":1,"price":7999,"productName":"小米手机 金色 128GB","productSubTitle":"全网通版","productPic":"http://example.com/pic1.jpg","productSkuCode":"SKU001","productSn":"SN001","productBrand":"小米","productCategoryId":1,"productAttr":"[]","memberNickname":"张三"}')
 IDEMPOTENT_CODE=$(json_val "d.get('code','')" "$IDEMPOTENT_RESP")
 if [ "$IDEMPOTENT_CODE" = "0" ]; then
   log_pass "幂等加购成功（数量累加或更新）"
@@ -111,7 +111,7 @@ log_info "5. 加购第二个商品 - productId=2, skuId=3"
 ADD2_RESP=$(curl -s --max-time $TIMEOUT -X POST "$BASE_URL/api/order/addCart" \
   -H "$AUTH" \
   -H 'Content-Type: application/json' \
-  -d '{"productId":2,"productSkuId":3,"quantity":2}')
+  -d '{"productId":2,"productSkuId":3,"quantity":2,"price":7999,"productName":"苹果手机 金色 128GB","productSubTitle":"全网通版","productPic":"http://example.com/pic2.jpg","productSkuCode":"SKU003","productSn":"SN002","productBrand":"Apple","productCategoryId":1,"productAttr":"[]","memberNickname":"张三"}')
 ADD2_CODE=$(json_val "d.get('code','')" "$ADD2_RESP")
 if [ "$ADD2_CODE" = "0" ]; then
   log_pass "第二个商品加购成功"
@@ -130,7 +130,7 @@ log_info "6. 未登录加购应返回 401"
 NOAUTH_CODE=$(curl -s --max-time $TIMEOUT -o /dev/null -w "%{http_code}" \
   -X POST "$BASE_URL/api/order/addCart" \
   -H 'Content-Type: application/json' \
-  -d '{"productId":1,"productSkuId":1,"quantity":1}')
+  -d '{"productId":1,"productSkuId":1,"quantity":1,"price":7999,"productName":"test","productSubTitle":"","productPic":"","productSkuCode":"SKU001","productSn":"SN001","productBrand":"","productCategoryId":1,"productAttr":"[]","memberNickname":"test"}')
 if [ "$NOAUTH_CODE" = "401" ]; then
   log_pass "未登录返回 401"
 else

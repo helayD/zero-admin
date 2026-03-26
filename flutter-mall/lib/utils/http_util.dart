@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:io' show HttpClient, Platform;
 
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mall/config/constant_param.dart';
@@ -20,64 +22,54 @@ class HttpUtil {
 
   static Dio get dio {
     if (_dio == null) {
-      // 配置Dio实例
-      BaseOptions options = BaseOptions(
-        baseUrl: "", // API地址通过各接口的完整URL指定
-        connectTimeout: const Duration(milliseconds: 5000), // 设置连接超时时间为5秒
-        receiveTimeout: const Duration(milliseconds: 5000), // 设置接收数据超时时间为5秒
+      // macOS desktop 模式下，强制直连绕过系统代理，解决 sandbox 下访问外网被拒绝的问题
+      final IOHttpClientAdapter httpClientAdapter = IOHttpClientAdapter(
+        createHttpClient: () {
+          final client = HttpClient();
+          if (Platform.isMacOS) {
+            client.findProxy = (uri) => 'DIRECT';
+          }
+          return client;
+        },
       );
 
-      _dio = Dio(options);
+      // 配置Dio实例
+      BaseOptions options = BaseOptions(
+        baseUrl: "",
+        connectTimeout: const Duration(milliseconds: 5000),
+        receiveTimeout: const Duration(milliseconds: 5000),
+      );
 
-      // 可以添加拦截器、日志等其他配置
+      _dio = Dio(options)..httpClientAdapter = httpClientAdapter;
 
-      // 添加请求拦截器
       _dio!.interceptors.add(InterceptorsWrapper(
         onRequest: (RequestOptions options, RequestInterceptorHandler handler) {
           if (kDebugMode) {
-            print("\n");
-            print("\n");
-            print("========================请求数据===================");
+            print("\n\n========================请求数据===================");
             print("url=${options.uri.toString()}");
             print("params=${options.data}");
           }
-
-          // 在请求之前做一些操作，比如添加token等
           return handler.next(options);
         },
         onResponse: (Response response, ResponseInterceptorHandler handler) {
           if (kDebugMode) {
-            print("\n");
-            print("\n");
-            print("========================响应数据===================");
+            print("\n\n========================响应数据===================");
             print("code=${response.statusCode}");
             print("response=${response.data}");
-            print("==================================================");
-            print("\n");
-            print("\n");
-            print("\n");
+            print("==================================================\n\n\n");
           }
-
-          // 在响应之前做一些操作
           return handler.next(response);
         },
         onError: (DioException e, ErrorInterceptorHandler handler) {
-          // 在错误之前做一些操作
           if (kDebugMode) {
-            print("\n");
-            print("\n");
-            print("========================错误数据===================");
+            print("\n\n========================错误数据===================");
             print("code=${e.response?.statusCode}");
             print("message=${e.response?.statusMessage}");
             print("data=${e.response?.data}");
-            print("==================================================");
-            print("\n");
-            print("\n");
-            print("\n");
+            print("==================================================\n\n\n");
           }
           if (e.response?.statusCode == 401) {
             final navContext = NavKey.navKey.currentState!.context;
-            // 保存当前路由用于登录后恢复
             final currentRoute = ModalRoute.of(navContext)?.settings.name;
             Navigator.of(navContext).push(
               MaterialPageRoute(
@@ -96,71 +88,62 @@ class HttpUtil {
 
   // 封装GET请求
   static Future<Response> get(String path, {Map<String, dynamic>? queryParameters}) async {
-    try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      Map<String, dynamic> header = <String, dynamic>{};
-      header["Authorization"] = prefs.getString(token);
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    Map<String, dynamic> header = <String, dynamic>{};
+    header["Authorization"] = prefs.getString(token);
 
-      Response response = await dio.get(
-        path,
-        queryParameters: queryParameters,
-        options: Options(headers: header),
-      );
-      return response;
-    } catch (e) {
-      throw e;
-    }
+    Response response = await dio.get(
+      path,
+      queryParameters: queryParameters,
+      options: Options(headers: header),
+    );
+    return response;
   }
 
   // 封装POST请求，数据以JSON格式发送
   static Future<Response> post(String path, {Map<String, dynamic>? data}) async {
-    try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      Map<String, dynamic> header = <String, dynamic>{};
-      header["Authorization"] = prefs.getString(token);
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    Map<String, dynamic> header = <String, dynamic>{};
+    header["Authorization"] = prefs.getString(token);
 
-      Response response = await dio.post(
-        path,
-        data: jsonEncode(data),
-        options: Options(contentType: 'application/json', headers: header),
-      );
-      return response;
-    } catch (e) {
-      throw e;
-    }
+    Response response = await dio.post(
+      path,
+      data: jsonEncode(data),
+      options: Options(contentType: 'application/json', headers: header),
+    );
+    return response;
   }
 
   // 封装POST请求，支持自定义请求头（用于幂等键等场景）
-  static Future<Response> postWithHeaders(String path, {Map<String, dynamic>? data, Map<String, String>? headers}) async {
-    try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      Map<String, dynamic> header = <String, dynamic>{};
-      header["Authorization"] = prefs.getString(token) ?? "";
-      if (headers != null) {
-        header.addAll(headers);
-      }
-
-      Response response = await dio.post(
-        path,
-        data: jsonEncode(data),
-        options: Options(contentType: 'application/json', headers: header.cast<String, dynamic>()),
-      );
-      return response;
-    } catch (e) {
-      throw e;
+  static Future<Response> postWithHeaders(
+    String path, {
+    Map<String, dynamic>? data,
+    Map<String, String>? headers,
+  }) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    Map<String, dynamic> header = <String, dynamic>{};
+    header["Authorization"] = prefs.getString(token) ?? "";
+    if (headers != null) {
+      header.addAll(headers);
     }
+
+    Response response = await dio.post(
+      path,
+      data: jsonEncode(data),
+      options: Options(
+        contentType: 'application/json',
+        headers: header.cast<String, dynamic>(),
+      ),
+    );
+    return response;
   }
 
   // 封装POST请求，数据以form表单格式发送
   static Future<Response> postForm(String path, {Map<String, dynamic>? data}) async {
-    try {
-      Response response = await dio.post(
-        path,
-        queryParameters: data,
-      );
-      return response;
-    } catch (e) {
-      throw e;
-    }
+    Response response = await dio.post(
+      path,
+      queryParameters: data,
+    );
+    return response;
   }
 }

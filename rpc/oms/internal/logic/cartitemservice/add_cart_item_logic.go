@@ -11,8 +11,6 @@ import (
 	"github.com/feihua/zero-admin/rpc/oms/omsclient"
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 // AddCartItemLogic 添加购物车
@@ -73,20 +71,28 @@ func (l *AddCartItemLogic) AddCartItem(in *omsclient.AddCartItemReq) (*omsclient
 		UpdateTime:        &nowPtr,
 	}
 
-	// 幂等化 upsert：INSERT ... ON DUPLICATE KEY UPDATE
+	// 幂等化 upsert：原生 SQL INSERT ... ON DUPLICATE KEY UPDATE
 	// 无竞态条件，并发重复加购同一商品不会产生 duplicate key 错误
-	err := q.WithContext(l.ctx).Clauses(clause.OnConflict{
-		Columns: []clause.Column{
-			{Name: "member_id"},
-			{Name: "product_sku_id"},
-			{Name: "delete_status"},
-		},
-		DoUpdates: clause.Assignments(map[string]interface{}{
-			"quantity":     gorm.Expr("quantity + ?", in.Quantity),
-			"selected":    in.Selected,
-			"update_time": now,
-		}),
-	}).Create(newItem)
+	// 注意：不使用 GORM Clauses(OnConflict{gorm.Expr(...)})，因为新版 GORM 出于安全原因禁止了该写法
+	db := q.WithContext(l.ctx).UnderlyingDB()
+	err := db.Exec(`INSERT INTO oms_cart_item
+		(member_id, product_id, product_sku_id, quantity, price, selected,
+		 product_name, product_sub_title, product_pic, product_sku_code, product_sn,
+		 product_brand, product_category_id, product_attr, member_nickname, source,
+		 delete_status, expire_time, create_time, update_time)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)
+		ON DUPLICATE KEY UPDATE
+		quantity = quantity + VALUES(quantity),
+		selected = VALUES(selected),
+		update_time = VALUES(update_time)`,
+		newItem.MemberID, newItem.ProductID, newItem.ProductSkuID, newItem.Quantity,
+		newItem.Price, newItem.Selected,
+		newItem.ProductName, newItem.ProductSubTitle, newItem.ProductPic,
+		newItem.ProductSkuCode, newItem.ProductSn,
+		newItem.ProductBrand, newItem.ProductCategoryID, newItem.ProductAttr,
+		newItem.MemberNickname, newItem.Source,
+		newItem.ExpireTime, newItem.CreateTime, now,
+	).Error
 	if err != nil {
 		logc.Errorf(l.ctx, "添加购物车失败,参数:%+v,异常:%s", in, err.Error())
 		return nil, errors.New("添加购物车失败")

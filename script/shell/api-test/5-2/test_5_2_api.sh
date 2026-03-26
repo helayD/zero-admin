@@ -53,10 +53,10 @@ AUTH="Authorization: Bearer $FRONT_TOKEN"
 log_info "准备: 确保购物车有测试数据"
 curl -s --max-time $TIMEOUT -X POST "$BASE_URL/api/order/addCart" \
   -H "$AUTH" -H 'Content-Type: application/json' \
-  -d '{"productId":1,"productSkuId":1,"quantity":1}' > /dev/null
+  -d '{"productId":1,"productSkuId":1,"quantity":1,"price":7999,"productName":"小米手机 金色 128GB","productSubTitle":"全网通版","productPic":"http://example.com/pic1.jpg","productSkuCode":"SKU001","productSn":"SN001","productBrand":"小米","productCategoryId":1,"productAttr":"[]","memberNickname":"张三"}' > /dev/null
 curl -s --max-time $TIMEOUT -X POST "$BASE_URL/api/order/addCart" \
   -H "$AUTH" -H 'Content-Type: application/json' \
-  -d '{"productId":2,"productSkuId":3,"quantity":1}' > /dev/null
+  -d '{"productId":2,"productSkuId":3,"quantity":1,"price":7999,"productName":"苹果手机 金色 128GB","productSubTitle":"全网通版","productPic":"http://example.com/pic2.jpg","productSkuCode":"SKU003","productSn":"SN002","productBrand":"Apple","productCategoryId":1,"productAttr":"[]","memberNickname":"张三"}' > /dev/null
 echo "  准备完成"
 
 # 1. 查询购物车列表
@@ -136,7 +136,7 @@ log_info "6. 删除购物车单项"
 # 先加购一个临时商品用于测试删除
 curl -s --max-time $TIMEOUT -X POST "$BASE_URL/api/order/addCart" \
   -H "$AUTH" -H 'Content-Type: application/json' \
-  -d '{"productId":3,"productSkuId":5,"quantity":1}' > /dev/null
+  -d '{"productId":3,"productSkuId":5,"quantity":1,"price":7999,"productName":"华为手机 金色 128GB","productSubTitle":"折叠屏手机","productPic":"http://example.com/pic3.jpg","productSkuCode":"SKU005","productSn":"SN003","productBrand":"华为","productCategoryId":1,"productAttr":"[]","memberNickname":"张三"}' > /dev/null
 # 重新获取购物车，找到临时商品
 CART_RESP3=$(curl -s --max-time $TIMEOUT \
   "$BASE_URL/api/order/queryCarItemList" \
