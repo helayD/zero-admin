@@ -122,7 +122,7 @@ func (l *GenerateConfirmOrderLogic) GenerateConfirmOrder(req *types.GenerateConf
 	var promotionAmount int64 = 0
 	var payAmount int64 = 0
 	for _, item := range cartPromotionItemList {
-		totalAmount = totalAmount + item.Price*int64(item.Quantity)
+		totalAmount = totalAmount + int64(item.Price)*int64(item.Quantity)
 		promotionAmount = promotionAmount + item.ReduceAmount*int64(item.Quantity)
 	}
 	payAmount = totalAmount - promotionAmount
@@ -145,10 +145,10 @@ func (l *GenerateConfirmOrderLogic) GenerateConfirmOrder(req *types.GenerateConf
 			},
 			MemberIntegration: int64(memberInfo.Points),
 			CalcAmount: types.CalcAmount{
-				TotalAmount:     totalAmount,
-				FreightAmount:   freightAmount,
-				PromotionAmount: promotionAmount,
-				PayAmount:       payAmount,
+				TotalAmount:     float32(totalAmount),
+				FreightAmount:   float32(freightAmount),
+				PromotionAmount: float32(promotionAmount),
+				PayAmount:       float32(payAmount),
 			},
 		},
 	}, nil
