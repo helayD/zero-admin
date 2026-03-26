@@ -394,7 +394,13 @@ consumer/etc/consumer-api.yaml
 job/etc/job-api.yaml
 CFG
 
-git -c http.version=HTTP/1.1 fetch --depth=1 "$git_remote_url" "$git_ref"
+for _attempt in 1 2 3; do
+  if git -c http.version=HTTP/1.1 fetch --depth=1 "$git_remote_url" "$git_ref"; then
+    break
+  fi
+  echo "  git fetch attempt $_attempt failed, retrying in 3s..."
+  sleep 3
+done
 git checkout -f FETCH_HEAD
 
 while IFS= read -r rel; do
