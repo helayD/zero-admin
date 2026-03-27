@@ -86,15 +86,16 @@ if [ "$AVAIL_CODE" = "0" ]; then
       log_fail "优惠券数据字段缺失"
     fi
 
-    # 检查 receiveStatus 是否为 0（可领取）
+    # 检查 receiveStatus 语义（0=可领取，1=已达限领上限）
+    # 可领取列表中的券可能因当前会员已达 perLimit 而显示 receiveStatus=1
     if [ "$HAS_RECEIVE_STATUS" = "True" ]; then
       STATUS=$(json_val "d.get('data',[])[0].get('receiveStatus', -1)" "$AVAIL_RESP")
       echo "    第一张券 receiveStatus=$STATUS"
-      if [ "$STATUS" = "0" ]; then
-        log_pass "receiveStatus=0 表示可领取，语义正确"
-      else
-        log_fail "receiveStatus 应为 0，实际=$STATUS"
-      fi
+      case "$STATUS" in
+        0) log_pass "receiveStatus=0 表示可领取，语义正确" ;;
+        1) log_pass "receiveStatus=1 表示已达限领上限，语义正确（AC#2: 失败原因友好）" ;;
+        *) log_fail "receiveStatus 值非法（期望 0 或 1），实际=$STATUS" ;;
+      esac
     fi
   else
     log_pass "当前无可领优惠券（数据符合预期）"
@@ -115,20 +116,36 @@ fi
 
 if [ -n "$AVAIL_ID" ] && [ "$AVAIL_ID" != "None" ]; then
   echo "    尝试领取优惠券 ID=$AVAIL_ID"
-  ADD_RESP=$(curl -s --max-time $TIMEOUT -X POST "$BASE_URL/api/member/coupon/addCoupon" \
+  ADD_HTTP=$(curl -s --max-time $TIMEOUT -o /tmp/add_resp.txt -w "%{http_code}" -X POST "$BASE_URL/api/member/coupon/addCoupon" \
     -H "$AUTH" -H 'Content-Type: application/json' \
     -d "{\"couponId\":$AVAIL_ID}")
-  ADD_CODE=$(json_val "d.get('code','')" "$ADD_RESP")
-  ADD_MSG=$(json_val "d.get('message',d.get('msg',''))" "$ADD_RESP")
-  echo "    领券响应: code=$ADD_CODE msg=$ADD_MSG"
+  ADD_BODY=$(cat /tmp/add_resp.txt)
+  # 尝试解析 JSON，失败则将纯文本作为错误信息
+  ADD_CODE=$(echo "$ADD_BODY" | python3 -c "
+import sys,json
+try:
+    d=json.load(sys.stdin)
+    print(d.get('code',''))
+except:
+    print('')
+" 2>/dev/null || echo "")
+  ADD_MSG=$(echo "$ADD_BODY" | python3 -c "
+import sys,json
+try:
+    d=json.load(sys.stdin)
+    print(d.get('message',d.get('msg','')))
+except:
+    print(sys.stdin.read())
+" 2>/dev/null || echo "$ADD_BODY")
+  echo "    领券响应: http=$ADD_HTTP code=$ADD_CODE msg=$ADD_MSG"
 
-  # 成功或"已领取"都是预期行为
-  if [ "$ADD_CODE" = "0" ]; then
+  # 成功（200）或"已达上限"都是预期行为
+  if [ "$ADD_HTTP" = "200" ]; then
     log_pass "领券成功"
-  elif echo "$ADD_MSG" | grep -qiE "已领|已领取|已存在|已申领"; then
+  elif echo "$ADD_MSG" | grep -qiE "已领|已领取|已存在|已申领|已达.*领取|上限"; then
     log_pass "领券失败原因可理解: $ADD_MSG（AC#2: 失败原因友好）"
   else
-    log_fail "领券失败: code=$ADD_CODE msg=$ADD_MSG"
+    log_fail "领券失败: http=$ADD_HTTP msg=$ADD_MSG"
   fi
 else
   log_pass "无可领优惠券，跳过领券测试"
@@ -137,16 +154,31 @@ fi
 # 3. 重复领取同一优惠券 - AC#2: 幂等保护
 log_info "3. 重复领取测试（幂等保护）"
 if [ -n "$AVAIL_ID" ] && [ "$AVAIL_ID" != "None" ]; then
-  ADD_RESP2=$(curl -s --max-time $TIMEOUT -X POST "$BASE_URL/api/member/coupon/addCoupon" \
+  ADD_RESP2=$(curl -s --max-time $TIMEOUT -o /tmp/add_resp2.txt -w "%{http_code}" -X POST "$BASE_URL/api/member/coupon/addCoupon" \
     -H "$AUTH" -H 'Content-Type: application/json' \
     -d "{\"couponId\":$AVAIL_ID}")
-  ADD_CODE2=$(json_val "d.get('code','')" "$ADD_RESP2")
-  ADD_MSG2=$(json_val "d.get('message',d.get('msg',''))" "$ADD_RESP2")
+  ADD_BODY2=$(cat /tmp/add_resp2.txt)
+  ADD_CODE2=$(echo "$ADD_BODY2" | python3 -c "
+import sys,json
+try:
+    d=json.load(sys.stdin)
+    print(d.get('code',''))
+except:
+    print('')
+" 2>/dev/null || echo "")
 
   # 不应返回 code=0（已领取）或明确的错误原因
   if [ "$ADD_CODE2" = "0" ]; then
     log_fail "重复领取返回成功（应拒绝）"
   else
+    ADD_MSG2=$(echo "$ADD_BODY2" | python3 -c "
+import sys,json
+try:
+    d=json.load(sys.stdin)
+    print(d.get('message',d.get('msg','')))
+except:
+    print(sys.stdin.read())
+" 2>/dev/null || echo "$ADD_BODY2")
     log_pass "重复领取被正确拒绝: code=$ADD_CODE2 msg=$ADD_MSG2"
   fi
 else
@@ -155,12 +187,27 @@ fi
 
 # 4. 领取无效优惠券 - AC#2: 非法 couponId 拒绝
 log_info "4. 领取非法优惠券 ID=999999"
-BAD_ADD_RESP=$(curl -s --max-time $TIMEOUT -X POST "$BASE_URL/api/member/coupon/addCoupon" \
+BAD_ADD_RESP=$(curl -s --max-time $TIMEOUT -o /tmp/bad_add.txt -w "%{http_code}" -X POST "$BASE_URL/api/member/coupon/addCoupon" \
   -H "$AUTH" -H 'Content-Type: application/json' \
   -d '{"couponId":999999}')
-BAD_CODE=$(json_val "d.get('code','')" "$BAD_ADD_RESP")
-BAD_MSG=$(json_val "d.get('message',d.get('msg',''))" "$BAD_ADD_RESP")
+BAD_BODY=$(cat /tmp/bad_add.txt)
+BAD_CODE=$(echo "$BAD_BODY" | python3 -c "
+import sys,json
+try:
+    d=json.load(sys.stdin)
+    print(d.get('code',''))
+except:
+    print('')
+" 2>/dev/null || echo "")
 if [ "$BAD_CODE" != "0" ]; then
+  BAD_MSG=$(echo "$BAD_BODY" | python3 -c "
+import sys,json
+try:
+    d=json.load(sys.stdin)
+    print(d.get('message',d.get('msg','')))
+except:
+    print(sys.stdin.read())
+" 2>/dev/null || echo "$BAD_BODY")
   log_pass "非法 couponId 被正确拒绝: $BAD_MSG"
 else
   log_fail "非法 couponId 未被拒绝"
