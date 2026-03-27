@@ -119,11 +119,12 @@ type BrandProductData struct {
 	DetailMobileHtml    string  `json:"detailMobileHtml"`    //移动端网页详情
 }
 
+// CalcAmount 确认单金额试算（Story 5-3 HIGH-5: 统一为 int64 单位分，避免 float32 精度截断）
 type CalcAmount struct {
-	TotalAmount     float32 `json:"totalAmount"`
-	FreightAmount   float32 `json:"freightAmount"`
-	PromotionAmount float32 `json:"promotionAmount"`
-	PayAmount       float32 `json:"payAmount"`
+	TotalAmount     int64 `json:"totalAmount"`      // 商品合计（分）
+	FreightAmount   int64 `json:"freightAmount"`    // 运费（分）
+	PromotionAmount int64 `json:"promotionAmount"`   // 促销优惠（分）
+	PayAmount       int64 `json:"payAmount"`        // 应付金额（分）
 }
 
 type CancelUserOrderReq struct {
@@ -399,9 +400,10 @@ type CouponData struct {
 	DisableReason string  `json:"disableReason"` //不可用原因
 }
 
+// CouponListByCartData 确认单优惠券列表（Story 5-3 HIGH-1: 统一为强类型 []CouponData）
 type CouponListByCartData struct {
-	EnableList  interface{} `json:"enableList"`
-	DisableList interface{} `json:"disableList"`
+	EnableList  []CouponData `json:"enableList"`  // 可用优惠券
+	DisableList []CouponData `json:"disableList"` // 不可用优惠券
 }
 
 type CouponListByCartReq struct {
@@ -479,6 +481,7 @@ type GenerateOrderReq struct {
 	MemberReceiveAddressId int64   `json:"memberReceiveAddressId"` //
 	PayType                int32   `json:"payType"`                //支付方式
 	UseIntegration         int32   `json:"useIntegration"`         //使用的积分
+	Note                   string  `json:"note,optional"`          //订单备注（MEDIUM-3：后端目前不写 OMS proto，仅透传）
 }
 
 type GenerateOrderResp struct {
@@ -670,7 +673,7 @@ type MemberResp struct {
 type OrderDetailModel struct {
 	CartPromotionItemList     []CartPromotionItemList    `json:"cartPromotionItemList"`
 	MemberReceiveAddressList  []MemberReceiveAddressList `json:"memberReceiveAddressList"`
-	CouponHistoryDetailList   interface{}                `json:"couponHistoryDetailList"`
+	CouponHistoryDetailList   CouponListByCartData       `json:"couponHistoryDetailList"`
 	IntegrationConsumeSetting IntegrationConsumeSetting  `json:"integrationConsumeSetting"`
 	MemberIntegration         int64                      `json:"memberIntegration"`
 	CalcAmount                CalcAmount                 `json:"calcAmount"`

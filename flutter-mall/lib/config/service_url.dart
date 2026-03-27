@@ -42,6 +42,8 @@ const updateCartQuantityUrl = "$baseUrl/api/order/updateCartItemQuantity";
 const validateCartItemsUrl = "$baseUrl/api/order/validateCartItems";
 // 生成确认单
 const generateConfirmOrderUrl = "$baseUrl/api/order/generateConfirmOrder";
+// 提交订单（Story 5-3 HIGH-4）
+const generateOrderUrl = "$baseUrl/api/order/generateOrder";
 // 添加商品进购物车
 const cartAddUrl = "$baseUrl/api/order/addCart";
 // 商品列表

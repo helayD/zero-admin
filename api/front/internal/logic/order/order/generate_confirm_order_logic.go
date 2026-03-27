@@ -145,10 +145,10 @@ func (l *GenerateConfirmOrderLogic) GenerateConfirmOrder(req *types.GenerateConf
 			},
 			MemberIntegration: int64(memberInfo.Points),
 			CalcAmount: types.CalcAmount{
-				TotalAmount:     float32(totalAmount),
-				FreightAmount:   float32(freightAmount),
-				PromotionAmount: float32(promotionAmount),
-				PayAmount:       float32(payAmount),
+				TotalAmount:     totalAmount,      // int64 单位：分
+				FreightAmount:   freightAmount,    // int64 单位：分
+				PromotionAmount: promotionAmount,   // int64 单位：分
+				PayAmount:       payAmount,        // int64 单位：分
 			},
 		},
 	}, nil
