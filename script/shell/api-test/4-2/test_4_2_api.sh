@@ -120,23 +120,21 @@ if [ -n "$AVAIL_ID" ] && [ "$AVAIL_ID" != "None" ]; then
     -H "$AUTH" -H 'Content-Type: application/json' \
     -d "{\"couponId\":$AVAIL_ID}")
   ADD_BODY=$(cat /tmp/add_resp.txt)
-  # 尝试解析 JSON，失败则将纯文本作为错误信息
-  ADD_CODE=$(echo "$ADD_BODY" | python3 -c "
+  # 尝试解析 JSON，失败则保留纯文本作为错误信息
+  ADD_CODE=$(python3 -c "
 import sys,json
 try:
-    d=json.load(sys.stdin)
-    print(d.get('code',''))
+    print(json.loads(sys.argv[1]).get('code',''))
 except:
     print('')
-" 2>/dev/null || echo "")
-  ADD_MSG=$(echo "$ADD_BODY" | python3 -c "
+" "$ADD_BODY" 2>/dev/null || echo "")
+  ADD_MSG=$(python3 -c "
 import sys,json
 try:
-    d=json.load(sys.stdin)
-    print(d.get('message',d.get('msg','')))
+    print(json.loads(sys.argv[1]).get('message',''))
 except:
-    print(sys.stdin.read())
-" 2>/dev/null || echo "$ADD_BODY")
+    print(sys.argv[1])
+" "$ADD_BODY" 2>/dev/null || echo "$ADD_BODY")
   echo "    领券响应: http=$ADD_HTTP code=$ADD_CODE msg=$ADD_MSG"
 
   # 成功（200）或"已达上限"都是预期行为
@@ -158,27 +156,25 @@ if [ -n "$AVAIL_ID" ] && [ "$AVAIL_ID" != "None" ]; then
     -H "$AUTH" -H 'Content-Type: application/json' \
     -d "{\"couponId\":$AVAIL_ID}")
   ADD_BODY2=$(cat /tmp/add_resp2.txt)
-  ADD_CODE2=$(echo "$ADD_BODY2" | python3 -c "
+  ADD_CODE2=$(python3 -c "
 import sys,json
 try:
-    d=json.load(sys.stdin)
-    print(d.get('code',''))
+    print(json.loads(sys.argv[1]).get('code',''))
 except:
     print('')
-" 2>/dev/null || echo "")
+" "$ADD_BODY2" 2>/dev/null || echo "")
 
   # 不应返回 code=0（已领取）或明确的错误原因
   if [ "$ADD_CODE2" = "0" ]; then
     log_fail "重复领取返回成功（应拒绝）"
   else
-    ADD_MSG2=$(echo "$ADD_BODY2" | python3 -c "
+    ADD_MSG2=$(python3 -c "
 import sys,json
 try:
-    d=json.load(sys.stdin)
-    print(d.get('message',d.get('msg','')))
+    print(json.loads(sys.argv[1]).get('message',''))
 except:
-    print(sys.stdin.read())
-" 2>/dev/null || echo "$ADD_BODY2")
+    print(sys.argv[1])
+" "$ADD_BODY2" 2>/dev/null || echo "$ADD_BODY2")
     log_pass "重复领取被正确拒绝: code=$ADD_CODE2 msg=$ADD_MSG2"
   fi
 else
@@ -191,23 +187,21 @@ BAD_ADD_RESP=$(curl -s --max-time $TIMEOUT -o /tmp/bad_add.txt -w "%{http_code}"
   -H "$AUTH" -H 'Content-Type: application/json' \
   -d '{"couponId":999999}')
 BAD_BODY=$(cat /tmp/bad_add.txt)
-BAD_CODE=$(echo "$BAD_BODY" | python3 -c "
+BAD_CODE=$(python3 -c "
 import sys,json
 try:
-    d=json.load(sys.stdin)
-    print(d.get('code',''))
+    print(json.loads(sys.argv[1]).get('code',''))
 except:
     print('')
-" 2>/dev/null || echo "")
+" "$BAD_BODY" 2>/dev/null || echo "")
 if [ "$BAD_CODE" != "0" ]; then
-  BAD_MSG=$(echo "$BAD_BODY" | python3 -c "
+  BAD_MSG=$(python3 -c "
 import sys,json
 try:
-    d=json.load(sys.stdin)
-    print(d.get('message',d.get('msg','')))
+    print(json.loads(sys.argv[1]).get('message',''))
 except:
-    print(sys.stdin.read())
-" 2>/dev/null || echo "$BAD_BODY")
+    print(sys.argv[1])
+" "$BAD_BODY" 2>/dev/null || echo "$BAD_BODY")
   log_pass "非法 couponId 被正确拒绝: $BAD_MSG"
 else
   log_fail "非法 couponId 未被拒绝"
