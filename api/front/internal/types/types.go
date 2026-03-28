@@ -455,6 +455,7 @@ type GenerateConfirmOrderResp struct {
 
 type GenerateOrderData struct {
 	Id                int64  `json:"id"`                // 订单id
+	OrderSn           string `json:"orderSn"`           // 订单编号（Story 5.4 新增）
 	MemberId          int64  `json:"memberId"`          // 会员id
 	MemberUsername    string `json:"memberUserName"`    // 用户帐号
 	TotalAmount       int64  `json:"totalAmount"`       // 订单总金额
@@ -482,6 +483,7 @@ type GenerateOrderReq struct {
 	PayType                int32   `json:"payType"`                //支付方式
 	UseIntegration         int32   `json:"useIntegration"`         //使用的积分
 	Note                   string  `json:"note,optional"`          //订单备注（MEDIUM-3：后端目前不写 OMS proto，仅透传）
+	IdempotencyKey         string  `json:"idempotencyKey,optional"` //幂等键，格式：{userId}:{timestamp}:{hash}（Story 5.4 新增）
 }
 
 type GenerateOrderResp struct {

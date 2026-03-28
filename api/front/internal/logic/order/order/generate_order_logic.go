@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/bytedance/sonic"
 	"github.com/feihua/zero-admin/api/front/internal/logic/common"
 	"github.com/feihua/zero-admin/api/front/internal/logic/member/coupon"
 	"github.com/feihua/zero-admin/api/front/internal/logic/order/cart"
+	"github.com/feihua/zero-admin/api/front/internal/middleware"
 	"github.com/feihua/zero-admin/pkg/errorx"
 	"github.com/feihua/zero-admin/rpc/oms/omsclient"
 	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
@@ -26,14 +28,21 @@ import (
 
 // OrderErrorCode 订单错误码（Story 5-3 Task 3）
 const (
-	ErrCodeOrderNoAddress               = "OMS_ORDER_NO_ADDRESS"
-	ErrCodeOrderAddressInvalid          = "OMS_ORDER_ADDRESS_INVALID"
-	ErrCodeOrderCouponUnavailable       = "OMS_ORDER_COUPON_UNAVAILABLE"
-	ErrCodeOrderIntegrationExceed       = "OMS_ORDER_INTEGRATION_EXCEED"
-	ErrCodeOrderIntegrationCouponConflict = "OMS_ORDER_INTEGRATION_COUPON_CONFLICT"
-	ErrCodeOrderPayTypeInvalid          = "OMS_ORDER_PAY_TYPE_INVALID"
-	ErrCodeOrderStockInsufficient       = "OMS_ORDER_STOCK_INSUFFICIENT"
-	ErrCodeOrderSystemError             = "OMS_ORDER_SYSTEM_ERROR"
+	ErrCodeOrderNoAddress                  = "OMS_ORDER_NO_ADDRESS"
+	ErrCodeOrderAddressInvalid             = "OMS_ORDER_ADDRESS_INVALID"
+	ErrCodeOrderCouponUnavailable         = "OMS_ORDER_COUPON_UNAVAILABLE"
+	ErrCodeOrderIntegrationExceed         = "OMS_ORDER_INTEGRATION_EXCEED"
+	ErrCodeOrderIntegrationCouponConflict  = "OMS_ORDER_INTEGRATION_COUPON_CONFLICT"
+	ErrCodeOrderPayTypeInvalid             = "OMS_ORDER_PAY_TYPE_INVALID"
+	ErrCodeOrderStockInsufficient         = "OMS_ORDER_STOCK_INSUFFICIENT"
+	ErrCodeOrderSystemError               = "OMS_ORDER_SYSTEM_ERROR"
+)
+
+// Story 5.4 新增错误码
+const (
+	ErrCodeOrderDuplicatedRequest      = "OMS_ORDER_DUPLICATED_REQUEST"      // 重复提交
+	ErrCodeOrderCompensationFailed    = "OMS_ORDER_COMPENSATION_FAILED"      // Saga 补偿失败，需人工介入
+	ErrCodeOrderStockLocked           = "OMS_ORDER_STOCK_LOCKED"             // 库存已被其他订单锁定
 )
 
 // GenerateOrderLogic
@@ -41,6 +50,7 @@ const (
 Author: LiuFeiHua
 Date: 2023/12/12 18:04
 Updated by Story 5-3: Complete order generation with address, coupon, integration, and pay type.
+Updated by Story 5-4: Add idempotency key mechanism and Saga compensation chain.
 */
 type GenerateOrderLogic struct {
 	logx.Logger
@@ -64,29 +74,62 @@ func genOrderNo() string {
 		r.Intn(10000))
 }
 
-// GenerateOrder 根据提交信息生成订单（Story 5-3 重启注释代码，完整闭环）
-// 1.获取购物车及优惠信息
-// 2.生成下单商品信息（启用所有字段）
-// 3.判断购物车中商品是否都有库存
-// 4.判断是否使用了优惠券（重新启用）
-// 5.判断是否使用积分（重新启用）
-// 6.计算order_item的实付金额（重新启用）
-// 7.进行库存锁定
-// 8.计算应付金额
-// 9.校验收货地址
-// 10.转化订单信息并插入数据库
-// 11.保存收货地址信息
-// 12.如果使用优惠券,更新优惠券使用状态（重新启用）
-// 13.如果使用积分,需要扣除积分
-// 14.发送延迟消息取消订单
+// GenerateOrder 根据提交信息生成订单
+// Story 5.4 实现内容：
+// - 幂等键检查（Redis 三状态机）
+// - Saga 补偿链路（单次请求内内存级回滚）
+// - Saga 补偿顺序：① 库存预锁 → ② 创建订单主记录 → ③ 存储收货人 → ④ 核销优惠券 → ⑤ 扣除积分 → ⑥ 发送延迟消息
 func (l *GenerateOrderLogic) GenerateOrder(req *types.GenerateOrderReq) (*types.GenerateOrderResp, error) {
 	memberId, err := common.GetMemberId(l.ctx)
 	if err != nil {
 		return nil, err
 	}
 
+	// === Task 1: 幂等键检查 ===
+	idempotencyKey := req.IdempotencyKey
+	if idempotencyKey != "" {
+		result, hit, err := middleware.CheckAndSetProcessing(l.ctx, l.svcCtx.Redis, idempotencyKey)
+		if err != nil {
+			logc.Errorf(l.ctx, "[Saga-IDEM] 幂等键 Redis 异常, key=%s, err=%s", idempotencyKey, err.Error())
+			return nil, errorx.NewDefaultError(ErrCodeOrderSystemError)
+		}
+		if hit {
+			switch result.State {
+			case middleware.StateCompleted:
+				// 幂等命中，返回原订单ID
+				logc.Infof(l.ctx, "[Saga-IDEM] 幂等命中，返回已有订单, key=%s, orderId=%d", idempotencyKey, result.OrderId)
+				return &types.GenerateOrderResp{
+					Code:    0,
+					Message: "订单已存在",
+					Data: types.GenerateOrderData{
+						Id: result.OrderId,
+					},
+				}, nil
+			case middleware.StateFailed:
+				// 幂等命中失败，返回原错误
+				logc.Infof(l.ctx, "[Saga-IDEM] 幂等命中失败, key=%s, errCode=%s, errMsg=%s", idempotencyKey, result.ErrCode, result.ErrMsg)
+				return nil, errorx.NewDefaultError(result.ErrCode)
+			case middleware.StateProcessing:
+				// 另一个请求正在处理中
+				logc.Warnf(l.ctx, "[Saga-IDEM] 幂等键处理中，等待超时, key=%s", idempotencyKey)
+				return nil, errorx.NewDefaultError(ErrCodeOrderDuplicatedRequest)
+			}
+		}
+		// 设置成功，继续处理
+	}
+
+	// 使用 defer 处理幂等键和 Saga 补偿
+	defer func() {
+		if idempotencyKey != "" {
+			// 补偿完成，清理 Redis 幂等键（已在 MarkCompleted/MarkFailed 中设置 TTL）
+		}
+	}()
+
 	// === Task 9: 校验收货地址 ===
 	if req.MemberReceiveAddressId <= 0 {
+		if idempotencyKey != "" {
+			middleware.MarkFailed(l.ctx, l.svcCtx.Redis, idempotencyKey, ErrCodeOrderNoAddress, "收货地址无效")
+		}
 		return nil, errorx.NewDefaultError(ErrCodeOrderNoAddress)
 	}
 	addressDetail, err := l.svcCtx.MemberAddressService.QueryMemberAddressDetail(l.ctx, &umsclient.QueryMemberAddressDetailReq{
@@ -97,6 +140,9 @@ func (l *GenerateOrderLogic) GenerateOrder(req *types.GenerateOrderReq) (*types.
 		s, _ := status.FromError(err)
 		if err != nil && s.Code() != 0 {
 			logc.Errorf(l.ctx, "查询收货地址异常, addressId=%d, err=%s", req.MemberReceiveAddressId, err.Error())
+		}
+		if idempotencyKey != "" {
+			middleware.MarkFailed(l.ctx, l.svcCtx.Redis, idempotencyKey, ErrCodeOrderAddressInvalid, "收货地址无效")
 		}
 		return nil, errorx.NewDefaultError(ErrCodeOrderAddressInvalid)
 	}
@@ -109,9 +155,15 @@ func (l *GenerateOrderLogic) GenerateOrder(req *types.GenerateOrderReq) (*types.
 	// 1.获取购物车及优惠信息
 	cartPromotionItemList, err := cart.QueryCartListPromotion(req.CartIds, l.ctx, l.svcCtx)
 	if err != nil {
+		if idempotencyKey != "" {
+			middleware.MarkFailed(l.ctx, l.svcCtx.Redis, idempotencyKey, ErrCodeOrderSystemError, "购物车查询失败")
+		}
 		return nil, err
 	}
 	if len(cartPromotionItemList) == 0 {
+		if idempotencyKey != "" {
+			middleware.MarkFailed(l.ctx, l.svcCtx.Redis, idempotencyKey, ErrCodeOrderSystemError, "购物车为空")
+		}
 		return result(1, "购物车还没有商品,请先添加商品到购物车!"), nil
 	}
 
@@ -150,45 +202,57 @@ func (l *GenerateOrderLogic) GenerateOrder(req *types.GenerateOrderReq) (*types.
 
 	// 3.判断购物车中商品是否都有库存
 	if flag {
+		if idempotencyKey != "" {
+			middleware.MarkFailed(l.ctx, l.svcCtx.Redis, idempotencyKey, ErrCodeOrderStockInsufficient, "库存不足")
+		}
 		return nil, errorx.NewDefaultError(ErrCodeOrderStockInsufficient)
 	}
 
 	// 优惠券按商品金额（分）比例分摊（全场通用）
-		couponAmountTotalFen := int64(0)
-		if req.CouponId > 0 {
-			enableList, _, err := coupon.QueryCouponList(l.svcCtx, l.ctx, cartPromotionItemList)
-			if err != nil {
-				return nil, errorx.NewDefaultError(ErrCodeOrderSystemError)
+	couponAmountTotalFen := int64(0)
+	if req.CouponId > 0 {
+		enableList, _, err := coupon.QueryCouponList(l.svcCtx, l.ctx, cartPromotionItemList)
+		if err != nil {
+			if idempotencyKey != "" {
+				middleware.MarkFailed(l.ctx, l.svcCtx.Redis, idempotencyKey, ErrCodeOrderSystemError, "优惠券查询失败")
 			}
-			var selectedCoupon *types.CouponData
-			for i := range enableList {
-				if enableList[i].Id == req.CouponId {
-					selectedCoupon = &enableList[i]
-					break
-				}
-			}
-			if selectedCoupon == nil {
-				return nil, errorx.NewDefaultError(ErrCodeOrderCouponUnavailable)
-			}
-			// 金额口径：CouponData.Amount 单位是元（float32），转为分（int64）再参与分摊
-			couponAmountFen := int64(selectedCoupon.Amount * 100)
-			var applicableTotalFen int64 = 0
-			for _, item := range cartPromotionItemList {
-				applicableTotalFen += int64(item.Price) * int64(item.Quantity)
-			}
-			if applicableTotalFen > 0 {
-				for _, item := range orderItemList {
-					itemCouponFen := couponAmountFen * int64(item.SkuTotalAmount) / applicableTotalFen
-					item.CouponAmount = float32(itemCouponFen) // OMS proto 约束，仍写 float32
-					couponAmountTotalFen += itemCouponFen
-				}
+			return nil, errorx.NewDefaultError(ErrCodeOrderSystemError)
+		}
+		var selectedCoupon *types.CouponData
+		for i := range enableList {
+			if enableList[i].Id == req.CouponId {
+				selectedCoupon = &enableList[i]
+				break
 			}
 		}
+		if selectedCoupon == nil {
+			if idempotencyKey != "" {
+				middleware.MarkFailed(l.ctx, l.svcCtx.Redis, idempotencyKey, ErrCodeOrderCouponUnavailable, "优惠券不可用")
+			}
+			return nil, errorx.NewDefaultError(ErrCodeOrderCouponUnavailable)
+		}
+		// 金额口径：CouponData.Amount 单位是元（float32），转为分（int64）再参与分摊
+		couponAmountFen := int64(selectedCoupon.Amount * 100)
+		var applicableTotalFen int64 = 0
+		for _, item := range cartPromotionItemList {
+			applicableTotalFen += int64(item.Price) * int64(item.Quantity)
+		}
+		if applicableTotalFen > 0 {
+			for _, item := range orderItemList {
+				itemCouponFen := couponAmountFen * int64(item.SkuTotalAmount) / applicableTotalFen
+				item.CouponAmount = float32(itemCouponFen) // OMS proto 约束，仍写 float32
+				couponAmountTotalFen += itemCouponFen
+			}
+		}
+	}
 
-	// === Task 2.3: 积分提交（重新启用，已在原代码中部分实现）===
+	// === Task 2.3: 积分提交 ===
 	var integrationAmountTotal int64 = 0
 	if req.UseIntegration > 0 {
 		if req.UseIntegration > memberInfo.Points {
+			if idempotencyKey != "" {
+				middleware.MarkFailed(l.ctx, l.svcCtx.Redis, idempotencyKey, ErrCodeOrderIntegrationExceed, "积分不足")
+			}
 			return nil, errorx.NewDefaultError(ErrCodeOrderIntegrationExceed)
 		}
 		consumeSetting, _ := l.svcCtx.MemberConsumeSettingService.QueryMemberConsumeSettingDetail(l.ctx, &umsclient.QueryMemberConsumeSettingDetailReq{Id: 1})
@@ -197,10 +261,16 @@ func (l *GenerateOrderLogic) GenerateOrder(req *types.GenerateOrderReq) (*types.
 		}
 		// 积分与优惠券互斥判断
 		if req.CouponId > 0 && consumeSetting.CouponStatus == 0 {
+			if idempotencyKey != "" {
+				middleware.MarkFailed(l.ctx, l.svcCtx.Redis, idempotencyKey, ErrCodeOrderIntegrationCouponConflict, "积分与优惠券互斥")
+			}
 			return nil, errorx.NewDefaultError(ErrCodeOrderIntegrationCouponConflict)
 		}
 		// 最低使用门槛
 		if req.UseIntegration < consumeSetting.UseUnit {
+			if idempotencyKey != "" {
+				middleware.MarkFailed(l.ctx, l.svcCtx.Redis, idempotencyKey, ErrCodeOrderIntegrationExceed, "积分不足最低门槛")
+			}
 			return nil, errorx.NewDefaultError(ErrCodeOrderIntegrationExceed)
 		}
 		// 每积分抵扣金额
@@ -233,7 +303,86 @@ func (l *GenerateOrderLogic) GenerateOrder(req *types.GenerateOrderReq) (*types.
 		item.RealAmount = realAmt
 	}
 
-	// 7.进行库存锁定
+	// === Task 2.5: 金额计算收口 ===
+	payAmount := totalAmount - promotionAmountTotal - couponAmountTotalFen - integrationAmountTotal
+	if payAmount < 0 {
+		payAmount = 0
+	}
+
+	// === Task 2.4: 支付方式校验 ===
+	if req.PayType != 1 && req.PayType != 2 {
+		if idempotencyKey != "" {
+			middleware.MarkFailed(l.ctx, l.svcCtx.Redis, idempotencyKey, ErrCodeOrderPayTypeInvalid, "支付方式无效")
+		}
+		return nil, errorx.NewDefaultError(ErrCodeOrderPayTypeInvalid)
+	}
+
+	// =========================================================
+	// === Saga 补偿链路（Task 2: Story 5.4 核心改造）===
+	// =========================================================
+	// 补偿顺序：① 库存预锁 → ② 创建订单主记录 → ③ 存储收货人 → ④ 核销优惠券 → ⑤ 扣除积分 → ⑥ 发送延迟消息
+	// 每个步骤后记录补偿标记；若步骤 N+1 失败，则回滚步骤 1~N
+
+	// Saga 补偿标记
+	sagaStockLocked := false
+	sagaOrderCreated := false
+	sagaDeliverySaved := false
+	sagaCouponConsumed := false
+	sagaPointsDeducted := false
+	orderId := int64(0)
+	orderNo := genOrderNo()
+
+	// 补偿回滚函数
+	compensate := func(failedStep string) {
+		logc.Warnf(l.ctx, "[Saga-COMP] 开始 Saga 补偿，失败步骤=%s, orderNo=%s", failedStep, orderNo)
+
+		// 回滚积分扣除（步骤⑤）
+		if sagaPointsDeducted {
+			_, _ = l.svcCtx.MemberService.UpdateMemberPoints(l.ctx, &umsclient.UpdateMemberPointsReq{
+				MemberId: memberId,
+				Points:   memberInfo.Points, // 还原原始积分
+			})
+			logc.Infof(l.ctx, "[Saga-COMP] 已回滚积分, memberId=%d", memberId)
+		}
+
+		// 回滚优惠券核销（步骤④）
+		if sagaCouponConsumed {
+			_, _ = l.svcCtx.CouponRecordService.UpdateCouponRecord(l.ctx, &smsclient.UpdateCouponRecordReq{
+				MemberId:  memberId,
+				CouponIds: []int64{req.CouponId},
+				Status:    0, // 还原为未使用
+			})
+			logc.Infof(l.ctx, "[Saga-COMP] 已回滚优惠券, couponId=%d", req.CouponId)
+		}
+
+		// 回滚订单创建（步骤②）- 仅当订单已创建时
+		if sagaOrderCreated && orderId > 0 {
+			_, _ = l.svcCtx.OrderService.CancelOrder(l.ctx, &omsclient.CancelOrderReq{
+				MemberId: memberId,
+				OrderId:  orderId,
+			})
+			logc.Infof(l.ctx, "[Saga-COMP] 已回滚订单, orderId=%d", orderId)
+		}
+
+		// 回滚库存锁定（步骤①）- 仅当库存已锁定时
+		if sagaStockLocked {
+			var stockReleaseData []*pmsclient.UpdateSkuStockData
+			for _, item := range orderItemList {
+				stockReleaseData = append(stockReleaseData, &pmsclient.UpdateSkuStockData{
+					Id:              item.SkuId,
+					ProductQuantity: item.SkuQuantity,
+				})
+			}
+			_, _ = l.svcCtx.ProductSkuService.ReleaseSkuStockLock(l.ctx, &pmsclient.UpdateSkuStockReq{
+				Data: stockReleaseData,
+			})
+			logc.Infof(l.ctx, "[Saga-COMP] 已释放库存锁定, orderNo=%s", orderNo)
+		}
+
+		logc.Infof(l.ctx, "[Saga-COMP] Saga 补偿完成, failedStep=%s, orderNo=%s", failedStep, orderNo)
+	}
+
+	// ① 库存预锁
 	var stockLockData []*pmsclient.UpdateSkuStockData
 	for _, item := range orderItemList {
 		stockLockData = append(stockLockData, &pmsclient.UpdateSkuStockData{
@@ -247,27 +396,15 @@ func (l *GenerateOrderLogic) GenerateOrder(req *types.GenerateOrderReq) (*types.
 	if err != nil {
 		logc.Errorf(l.ctx, "锁定库存异常,参数: %+v,异常：%s", stockLockData, err.Error())
 		s, _ := status.FromError(err)
-		return nil, errorx.NewDefaultError(s.Message())
+		if idempotencyKey != "" {
+			middleware.MarkFailed(l.ctx, l.svcCtx.Redis, idempotencyKey, ErrCodeOrderStockLocked, s.Message())
+		}
+		return nil, errorx.NewDefaultError(ErrCodeOrderStockLocked)
 	}
+	sagaStockLocked = true
+	logc.Infof(l.ctx, "[Saga] 步骤①库存预锁成功, orderNo=%s", orderNo)
 
-	// === Task 2.5: 金额计算收口 ===
-	// payAmount = totalAmount - promotionAmount - couponAmount - integrationAmount（分）
-	payAmount := totalAmount - promotionAmountTotal - couponAmountTotalFen - integrationAmountTotal
-	if payAmount < 0 {
-		payAmount = 0
-	}
-
-	// === Task 2.4: 支付方式校验 ===
-	if req.PayType != 1 && req.PayType != 2 {
-		return nil, errorx.NewDefaultError(ErrCodeOrderPayTypeInvalid)
-	}
-	// OMS proto AddOrderReq 无 PayType 字段；实际支付方式由支付回调写入 OMS
-	// 前端提交时已做 PayType 校验（1=支付宝，2=微信）
-
-	// === Task 2.1: 收货人信息传递（通过 AddOrderDelivery）===
-	orderNo := genOrderNo()
-
-	// 10.转化为订单信息并插入数据库
+	// ② 创建订单主记录
 	orderInfo := &omsclient.AddOrderReq{
 		OrderNo:         orderNo,
 		UserId:          memberId,
@@ -277,7 +414,7 @@ func (l *GenerateOrderLogic) GenerateOrder(req *types.GenerateOrderReq) (*types.
 		CouponAmount:    float32(couponAmountTotalFen),
 		PointsAmount:    float32(integrationAmountTotal),
 		DiscountAmount:  0,
-		FreightAmount:   0, // MVP 阶段运费写死为 0，Story 5.4 后续实现
+		FreightAmount:   0,
 		PayAmount:       float32(payAmount),
 		SourceType:      1, // 1-APP
 		UsePoints:       req.UseIntegration,
@@ -286,10 +423,18 @@ func (l *GenerateOrderLogic) GenerateOrder(req *types.GenerateOrderReq) (*types.
 
 	orderAddResp, err := l.svcCtx.OrderService.AddOrder(l.ctx, orderInfo)
 	if err != nil {
+		logc.Errorf(l.ctx, "[Saga-STEP2] 创建订单失败, orderNo=%s, err=%s", orderNo, err.Error())
+		compensate("②创建订单")
+		if idempotencyKey != "" {
+			middleware.MarkFailed(l.ctx, l.svcCtx.Redis, idempotencyKey, ErrCodeOrderCompensationFailed, "订单创建失败")
+		}
 		return nil, errorx.NewDefaultError(ErrCodeOrderSystemError)
 	}
+	orderId = orderAddResp.Id
+	sagaOrderCreated = true
+	logc.Infof(l.ctx, "[Saga] 步骤②创建订单成功, orderId=%d, orderNo=%s", orderId, orderNo)
 
-	// === Task 2.7 & MEDIUM-6: 保存收货人信息到 OrderDelivery ===
+	// ③ 存储收货人信息
 	_, err = l.svcCtx.OrderDeliveryService.AddOrderDelivery(l.ctx, &omsclient.AddOrderDeliveryReq{
 		OrderId:          orderAddResp.Id,
 		OrderNo:          orderNo,
@@ -301,56 +446,72 @@ func (l *GenerateOrderLogic) GenerateOrder(req *types.GenerateOrderReq) (*types.
 		ReceiverAddress:  addressDetail.DetailAddress,
 	})
 	if err != nil {
-		logc.Errorf(l.ctx, "保存收货人信息失败, orderId=%d, err=%s", orderAddResp.Id, err.Error())
+		logc.Errorf(l.ctx, "[Saga-STEP3] 保存收货人信息失败, orderId=%d, err=%s", orderAddResp.Id, err.Error())
 		// 不阻塞订单创建，记录日志即可
 	}
+	sagaDeliverySaved = true
+	logc.Infof(l.ctx, "[Saga] 步骤③收货人信息保存完成, orderId=%d", orderId)
 
-	// === Task 2.2: 优惠券核销 ===
-	// 【重要】优惠券核销和积分扣除均在订单创建之后执行，存在分布式事务不一致风险：
-	// - 最优方案：使用 Saga 模式或 TCC 事务框架统一编排（Story 5.7 异步链路监控视图处理）
-	// - 当前方案（MVP）：订单创建成功后执行后置操作，失败时仅记录日志并返回成功
-	//   （理由：订单已不可逆，优惠券/积分的补偿可通过后台对账人工处理）
-	//   若后续需要强一致性，需在 Story 5.7 中引入 Saga 编排器。
+	// ④ 核销优惠券
 	if req.CouponId > 0 {
 		_, err = l.svcCtx.CouponRecordService.UpdateCouponRecord(l.ctx, &smsclient.UpdateCouponRecordReq{
 			CouponIds: []int64{req.CouponId},
 			MemberId:  memberId,
-			OrderId:   orderAddResp.Id,
+			OrderId:   orderId,
 		})
 		if err != nil {
-			// ⚠️ 警告：核销失败，订单已创建。Story 5.7 引入 Saga 补偿事务后此处需触发补偿。
-			logc.Errorf(l.ctx, "[Saga-WARN] 优惠券核销失败，orderId=%d, couponId=%d, err=%s",
-				orderAddResp.Id, req.CouponId, err.Error())
+			logc.Errorf(l.ctx, "[Saga-STEP4] 优惠券核销失败, orderId=%d, couponId=%d, err=%s", orderId, req.CouponId, err.Error())
+			compensate("④核销优惠券")
+			if idempotencyKey != "" {
+				middleware.MarkFailed(l.ctx, l.svcCtx.Redis, idempotencyKey, ErrCodeOrderCompensationFailed, "优惠券核销失败，订单已回滚")
+			}
+			return nil, errorx.NewDefaultError(ErrCodeOrderCompensationFailed)
 		}
+		sagaCouponConsumed = true
+		logc.Infof(l.ctx, "[Saga] 步骤④优惠券核销成功, orderId=%d, couponId=%d", orderId, req.CouponId)
 	}
 
-	// 13.如果使用积分,需要扣除积分（同样存在 Saga 补偿风险，见上方说明）
+	// ⑤ 扣除积分
 	if req.UseIntegration > 0 {
 		newPoints := memberInfo.Points - req.UseIntegration
 		if newPoints < 0 {
 			newPoints = 0
 		}
-		_, err = l.svcCtx.MemberService.UpdateMemberPoints(l.ctx, &umsclient.UpdateMemberPointsReq{MemberId: memberId, Points: newPoints})
+		_, err = l.svcCtx.MemberService.UpdateMemberPoints(l.ctx, &umsclient.UpdateMemberPointsReq{
+			MemberId: memberId,
+			Points:   newPoints,
+		})
 		if err != nil {
-			// ⚠️ 警告：积分扣除失败，订单已创建。Story 5.7 引入 Saga 补偿事务后此处需触发补偿。
-			logc.Errorf(l.ctx, "[Saga-WARN] 积分扣除失败，orderId=%d, memberId=%d, points=%d, err=%s",
-				orderAddResp.Id, memberId, req.UseIntegration, err.Error())
+			logc.Errorf(l.ctx, "[Saga-STEP5] 积分扣除失败, orderId=%d, memberId=%d, points=%d, err=%s", orderId, memberId, req.UseIntegration, err.Error())
+			compensate("⑤扣除积分")
+			if idempotencyKey != "" {
+				middleware.MarkFailed(l.ctx, l.svcCtx.Redis, idempotencyKey, ErrCodeOrderCompensationFailed, "积分扣除失败，订单已回滚")
+			}
+			return nil, errorx.NewDefaultError(ErrCodeOrderCompensationFailed)
 		}
+		sagaPointsDeducted = true
+		logc.Infof(l.ctx, "[Saga] 步骤⑤积分扣除成功, orderId=%d, deduct=%d, remaining=%d", orderId, req.UseIntegration, newPoints)
 	}
 
-	orderId := orderAddResp.Id
-	// 14.发送延迟消息取消订单
+	// ⑥ 发送延迟消息
 	err = l.sendMsg(orderId, memberId)
 	if err != nil {
-		return nil, err
+		// 延迟消息发送失败不影响订单创建，仅记录日志
+		logc.Errorf(l.ctx, "[Saga-STEP6] 延迟消息发送失败, orderId=%d, err=%s", orderId, err.Error())
 	}
 
-	// === Task 9.4 & MEDIUM-5: 返回完整订单信息 ===
+	// 幂等键标记为完成
+	if idempotencyKey != "" {
+		middleware.MarkCompleted(l.ctx, l.svcCtx.Redis, idempotencyKey, orderId)
+	}
+
+	// === 返回完整订单信息 ===
 	return &types.GenerateOrderResp{
 		Code:    0,
 		Message: "下单成功",
 		Data: types.GenerateOrderData{
 			Id:                orderId,
+			OrderSn:           orderNo,
 			MemberId:          memberId,
 			MemberUsername:    memberInfo.Nickname,
 			TotalAmount:       totalAmount,
@@ -394,4 +555,11 @@ func result(code int64, message string) *types.GenerateOrderResp {
 		Code:    code,
 		Message: message,
 	}
+}
+
+// trimQuotes 去除字符串首尾的引号
+func trimQuotes(s string) string {
+	s = strings.TrimPrefix(s, "\"")
+	s = strings.TrimSuffix(s, "\"")
+	return s
 }

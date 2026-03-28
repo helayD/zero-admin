@@ -6,6 +6,7 @@ import 'package:flutter_mall/provider/cart_model.dart';
 import 'package:flutter_mall/utils/http_util.dart';
 import 'package:flutter_mall/widgets/cached_image_widget.dart';
 import 'package:provider/provider.dart';
+import 'package:uuid/uuid.dart';
 
 import 'address_select_sheet.dart';
 import 'coupon_select_sheet.dart';
@@ -276,7 +277,7 @@ class _OrderSubmitState extends State<OrderSubmit> {
     });
   }
 
-  /// Task 9: 提交订单
+  /// Task 7: 提交订单（Story 5.4: 幂等键 + postWithHeaders）
   Future<void> _submitOrder() async {
     if (_isSubmitting) return;
 
@@ -294,7 +295,7 @@ class _OrderSubmitState extends State<OrderSubmit> {
       return;
     }
 
-    // === Task 7.3: 积分与优惠券互斥 ===
+    // === Task 7.1: 积分与优惠券互斥 ===
     if (_integrationConflict) {
       _showInlineError("该优惠券不支持与积分共用");
       return;
@@ -308,18 +309,36 @@ class _OrderSubmitState extends State<OrderSubmit> {
     setState(() => _isSubmitting = true);
 
     try {
-      final resp = await HttpUtil.post(generateOrderUrl, data: {
-        "cartIds": cartIds,
-        "memberReceiveAddressId": selectedAddr.id,
-        "couponId": _selectedCoupon?.id ?? 0,
-        "useIntegration": useIntegration,
-        "payType": _selectedPayType,
-        "note": _remarkController.text.trim(),  // MEDIUM-3：订单备注
-      });
+      // === Task 7.1: 生成幂等键 ===
+      // 格式: {userId}:{timestamp}:{cartIds}:{couponId}:{useIntegration}:{uuid}
+      final uuid = const Uuid();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final memberId = selectedAddr.id;
+      final cartIdsStr = cartIds.join(',');
+      final idempotencyKey = '$memberId:$timestamp:${cartIdsStr}:${_selectedCoupon?.id ?? 0}:$useIntegration:${uuid.v4()}';
+
+      // === Task 7.2: 通过 HTTP header 传递幂等键 ===
+      final resp = await HttpUtil.postWithHeaders(
+        generateOrderUrl,
+        data: {
+          "cartIds": cartIds,
+          "memberReceiveAddressId": selectedAddr.id,
+          "couponId": _selectedCoupon?.id ?? 0,
+          "useIntegration": useIntegration,
+          "payType": _selectedPayType,
+          "note": _remarkController.text.trim(),  // MEDIUM-3：订单备注
+        },
+        headers: {"X-Idempotency-Key": idempotencyKey},
+      );
 
       if (!mounted) return;
 
       if (resp.data["code"] == 0) {
+        final orderData = resp.data["data"];
+        final orderId = orderData?["id"] ?? 0;
+        final orderSn = orderData?["orderSn"] ?? '';
+        final payAmount = _calcFinalPayAmount();
+
         // Task 9.3: 清空已结算购物车项
         try {
           await HttpUtil.post(deleteCartUrl, data: {"ids": cartIds});
@@ -327,17 +346,31 @@ class _OrderSubmitState extends State<OrderSubmit> {
 
         if (!mounted) return;
 
-        // 跳转支付结果页
+        // === Task 8: 跳转支付页，传递完整订单信息 ===
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (ctx) => OrderPay(
-              amount: (_orderData?.calcAmount.payAmount ?? 0) / 100.0,
+              orderId: orderId,
+              orderSn: orderSn,
+              payType: _selectedPayType,
+              amount: payAmount,
             ),
           ),
         );
       } else {
+        // === Task 7.3 & Task 8: 幂等命中或其他错误的差异化提示 ===
         final msg = resp.data["message"] ?? "提交失败，请稍后重试";
-        _showInlineError(msg);
+        final code = resp.data["code"] ?? -1;
+
+        if (code == 'OMS_ORDER_DUPLICATED_REQUEST') {
+          _showInlineError("订单正在处理中，请稍后查看");
+        } else if (code == 'OMS_ORDER_COMPENSATION_FAILED') {
+          _showInlineError("订单创建异常，请稍后重试");
+        } else if (code == 'OMS_ORDER_STOCK_LOCKED') {
+          _showInlineError("库存已被其他订单占用，请返回购物车重新选择");
+        } else {
+          _showInlineError(msg);
+        }
         setState(() => _isSubmitting = false);
       }
     } catch (e) {
@@ -346,6 +379,19 @@ class _OrderSubmitState extends State<OrderSubmit> {
         setState(() => _isSubmitting = false);
       }
     }
+  }
+
+  /// 计算最终实付金额（与底部栏保持一致）
+  int _calcFinalPayAmount() {
+    final calc = _orderData?.calcAmount;
+    if (calc == null) return 0;
+    final totalAmount = calc.totalAmount;
+    final promotionAmount = calc.promotionAmount;
+    final couponAmount = _selectedCoupon != null
+        ? (_selectedCoupon!.amount * 100).toInt()
+        : 0;
+    final integrationAmount = _previewIntegrationAmount;
+    return totalAmount - promotionAmount - couponAmount - integrationAmount;
   }
 
   void _showInlineError(String msg) {
@@ -949,15 +995,10 @@ class _OrderSubmitState extends State<OrderSubmit> {
     );
   }
 
-  // Task 9: 底部提交栏
+  // Task 10: 底部提交栏（含提交前确认对话框）
   Container buildSubmit() {
     final calc = _orderData?.calcAmount;
-    final totalAmount = calc?.totalAmount ?? 0;
-    final promotionAmount = calc?.promotionAmount ?? 0;
-    final payAmount = totalAmount -
-        promotionAmount -
-        _previewCouponAmount -
-        _previewIntegrationAmount;
+    final payAmount = _calcFinalPayAmount();
 
     return Container(
       padding: const EdgeInsets.only(left: 15),
@@ -1005,7 +1046,7 @@ class _OrderSubmitState extends State<OrderSubmit> {
           Expanded(
             flex: 1,
             child: GestureDetector(
-              onTap: _isSubmitting ? null : _submitOrder,
+              onTap: _isSubmitting ? null : () => _confirmAndSubmit(payAmount),
               child: Container(
                 alignment: Alignment.center,
                 height: 60,
@@ -1033,6 +1074,37 @@ class _OrderSubmitState extends State<OrderSubmit> {
         ],
       ),
     );
+  }
+
+  /// Task 10.1: 提交前确认对话框
+  Future<void> _confirmAndSubmit(int payAmount) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("确认提交订单？"),
+        content: Text(
+          "提交后将锁定库存和优惠，实付款 ￥${(payAmount / 100).toStringAsFixed(2)}，是否继续？",
+          style: const TextStyle(fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text("取消"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFFFA436A),
+            ),
+            child: const Text("确认提交"),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _submitOrder();
+    }
   }
 }
 
