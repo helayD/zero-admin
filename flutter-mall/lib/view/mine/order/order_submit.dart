@@ -49,7 +49,6 @@ class _OrderSubmitState extends State<OrderSubmit> {
   bool _isSubmitting = false;
 
   // Price Breakdown Card（Task 11）
-  int _previewCouponAmount = 0;
   int _previewIntegrationAmount = 0;
 
   @override
@@ -268,13 +267,7 @@ class _OrderSubmitState extends State<OrderSubmit> {
 
   /// Task 11: 重新计算预览金额（本地计算，不调后端）
   void _recalcPreview() {
-    final data = _orderData;
-    if (data == null) return;
-    setState(() {
-      _previewCouponAmount = _selectedCoupon != null
-          ? (_selectedCoupon!.amount * 100).toInt()
-          : 0;
-    });
+    // 优惠券金额在 _calcFinalPayAmount 中直接计算，无需独立状态
   }
 
   /// Task 7: 提交订单（Story 5.4: 幂等键 + postWithHeaders）
@@ -315,7 +308,7 @@ class _OrderSubmitState extends State<OrderSubmit> {
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final memberId = selectedAddr.id;
       final cartIdsStr = cartIds.join(',');
-      final idempotencyKey = '$memberId:$timestamp:${cartIdsStr}:${_selectedCoupon?.id ?? 0}:$useIntegration:${uuid.v4()}';
+      final idempotencyKey = '$memberId:$timestamp:$cartIdsStr:${_selectedCoupon?.id ?? 0}:$useIntegration:${uuid.v4()}';
 
       // === Task 7.2: 通过 HTTP header 传递幂等键 ===
       final resp = await HttpUtil.postWithHeaders(
@@ -353,7 +346,7 @@ class _OrderSubmitState extends State<OrderSubmit> {
               orderId: orderId,
               orderSn: orderSn,
               payType: _selectedPayType,
-              amount: payAmount,
+              amount: payAmount / 100.0,
             ),
           ),
         );
@@ -997,7 +990,6 @@ class _OrderSubmitState extends State<OrderSubmit> {
 
   // Task 10: 底部提交栏（含提交前确认对话框）
   Container buildSubmit() {
-    final calc = _orderData?.calcAmount;
     final payAmount = _calcFinalPayAmount();
 
     return Container(
