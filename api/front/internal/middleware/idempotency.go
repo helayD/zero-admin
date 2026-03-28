@@ -12,7 +12,7 @@ import (
 const (
 	// IdempotencyKeyPrefix Redis 幂等键前缀
 	IdempotencyKeyPrefix = "order:idempotent:"
-	// PROCESSING 状态 TTL=30s（处理中）
+	// ProcessingTTL 状态 TTL=30s（处理中）
 	ProcessingTTL = 30 * time.Second
 	// CompletedTTL 最终状态 TTL=24h（完成/失败）
 	CompletedTTL = 24 * time.Hour
@@ -24,9 +24,9 @@ const (
 type IdempotencyState string
 
 const (
-	StateProcessing  IdempotencyState = "PROCESSING"
-	StateCompleted   IdempotencyState = "COMPLETED"
-	StateFailed      IdempotencyState = "FAILED"
+	StateProcessing IdempotencyState = "PROCESSING"
+	StateCompleted  IdempotencyState = "COMPLETED"
+	StateFailed     IdempotencyState = "FAILED"
 )
 
 // IdempotencyResult 幂等命中时的返回结果
@@ -42,24 +42,25 @@ type IdempotencyResult struct {
 func CheckAndSetProcessing(ctx context.Context, rds *redis.Redis, idempotencyKey string) (IdempotencyResult, bool, error) {
 	key := IdempotencyKeyPrefix + idempotencyKey
 
-	// 使用 SETNX 原子设置 PROCESSING 状态
-	set, err := rds.Setnx(key, IdempotencyProcessing, int(ProcessingTTL.Seconds()))
+	// 使用 SetnxEx 原子设置 PROCESSING 状态（含 TTL=30s）
+	set, err := rds.SetnxExCtx(ctx, key, IdempotencyProcessing, int(ProcessingTTL.Seconds()))
 	if err != nil {
-		return IdempotencyResult{}, false, fmt.Errorf("Redis Setnx 异常: %w", err)
+		return IdempotencyResult{}, false, fmt.Errorf("Redis SetnxEx 异常: %w", err)
 	}
 
 	if !set {
 		// 键已存在，读取当前状态
-		val, err := rds.Get(key)
-		if err != nil && err != redis.ErrNotFound {
+		val, err := rds.GetCtx(ctx, key)
+		if err != nil {
+			// Redis 异常才返回错误
 			return IdempotencyResult{}, false, fmt.Errorf("Redis Get 异常: %w", err)
 		}
-		if err == redis.ErrNotFound {
-			// 键已过期，视为新请求，重试设置
-			return CheckAndSetProcessing(ctx, rds, idempotencyKey)
+		// 键不存在（已过期）或值为空，视为新请求
+		if val == "" {
+			return IdempotencyResult{}, false, nil
 		}
 		// 解析状态
-		return parseState(val, idempotencyKey, rds, key)
+		return parseState(val)
 	}
 
 	// 设置成功，当前请求继续处理
@@ -67,14 +68,13 @@ func CheckAndSetProcessing(ctx context.Context, rds *redis.Redis, idempotencyKey
 }
 
 // parseState 解析并返回幂等状态信息
-func parseState(val string, _ string, _ *redis.Redis, _ string) (IdempotencyResult, bool, error) {
+func parseState(val string) (IdempotencyResult, bool, error) {
 	if val == IdempotencyProcessing {
 		// 另一个请求正在处理中，30s 后超时视为失败
 		return IdempotencyResult{State: StateProcessing}, true, nil
 	}
 	if len(val) > 0 && val[0] == '{' {
 		// COMPLETED 状态，val 格式为 {"orderId":123}
-		// 尝试解析 JSON
 		var result struct {
 			OrderId int64 `json:"orderId"`
 		}
@@ -106,20 +106,27 @@ func parseState(val string, _ string, _ *redis.Redis, _ string) (IdempotencyResu
 		}
 		return IdempotencyResult{State: StateFailed, ErrCode: rest, ErrMsg: ""}, true, nil
 	}
-	// 未知状态，视为新请求
-	return IdempotencyResult{State: StateProcessing}, false, nil
+	// 未知状态，视为 PROCESSING 等待
+	return IdempotencyResult{State: StateProcessing}, true, nil
 }
 
 // MarkCompleted 将幂等键标记为完成状态，存储订单ID
 func MarkCompleted(ctx context.Context, rds *redis.Redis, idempotencyKey string, orderId int64) error {
 	key := IdempotencyKeyPrefix + idempotencyKey
 	val := fmt.Sprintf("{\"orderId\":%d}", orderId)
-	return rds.SetExpire(key, val, int(CompletedTTL.Seconds()))
+	// 先 Set 新值再 Expire，SETEX 不可用时用两步
+	if err := rds.SetexCtx(ctx, key, val, int(CompletedTTL.Seconds())); err != nil {
+		return fmt.Errorf("MarkCompleted Setex 异常: %w", err)
+	}
+	return nil
 }
 
 // MarkFailed 将幂等键标记为失败状态，存储错误码和错误信息
 func MarkFailed(ctx context.Context, rds *redis.Redis, idempotencyKey string, errCode, errMsg string) error {
 	key := IdempotencyKeyPrefix + idempotencyKey
 	val := fmt.Sprintf("FAILED:%s:%s", errCode, errMsg)
-	return rds.SetExpire(key, val, int(CompletedTTL.Seconds()))
+	if err := rds.SetexCtx(ctx, key, val, int(CompletedTTL.Seconds())); err != nil {
+		return fmt.Errorf("MarkFailed Setex 异常: %w", err)
+	}
+	return nil
 }

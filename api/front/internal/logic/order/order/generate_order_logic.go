@@ -111,7 +111,7 @@ func (l *GenerateOrderLogic) GenerateOrder(req *types.GenerateOrderReq) (*types.
 				return nil, errorx.NewDefaultError(result.ErrCode)
 			case middleware.StateProcessing:
 				// 另一个请求正在处理中
-				logc.Warnf(l.ctx, "[Saga-IDEM] 幂等键处理中，等待超时, key=%s", idempotencyKey)
+				logc.Infof(l.ctx, "[Saga-IDEM] 幂等键处理中，等待超时, key=%s", idempotencyKey)
 				return nil, errorx.NewDefaultError(ErrCodeOrderDuplicatedRequest)
 			}
 		}
@@ -326,7 +326,6 @@ func (l *GenerateOrderLogic) GenerateOrder(req *types.GenerateOrderReq) (*types.
 	// Saga 补偿标记
 	sagaStockLocked := false
 	sagaOrderCreated := false
-	sagaDeliverySaved := false
 	sagaCouponConsumed := false
 	sagaPointsDeducted := false
 	orderId := int64(0)
@@ -334,7 +333,7 @@ func (l *GenerateOrderLogic) GenerateOrder(req *types.GenerateOrderReq) (*types.
 
 	// 补偿回滚函数
 	compensate := func(failedStep string) {
-		logc.Warnf(l.ctx, "[Saga-COMP] 开始 Saga 补偿，失败步骤=%s, orderNo=%s", failedStep, orderNo)
+		logc.Infof(l.ctx, "[Saga-COMP] 开始 Saga 补偿，失败步骤=%s, orderNo=%s", failedStep, orderNo)
 
 		// 回滚积分扣除（步骤⑤）
 		if sagaPointsDeducted {
@@ -449,7 +448,6 @@ func (l *GenerateOrderLogic) GenerateOrder(req *types.GenerateOrderReq) (*types.
 		logc.Errorf(l.ctx, "[Saga-STEP3] 保存收货人信息失败, orderId=%d, err=%s", orderAddResp.Id, err.Error())
 		// 不阻塞订单创建，记录日志即可
 	}
-	sagaDeliverySaved = true
 	logc.Infof(l.ctx, "[Saga] 步骤③收货人信息保存完成, orderId=%d", orderId)
 
 	// ④ 核销优惠券
