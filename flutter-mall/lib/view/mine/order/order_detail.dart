@@ -36,6 +36,8 @@ class OrderDetail extends StatefulWidget {
 class _OrderDetailState extends State<OrderDetail> with SingleTickerProviderStateMixin {
   OrderDetailData? orderDetailData;
   bool _isLoading = true;
+  bool _isOperating = false; // Story 6.2 Task 7: 操作防抖
+  bool _localTimelineAppended = false; // Story 6.2 Review Fix: 防止重复追加时间线节点
   late AnimationController _skeletonController;
   late Animation<double> _skeletonAnimation;
 
@@ -70,6 +72,167 @@ class _OrderDetailState extends State<OrderDetail> with SingleTickerProviderStat
     );
   }
 
+  // Story 6.2 Task 8.1+8.2+8.4: 本地追加时间线节点（status==5 取消 / status==3 确认收货）
+  // Review Fix: 防止 _queryOrderDetail 重入时重复追加（flag 在 _queryOrderDetail 成功后重置）
+  void _appendLocalTimelineNodes(OrderDetailData d) {
+    if (_localTimelineAppended) return;
+    // 取消节点：status==5 且 timeline 中无"取消"字样节点
+    if (d.orderStatus == 5 && !d.timeline.any((n) => n.title.contains('取消'))) {
+      d.timeline.add(TimelineNode(
+        status: "interrupted",
+        title: "已取消",
+        time: _formatTime(d.updateTime),
+        detail: "用户主动取消",
+      ));
+    }
+    // 确认收货节点：status==3 且 timeline 中无"确认收货"节点
+    if (d.orderStatus == 3 && !d.timeline.any((n) => n.title.contains('确认收货'))) {
+      d.timeline.add(TimelineNode(
+        status: "completed",
+        title: "确认收货",
+        time: _formatTime(d.receiveTime),
+        detail: "",
+      ));
+    }
+    _localTimelineAppended = true;
+  }
+
+  // Story 6.2 Task 5.1: 取消订单
+  Future<void> _cancelOrder() async {
+    if (_isOperating) return;
+    final confirmed = await _showCancelConfirmDialog();
+    if (confirmed != true) return;
+
+    setState(() => _isOperating = true);
+    try {
+      final Response resp = await HttpUtil.get(cancelOrderUrl + widget.orderId.toString());
+      if (resp.data['code'] == 0) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('订单已取消'),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+        await _queryOrderDetail();
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(resp.data['message'] ?? '取消失败'),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('取消失败: $e'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isOperating = false);
+    }
+  }
+
+  Future<bool?> _showCancelConfirmDialog() {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('取消订单'),
+        content: const Text('确定要取消该订单吗？取消后库存将释放，优惠券和积分将返还。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('再想想'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('确认取消'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Story 6.2 Task 6.1+6.2+6.3+6.4: 确认收货
+  Future<void> _confirmReceive() async {
+    if (_isOperating) return;
+    final confirmed = await _showConfirmReceiveDialog();
+    if (confirmed != true) return;
+
+    setState(() => _isOperating = true);
+    try {
+      final Response resp = await HttpUtil.get(confirmReceiveUrl + widget.orderId.toString());
+      if (resp.data['code'] == 0) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('确认收货成功'),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+        await _queryOrderDetail();
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(resp.data['message'] ?? '确认收货失败'),
+              behavior: SnackBarBehavior.floating,
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('确认收货失败: $e'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isOperating = false);
+    }
+  }
+
+  Future<bool?> _showConfirmReceiveDialog() {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('确认收货'),
+        content: const Text('请确认您已收到商品且商品完好。确认后订单将完成。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('还没收到'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: const Color(0xFFFA436A)),
+            child: const Text('确认收货'),
+          ),
+        ],
+      ),
+    );
+  }
+
   // Story 6-1 Task 6.1: 真实 API 接入
   Future<void> _queryOrderDetail() async {
     setState(() {
@@ -84,6 +247,10 @@ class _OrderDetailState extends State<OrderDetail> with SingleTickerProviderStat
 
       setState(() {
         orderDetailData = model.data;
+        // Story 6.2 Task 8: 本地追加时间线节点（取消/确认收货）
+        // Review Fix: flag 在每次成功拉取后重置，防止重复追加
+        _localTimelineAppended = false;
+        _appendLocalTimelineNodes(model.data);
         _isLoading = false;
       });
     } catch (e) {
@@ -544,7 +711,7 @@ class _OrderDetailState extends State<OrderDetail> with SingleTickerProviderStat
           children: [
             // Story 6-2 实现：取消订单（OMS 0=待支付）
             if (status == 0)
-              _ActionButton(label: "取消订单", isPrimary: false, onTap: () => _showComingSoon("取消订单")),
+              _ActionButton(label: "取消订单", isPrimary: false, onTap: _cancelOrder),
             if (status == 0) const SizedBox(width: 10),
             // Story 6-2 实现：立即付款（OMS 0=待支付）
             if (status == 0)
@@ -555,7 +722,7 @@ class _OrderDetailState extends State<OrderDetail> with SingleTickerProviderStat
             if (status == 1 || status == 2) const SizedBox(width: 10),
             // Story 6-2 实现：确认收货（OMS 2=已发货）
             if (status == 2)
-              _ActionButton(label: "确认收货", isPrimary: true, onTap: () => _showComingSoon("确认收货")),
+              _ActionButton(label: "确认收货", isPrimary: true, onTap: _confirmReceive),
             // Story 6-4 实现：申请售后（OMS 4=已完成, 7=售后中）
             if (status == 4 || status == 7)
               _ActionButton(label: "申请售后", isPrimary: false, onTap: () => _showComingSoon("申请售后")),

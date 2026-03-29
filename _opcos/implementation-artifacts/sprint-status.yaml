@@ -87,7 +87,7 @@ development_status:
 
   epic-6: in-progress
   6-1-订单列表与详情时间线: done
-  6-2-取消未支付订单与确认收货: backlog
+  6-2-取消未支付订单与确认收货: done
   6-3-物流轨迹与配送关键状态: backlog
   6-4-售后申请提交与材料上传: backlog
   6-5-订单状态编排与多角色视图一致: backlog

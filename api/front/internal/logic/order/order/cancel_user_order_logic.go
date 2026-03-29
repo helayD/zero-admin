@@ -40,7 +40,8 @@ func (l *CancelUserOrderLogic) CancelUserOrder(req *types.CancelUserOrderReq) (r
 		return nil, err
 	}
 
-	// todo 暂时没有分布式事务
+	// 编排说明：OMS CancelOrder 内部处理订单状态变更，返回锁定库存、已用优惠券、已扣积分
+	// 后续 4 步按序执行，当前为串行编排，Story 7-3a 评估引入消息队列实现最终一致性
 	// 1.查询订单是否存在
 	// 2.修改订单状态
 	resp, err := l.svcCtx.OrderService.CancelOrder(l.ctx, &omsclient.CancelOrderReq{

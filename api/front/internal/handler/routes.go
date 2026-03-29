@@ -49,6 +49,16 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Path:    "/queryOrderDetail",
 				Handler: orderdetail.QueryOrderDetailHandler(serverCtx),
 			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/cancelUserOrder",
+				Handler: orderlist.CancelUserOrderHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/confirmReceiveOrder",
+				Handler: orderlist.ConfirmReceiveOrderHandler(serverCtx),
+			},
 		},
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
 		rest.WithPrefix("/api/order"),

@@ -62,6 +62,10 @@ const addCouponUrl = "$baseUrl/api/member/coupon/addCoupon";
 const orderListDataUrl = "$baseUrl/api/order/queryOrderList?status=";
 // 订单详情
 const orderDetailDataUrl = "$baseUrl/api/order/queryOrderDetail?orderId=";
+// 取消订单（Story 6.2）
+const cancelOrderUrl = "$baseUrl/api/order/cancelUserOrder?orderId=";
+// 确认收货（Story 6.2）
+const confirmReceiveUrl = "$baseUrl/api/order/confirmReceiveOrder?orderId=";
 // 收货地址列表
 const addressListDataUrl = "$baseUrl/api/member/queryAddressList";
 // 添加会员地址
