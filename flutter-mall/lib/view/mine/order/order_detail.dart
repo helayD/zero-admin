@@ -10,6 +10,8 @@ import 'package:flutter_mall/widgets/price_breakdown_card.dart';
 import '../../../config/order_status.dart';
 import '../../../model/order_item.dart'; // OrderItemList canonical
 import '../../../model/order_detail.dart';
+import 'order_logistics.dart';
+import 'apply_after_sales.dart';
 
 ///
 /// 订单详情页面
@@ -709,23 +711,23 @@ class _OrderDetailState extends State<OrderDetail> with SingleTickerProviderStat
         child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            // Story 6-2 实现：取消订单（OMS 0=待支付）
+            // Story 6-2 实现：取消订单（OMS order_status=5=已取消）
             if (status == 0)
               _ActionButton(label: "取消订单", isPrimary: false, onTap: _cancelOrder),
             if (status == 0) const SizedBox(width: 10),
-            // Story 6-2 实现：立即付款（OMS 0=待支付）
+            // Story 6-2 实现：立即付款（OMS order_status=0=待支付）
             if (status == 0)
               _ActionButton(label: "立即付款", isPrimary: true, onTap: () => _showComingSoon("立即付款")),
-            // Story 6-3 实现：查看物流（OMS 1=已支付/待发货, 2=已发货）
-            if (status == 1 || status == 2)
-              _ActionButton(label: "查看物流", isPrimary: false, onTap: () => _showComingSoon("查看物流")),
-            if (status == 1 || status == 2) const SizedBox(width: 10),
-            // Story 6-2 实现：确认收货（OMS 2=已发货）
+            // Story 6-3 实现：查看物流（OMS order_status=3=已发货）
+            if (status == 2)
+              _ActionButton(label: "查看物流", isPrimary: false, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => OrderLogistics(orderId: widget.orderId)))),
+            if (status == 2) const SizedBox(width: 10),
+            // Story 6-2 实现：确认收货（OMS order_status=3=已发货）
             if (status == 2)
               _ActionButton(label: "确认收货", isPrimary: true, onTap: _confirmReceive),
-            // Story 6-4 实现：申请售后（OMS 4=已完成, 7=售后中）
+            // Story 6-4 实现：申请售后（OMS order_status=4=已完成, 7=售后中）
             if (status == 4 || status == 7)
-              _ActionButton(label: "申请售后", isPrimary: false, onTap: () => _showComingSoon("申请售后")),
+              _ActionButton(label: "申请售后", isPrimary: false, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ApplyAfterSales(orderId: widget.orderId)))),
           ],
         ),
       ),

@@ -41,9 +41,9 @@ class OrderDetailData {
   int id;
   String orderNo;
   int userId;
-  int orderStatus;      // OMS订单状态：0=待支付,1=已支付/待发货,2=已取消,3=已完成,4=售后中
-  int payStatus;        // 支付状态：0=未支付,1=已支付
-  int deliveryStatus;   // 发货状态：0=未发货,1=已发货,2=已收货
+  int orderStatus;      // OMS order_status: 1=待支付, 2=已支付/待发货, 3=已发货, 4=已完成, 5=已取消, 6=已退款, 7=售后中
+  int payStatus;        // OMS pay_status: 0=待支付, 1=支付成功, 2=支付失败
+  int deliveryStatus;   // OMS receive_status: 0=未发货, 1=已发货, 2=已收货
   int aftersaleStatus; // 售后状态：0=无售后,1=售后申请中,2=售后完成
   double totalAmount;
   double promotionAmount;
@@ -396,3 +396,63 @@ class MemberReceiveAddress {
     return '${receiverPhone.substring(0, 3)}****${receiverPhone.substring(receiverPhone.length - 4)}';
   }
 }
+
+// LogisticsData 物流数据（Story 6-3 Task 7）
+class LogisticsData {
+  final String deliveryCompany; // 物流公司
+  final String deliveryNo;       // 物流单号
+  final String currentStatus;    // 当前状态描述
+  final List<LogisticsNodeData> logisticsNodes; // 轨迹节点
+
+  LogisticsData({
+    required this.deliveryCompany,
+    required this.deliveryNo,
+    required this.currentStatus,
+    required this.logisticsNodes,
+  });
+
+  factory LogisticsData.fromJson(Map<String, dynamic> json) {
+    return LogisticsData(
+      deliveryCompany: json['deliveryCompany'] ?? '',
+      deliveryNo: json['deliveryNo'] ?? '',
+      currentStatus: json['currentStatus'] ?? '',
+      logisticsNodes: json['logisticsNodes'] != null
+          ? (json['logisticsNodes'] as List)
+              .map((e) => LogisticsNodeData.fromJson(e))
+              .toList()
+          : [],
+    );
+  }
+}
+
+// LogisticsNodeData 物流轨迹节点（Story 6-3 Task 7）
+class LogisticsNodeData {
+  final String status;      // completed/pending/current/error
+  final String description; // 状态描述
+  final String time;        // 时间
+
+  LogisticsNodeData({
+    required this.status,
+    required this.description,
+    required this.time,
+  });
+
+  factory LogisticsNodeData.fromJson(Map<String, dynamic> json) {
+    return LogisticsNodeData(
+      status: json['status'] ?? 'pending',
+      description: json['description'] ?? '',
+      time: json['time'] ?? '',
+    );
+  }
+
+  // 转换为 OrderTimelinePanel 需要的 TimelineNode 格式
+  TimelineNode toTimelineNode() {
+    return TimelineNode(
+      status: status,
+      title: description,
+      time: time,
+      detail: '',
+    );
+  }
+}
+
