@@ -34,6 +34,8 @@ const (
 	ErrCodeOrderIntegrationExceed         = "OMS_ORDER_INTEGRATION_EXCEED"
 	ErrCodeOrderIntegrationCouponConflict  = "OMS_ORDER_INTEGRATION_COUPON_CONFLICT"
 	ErrCodeOrderPayTypeInvalid             = "OMS_ORDER_PAY_TYPE_INVALID"
+	ErrCodeOrderStatusInvalid              = "OMS_ORDER_STATUS_INVALID" // 订单状态不允许支付
+	ErrCodeOrderPayFailed                  = "OMS_ORDER_PAY_FAILED"     // 支付发起失败
 	ErrCodeOrderStockInsufficient         = "OMS_ORDER_STOCK_INSUFFICIENT"
 	ErrCodeOrderSystemError               = "OMS_ORDER_SYSTEM_ERROR"
 )
@@ -44,6 +46,9 @@ const (
 	ErrCodeOrderCompensationFailed    = "OMS_ORDER_COMPENSATION_FAILED"      // Saga 补偿失败，需人工介入
 	ErrCodeOrderStockLocked           = "OMS_ORDER_STOCK_LOCKED"             // 库存已被其他订单锁定
 )
+
+// Saga 链路总超时（60s），防止客户端断开后资源泄漏
+const sagaTimeout = 60 * time.Second
 
 // GenerateOrderLogic
 /*
@@ -85,6 +90,10 @@ func (l *GenerateOrderLogic) GenerateOrder(req *types.GenerateOrderReq) (*types.
 		return nil, err
 	}
 
+	// 使用带超时的 context 包装 Saga 链路，客户端断开时自动取消
+	ctx, cancel := context.WithTimeout(l.ctx, sagaTimeout)
+	defer cancel()
+
 	// === Task 1: 幂等键检查 ===
 	idempotencyKey := req.IdempotencyKey
 	if idempotencyKey != "" {
@@ -118,12 +127,8 @@ func (l *GenerateOrderLogic) GenerateOrder(req *types.GenerateOrderReq) (*types.
 		// 设置成功，继续处理
 	}
 
-	// 使用 defer 处理幂等键和 Saga 补偿
-	defer func() {
-		if idempotencyKey != "" {
-			// 补偿完成，清理 Redis 幂等键（已在 MarkCompleted/MarkFailed 中设置 TTL）
-		}
-	}()
+	// 使用 defer 处理幂等键（TTL 在 MarkCompleted/MarkFailed 中自动设置，无需显式清理）
+	// LOW-2 修复：Saga 链路使用 ctxWithTimeout，客户端断开时自动取消
 
 	// === Task 9: 校验收货地址 ===
 	if req.MemberReceiveAddressId <= 0 {
@@ -331,36 +336,45 @@ func (l *GenerateOrderLogic) GenerateOrder(req *types.GenerateOrderReq) (*types.
 	orderId := int64(0)
 	orderNo := genOrderNo()
 
-	// 补偿回滚函数
+	// Saga 补偿函数：MEDIUM-2 修复 — 记录补偿失败日志，不静默忽略
 	compensate := func(failedStep string) {
 		logc.Infof(l.ctx, "[Saga-COMP] 开始 Saga 补偿，失败步骤=%s, orderNo=%s", failedStep, orderNo)
 
 		// 回滚积分扣除（步骤⑤）
 		if sagaPointsDeducted {
-			_, _ = l.svcCtx.MemberService.UpdateMemberPoints(l.ctx, &umsclient.UpdateMemberPointsReq{
+			if _, compErr := l.svcCtx.MemberService.UpdateMemberPoints(ctx, &umsclient.UpdateMemberPointsReq{
 				MemberId: memberId,
 				Points:   memberInfo.Points, // 还原原始积分
-			})
-			logc.Infof(l.ctx, "[Saga-COMP] 已回滚积分, memberId=%d", memberId)
+			}); compErr != nil {
+				logc.Errorf(l.ctx, "[Saga-COMP] 积分回滚失败, memberId=%d, err=%s", memberId, compErr.Error())
+			} else {
+				logc.Infof(l.ctx, "[Saga-COMP] 已回滚积分, memberId=%d", memberId)
+			}
 		}
 
 		// 回滚优惠券核销（步骤④）
 		if sagaCouponConsumed {
-			_, _ = l.svcCtx.CouponRecordService.UpdateCouponRecord(l.ctx, &smsclient.UpdateCouponRecordReq{
+			if _, compErr := l.svcCtx.CouponRecordService.UpdateCouponRecord(ctx, &smsclient.UpdateCouponRecordReq{
 				MemberId:  memberId,
 				CouponIds: []int64{req.CouponId},
 				Status:    0, // 还原为未使用
-			})
-			logc.Infof(l.ctx, "[Saga-COMP] 已回滚优惠券, couponId=%d", req.CouponId)
+			}); compErr != nil {
+				logc.Errorf(l.ctx, "[Saga-COMP] 优惠券回滚失败, couponId=%d, err=%s", req.CouponId, compErr.Error())
+			} else {
+				logc.Infof(l.ctx, "[Saga-COMP] 已回滚优惠券, couponId=%d", req.CouponId)
+			}
 		}
 
 		// 回滚订单创建（步骤②）- 仅当订单已创建时
 		if sagaOrderCreated && orderId > 0 {
-			_, _ = l.svcCtx.OrderService.CancelOrder(l.ctx, &omsclient.CancelOrderReq{
+			if _, compErr := l.svcCtx.OrderService.CancelOrder(ctx, &omsclient.CancelOrderReq{
 				MemberId: memberId,
 				OrderId:  orderId,
-			})
-			logc.Infof(l.ctx, "[Saga-COMP] 已回滚订单, orderId=%d", orderId)
+			}); compErr != nil {
+				logc.Errorf(l.ctx, "[Saga-COMP] 订单回滚失败, orderId=%d, err=%s", orderId, compErr.Error())
+			} else {
+				logc.Infof(l.ctx, "[Saga-COMP] 已回滚订单, orderId=%d", orderId)
+			}
 		}
 
 		// 回滚库存锁定（步骤①）- 仅当库存已锁定时
@@ -372,16 +386,19 @@ func (l *GenerateOrderLogic) GenerateOrder(req *types.GenerateOrderReq) (*types.
 					ProductQuantity: item.SkuQuantity,
 				})
 			}
-			_, _ = l.svcCtx.ProductSkuService.ReleaseSkuStockLock(l.ctx, &pmsclient.UpdateSkuStockReq{
+			if _, compErr := l.svcCtx.ProductSkuService.ReleaseSkuStockLock(ctx, &pmsclient.UpdateSkuStockReq{
 				Data: stockReleaseData,
-			})
-			logc.Infof(l.ctx, "[Saga-COMP] 已释放库存锁定, orderNo=%s", orderNo)
+			}); compErr != nil {
+				logc.Errorf(l.ctx, "[Saga-COMP] 库存释放失败, orderNo=%s, err=%s", orderNo, compErr.Error())
+			} else {
+				logc.Infof(l.ctx, "[Saga-COMP] 已释放库存锁定, orderNo=%s", orderNo)
+			}
 		}
 
 		logc.Infof(l.ctx, "[Saga-COMP] Saga 补偿完成, failedStep=%s, orderNo=%s", failedStep, orderNo)
 	}
 
-	// ① 库存预锁
+	// ① 库存预锁（使用带超时的 ctx）
 	var stockLockData []*pmsclient.UpdateSkuStockData
 	for _, item := range orderItemList {
 		stockLockData = append(stockLockData, &pmsclient.UpdateSkuStockData{
@@ -389,7 +406,7 @@ func (l *GenerateOrderLogic) GenerateOrder(req *types.GenerateOrderReq) (*types.
 			ProductQuantity: item.SkuQuantity,
 		})
 	}
-	_, err = l.svcCtx.ProductSkuService.LockSkuStockLock(l.ctx, &pmsclient.UpdateSkuStockReq{
+	_, err = l.svcCtx.ProductSkuService.LockSkuStockLock(ctx, &pmsclient.UpdateSkuStockReq{
 		Data: stockLockData,
 	})
 	if err != nil {
@@ -420,7 +437,7 @@ func (l *GenerateOrderLogic) GenerateOrder(req *types.GenerateOrderReq) (*types.
 		OrderItemData:   orderItemList,
 	}
 
-	orderAddResp, err := l.svcCtx.OrderService.AddOrder(l.ctx, orderInfo)
+	orderAddResp, err := l.svcCtx.OrderService.AddOrder(ctx, orderInfo)
 	if err != nil {
 		logc.Errorf(l.ctx, "[Saga-STEP2] 创建订单失败, orderNo=%s, err=%s", orderNo, err.Error())
 		compensate("②创建订单")
@@ -434,7 +451,7 @@ func (l *GenerateOrderLogic) GenerateOrder(req *types.GenerateOrderReq) (*types.
 	logc.Infof(l.ctx, "[Saga] 步骤②创建订单成功, orderId=%d, orderNo=%s", orderId, orderNo)
 
 	// ③ 存储收货人信息
-	_, err = l.svcCtx.OrderDeliveryService.AddOrderDelivery(l.ctx, &omsclient.AddOrderDeliveryReq{
+	_, err = l.svcCtx.OrderDeliveryService.AddOrderDelivery(ctx, &omsclient.AddOrderDeliveryReq{
 		OrderId:          orderAddResp.Id,
 		OrderNo:          orderNo,
 		ReceiverName:     addressDetail.ReceiverName,
@@ -452,7 +469,7 @@ func (l *GenerateOrderLogic) GenerateOrder(req *types.GenerateOrderReq) (*types.
 
 	// ④ 核销优惠券
 	if req.CouponId > 0 {
-		_, err = l.svcCtx.CouponRecordService.UpdateCouponRecord(l.ctx, &smsclient.UpdateCouponRecordReq{
+		_, err = l.svcCtx.CouponRecordService.UpdateCouponRecord(ctx, &smsclient.UpdateCouponRecordReq{
 			CouponIds: []int64{req.CouponId},
 			MemberId:  memberId,
 			OrderId:   orderId,
@@ -475,7 +492,7 @@ func (l *GenerateOrderLogic) GenerateOrder(req *types.GenerateOrderReq) (*types.
 		if newPoints < 0 {
 			newPoints = 0
 		}
-		_, err = l.svcCtx.MemberService.UpdateMemberPoints(l.ctx, &umsclient.UpdateMemberPointsReq{
+		_, err = l.svcCtx.MemberService.UpdateMemberPoints(ctx, &umsclient.UpdateMemberPointsReq{
 			MemberId: memberId,
 			Points:   newPoints,
 		})
@@ -492,7 +509,7 @@ func (l *GenerateOrderLogic) GenerateOrder(req *types.GenerateOrderReq) (*types.
 	}
 
 	// ⑥ 发送延迟消息
-	err = l.sendMsg(orderId, memberId)
+	err = l.sendMsg(ctx, orderId, memberId)
 	if err != nil {
 		// 延迟消息发送失败不影响订单创建，仅记录日志
 		logc.Errorf(l.ctx, "[Saga-STEP6] 延迟消息发送失败, orderId=%d, err=%s", orderId, err.Error())
@@ -528,8 +545,8 @@ func (l *GenerateOrderLogic) GenerateOrder(req *types.GenerateOrderReq) (*types.
 	}, nil
 }
 
-// 发送延迟消息取消订单
-func (l *GenerateOrderLogic) sendMsg(orderId, memberId int64) error {
+// 发送延迟消息取消订单（使用 ctx 以支持超时取消）
+func (l *GenerateOrderLogic) sendMsg(ctx context.Context, orderId, memberId int64) error {
 	delayMinutes := 30 // 延迟时间(分钟)
 	message := map[string]any{"orderId": orderId, "memberId": memberId}
 	body, err := sonic.Marshal(message)

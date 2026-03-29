@@ -729,20 +729,24 @@ type OrderPayQueryReq struct {
 }
 
 type OrderPayQueryResp struct {
-	Code    int64  `json:"code"`
-	Message string `json:"message"`
-	Data    string `json:"data"`
+	Code        int64  `json:"code"`
+	Message     string `json:"message"`
+	Data        string `json:"data"`
+	OrderStatus int64  `json:"orderStatus"` // 0=待支付 1=已支付 2=已取消
+	PayStatus   int64  `json:"payStatus"`   // 0=未支付 1=已支付
+	ExpireTime  int64  `json:"expireTime"`  // 剩余支付秒数
 }
 
 type OrderPayReq struct {
 	OrderId int64  `json:"orderId"`
+	PayType int64  `json:"payType"` // 支付方式：1=支付宝，2=微信
 	Remark  string `json:"remark,optional"`
 }
 
 type OrderPayResp struct {
 	Code    int64  `json:"code"`
 	Message string `json:"message"`
-	Data    string `json:"data"`
+	Data    string `json:"data"` // 支付唤起参数（支付宝orderInfo字符串 / 微信mweb_url）
 }
 
 type PreferredAreaListData struct {
