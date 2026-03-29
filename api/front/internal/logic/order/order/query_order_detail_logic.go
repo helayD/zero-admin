@@ -45,9 +45,9 @@ func NewQueryOrderDetailLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 }
 
 // buildTimeline 根据OMS订单状态构建时间线节点（Story 6-1 Task 2.2）
-// OMS状态: orderStatus: 0=待支付,1=已支付/待发货,2=已取消,3=已完成,4=售后中
-// deliveryStatus: 0=未发货,1=已发货,2=已收货
-// aftersaleStatus: 0=无售后,1=售后申请中,2=售后完成
+// OMS order_status: 1=待支付, 2=已支付/待发货, 3=已发货, 4=已完成, 5=已取消, 6=已退款, 7=售后中
+// deliveryStatus: 0=未发货, 1=已发货, 2=已收货
+// aftersaleStatus: 0=无售后, 1=售后申请中, 2=售后完成
 func (l *QueryOrderDetailLogic) buildTimeline(detail *omsclient.OrderListData) []types.TimelineNode {
 	var nodes []types.TimelineNode
 

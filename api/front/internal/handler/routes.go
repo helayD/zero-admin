@@ -59,6 +59,21 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Path:    "/confirmReceiveOrder",
 				Handler: orderlist.ConfirmReceiveOrderHandler(serverCtx),
 			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/queryLogistics",
+				Handler: orderlist.QueryLogisticsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/queryReturnReasonList",
+				Handler: orderlist.QueryReturnReasonListHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/applyAfterSales",
+				Handler: orderlist.ApplyAfterSalesHandler(serverCtx),
+			},
 		},
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
 		rest.WithPrefix("/api/order"),

@@ -81,12 +81,12 @@ type MemberReceiveAddressList {
 }
 
 type GenerateOrderReq {
-	CartIds                []int64 `json:"cartIds"`                //购物车id
-	CouponId               int64   `json:"couponId"`               //优惠券id
-	MemberReceiveAddressId int64   `json:"memberReceiveAddressId"`  //
-	PayType                int32   `json:"payType"`                //支付方式
-	UseIntegration         int32   `json:"useIntegration"`         //使用的积分
-	IdempotencyKey        string  `json:"idempotencyKey,optional"` //幂等键，格式：{userId}:{timestamp}:{hash}（Story 5.4 新增）
+	CartIds                []int64 `json:"cartIds"` //购物车id
+	CouponId               int64   `json:"couponId"` //优惠券id
+	MemberReceiveAddressId int64   `json:"memberReceiveAddressId"` //
+	PayType                int32   `json:"payType"` //支付方式
+	UseIntegration         int32   `json:"useIntegration"` //使用的积分
+	IdempotencyKey         string  `json:"idempotencyKey,optional"` //幂等键，格式：{userId}:{timestamp}:{hash}（Story 5.4 新增）
 }
 
 type GenerateOrderResp {
@@ -186,6 +186,33 @@ type ConfirmReceiveOrderResp {
 	Message string `json:"message"`
 }
 
+// QueryLogisticsReq 物流查询请求（Story 6-3 Task 1）
+type QueryLogisticsReq {
+	OrderId int64 `form:"orderId"`
+}
+
+// LogisticsNode 物流轨迹节点（Story 6-3 Task 1）
+type LogisticsNode {
+	Status      string `json:"status"` // completed/pending/current/error
+	Description string `json:"description"` // 状态描述
+	Time        string `json:"time"` // 时间
+}
+
+// LogisticsData 物流数据（Story 6-3 Task 1）
+type LogisticsData {
+	DeliveryCompany string          `json:"deliveryCompany"` // 物流公司
+	DeliveryNo      string          `json:"deliveryNo"` // 物流单号
+	CurrentStatus   string          `json:"currentStatus"` // 当前状态描述
+	LogisticsNodes  []LogisticsNode `json:"logisticsNodes"` // 轨迹节点列表
+}
+
+// QueryLogisticsResp 物流查询响应（Story 6-3 Task 1）
+type QueryLogisticsResp {
+	Code    int64         `json:"code"`
+	Message string        `json:"message"`
+	Data    LogisticsData `json:"data"`
+}
+
 type DeleteOrderReq {
 	OrderIds []int64 `form:"orderIds"`
 }
@@ -230,6 +257,40 @@ type ReturnApplyResp {
 	Message string `json:"message"`
 }
 
+// QueryReturnReasonListReq 售后原因列表请求（Story 6-4 Task 1）
+type QueryReturnReasonListReq {
+}
+
+// ReturnReasonItem 售后原因项（Story 6-4 Task 1）
+type ReturnReasonItem {
+	Id   int64  `json:"id"`   // 原因ID
+	Name string `json:"name"` // 原因名称
+}
+
+// QueryReturnReasonListResp 售后原因列表响应（Story 6-4 Task 1）
+type QueryReturnReasonListResp {
+	Code       int64            `json:"code"`
+	Message    string           `json:"message"`
+	ReasonList []ReturnReasonItem `json:"reasonList"`
+}
+
+// ApplyAfterSalesReq 售后申请请求（Story 6-4 Task 2）
+type ApplyAfterSalesReq {
+	OrderId    int64  `json:"orderId"`    // 关联订单ID
+	Type       int32  `json:"type"`        // 售后类型：0=退货退款, 1=仅退款, 2=换货
+	ReasonId   int64  `json:"reasonId"`    // 退货原因ID
+	Description string `json:"description"` // 问题描述（可选）
+	ProofPics  string `json:"proofPics"`   // 凭证图片（base64，逗号分隔）
+}
+
+// ApplyAfterSalesResp 售后申请响应（Story 6-4 Task 2）
+type ApplyAfterSalesResp {
+	Code     int64  `json:"code"`
+	Message  string `json:"message"`
+	ReturnId int64  `json:"returnId"`  // 售后单ID
+	ReturnNo string `json:"returnNo"`  // 售后单号
+}
+
 @server (
 	jwt:      Auth
 	group:    order/order
@@ -262,6 +323,10 @@ service front-api {
 	@handler ConfirmReceiveOrder
 	get /confirmReceiveOrder (ConfirmReceiveOrderReq) returns (ConfirmReceiveOrderResp)
 
+	//查询物流轨迹（Story 6-3 Task 1）
+	@handler QueryLogistics
+	get /queryLogistics (QueryLogisticsReq) returns (QueryLogisticsResp)
+
 	//用户删除订单
 	@handler DeleteOrder
 	get /deleteOrder (DeleteOrderReq) returns (DeleteOrderResp)
@@ -269,5 +334,13 @@ service front-api {
 	//申请退货
 	@handler ReturnApply
 	post /returnApply (ReturnApplyReq) returns (ReturnApplyResp)
+
+	//查询售后原因列表（Story 6-4 Task 1）
+	@handler QueryReturnReasonList
+	post /queryReturnReasonList (QueryReturnReasonListReq) returns (QueryReturnReasonListResp)
+
+	//提交售后申请（Story 6-4 Task 2）
+	@handler ApplyAfterSales
+	post /applyAfterSales (ApplyAfterSalesReq) returns (ApplyAfterSalesResp)
 }
 

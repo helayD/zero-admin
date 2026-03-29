@@ -1189,3 +1189,65 @@ type UpdateMemberReq struct {
 type UpdatePasswordReq struct {
 	Password string `json:"password"` //密码
 }
+
+// QueryLogisticsReq 物流查询请求（Story 6-3 Task 2）
+type QueryLogisticsReq struct {
+	OrderId int64 `form:"orderId"`
+}
+
+// LogisticsNode 物流轨迹节点（Story 6-3 Task 2）
+type LogisticsNode struct {
+	Status      string `json:"status"`        // completed/pending/current/error
+	Description string `json:"description"` // 状态描述
+	Time        string `json:"time"`        // 时间
+}
+
+// LogisticsData 物流数据（Story 6-3 Task 2）
+type LogisticsData struct {
+	DeliveryCompany string         `json:"deliveryCompany"` // 物流公司
+	DeliveryNo      string         `json:"deliveryNo"`     // 物流单号
+	CurrentStatus   string         `json:"currentStatus"`  // 当前状态描述
+	LogisticsNodes  []LogisticsNode `json:"logisticsNodes"` // 轨迹节点列表
+}
+
+// QueryLogisticsResp 物流查询响应（Story 6-3 Task 2）
+type QueryLogisticsResp struct {
+	Code    int64         `json:"code"`
+	Message string        `json:"message"`
+	Data    LogisticsData `json:"data"`
+}
+
+// QueryReturnReasonListReq 售后原因列表请求（Story 6-4 Task 3）
+type QueryReturnReasonListReq struct {
+}
+
+// ReturnReasonItem 售后原因项（Story 6-4 Task 3）
+type ReturnReasonItem struct {
+	Id   int64  `json:"id"`   // 原因ID
+	Name string `json:"name"` // 原因名称
+}
+
+// QueryReturnReasonListResp 售后原因列表响应（Story 6-4 Task 3）
+type QueryReturnReasonListResp struct {
+	Code       int64            `json:"code"`
+	Message    string           `json:"message"`
+	ReasonList []ReturnReasonItem `json:"reasonList"`
+}
+
+// ApplyAfterSalesReq 售后申请请求（Story 6-4 Task 3）
+type ApplyAfterSalesReq struct {
+	OrderId     int64  `json:"orderId"`     // 关联订单ID
+	Type        int32  `json:"type"`        // 售后类型：0=退货退款, 1=仅退款, 2=换货
+	ReasonId    int64  `json:"reasonId"`    // 退货原因ID
+	Description string `json:"description"`   // 问题描述（可选）
+	ProofPics  string `json:"proofPics"`    // 凭证图片（base64，逗号分隔）
+}
+
+// ApplyAfterSalesResp 售后申请响应（Story 6-4 Task 3）
+type ApplyAfterSalesResp struct {
+	Code     int64  `json:"code"`
+	Message  string `json:"message"`
+	ReturnId int64  `json:"returnId"` // 售后单ID
+	ReturnNo string `json:"returnNo"` // 售后单号
+}
+

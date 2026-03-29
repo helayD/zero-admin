@@ -36,8 +36,8 @@ func NewQueryOrderListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Qu
 
 // QueryOrderList 按状态分页获取用户订单列表
 // Story 6-1 Task 1+3: Flutter Tab映射 → OMS Status映射
-// Flutter Tab: 0=全部,1=待支付,2=待发货,3=已完成,4=已取消
-// OMS Status: 0=全部不填,1=待支付,2=已支付(=待发货),3=已发货,4=已取消
+// Flutter Tab: 0=全部, 1=待支付, 2=待发货, 3=已完成, 4=已取消
+// OMS order_status: 0=全部不填, 1=待支付, 2=已支付/待发货, 3=已发货, 4=已完成, 5=已取消, 6=已退款, 7=售后中
 func (l *QueryOrderListLogic) QueryOrderList(req *types.OrderListReq) (resp1 *types.OrderListResp, err error) {
 	memberId, err := common.GetMemberId(l.ctx)
 	if err != nil {
@@ -45,20 +45,20 @@ func (l *QueryOrderListLogic) QueryOrderList(req *types.OrderListReq) (resp1 *ty
 	}
 
 	// Story 6-1 Task 1.2: Flutter状态 → OMS状态映射
-	// Flutter: 0=全部,1=待支付,2=待发货,3=已完成,4=已取消
-	// OMS:    1=待支付,2=已支付(待发货),3=已发货,4=已完成,5=已取消
+	// Flutter: 0=全部, 1=待支付, 2=待发货, 3=已完成, 4=已取消
+	// OMS:    0=全部, 1=待支付, 2=已支付/待发货, 4=已完成, 5=已取消
 	var omsStatus int32
 	switch req.Status {
 	case 0:
 		omsStatus = 0 // 全部：不填，传0让OMS返回所有
 	case 1:
-		omsStatus = 1 // 待支付
+		omsStatus = 1 // 待支付（OMS: 1=待支付）
 	case 2:
-		omsStatus = 2 // 待发货（OMS:已支付）
+		omsStatus = 2 // 待发货（OMS: 2=已支付/待发货）
 	case 3:
-		omsStatus = 4 // 已完成
+		omsStatus = 4 // 已完成（OMS: 4=已完成）
 	case 4:
-		omsStatus = 5 // 已取消
+		omsStatus = 5 // 已取消（OMS: 5=已取消）
 	default:
 		omsStatus = 0
 	}
