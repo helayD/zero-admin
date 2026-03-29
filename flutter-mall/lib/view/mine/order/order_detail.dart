@@ -290,18 +290,22 @@ class _OrderDetailState extends State<OrderDetail> with SingleTickerProviderStat
     );
   }
 
+  // OMS 真实值图标映射（Review Fix: OMS status code alignment）
+  // OMS: 0=等待付款, 1=已支付(待发货), 2=已发货, 3=已发货(?), 4=已完成, 5=已取消, 7=售后中
   String _getStatusIcon(int status) {
     switch (status) {
       case 0:
-        return "images/daifukuan.png";
+        return "images/daifukuan.png"; // 等待付款
       case 1:
-        return "images/daifahuo.png";
       case 2:
-        return "images/delete.png";
       case 3:
-        return "images/tick.png";
+        return "images/daifahuo.png"; // 已支付/已发货 → 都是等收货
       case 4:
-        return "images/tuihuo.png";
+        return "images/tick.png"; // 交易完成
+      case 5:
+        return "images/delete.png"; // 已取消
+      case 7:
+        return "images/tuihuo.png"; // 售后中
       default:
         return "images/daifukuan.png";
     }
@@ -538,22 +542,22 @@ class _OrderDetailState extends State<OrderDetail> with SingleTickerProviderStat
         child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            // Story 6-2 实现：取消订单
+            // Story 6-2 实现：取消订单（OMS 0=待支付）
             if (status == 0)
               _ActionButton(label: "取消订单", isPrimary: false, onTap: () => _showComingSoon("取消订单")),
             if (status == 0) const SizedBox(width: 10),
-            // Story 6-2 实现：立即付款
+            // Story 6-2 实现：立即付款（OMS 0=待支付）
             if (status == 0)
               _ActionButton(label: "立即付款", isPrimary: true, onTap: () => _showComingSoon("立即付款")),
-            // Story 6-3 实现：查看物流
-            if (status == 1 || status == 3)
+            // Story 6-3 实现：查看物流（OMS 1=已支付/待发货, 2=已发货）
+            if (status == 1 || status == 2)
               _ActionButton(label: "查看物流", isPrimary: false, onTap: () => _showComingSoon("查看物流")),
-            if (status == 1 || status == 3) const SizedBox(width: 10),
-            // Story 6-2 实现：确认收货
-            if (status == 1)
+            if (status == 1 || status == 2) const SizedBox(width: 10),
+            // Story 6-2 实现：确认收货（OMS 2=已发货）
+            if (status == 2)
               _ActionButton(label: "确认收货", isPrimary: true, onTap: () => _showComingSoon("确认收货")),
-            // Story 6-4 实现：申请售后
-            if (status == 3)
+            // Story 6-4 实现：申请售后（OMS 4=已完成, 7=售后中）
+            if (status == 4 || status == 7)
               _ActionButton(label: "申请售后", isPrimary: false, onTap: () => _showComingSoon("申请售后")),
           ],
         ),

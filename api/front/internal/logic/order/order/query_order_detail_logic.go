@@ -90,31 +90,33 @@ func (l *QueryOrderDetailLogic) buildTimeline(detail *omsclient.OrderListData) [
 		})
 	}
 
-	// 节点5: 订单完成（当状态为已完成且有完成时间）
-	if detail.OrderStatus == 4 && detail.FinishTime != "" && detail.FinishTime != "0001-01-01T00:00:00Z" {
+	// 节点5: 订单完成（当状态为已完成）
+	// 注：OMS OrderListData proto 无 finish_time 字段，OrderStatus==4 即表示已完成
+	if detail.OrderStatus == 4 {
 		nodes = append(nodes, types.TimelineNode{
 			Status: "completed",
 			Title:  "订单完成",
-			Time:   formatTimelineTime(detail.FinishTime),
+			Time:   formatTimelineTime(detail.ReceiveTime), // 用收货时间标记
 		})
 	}
 
 	// 当前进行中节点判断（用于高亮）
+	// OMS 真实值：0=待支付, 1=已支付(待发货), 2=已发货, 3=?, 4=已完成, 5=已取消, 7=售后中
 	currentNodeIdx := 0
 	if detail.OrderStatus == 0 {
-		// 待支付 → 高亮"订单创建"
+		// 等待付款 → 高亮"订单创建"
 		currentNodeIdx = 0
 	} else if detail.OrderStatus == 1 {
-		// 已支付/待发货 → 高亮"支付成功"
+		// 已支付(待发货) → 高亮"支付成功"
 		currentNodeIdx = 1
-	} else if detail.OrderStatus == 2 {
-		// 已取消 → 时间线在"支付"后中断
+	} else if detail.OrderStatus == 5 {
+		// 已取消 → 时间线在"支付"后中断（OMS 5=已取消）
 		currentNodeIdx = -1
-	} else if detail.OrderStatus == 3 {
+	} else if detail.OrderStatus == 4 {
 		// 已完成 → 高亮"订单完成"
 		currentNodeIdx = len(nodes) - 1
-	} else if detail.OrderStatus == 4 {
-		// 售后中
+	} else if detail.OrderStatus == 7 {
+		// 售后中（OMS 7=售后中）
 		currentNodeIdx = -1
 	}
 
@@ -126,7 +128,7 @@ func (l *QueryOrderDetailLogic) buildTimeline(detail *omsclient.OrderListData) [
 	}
 
 	// 中断节点（取消/售后）
-	if detail.OrderStatus == 2 {
+	if detail.OrderStatus == 5 {
 		// 已取消：追加中断节点
 		nodes = append(nodes, types.TimelineNode{
 			Status: "interrupted",
@@ -134,7 +136,7 @@ func (l *QueryOrderDetailLogic) buildTimeline(detail *omsclient.OrderListData) [
 			Time:   "",
 			Detail: "系统自动关闭或用户取消",
 		})
-	} else if detail.OrderStatus == 4 {
+	} else if detail.OrderStatus == 7 {
 		// 售后中：追加中断节点
 		nodes = append(nodes, types.TimelineNode{
 			Status: "interrupted",
