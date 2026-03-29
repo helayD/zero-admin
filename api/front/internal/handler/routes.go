@@ -6,6 +6,8 @@ package handler
 import (
 	"net/http"
 
+	orderdetail "github.com/feihua/zero-admin/api/front/internal/handler/order/order"
+	orderlist "github.com/feihua/zero-admin/api/front/internal/handler/order/order"
 	orderpay "github.com/feihua/zero-admin/api/front/internal/handler/order/pay"
 	"github.com/feihua/zero-admin/api/front/internal/svc"
 
@@ -29,6 +31,23 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodGet,
 				Path:    "/orderPayQueryStatus",
 				Handler: orderpay.OrderPayQueryStatusHandler(serverCtx),
+			},
+		},
+		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/order"),
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodGet,
+				Path:    "/queryOrderList",
+				Handler: orderlist.QueryOrderListHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/queryOrderDetail",
+				Handler: orderdetail.QueryOrderDetailHandler(serverCtx),
 			},
 		},
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),

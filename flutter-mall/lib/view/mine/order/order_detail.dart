@@ -3,45 +3,95 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mall/config/service_url.dart';
 import 'package:flutter_mall/utils/http_util.dart';
 import 'package:flutter_mall/widgets/cached_image_widget.dart';
+import 'package:flutter_mall/widgets/empty_state_widget.dart';
+import 'package:flutter_mall/widgets/order_timeline_panel.dart';
+import 'package:flutter_mall/widgets/price_breakdown_card.dart';
 
 import '../../../config/order_status.dart';
+import '../../../model/order_item.dart'; // OrderItemList canonical
 import '../../../model/order_detail.dart';
 
 ///
 /// 订单详情页面
+///
+/// Story 6-1 重构：接入真实 API、Order Timeline Panel、Price Breakdown Card、State Shell
 ///
 /// 作者：刘飞华
 /// 日期：2023/11/21 17:17
 ///
 class OrderDetail extends StatefulWidget {
   final int orderId;
+  final String? intentSource; // Story 6-1 Task 10.2: Intent Recovery 预留
 
-  const OrderDetail({super.key, required this.orderId});
+  const OrderDetail({
+    super.key,
+    required this.orderId,
+    this.intentSource,
+  });
 
   @override
   State<OrderDetail> createState() => _OrderDetailState();
 }
 
-class _OrderDetailState extends State<OrderDetail> {
+class _OrderDetailState extends State<OrderDetail> with SingleTickerProviderStateMixin {
   OrderDetailData? orderDetailData;
-  MemberReceiveAddress? receiveAddress;
-
-  List<OrderItemList> orderItemList = [];
+  bool _isLoading = true;
+  late AnimationController _skeletonController;
+  late Animation<double> _skeletonAnimation;
 
   @override
   void initState() {
     super.initState();
-    queryOrderDetail();
+    _skeletonController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+    _skeletonAnimation = Tween<double>(begin: 0.3, end: 0.7).animate(
+      CurvedAnimation(parent: _skeletonController, curve: Curves.easeInOut),
+    );
+    _queryOrderDetail();
   }
 
-  void queryOrderDetail() async {
-    Response result = await HttpUtil.get(orderDetailDataUrl + widget.orderId.toString());
-    OrderDetailModel orderDetailModel = OrderDetailModel.fromJson(result.data);
+  @override
+  void dispose() {
+    _skeletonController.dispose();
+    super.dispose();
+  }
+
+  // Story 6-1 Review Fix: LOW-3 — 未实现功能显示友好提示
+  void _showComingSoon(String feature) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$feature 功能即将上线，敬请期待'),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.grey[700],
+      ),
+    );
+  }
+
+  // Story 6-1 Task 6.1: 真实 API 接入
+  Future<void> _queryOrderDetail() async {
     setState(() {
-      orderDetailData = orderDetailModel.data;
-      orderItemList = orderDetailModel.data.orderItemData;
-      receiveAddress = orderDetailModel.data.memberReceiveAddress;
+      _isLoading = true;
     });
+
+    try {
+      final Response result = await HttpUtil.get(
+        orderDetailDataUrl + widget.orderId.toString(),
+      );
+      final OrderDetailModel model = OrderDetailModel.fromJson(result.data);
+
+      setState(() {
+        orderDetailData = model.data;
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('[OrderDetail] _queryOrderDetail error: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -52,628 +102,542 @@ class _OrderDetailState extends State<OrderDetail> {
         title: const Text("订单详情"),
         titleTextStyle: const TextStyle(fontSize: 16, color: Colors.black),
         centerTitle: true,
+        elevation: 0,
       ),
-      body: Container(
-        height: MediaQuery.of(context).size.height,
-        color: Colors.white,
-        width: MediaQuery.of(context).size.width,
-        child: orderDetailData != null
-            ? Stack(
-                alignment: Alignment.topCenter,
-                children: [buildOrderDetail(), Positioned(bottom: 0, child: buildSubmit())],
-              )
-            : Container(),
-      ),
+      body: _buildBody(),
     );
   }
 
-  CustomScrollView buildOrderDetail() {
-    return CustomScrollView(
-      shrinkWrap: true,
-      slivers: [
-        buildOrderStatus(),
-        buildAddress(),
-        buildProductTitle(),
-        buildProductList(4),
-        // buildCoupon(),
-        buildOrderInfo(),
-        buildOrderPay(),
+  Widget _buildBody() {
+    // 加载态：骨架屏（Story 6-1 Task 7.2）
+    if (_isLoading) {
+      return _buildSkeletonScreen();
+    }
+
+    // 错误态（Story 6-1 Task 7.2）
+    if (orderDetailData == null) {
+      return ErrorRetryWidget(
+        message: "加载失败，请重试",
+        onRetry: _queryOrderDetail,
+      );
+    }
+
+    // 订单不存在（空态兜底）
+    if (orderDetailData!.id == 0) {
+      return EmptyStateWidget(
+        message: "订单不存在",
+        actionText: "返回",
+        icon: Icons.receipt_long_outlined,
+        onAction: () => Navigator.of(context).pop(),
+      );
+    }
+
+    // 正常内容
+    return Stack(
+      children: [
+        _buildContent(),
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: _buildBottomActions(),
+        ),
       ],
     );
   }
 
-  // 订单状态
-  SliverPadding buildOrderStatus() {
-    return SliverPadding(
-        padding: const EdgeInsets.all(0),
-        sliver: SliverList(
-            delegate: SliverChildListDelegate(<Widget>[
-          Container(
-            color: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
-            height: 100,
-            padding: const EdgeInsets.symmetric(horizontal: 15),
-            child: Row(
-              children: [
-                Image.asset(
-                  getStatusIcon(orderDetailData!.orderStatus),
-                  height: 24,
-                  width: 24,
-                  color: Colors.white,
-                ),
-                const SizedBox(
-                  width: 10,
-                ),
-                Text(getOrderStatusTxt(orderDetailData!.orderStatus),
-                    style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
-              ],
-            ),
+  // Story 6-1 Review Fix: 骨架屏微动画（LOW-1）
+  Widget _buildSkeletonBox(double width, double height) {
+    return AnimatedBuilder(
+      animation: _skeletonAnimation,
+      builder: (context, child) {
+        return Container(
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            color: Colors.grey[300]!.withOpacity(_skeletonAnimation.value),
+            borderRadius: BorderRadius.circular(4),
           ),
-        ])));
+        );
+      },
+    );
   }
 
-  // 用户收货地址
-  SliverPadding buildAddress() {
-    var border = BorderSide(width: 5, color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255));
-    var boxDecoration = BoxDecoration(
-      color: Colors.white,
-      border: Border(bottom: border),
-    );
-    return SliverPadding(
-        padding: const EdgeInsets.all(0),
-        sliver: SliverList(
-            delegate: SliverChildListDelegate(<Widget>[
+  // Story 6-1 Task 7.2: 骨架屏
+  Widget _buildSkeletonScreen() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(bottom: 60),
+      child: Column(
+        children: [
+          // 状态骨架
           Container(
-            decoration: boxDecoration,
+            height: 100,
+            color: Colors.grey[200],
+          ),
+          const SizedBox(height: 5),
+          // 地址骨架
+          Container(
             height: 78,
-            padding: const EdgeInsets.symmetric(horizontal: 15),
+            color: Colors.white,
+            margin: const EdgeInsets.only(top: 5),
+            padding: const EdgeInsets.all(15),
             child: Row(
               children: [
-                Image.asset(
-                  "images/address.png",
-                  height: 24,
-                  width: 22,
-                ),
-                const SizedBox(
-                  width: 10,
-                ),
+                _buildSkeletonBox(24, 24),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text("${receiveAddress!.receiverName} ${receiveAddress!.receiverPhone}",
-                          style: TextStyle(fontSize: 17, color: Color(int.parse('303133', radix: 16)).withAlpha(255))),
-                      const SizedBox(
-                        height: 5,
-                      ),
-                      Text(
-                          "${receiveAddress!.province} ${receiveAddress!.city} ${receiveAddress!.district} ${receiveAddress!.detailAddress}",
-                          style: TextStyle(fontSize: 14, color: Color(int.parse('909399', radix: 16)).withAlpha(255))),
+                      _buildSkeletonBox(120, 14),
+                      const SizedBox(height: 6),
+                      _buildSkeletonBox(200, 12),
                     ],
                   ),
                 ),
               ],
             ),
           ),
-        ])));
-  }
-
-  // 标题
-  SliverPadding buildProductTitle() {
-    var border = BorderSide(width: 1, color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255));
-    var boxDecoration = BoxDecoration(
-      color: Colors.white,
-      border: Border(bottom: border),
-    );
-    return SliverPadding(
-        padding: const EdgeInsets.all(0),
-        sliver: SliverList(
-            delegate: SliverChildListDelegate(<Widget>[
+          const SizedBox(height: 5),
+          // 商品骨架
           Container(
-              alignment: AlignmentDirectional.centerStart,
-              padding: const EdgeInsets.only(left: 15),
-              decoration: boxDecoration,
-              height: 42,
-              child: Text("商品信息",
-                  style: TextStyle(fontSize: 15, color: Color(int.parse('606266', radix: 16)).withAlpha(255)))),
-        ])));
-  }
-
-  // 商品列表
-  SliverList buildProductList(int count) {
-    return SliverList.builder(
-        itemCount: orderItemList.length,
-        itemBuilder: (BuildContext context, int index) {
-          return Container(
+            height: 100,
             color: Colors.white,
+            margin: const EdgeInsets.only(top: 5),
             padding: const EdgeInsets.all(15),
             child: Row(
               children: [
-                CachedImageWidget(
-                  70,
-                  70,
-                  orderItemList[index].skuPic,
-                  fit: BoxFit.cover,
-                ),
-                const SizedBox(
-                  width: 8,
-                ),
+                _buildSkeletonBox(70, 70),
+                const SizedBox(width: 10),
                 Expanded(
-                    child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(orderItemList[index].skuName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 15, color: Color(int.parse('303133', radix: 16)).withAlpha(255))),
-                    const SizedBox(
-                      height: 6,
-                    ),
-                    Text(orderItemList[index].specData,
-                        maxLines: 1,
-                        style: TextStyle(fontSize: 13, color: Color(int.parse('909399', radix: 16)).withAlpha(255))),
-                    const SizedBox(
-                      height: 6,
-                    ),
-                    Text("￥${orderItemList[index].skuPrice}x1",
-                        style: TextStyle(fontSize: 16, color: Color(int.parse('303133', radix: 16)).withAlpha(255))),
-                  ],
-                ))
-              ],
-            ),
-          );
-        });
-  }
-
-  SliverPadding buildCoupon() {
-    var border = BorderSide(width: 5, color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255));
-    var boxDecoration = BoxDecoration(
-      color: Colors.white,
-      border: Border(top: border),
-    );
-    return SliverPadding(
-        padding: const EdgeInsets.all(0),
-        sliver: SliverList(
-            delegate: SliverChildListDelegate(<Widget>[
-          Container(
-            margin: const EdgeInsets.only(top: 5),
-            padding: const EdgeInsets.symmetric(horizontal: 15),
-            decoration: boxDecoration,
-            height: 45,
-            child: Row(
-              children: [
-                Container(
-                  width: 20,
-                  height: 20,
-                  alignment: Alignment.center,
-                  color: Color(int.parse('f85e52', radix: 16)).withAlpha(255),
-                  child: const Text("券",
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.white,
-                      )),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildSkeletonBox(double.infinity, 14),
+                      const SizedBox(height: 6),
+                      _buildSkeletonBox(100, 12),
+                      const SizedBox(height: 6),
+                      _buildSkeletonBox(80, 14),
+                    ],
+                  ),
                 ),
-                const SizedBox(
-                  width: 5,
-                ),
-                Expanded(
-                  child: Text("优惠券",
-                      style: TextStyle(fontSize: 13, color: Color(int.parse('707070', radix: 16)).withAlpha(255))),
-                ),
-                Text("选择优惠券",
-                    style: TextStyle(fontSize: 13, color: Color(int.parse('fa436a', radix: 16)).withAlpha(255))),
               ],
             ),
           ),
-          Divider(
-            height: 1,
-            indent: 15,
-            color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
-          ),
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 15),
-            height: 45,
-            child: Row(
-              children: [
-                Container(
-                  width: 20,
-                  height: 20,
-                  alignment: Alignment.center,
-                  color: Color(int.parse('ffaa0e', radix: 16)).withAlpha(255),
-                  child: const Text("积",
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.white,
-                      )),
-                ),
-                const SizedBox(
-                  width: 5,
-                ),
-                Expanded(
-                  child: Text("积分抵扣",
-                      style: TextStyle(fontSize: 13, color: Color(int.parse('707070', radix: 16)).withAlpha(255))),
-                ),
-                Text("0", style: TextStyle(fontSize: 13, color: Color(int.parse('fa436a', radix: 16)).withAlpha(255))),
-              ],
-            ),
-          )
-        ])));
-  }
-
-  SliverPadding buildOrderInfo() {
-    var border = BorderSide(width: 5, color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255));
-    var boxDecoration = BoxDecoration(
-      color: Colors.white,
-      border: Border(top: border),
+        ],
+      ),
     );
-    return SliverPadding(
-        padding: const EdgeInsets.all(0),
-        sliver: SliverList(
-            delegate: SliverChildListDelegate(<Widget>[
-          Container(
-            decoration: boxDecoration,
-            padding: const EdgeInsets.symmetric(horizontal: 15),
-            child: Column(
-              children: [
-                SizedBox(
-                  height: 45,
-                  child: Row(
-                    children: [
-                      Expanded(
-                          child: Text("商品合计",
-                              style: TextStyle(
-                                  fontSize: 13, color: Color(int.parse('909399', radix: 16)).withAlpha(255)))),
-                      Text("￥${orderDetailData!.payAmount}",
-                          style: TextStyle(fontSize: 13, color: Color(int.parse('303133', radix: 16)).withAlpha(255))),
-                    ],
-                  ),
-                ),
-                Divider(
-                  height: 1,
-                  color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
-                ),
-                SizedBox(
-                  height: 45,
-                  child: Row(
-                    children: [
-                      Expanded(
-                          child: Text("运费",
-                              style: TextStyle(
-                                  fontSize: 13, color: Color(int.parse('909399', radix: 16)).withAlpha(255)))),
-                      Text("￥${orderDetailData!.freightAmount}",
-                          style: TextStyle(fontSize: 13, color: Color(int.parse('303133', radix: 16)).withAlpha(255))),
-                    ],
-                  ),
-                ),
-                Divider(
-                  height: 1,
-                  color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
-                ),
-                SizedBox(
-                  height: 45,
-                  child: Row(
-                    children: [
-                      Expanded(
-                          child: Text("活动优惠",
-                              style: TextStyle(
-                                  fontSize: 13, color: Color(int.parse('909399', radix: 16)).withAlpha(255)))),
-                      Text("-￥${orderDetailData!.promotionAmount}",
-                          style: TextStyle(fontSize: 13, color: Color(int.parse('fa436a', radix: 16)).withAlpha(255))),
-                    ],
-                  ),
-                ),
-                Divider(
-                  height: 1,
-                  color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
-                ),
-                SizedBox(
-                  height: 45,
-                  child: Row(
-                    children: [
-                      Expanded(
-                          child: Text("优惠券",
-                              style: TextStyle(
-                                  fontSize: 13, color: Color(int.parse('909399', radix: 16)).withAlpha(255)))),
-                      Text("-￥${orderDetailData!.couponAmount}",
-                          style: TextStyle(fontSize: 13, color: Color(int.parse('fa436a', radix: 16)).withAlpha(255))),
-                    ],
-                  ),
-                ),
-                Divider(
-                  height: 1,
-                  color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
-                ),
-                SizedBox(
-                  height: 45,
-                  child: Row(
-                    children: [
-                      Expanded(
-                          child: Text("积分抵扣",
-                              style: TextStyle(
-                                  fontSize: 13, color: Color(int.parse('909399', radix: 16)).withAlpha(255)))),
-                      Text("-￥${orderDetailData!.pointsAmount}",
-                          style: TextStyle(fontSize: 13, color: Color(int.parse('fa436a', radix: 16)).withAlpha(255))),
-                    ],
-                  ),
-                ),
-                Divider(
-                  height: 1,
-                  color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
-                ),
-                SizedBox(
-                  height: 45,
-                  child: Row(
-                    textBaseline: TextBaseline.alphabetic,
-                    children: [
-                      Text("备注",
-                          style: TextStyle(fontSize: 13, color: Color(int.parse('909399', radix: 16)).withAlpha(255))),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      Expanded(
-                        child: Text("备注",
-                            style:
-                                TextStyle(fontSize: 12, color: Color(int.parse('909399', radix: 16)).withAlpha(255))),
-                      )
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          )
-        ])));
   }
 
-  SliverPadding buildOrderPay() {
-    var border = BorderSide(width: 5, color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255));
-    var boxDecoration = BoxDecoration(
-      color: Colors.white,
-      border: Border(top: border),
+  // Story 6-1 Task 6: 主内容区
+  Widget _buildContent() {
+    final d = orderDetailData!;
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(bottom: 80),
+      child: Column(
+        children: [
+          // 1. 订单状态条（Story 6-1 Task 6 - 订单状态）
+          _buildOrderStatusBar(d),
+          // 2. Order Timeline Panel（Story 6-1 Task 6.2）
+          if (d.timeline.isNotEmpty)
+            OrderTimelinePanel(timeline: d.timeline, orderStatus: d.orderStatus),
+          const SizedBox(height: 5),
+          // 3. 收货信息卡片（Story 6-1 Task 6.5）
+          _buildAddressCard(d),
+          const SizedBox(height: 5),
+          // 4. 商品明细（Story 6-1 Task 6.4）
+          _buildProductSection(d),
+          const SizedBox(height: 5),
+          // 5. 金额拆分卡片（Story 6-1 Task 6.3）
+          PriceBreakdownCard(priceBreakdown: d.priceBreakdown),
+          const SizedBox(height: 5),
+          // 6. 订单基本信息（Story 6-1 Task 6.6）
+          _buildOrderInfo(d),
+        ],
+      ),
     );
-    return SliverPadding(
-        padding: const EdgeInsets.all(0),
-        sliver: SliverList(
-            delegate: SliverChildListDelegate(<Widget>[
-          Container(
-            decoration: boxDecoration,
-            padding: const EdgeInsets.symmetric(horizontal: 15),
-            child: Column(
-              children: [
-                buildTxt("订单编号", orderDetailData!.orderNo),
-                buildTxt("提交时间", orderDetailData!.createTime.toString()),
-                buildTxt("支付方式", getPayType(orderDetailData!.payType)),
-                buildTxt("实付金额", "￥${orderDetailData!.payAmount}"),
-                buildTxt("付款时间", orderDetailData!.payTime.toString()),
-                const SizedBox(
-                  height: 45,
-                ),
-              ],
-            ),
-          )
-        ])));
   }
 
-  // 底部提交订单部分
-  Container buildSubmit() {
+  // 订单状态条（Story 6-1 Task 6）
+  Widget _buildOrderStatusBar(OrderDetailData d) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 15),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 20),
       decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border.symmetric(
-          vertical: BorderSide(
-            color: Colors.grey, //边框颜色
-            width: 1, //边框宽度)
+        color: Color(0xFFFA436A),
+      ),
+      child: Row(
+        children: [
+          Image.asset(
+            _getStatusIcon(d.orderStatus),
+            height: 24,
+            width: 24,
+            color: Colors.white,
           ),
+          const SizedBox(width: 12),
+          Text(
+            getOmsOrderStatusTxt(d.orderStatus),
+            style: const TextStyle(
+              fontSize: 16,
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getStatusIcon(int status) {
+    switch (status) {
+      case 0:
+        return "images/daifukuan.png";
+      case 1:
+        return "images/daifahuo.png";
+      case 2:
+        return "images/delete.png";
+      case 3:
+        return "images/tick.png";
+      case 4:
+        return "images/tuihuo.png";
+      default:
+        return "images/daifukuan.png";
+    }
+  }
+
+  // 收货信息卡片（Story 6-1 Task 6.5）
+  Widget _buildAddressCard(OrderDetailData d) {
+    final addr = d.memberReceiveAddress;
+    return Container(
+      color: Colors.white,
+      child: Column(
+        children: [
+          // 地址图标 + 信息
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.location_on_outlined,
+                  size: 22,
+                  color: Color(0xFF606266),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "${addr.receiverName}  ${addr.maskedPhone}",
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF303133),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        addr.fullAddress,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF909399),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // 分割线
+          Container(
+            height: 5,
+            color: const Color(0xFFF5F5F5),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 商品明细（Story 6-1 Task 6.4）
+  Widget _buildProductSection(OrderDetailData d) {
+    return Container(
+      color: Colors.white,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 标题
+          Container(
+            height: 42,
+            padding: const EdgeInsets.symmetric(horizontal: 15),
+            alignment: Alignment.centerLeft,
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(width: 1, color: Colors.grey[200]!),
+              ),
+            ),
+            child: const Text(
+              "商品信息",
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF606266),
+              ),
+            ),
+          ),
+          // 商品列表
+          ...d.orderItemData.map((item) => _buildProductItem(item)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProductItem(OrderItemList item) {
+    return Container(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(width: 1, color: Colors.grey[200]!),
         ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 商品图片
+          CachedImageWidget(
+            70,
+            70,
+            item.skuPic,
+            fit: BoxFit.cover,
+          ),
+          const SizedBox(width: 10),
+          // 商品信息
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.skuName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF303133),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  item.specData,
+                  maxLines: 1,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF909399),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Text(
+                      "￥${item.skuPrice.toStringAsFixed(2)}",
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF303133),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      "x${item.skuQuantity}",
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF909399),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 订单基本信息（Story 6-1 Task 6.6）
+  Widget _buildOrderInfo(OrderDetailData d) {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 15),
+      child: Column(
+        children: [
+          _buildInfoRow("订单编号", d.orderNo),
+          _buildInfoRow("下单时间", _formatTime(d.createTime)),
+          _buildInfoRow("支付方式", _getPayTypeTxt(d.payType)),
+          if (d.payTime.isNotEmpty)
+            _buildInfoRow("付款时间", _formatTime(d.payTime)),
+          if (d.deliveryTime.isNotEmpty)
+            _buildInfoRow("发货时间", _formatTime(d.deliveryTime)),
+          if (d.receiveTime.isNotEmpty)
+            _buildInfoRow("收货时间", _formatTime(d.receiveTime)),
+          const SizedBox(height: 12),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Container(
+      height: 40,
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(width: 1, color: Colors.grey[200]!),
+        ),
+      ),
+      child: Row(
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              color: Color(0xFF909399),
+            ),
+          ),
+          const Spacer(),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 13,
+              color: Color(0xFF303133),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 底部操作按钮（Story 6-1 Task 6 - MVP 不实现操作，仅展示状态对应按钮占位）
+  Widget _buildBottomActions() {
+    if (orderDetailData == null) return const SizedBox.shrink();
+
+    final status = orderDetailData!.orderStatus;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
         boxShadow: [
           BoxShadow(
-            blurRadius: 2, //阴影范围
-            spreadRadius: 1, //阴影浓度
-            color: Colors.grey, //阴影颜色
+            blurRadius: 4,
+            spreadRadius: 1,
+            color: Colors.grey[300]!,
           ),
         ],
       ),
-      height: 45,
-      width: MediaQuery.of(context).size.width,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          Visibility(
-              visible: orderDetailData!.orderStatus == 0,
-              child: InkWell(
-                onTap: () {
-                  // Navigator.of(context).push(
-                  //   MaterialPageRoute(
-                  //     builder: (context) => const OrderPay(),
-                  //   ),
-                  // );
-                },
-                child: Container(
-                  alignment: Alignment.center,
-                  margin: const EdgeInsets.all(6),
-                  width: 70,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey),
-                    borderRadius: const BorderRadius.all(Radius.circular(15)),
-                  ),
-                  child: Text(
-                    '取消订单',
-                    style: TextStyle(color: Color(int.parse('303133', radix: 16)).withAlpha(255), fontSize: 13),
-                  ),
-                ),
-              )),
-          // const SizedBox(width: 10,),
-          Visibility(
-              visible: orderDetailData!.orderStatus == 0,
-              child: InkWell(
-                onTap: () {
-                  // Navigator.of(context).push(
-                  //   MaterialPageRoute(
-                  //     builder: (context) => const OrderPay(),
-                  //   ),
-                  // );
-                },
-                child: Container(
-                  alignment: Alignment.center,
-                  margin: const EdgeInsets.all(6),
-                  width: 70,
-                  decoration: BoxDecoration(
-                    // color: Color(int.parse('f7bcc8', radix: 16)).withAlpha(255),
-                    border: Border.all(color: Colors.grey),
-                    borderRadius: const BorderRadius.all(Radius.circular(15)),
-                  ),
-                  child: Text(
-                    '立即付款',
-                    style: TextStyle(color: Color(int.parse('fa436a', radix: 16)).withAlpha(255), fontSize: 13),
-                  ),
-                ),
-              )),
-          Visibility(
-              visible: orderDetailData!.orderStatus == 2,
-              child: InkWell(
-                onTap: () {
-                  // Navigator.of(context).push(
-                  //   MaterialPageRoute(
-                  //     builder: (context) => const OrderPay(),
-                  //   ),
-                  // );
-                },
-                child: Container(
-                  alignment: Alignment.center,
-                  margin: const EdgeInsets.all(6),
-                  width: 70,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey),
-                    borderRadius: const BorderRadius.all(Radius.circular(15)),
-                  ),
-                  child: Text(
-                    '查看物流',
-                    style: TextStyle(color: Color(int.parse('303133', radix: 16)).withAlpha(255), fontSize: 13),
-                  ),
-                ),
-              )),
-          // const SizedBox(width: 10,),
-          Visibility(
-              visible: orderDetailData!.orderStatus == 2,
-              child: InkWell(
-                onTap: () {
-                  // Navigator.of(context).push(
-                  //   MaterialPageRoute(
-                  //     builder: (context) => const OrderPay(),
-                  //   ),
-                  // );
-                },
-                child: Container(
-                  alignment: Alignment.center,
-                  margin: const EdgeInsets.all(6),
-                  width: 70,
-                  decoration: BoxDecoration(
-                    // color: Color(int.parse('f7bcc8', radix: 16)).withAlpha(255),
-                    border: Border.all(color: Colors.grey),
-                    borderRadius: const BorderRadius.all(Radius.circular(15)),
-                  ),
-                  child: Text(
-                    '确认收货',
-                    style: TextStyle(color: Color(int.parse('fa436a', radix: 16)).withAlpha(255), fontSize: 13),
-                  ),
-                ),
-              )),
-          Visibility(
-              visible: orderDetailData!.orderStatus == 3,
-              child: InkWell(
-                onTap: () {
-                  // Navigator.of(context).push(
-                  //   MaterialPageRoute(
-                  //     builder: (context) => const OrderPay(),
-                  //   ),
-                  // );
-                },
-                child: Container(
-                  alignment: Alignment.center,
-                  margin: const EdgeInsets.all(6),
-                  width: 70,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey),
-                    borderRadius: const BorderRadius.all(Radius.circular(15)),
-                  ),
-                  child: Text(
-                    '申请售后',
-                    style: TextStyle(color: Color(int.parse('303133', radix: 16)).withAlpha(255), fontSize: 13),
-                  ),
-                ),
-              )),
-          // const SizedBox(width: 10,),
-          Visibility(
-              visible: orderDetailData!.orderStatus == 3,
-              child: InkWell(
-                onTap: () {
-                  // Navigator.of(context).push(
-                  //   MaterialPageRoute(
-                  //     builder: (context) => const OrderPay(),
-                  //   ),
-                  // );
-                },
-                child: Container(
-                  alignment: Alignment.center,
-                  margin: const EdgeInsets.all(6),
-                  width: 70,
-                  decoration: BoxDecoration(
-                    // color: Color(int.parse('f7bcc8', radix: 16)).withAlpha(255),
-                    border: Border.all(color: Colors.grey),
-                    borderRadius: const BorderRadius.all(Radius.circular(15)),
-                  ),
-                  child: Text(
-                    '评价商品',
-                    style: TextStyle(color: Color(int.parse('fa436a', radix: 16)).withAlpha(255), fontSize: 13),
-                  ),
-                ),
-              ))
-        ],
+      child: SafeArea(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            // Story 6-2 实现：取消订单
+            if (status == 0)
+              _ActionButton(label: "取消订单", isPrimary: false, onTap: () => _showComingSoon("取消订单")),
+            if (status == 0) const SizedBox(width: 10),
+            // Story 6-2 实现：立即付款
+            if (status == 0)
+              _ActionButton(label: "立即付款", isPrimary: true, onTap: () => _showComingSoon("立即付款")),
+            // Story 6-3 实现：查看物流
+            if (status == 1 || status == 3)
+              _ActionButton(label: "查看物流", isPrimary: false, onTap: () => _showComingSoon("查看物流")),
+            if (status == 1 || status == 3) const SizedBox(width: 10),
+            // Story 6-2 实现：确认收货
+            if (status == 1)
+              _ActionButton(label: "确认收货", isPrimary: true, onTap: () => _showComingSoon("确认收货")),
+            // Story 6-4 实现：申请售后
+            if (status == 3)
+              _ActionButton(label: "申请售后", isPrimary: false, onTap: () => _showComingSoon("申请售后")),
+          ],
+        ),
       ),
     );
   }
 
-  Container buildTxt(String title, String value) {
-    var border = BorderSide(width: 1, color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255));
-    var boxDecoration = BoxDecoration(
-      color: Colors.white,
-      border: Border(bottom: border),
-    );
-    return Container(
-      decoration: boxDecoration,
-      height: 45,
-      child: Row(
-        children: [
-          Expanded(
-              child: Text(title,
-                  style: TextStyle(fontSize: 13, color: Color(int.parse('909399', radix: 16)).withAlpha(255)))),
-          Text(value, style: TextStyle(fontSize: 13, color: Color(int.parse('303133', radix: 16)).withAlpha(255))),
-        ],
-      ),
-    );
+  String _getPayTypeTxt(int type) {
+    switch (type) {
+      case 1:
+        return "支付宝支付";
+      case 2:
+        return "微信支付";
+      default:
+        return "未支付";
+    }
   }
 
-  String getPayType(int type) {
-    Map typeMap = <int, String>{};
-    typeMap[2] = "微信支付";
-    typeMap[1] = "支付宝支付";
-    typeMap[0] = "未支付";
-
-    return typeMap[type];
+  String _formatTime(String isoTime) {
+    if (isoTime.isEmpty) return "";
+    try {
+      // 格式: 2025-03-29T10:30:00+08:00 → 2025-03-29 10:30
+      final parts = isoTime.split("T");
+      if (parts.length >= 2) {
+        final datePart = parts[0];
+        final timePart = parts[1].substring(0, 5);
+        return "$datePart $timePart";
+      }
+      return isoTime;
+    } catch (_) {
+      return isoTime;
+    }
   }
+}
 
-  // 状态图标转换
-  String getStatusIcon(int status) {
-    //0->待付款；1->待发货；2->已发货；3->已完成；4->已关闭；5->无效订单',
-    Map statusIconMap = <int, String>{};
-    statusIconMap[0] = "images/daifukuan.png";
-    statusIconMap[1] = "images/daifahuo.png";
-    statusIconMap[2] = "images/yifukuan.png";
-    statusIconMap[3] = "images/tick.png";
-    statusIconMap[4] = "images/delete.png";
-    statusIconMap[5] = "images/delete.png";
+class _ActionButton extends StatelessWidget {
+  final String label;
+  final bool isPrimary;
+  final VoidCallback onTap;
 
-    return statusIconMap[status];
+  const _ActionButton({
+    required this.label,
+    required this.isPrimary,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (isPrimary) {
+      return InkWell(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          decoration: BoxDecoration(
+            border: Border.all(color: const Color(0xFFFA436A)),
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              color: Color(0xFFFA436A),
+            ),
+          ),
+        ),
+      );
+    } else {
+      return InkWell(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey),
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              color: Color(0xFF303133),
+            ),
+          ),
+        ),
+      );
+    }
   }
 }

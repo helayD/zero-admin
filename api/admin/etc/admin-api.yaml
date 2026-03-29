@@ -2,58 +2,55 @@ Name: admin-api
 Host: 0.0.0.0
 Port: 8888
 
-#系统
+Timeout: 60000
+
+Timeout: 60000
+
+#系统 - 直连模式绕过 etcd
 SysRpc:
-  Etcd:
-    Hosts:
-      - localhost:2379
-    Key: sys.rpc
+  Endpoints:
+    - 127.0.0.1:8070
+  Timeout: 30000
   NonBlock: true
 
 #会员
 UmsRpc:
-  Etcd:
-    Hosts:
-      - localhost:2379
-    Key: ums.rpc
+  Endpoints:
+    - 127.0.0.1:8081
+  Timeout: 30000
   NonBlock: true
 
 #商品
 PmsRpc:
-  Etcd:
-    Hosts:
-      - localhost:2379
-    Key: pms.rpc
+  Endpoints:
+    - 127.0.0.1:8082
+  Timeout: 30000
   NonBlock: true
 
 #订单
 OmsRpc:
-  Etcd:
-    Hosts:
-      - localhost:2379
-    Key: oms.rpc
+  Endpoints:
+    - 127.0.0.1:8083
+  Timeout: 30000
   NonBlock: true
 
 #营销
 SmsRpc:
-  Etcd:
-    Hosts:
-      - localhost:2379
-    Key: sms.rpc
+  Endpoints:
+    - 127.0.0.1:8084
+  Timeout: 30000
   NonBlock: true
 
 #内容
 CmsRpc:
-  Etcd:
-    Hosts:
-      - localhost:2379
-    Key: cms.rpc
+  Endpoints:
+    - 127.0.0.1:8086
+  Timeout: 30000
   NonBlock: true
 
 Auth:
   AccessSecret: ad879037-c7a4-4063-9236-6bfc35d54b7d
   AccessExpire: 86400
-  # 不需要拦截的url
   ExcludeUrl: "/api/sys/user/info,/api/sys/user/queryAllRelations,/api/sys/role/queryMenuByRoleId"
 
 Prometheus:
@@ -62,15 +59,15 @@ Prometheus:
   Path: /metrics
 
 Redis:
-  Address: 127.0.0.1:6379
+  Address: 127.0.0.1:16379
   Pass: "123456"
 
 Swagger:
-  IsTest: true  #是否打开swagger，true为打开，false为关闭（生产环境需要关闭）
-  Path: "api/admin/static"
+  IsTest: true
+  Path: "/root/zero-admin/api/admin/static"
 
 Log:
   ServiceName: admin-api
-  Stat: false # go-zero 版本 >= 1.5.0 才支持
+  Stat: false
   Mode: file
   Path: logs/admin

@@ -45,6 +45,10 @@ dependencies:
   intl: ^0.19.0
   uuid: ^4.3.3
 
+  # 支付相关（Story 5.5 Task 7 前置）
+  alipay_kit: ^6.0.0
+  fluwx: ^5.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

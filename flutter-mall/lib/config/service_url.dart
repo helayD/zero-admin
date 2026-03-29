@@ -100,3 +100,9 @@ const registerDataUrl = "$baseUrl/api/member/register";
 const memberInfoDataUrl = "$baseUrl/api/member/info";
 // 更新会员信息
 const updateMemberDataUrl = "$baseUrl/api/member/updateMember";
+
+// ==================== 支付相关（Story 5.5 Task 11）====================
+// 发起支付
+const orderPayUrl = "$baseUrl/api/order/orderPay";
+// 支付状态查询（Flutter 使用 query 参数：?orderId=xxx）
+const orderPayQueryUrl = "$baseUrl/api/order/orderPayQueryStatus";

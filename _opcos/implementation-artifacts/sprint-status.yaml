@@ -85,8 +85,8 @@ development_status:
   5-5-支付发起-结果页与恢复入口: review
   epic-5-retrospective: optional
 
-  epic-6: backlog
-  6-1-订单列表与详情时间线: backlog
+  epic-6: in-progress
+  6-1-订单列表与详情时间线: done
   6-2-取消未支付订单与确认收货: backlog
   6-3-物流轨迹与配送关键状态: backlog
   6-4-售后申请提交与材料上传: backlog

@@ -16,6 +16,56 @@ The deployment flow has exactly **one** publish path: push code to GitHub first,
 
 This keeps every deploy traceable to GitHub and ensures the server is syncing the same code that was just published.
 
+## Disk Health Check (Pre-Deploy Gate)
+
+**Server: 47.107.224.56 — After cleanup baseline: 81G / 99G, 86% used, 14 GB free. Baseline is healthy.**
+
+Before any deploy, run the disk check. If disk is above 85%, surface the warning to the user and do not proceed without explicit confirmation.
+
+```bash
+ssh -o ConnectTimeout=10 root@47.107.224.56 'df -h / && echo "---INODES---" && df -i /'
+```
+
+### Known Disk Consumers (measured 2026-03-29, post-cleanup)
+
+| Path | Usage | Actionable |
+|---|---|---|
+| `/` (root fs) | 81G / 99G, 86% | ✅ OK baseline |
+| `/root/zero-admin/.git/` | 209 MB (was 4.74 GB) | `git gc` periodically |
+| `/usr/share/elasticsearch/` | ~1.3 GB | Do not remove — ES running |
+| `/var/lib/snapd/` | 596 MB | Prune disabled snap revisions |
+| `/root/go/pkg/mod/` | 0 MB (cleaned) | Go build cache — on demand |
+| `/root/.npm/_cacache/` | 0 MB (cleaned) | npm cache — on demand |
+| `/root/.windsurf-server/` | 0 MB (cleaned) | Windsurf — on demand |
+| `/var/log/journal/` | 57 MB (was 385 MB) | `journalctl --vacuum-time=3d` |
+| `/var/lib/mongodb/` | 421 MB | Data dir — do not touch |
+| `/var/lib/mysql/` | 258 MB | Data dir — do not touch |
+| `/var/lib/etcd/` | 123 MB | K8s data — do not touch |
+| `/var/lib/containerd/` | ~380 MB | Prune orphaned snapshots |
+| `docker system df` | ~500 MB | `docker system prune -f` safe |
+
+### Disk Cleanup Commands (non-destructive, run with confirmation)
+
+```bash
+# apt cache
+ssh root@47.107.224.56 'apt-get clean && apt-get autoremove -y'
+
+# Docker prune
+ssh root@47.107.224.56 'docker system prune -f'
+
+# Journal vacuum (keep 3 days, 50MB cap)
+ssh root@47.107.224.56 'journalctl --vacuum-time=3d --vacuum-size=50M'
+
+# Git gc on zero-admin (reclaim ~4 GB over time as packs fragment)
+ssh root@47.107.224.56 'cd /root/zero-admin && git -c gc.pruneExpire=now gc --aggressive --prune=now'
+
+# Containerd orphaned snapshots
+ssh root@47.107.224.56 'ctr -n k8s.io snapshots ls | awk "NR>1 {print \$1}" | while read k; do ctr -n k8s.io snapshots remove "$k" 2>/dev/null || true; done'
+
+# Snap prune
+ssh root@47.107.224.56 'snap list --all | awk "/lxd|core20/ && \$5 ~ /disabled/ {print \$1,\$3}" | while read n r; do snap remove "$n" --revision="$r" 2>/dev/null; done'
+```
+
 ## When To Use
 
 - The user says "远程部署", "发到测试环境", "部署到 47.107.224.56", or asks to verify the deployed environment.
@@ -54,7 +104,17 @@ The deploy script now understands the real service layout of this repo:
 
 The default deploy scope is the full project. Use `--services <csv>` when you intentionally want a partial rollout.
 
-## Deploy Pipeline (8 Steps)
+## Deploy Pipeline (8 Steps + Pre-Check)
+
+**Step 0 — Disk Health Check (precondition, non-negotiable)**
+
+Run before everything else. Abort deploy if root fs usage > 85% and report the exact usage.
+
+```bash
+ssh -o ConnectTimeout=10 root@47.107.224.56 'df -h /'
+```
+
+If usage > 85%: surface a warning with the exact numbers, reclaim space (see Disk Health Check above), verify again, then proceed only after explicit confirmation.
 
 1. **Verify SSH** — confirm remote host is reachable
 2. **Prepare** — identify build scope
@@ -81,6 +141,18 @@ The default deploy scope is the full project. Use `--services <csv>` when you in
 5. If smoke or API tests fail, inspect the failing endpoint or remote process before retrying another rollout.
 
 ## Recommended Commands
+
+Disk health check (run before every deploy):
+
+```bash
+bash .agents/skills/zero-admin-remote-deploy/scripts/check_disk.sh
+```
+
+Auto-clean + re-check:
+
+```bash
+bash .agents/skills/zero-admin-remote-deploy/scripts/check_disk.sh --auto-clean
+```
 
 Default deploy:
 
@@ -172,6 +244,7 @@ python3 .agents/skills/zero-admin-remote-deploy/scripts/smoke_remote.py \
 - `deploy_remote.sh`: main deployment entrypoint with push-first GitHub sync, service scoping, migration (manual + auto-discovery), backup, restart, smoke hooks, and Story API test gate.
 - `smoke_remote.py`: admin smoke plus optional front smoke with clearer invalid-response diagnostics.
 - `run_api_tests.sh`: Story API test runner. Auto-discovers test scripts under `script/shell/api-test/<story-id>/test_*.sh`. Maps story prefixes to correct base URLs (4-* → admin, 5-* → front). Requires 100% pass rate.
+- `check_disk.sh`: remote disk health check. Run before every deploy. Exits with warning (85%) or abort (90%). Supports `--auto-clean` to reclaim space (apt clean, docker prune, snap prune, tmp cleanup).
 
 ### Story API Tests (`script/shell/api-test/`)
 

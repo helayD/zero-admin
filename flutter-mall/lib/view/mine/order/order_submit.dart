@@ -302,11 +302,11 @@ class _OrderSubmitState extends State<OrderSubmit> {
     setState(() => _isSubmitting = true);
 
     try {
-      // === Task 7.1: 生成幂等键 ===
+      // === Task 7.1: 生成幂等键（使用真实会员 ID，而非地址 ID）===
       // 格式: {userId}:{timestamp}:{cartIds}:{couponId}:{useIntegration}:{uuid}
       final uuid = const Uuid();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final memberId = selectedAddr.id;
+      final memberId = selectedAddr.memberId; // 修复 CRITICAL-1：使用会员 ID 而非地址 ID
       final cartIdsStr = cartIds.join(',');
       final idempotencyKey = '$memberId:$timestamp:$cartIdsStr:${_selectedCoupon?.id ?? 0}:$useIntegration:${uuid.v4()}';
 
@@ -352,15 +352,39 @@ class _OrderSubmitState extends State<OrderSubmit> {
         );
       } else {
         // === Task 7.3 & Task 8: 幂等命中或其他错误的差异化提示 ===
+        // errorx.NewDefaultError 返回 {"code": 1, "message": "错误码字符串"}
+        // Flutter int64 比较与 Go 常量 string 比较永远不同，需从 message 字段取错误码
         final msg = resp.data["message"] ?? "提交失败，请稍后重试";
-        final code = resp.data["code"] ?? -1;
+        final errCode = resp.data["message"] ?? ""; // 错误码在 message 字段（修复 CRITICAL-2）
 
-        if (code == 'OMS_ORDER_DUPLICATED_REQUEST') {
+        if (errCode == ErrCodeOrderDuplicatedRequest) {
           _showInlineError("订单正在处理中，请稍后查看");
-        } else if (code == 'OMS_ORDER_COMPENSATION_FAILED') {
-          _showInlineError("订单创建异常，请稍后重试");
-        } else if (code == 'OMS_ORDER_STOCK_LOCKED') {
-          _showInlineError("库存已被其他订单占用，请返回购物车重新选择");
+        } else if (errCode == ErrCodeOrderCompensationFailed) {
+          _showSubmitFailureWithActions("订单创建异常，请稍后重试");
+        } else if (errCode == ErrCodeOrderStockLocked) {
+          _showSubmitFailureWithActions("库存已被其他订单占用，请返回购物车重新选择");
+        } else if (errCode == ErrCodeOrderStockInsufficient) {
+          _showSubmitFailureWithActions("库存不足，请返回购物车重新选择");
+        } else if (errCode == ErrCodeOrderCouponUnavailable) {
+          _showSubmitFailureWithActions("优惠券不可用，请返回重新选择");
+        } else if (errCode == ErrCodeOrderIntegrationExceed) {
+          _showInlineError("积分不足，请调整使用数量");
+        } else if (errCode == ErrCodeOrderAddressInvalid) {
+          _showSubmitFailureWithActions("收货地址无效，请重新选择");
+        } else if (errCode == ErrCodeOrderPayTypeInvalid) {
+          _showSubmitFailureWithActions("支付方式无效，请重新选择");
+        } else if (resp.data["code"] == 0 && resp.data["data"]?["id"] != null) {
+          // 幂等命中：后端返回 code=0 但已有订单（message="订单已存在"）
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (ctx) => OrderPay(
+                orderId: resp.data["data"]["id"],
+                orderSn: resp.data["data"]["orderSn"] ?? '',
+                payType: _selectedPayType,
+                amount: (resp.data["data"]["payAmount"] ?? 0).toDouble(),
+              ),
+            ),
+          );
         } else {
           _showInlineError(msg);
         }
@@ -373,6 +397,16 @@ class _OrderSubmitState extends State<OrderSubmit> {
       }
     }
   }
+
+  // Story 5.4 错误码常量（与后端 errorx 保持一致）
+  static const String ErrCodeOrderDuplicatedRequest = 'OMS_ORDER_DUPLICATED_REQUEST';
+  static const String ErrCodeOrderCompensationFailed = 'OMS_ORDER_COMPENSATION_FAILED';
+  static const String ErrCodeOrderStockLocked = 'OMS_ORDER_STOCK_LOCKED';
+  static const String ErrCodeOrderStockInsufficient = 'OMS_ORDER_STOCK_INSUFFICIENT';
+  static const String ErrCodeOrderCouponUnavailable = 'OMS_ORDER_COUPON_UNAVAILABLE';
+  static const String ErrCodeOrderIntegrationExceed = 'OMS_ORDER_INTEGRATION_EXCEED';
+  static const String ErrCodeOrderAddressInvalid = 'OMS_ORDER_ADDRESS_INVALID';
+  static const String ErrCodeOrderPayTypeInvalid = 'OMS_ORDER_PAY_TYPE_INVALID';
 
   /// 计算最终实付金额（与底部栏保持一致）
   int _calcFinalPayAmount() {
@@ -1068,15 +1102,31 @@ class _OrderSubmitState extends State<OrderSubmit> {
     );
   }
 
-  /// Task 10.1: 提交前确认对话框
+  /// Task 10.1 & HIGH-3: 提交前确认对话框（展示商品摘要 + 提交锁定提示）
   Future<void> _confirmAndSubmit(int payAmount) async {
+    final products = _orderData?.cartPromotionItemList ?? [];
+    final productSummary = products.length == 1
+        ? products.first.productName
+        : "${products.first.productName} 等${products.length}件商品";
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text("确认提交订单？"),
-        content: Text(
-          "提交后将锁定库存和优惠，实付款 ￥${(payAmount / 100).toStringAsFixed(2)}，是否继续？",
-          style: const TextStyle(fontSize: 14),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "商品：$productSummary",
+              style: const TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              "提交后将锁定库存和优惠，实付款 ￥${(payAmount / 100).toStringAsFixed(2)}，是否继续？",
+              style: const TextStyle(fontSize: 14),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -1097,6 +1147,36 @@ class _OrderSubmitState extends State<OrderSubmit> {
     if (confirmed == true) {
       await _submitOrder();
     }
+  }
+
+  // MEDIUM-3: 提交失败双入口（返回购物车 / 重试）
+  void _showSubmitFailureWithActions(String msg) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("提交失败"),
+        content: Text(msg, style: const TextStyle(fontSize: 14)),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              Navigator.of(context).pop(); // 返回购物车
+            },
+            child: const Text("返回购物车"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              setState(() => _isSubmitting = false);
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFFFA436A),
+            ),
+            child: const Text("重试"),
+          ),
+        ],
+      ),
+    );
   }
 }
 

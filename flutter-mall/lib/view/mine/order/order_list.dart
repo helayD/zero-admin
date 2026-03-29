@@ -1,14 +1,18 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mall/config/service_url.dart';
+import 'package:flutter_mall/config/order_status.dart';
 import 'package:flutter_mall/view/mine/order/order_detail.dart';
 import 'package:flutter_mall/utils/http_util.dart';
 import 'package:flutter_mall/widgets/cached_image_widget.dart';
+import 'package:flutter_mall/widgets/empty_state_widget.dart';
 
 import '../../../model/order_list_model.dart';
 
 ///
 /// 订单列表页面
+///
+/// Story 6-1 重构：接入真实 API、分页加载、刷新、State Shell
 ///
 /// 作者：刘飞华
 /// 日期：2023/11/21 17:17
@@ -21,51 +25,128 @@ class OrderList extends StatefulWidget {
 }
 
 class _OrderListState extends State<OrderList> {
-  final List<String> orderStatus = ['全部', '待支付', '待发货', '已完成', '已取消'];
+  final List<String> _orderStatus = ['全部', '待支付', '待发货', '已完成', '已取消'];
 
-  List<OrderListData> orderListData = [];
+  /// 每个 tab 的数据独立管理
+  final Map<int, List<OrderListData>> _orderDataCache = {};
+  final Map<int, int> _currentPageCache = {};
+  final Map<int, bool> _hasMoreCache = {};
+  final Map<int, bool> _loadingCache = {};
+
+  int _currentTab = 0;
 
   @override
   void initState() {
     super.initState();
-    _queryOrderListData(0);
+    _initTab(0);
   }
 
-  void _queryOrderListData(int status) async {
-    Response result = await HttpUtil.get("$orderListDataUrl$status");
+  void _initTab(int tab) {
+    if (_orderDataCache[tab] == null) {
+      _queryOrderList(tab, refresh: true);
+    }
+  }
+
+  /// 获取当前页码
+  int _getCurrentPage() {
+    return _currentPageCache[_currentTab] ?? 1;
+  }
+
+  /// 是否有更多数据
+  bool _hasMore() {
+    return _hasMoreCache[_currentTab] ?? true;
+  }
+
+  /// 是否正在加载
+  bool _isLoading() {
+    return _loadingCache[_currentTab] ?? false;
+  }
+
+  /// 查询订单列表（Story 6-1 Task 5.1/5.2/5.5/5.6）
+  Future<void> _queryOrderList(int tab, {bool refresh = false, bool loadMore = false}) async {
+    final page = refresh ? 1 : _getCurrentPage() + 1;
+
+    // 缓存加载状态
+    _loadingCache[tab] = true;
+
+    try {
+      final status = flutterTabToBackendStatus(tab);
+      final url = "$orderListDataUrl$status&current=$page&pageSize=10";
+
+      final Response result = await HttpUtil.get(url);
+      final OrderListModel model = OrderListModel.fromJson(result.data);
+
+      setState(() {
+        if (refresh || loadMore) {
+          // 刷新或加载更多
+          final existing = _orderDataCache[tab] ?? [];
+          if (loadMore) {
+            _orderDataCache[tab] = [...existing, ...model.data];
+          } else {
+            _orderDataCache[tab] = model.data;
+          }
+        } else {
+          _orderDataCache[tab] = model.data;
+        }
+        _currentPageCache[tab] = page;
+        _hasMoreCache[tab] = model.hasMore;
+        _loadingCache[tab] = false;
+      });
+    } catch (e) {
+      setState(() {
+        _loadingCache[tab] = false;
+      });
+      // 错误由 State Shell 处理
+    }
+  }
+
+  void _onTabChanged(int index) {
     setState(() {
-      OrderListModel orderListModel = OrderListModel.fromJson(result.data);
-      orderListData = orderListModel.data;
+      _currentTab = index;
     });
+    _initTab(index);
+  }
+
+  void _onRefresh() {
+    _queryOrderList(_currentTab, refresh: true);
+  }
+
+  void _onLoadMore() {
+    if (!_hasMore() || _isLoading()) return;
+    _queryOrderList(_currentTab, loadMore: true);
   }
 
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: orderStatus.length,
+      length: _orderStatus.length,
       child: Scaffold(
         appBar: AppBar(
           title: const Text(' 我的订单 '),
           titleTextStyle: const TextStyle(fontSize: 16, color: Colors.black),
           centerTitle: true,
+          backgroundColor: Colors.white,
+          elevation: 0,
           bottom: TabBar(
-            indicatorColor: Color(
-              int.parse('fa436a', radix: 16),
-            ).withAlpha(255),
-            labelColor: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
-            onTap: (index) {
-              int status = index;
-              if (index >= 3) {
-                status = status + 1;
-              }
-              _queryOrderListData(status);
-            },
-            tabs: orderStatus.map((status) => Tab(text: status)).toList(),
+            isScrollable: false,
+            indicatorColor: const Color(0xFFFA436A),
+            labelColor: const Color(0xFFFA436A),
+            unselectedLabelColor: const Color(0xFF606266),
+            onTap: _onTabChanged,
+            tabs: _orderStatus.map((status) => Tab(text: status)).toList(),
           ),
         ),
         body: TabBarView(
-          children: orderStatus.map((status) {
-            return OrderListInfo(status: status, orderListData: orderListData);
+          children: _orderStatus.asMap().entries.map((entry) {
+            final tab = entry.key;
+            return _OrderListBody(
+              tab: tab,
+              data: _orderDataCache[tab] ?? [],
+              isLoading: _loadingCache[tab] ?? false,
+              hasMore: _hasMoreCache[tab] ?? true,
+              onRefresh: _onRefresh,
+              onLoadMore: _onLoadMore,
+            );
           }).toList(),
         ),
       ),
@@ -73,140 +154,142 @@ class _OrderListState extends State<OrderList> {
   }
 }
 
-class OrderListInfo extends StatelessWidget {
-  final String status;
-  final List<OrderListData> orderListData;
+/// 订单列表内容区（Story 6-1 Task 7.1: Commerce State Shell）
+class _OrderListBody extends StatelessWidget {
+  final int tab;
+  final List<OrderListData> data;
+  final bool isLoading;
+  final bool hasMore;
+  final VoidCallback onRefresh;
+  final VoidCallback onLoadMore;
 
-  const OrderListInfo({
-    super.key,
-    required this.status,
-    required this.orderListData,
+  const _OrderListBody({
+    required this.tab,
+    required this.data,
+    required this.isLoading,
+    required this.hasMore,
+    required this.onRefresh,
+    required this.onLoadMore,
   });
 
   @override
   Widget build(BuildContext context) {
-    var border = BorderSide(
-      width: 1,
-      color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
-    );
-    var boxDecoration = BoxDecoration(border: Border(bottom: border));
-    return ListView.builder(
-      itemCount: orderListData.length,
-      itemBuilder: (context, index) {
-        return InkWell(
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) =>
-                    OrderDetail(orderId: orderListData[index].id),
-              ),
-            );
-          },
-          child: Container(
-            padding: const EdgeInsets.only(left: 15),
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(
-                  width: 5,
-                  color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
+    // 首次加载中
+    if (isLoading && data.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    // 空态（Story 6-1 Task 7.1）
+    if (!isLoading && data.isEmpty) {
+      return EmptyStateWidget(
+        message: "暂无相关订单",
+        actionText: "去逛逛",
+        icon: Icons.shopping_bag_outlined,
+        onAction: () {
+          Navigator.of(context).pop();
+        },
+      );
+    }
+
+    // 刷新/加载更多列表
+    return RefreshIndicator(
+      onRefresh: () async => onRefresh(),
+      color: const Color(0xFFFA436A),
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (notification) {
+          if (notification is ScrollEndNotification) {
+            final metrics = notification.metrics;
+            if (metrics.pixels >= metrics.maxScrollExtent - 100) {
+              onLoadMore();
+            }
+          }
+          return false;
+        },
+        child: ListView.builder(
+          padding: const EdgeInsets.only(bottom: 20),
+          itemCount: data.length + (hasMore ? 1 : 0),
+          itemBuilder: (context, index) {
+            if (index >= data.length) {
+              return const Padding(
+                padding: EdgeInsets.all(16),
+                child: Center(
+                  child: Text(
+                    "加载中...",
+                    style: TextStyle(color: Colors.grey, fontSize: 13),
+                  ),
                 ),
-              ),
-            ),
-            child: Column(
-              children: [
-                buildCreateTime(boxDecoration, index),
-                buildProductList(index),
-                buildAmount(boxDecoration, index),
-                buildOrderOperate(index),
-              ],
-            ),
+              );
+            }
+            return _OrderListItem(data: data[index]);
+          },
+        ),
+      ),
+    );
+  }
+}
+
+/// 订单列表项（Story 6-1 Task 5.3/5.4）
+class _OrderListItem extends StatelessWidget {
+  final OrderListData data;
+
+  const _OrderListItem({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => OrderDetail(orderId: data.id),
           ),
         );
       },
+      child: Container(
+        margin: const EdgeInsets.only(top: 5),
+        color: Colors.white,
+        child: Column(
+          children: [
+            // 头部：订单号 + 状态（Story 6-1 Task 5.3）
+            _buildHeader(),
+            // 商品列表（最多展示1个）
+            if (data.orderItemData.isNotEmpty) _buildProductPreview(),
+            // 底部：实付款
+            _buildAmountFooter(),
+          ],
+        ),
+      ),
     );
   }
 
-  // 构建订单操作
-  Container buildOrderOperate(int index) {
-    int status = orderListData[index].orderStatus;
+  Widget _buildHeader() {
+    final statusText = getOmsOrderStatusTxt(data.status);
     return Container(
-      padding: const EdgeInsets.only(right: 5),
-      height: 40,
+      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            width: 1,
+            color: Colors.grey[200]!,
+          ),
+        ),
+      ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          Visibility(
-            visible: status == 0,
-            child: TextButton(
-              onPressed: () {},
-              // style: ButtonStyle(backgroundColor: MaterialStateProperty.all(Colors.white12)),
-              child: Text(
-                "取消订单",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(int.parse('303133', radix: 16)).withAlpha(255),
-                ),
+          Expanded(
+            child: Text(
+              data.orderNo.isNotEmpty ? data.orderSn : "订单号: ${data.id}",
+              style: const TextStyle(
+                fontSize: 13,
+                color: Color(0xFF303133),
               ),
             ),
           ),
-          Visibility(
-            visible: status == 2,
-            child: TextButton(
-              onPressed: () {},
-              // style: ButtonStyle(backgroundColor: MaterialStateProperty.all(Colors.white12)),
-              child: Text(
-                "查看物流",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(int.parse('303133', radix: 16)).withAlpha(255),
-                ),
-              ),
-            ),
-          ),
-          Visibility(
-            visible: status == 0,
-            child: TextButton(
-              onPressed: () {},
-              // style: ButtonStyle(backgroundColor: MaterialStateProperty.all(Colors.white12)),
-              child: Text(
-                "立即付款",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
-                ),
-              ),
-            ),
-          ),
-          // const SizedBox(
-          //   width: 5,
-          // ),
-          Visibility(
-            visible: status == 2,
-            child: TextButton(
-              onPressed: () {},
-              // style: ButtonStyle(backgroundColor: MaterialStateProperty.all(Color(int.parse('f7bcc8', radix: 16)).withAlpha(255))),
-              child: Text(
-                "确认收货",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
-                ),
-              ),
-            ),
-          ),
-          Visibility(
-            visible: status == 3,
-            child: TextButton(
-              onPressed: () {},
-              // style: ButtonStyle(backgroundColor: MaterialStateProperty.all(Color(int.parse('f7bcc8', radix: 16)).withAlpha(255))),
-              child: Text(
-                "评价商品",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
-                ),
-              ),
+          Text(
+            statusText,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFFFA436A),
             ),
           ),
         ],
@@ -214,186 +297,118 @@ class OrderListInfo extends StatelessWidget {
     );
   }
 
-  // 构建订单支付金额
-  Container buildAmount(BoxDecoration boxDecoration, int index) {
+  Widget _buildProductPreview() {
+    final firstItem = data.orderItemData.first;
     return Container(
-      padding: const EdgeInsets.only(right: 15),
-      height: 40,
-      decoration: boxDecoration,
+      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(width: 1, color: Colors.grey[200]!),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 商品图片
+          CachedImageWidget(
+            70,
+            70,
+            firstItem.skuPic,
+            fit: BoxFit.cover,
+          ),
+          const SizedBox(width: 10),
+          // 商品信息
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  firstItem.skuName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF303133),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  firstItem.specData.isNotEmpty ? firstItem.specData : " ",
+                  maxLines: 1,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF909399),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Text(
+                      "￥${firstItem.skuPrice.toStringAsFixed(2)}",
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF303133),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      "x${firstItem.skuQuantity}",
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF909399),
+                      ),
+                    ),
+                    if (data.orderItemData.length > 1) ...[
+                      const SizedBox(width: 8),
+                      Text(
+                        "+${data.orderItemData.length - 1} 件",
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF909399),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAmountFooter() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           Text(
-            "共",
-            style: TextStyle(
+            "共 ${data.orderItemData.length} 件商品  实付款 ",
+            style: const TextStyle(
               fontSize: 13,
-              color: Color(int.parse('707070', radix: 16)).withAlpha(255),
-            ),
-          ),
-          Text(
-            orderListData[index].orderItemData.length.toString(),
-            style: TextStyle(
-              fontSize: 13,
-              color: Color(int.parse('303133', radix: 16)).withAlpha(255),
-            ),
-          ),
-          Text(
-            "件商品 实付款",
-            style: TextStyle(
-              fontSize: 13,
-              color: Color(int.parse('707070', radix: 16)).withAlpha(255),
+              color: Color(0xFF707070),
             ),
           ),
           Text(
             " ￥",
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 12,
-              color: Color(int.parse('707070', radix: 16)).withAlpha(255),
+              color: Color(0xFF707070),
             ),
           ),
           Text(
-            orderListData[index].payAmount.toString(),
-            style: TextStyle(
+            data.payAmount.toStringAsFixed(2),
+            style: const TextStyle(
               fontSize: 16,
-              color: Color(int.parse('303133', radix: 16)).withAlpha(255),
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF303133),
             ),
           ),
         ],
       ),
     );
-  }
-
-  // 构建商品列表
-  Column buildProductList(int index) {
-    return Column(
-      children: orderListData[index].orderItemData.map((item) {
-        return Container(
-          padding: const EdgeInsets.only(right: 15, top: 15),
-          // decoration: boxDecoration,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              CachedImageWidget(60, 60, item.skuPic, fit: BoxFit.contain),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.skuName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 15,
-                        color: Color(
-                          int.parse('303133', radix: 16),
-                        ).withAlpha(255),
-                      ),
-                    ),
-                    Text(
-                      "颜色:黑色;容量:128G; x 1",
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Color(
-                          int.parse('707070', radix: 16),
-                        ).withAlpha(255),
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        Text(
-                          "￥",
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Color(
-                              int.parse('707070', radix: 16),
-                            ).withAlpha(255),
-                          ),
-                        ),
-                        Text(
-                          item.skuPrice.toString(),
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: Color(
-                              int.parse('303133', radix: 16),
-                            ).withAlpha(255),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  // 构建订单生成时间和订单状态
-  Container buildCreateTime(BoxDecoration boxDecoration, int index) {
-    return Container(
-      padding: const EdgeInsets.only(right: 15),
-      height: 40,
-      decoration: boxDecoration,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            child: Text(
-              orderListData[index].createTime.toString(),
-              style: TextStyle(
-                fontSize: 14,
-                color: Color(int.parse('303133', radix: 16)).withAlpha(255),
-              ),
-            ),
-          ),
-          Text(
-            getOrderStatus(orderListData[index].orderStatus),
-            style: TextStyle(
-              fontSize: 14,
-              color: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
-            ),
-          ),
-          Visibility(
-            visible: getDeleteStatus(orderListData[index].orderStatus),
-            child: Container(
-              margin: const EdgeInsets.only(left: 10),
-              child: Image.asset("images/delete.png", height: 17, width: 16),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // 状态转换
-  String getOrderStatus(int status) {
-    //0->待付款；1->待发货；2->已发货；3->已完成；4->已关闭；5->无效订单',
-    Map statusMap = <int, String>{};
-    statusMap[0] = "等待付款";
-    statusMap[1] = "待发货";
-    statusMap[2] = "等待收货";
-    statusMap[3] = "交易完成";
-    statusMap[4] = "交易关闭";
-    statusMap[5] = "无效订单";
-
-    return statusMap[status];
-  }
-
-  // 是否显示删除图标
-  bool getDeleteStatus(int status) {
-    //0->待付款；1->待发货；2->已发货；3->已完成；4->已关闭；5->无效订单',
-    Map statusMap = <int, bool>{};
-    statusMap[0] = false;
-    statusMap[1] = false;
-    statusMap[2] = false;
-    statusMap[3] = true;
-    statusMap[4] = true;
-    statusMap[5] = true;
-
-    return statusMap[status];
   }
 }
