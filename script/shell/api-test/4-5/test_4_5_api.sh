@@ -70,9 +70,8 @@ echo "  准备完成"
 
 # 1. 促销试算 - queryPromotionList
 log_info "1. 促销试算 queryPromotionList"
-PROMO_RESP=$(curl -s --max-time $TIMEOUT -X POST "$BASE_URL/api/order/queryPromotionList" \
-  -H "$AUTH" -H 'Content-Type: application/json' \
-  -d '{}')
+PROMO_RESP=$(curl -s --max-time $TIMEOUT "$BASE_URL/api/order/queryPromotionList" \
+  -H "$AUTH")
 PROMO_CODE=$(json_val "d.get('code','')" "$PROMO_RESP")
 if [ "$PROMO_CODE" = "0" ]; then
   log_pass "促销试算返回成功"
@@ -95,9 +94,8 @@ CART_RESP=$(curl -s --max-time $TIMEOUT \
 CART_IDS=$(json_val "','.join(str(item['id']) for item in (d.get('data',[]) or []) if item.get('selected',0)==1)" "$CART_RESP")
 echo "  选中购物车项 IDs: $CART_IDS"
 
-CONFIRM_RESP=$(curl -s --max-time $TIMEOUT -X POST "$BASE_URL/api/order/generateConfirmOrder" \
-  -H "$AUTH" -H 'Content-Type: application/json' \
-  -d '{}')
+CONFIRM_RESP=$(curl -s --max-time $TIMEOUT "$BASE_URL/api/order/generateConfirmOrder" \
+  -H "$AUTH")
 CONFIRM_CODE=$(json_val "d.get('code','')" "$CONFIRM_RESP")
 if [ "$CONFIRM_CODE" = "0" ]; then
   log_pass "确认单生成成功"
@@ -105,8 +103,8 @@ if [ "$CONFIRM_CODE" = "0" ]; then
   TOTAL_AMOUNT=$(json_val "d.get('data',{}).get('totalAmount', d.get('data',{}).get('calcAmount',{}).get('totalAmount', 'N/A'))" "$CONFIRM_RESP")
   echo "    totalAmount=$TOTAL_AMOUNT"
   # 检查是否有优惠券列表
-  HAS_COUPON=$(json_val "'couponList' in d.get('data',{})" "$CONFIRM_RESP")
-  echo "    包含 couponList: $HAS_COUPON"
+  HAS_COUPON=$(json_val "'couponHistoryDetailList' in d.get('data',{})" "$CONFIRM_RESP")
+  echo "    包含 couponHistoryDetailList: $HAS_COUPON"
 else
   CONFIRM_MSG=$(json_val "d.get('message',d.get('msg',''))" "$CONFIRM_RESP")
   log_fail "确认单生成失败: code=$CONFIRM_CODE msg=$CONFIRM_MSG"
@@ -171,7 +169,7 @@ fi
 # 6. 未登录访问应被拒绝
 log_info "6. 未登录访问确认单应返回 401"
 NOAUTH_CODE=$(curl -s --max-time $TIMEOUT -o /dev/null -w "%{http_code}" \
-  -X POST "$BASE_URL/api/order/generateConfirmOrder" \
+  -X GET "$BASE_URL/api/order/generateConfirmOrder" \
   -H 'Content-Type: application/json' \
   -d '{}')
 if [ "$NOAUTH_CODE" = "401" ]; then

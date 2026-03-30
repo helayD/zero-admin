@@ -112,9 +112,8 @@ fi
 
 # 4. 促销信息查询
 log_info "4. 查询购物车促销信息"
-PROMO_RESP=$(curl -s --max-time $TIMEOUT -X POST "$BASE_URL/api/order/queryPromotionList" \
-  -H "$AUTH" -H 'Content-Type: application/json' \
-  -d '{}')
+PROMO_RESP=$(curl -s --max-time $TIMEOUT "$BASE_URL/api/order/queryPromotionList" \
+  -H "$AUTH")
 PROMO_CODE=$(json_val "d.get('code','')" "$PROMO_RESP")
 if [ "$PROMO_CODE" = "0" ]; then
   log_pass "促销信息查询成功"
