@@ -102,3 +102,26 @@ INSERT IGNORE INTO sms_coupon_scope (id, coupon_id, scope_type, scope_id)
 VALUES (1, 1, 0, 0),  -- 满减券：全场通用
        (2, 2, 0, 0),  -- 新用户券：全场通用
        (3, 3, 0, 0);  -- 双十一券：全场通用
+
+-- 10. 修复下单后 SPU 库存与 SKU 库存不一致问题
+-- SPU.stock 应始终等于其所有 SKU.stock 之和，由 RefreshSpuDraftSummary 在 SKU 变更时同步
+-- 但旧版本或锁定库存时可能出现偏差，统一用子查询修正
+UPDATE pms_product_spu spu SET spu.stock = (
+    SELECT COALESCE(SUM(sku.stock), 0)
+    FROM pms_product_sku sku
+    WHERE sku.spu_id = spu.id AND sku.is_deleted = 0
+) WHERE EXISTS (
+    SELECT 1 FROM pms_product_sku sku2
+    WHERE sku2.spu_id = spu.id AND sku2.is_deleted = 0
+);
+
+-- 清理购物车中引用了已删除 SKU 的脏数据
+DELETE FROM oms_cart_item WHERE product_sku_id NOT IN (SELECT id FROM pms_product_sku WHERE is_deleted = 0);
+
+-- 确保上架商品 SPU 有充足库存
+UPDATE pms_product_spu SET stock = 1800, low_stock = 100
+WHERE publish_status = 1 AND verify_status = 1 AND stock < 100;
+
+-- 确保上架 SKU 有充足库存
+UPDATE pms_product_sku SET stock = 1000, low_stock = 100
+WHERE publish_status = 1 AND verify_status = 1 AND stock < 100;
