@@ -61,7 +61,6 @@ func buildOrderItemData(items []*omsclient.OrderItemData) []*types.OrderItemData
 			PointsAmount:    item.PointsAmount,
 			DiscountAmount:  item.DiscountAmount,
 			RealAmount:      item.RealAmount,
-			CreateTime:      item.CreateTime,
 		})
 	}
 	return result
