@@ -154,6 +154,9 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			{Method: http.MethodPost, Path: "/api/order/queryReturnReasonList", Handler: order.QueryReturnReasonListHandler(serverCtx)},
 			{Method: http.MethodPost, Path: "/api/order/applyAfterSales", Handler: order.ApplyAfterSalesHandler(serverCtx)},
 			{Method: http.MethodPost, Path: "/api/order/returnApply", Handler: order.ReturnApplyHandler(serverCtx)},
+			// Story 6-5 Task 8: 统一状态更新与快照查询
+			{Method: http.MethodPost, Path: "/api/order/updateOrderStatus", Handler: order.UpdateOrderStatusHandler(serverCtx)},
+			{Method: http.MethodPost, Path: "/api/order/queryOrderStatusSnapshot", Handler: order.QueryOrderStatusSnapshotHandler(serverCtx)},
 		},
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
 	)

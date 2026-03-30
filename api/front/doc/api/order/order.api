@@ -252,43 +252,89 @@ type ReturnItemData {
 	Remark       string  `json:"remark,optional"` //备注
 }
 
+// ReturnApplyResp 申请退货响应（Story 6-5 Task 6.1：补充 returnId/returnNo）
 type ReturnApplyResp {
-	Code    int64  `json:"code"`
-	Message string `json:"message"`
+	Code     int64  `json:"code"`
+	Message  string `json:"message"`
+	ReturnId int64  `json:"returnId"` // 售后单ID
+	ReturnNo string `json:"returnNo"`  // 售后单号
 }
 
 // QueryReturnReasonListReq 售后原因列表请求（Story 6-4 Task 1）
-type QueryReturnReasonListReq {
-}
+type QueryReturnReasonListReq {}
 
 // ReturnReasonItem 售后原因项（Story 6-4 Task 1）
 type ReturnReasonItem {
-	Id   int64  `json:"id"`   // 原因ID
+	Id   int64  `json:"id"` // 原因ID
 	Name string `json:"name"` // 原因名称
 }
 
 // QueryReturnReasonListResp 售后原因列表响应（Story 6-4 Task 1）
 type QueryReturnReasonListResp {
-	Code       int64            `json:"code"`
-	Message    string           `json:"message"`
+	Code       int64              `json:"code"`
+	Message    string             `json:"message"`
 	ReasonList []ReturnReasonItem `json:"reasonList"`
 }
 
 // ApplyAfterSalesReq 售后申请请求（Story 6-4 Task 2）
 type ApplyAfterSalesReq {
-	OrderId    int64  `json:"orderId"`    // 关联订单ID
-	Type       int32  `json:"type"`        // 售后类型：0=退货退款, 1=仅退款, 2=换货
-	ReasonId   int64  `json:"reasonId"`    // 退货原因ID
+	OrderId     int64  `json:"orderId"` // 关联订单ID
+	Type        int32  `json:"type"` // 售后类型：0=退货退款, 1=仅退款, 2=换货
+	ReasonId    int64  `json:"reasonId"` // 退货原因ID
 	Description string `json:"description"` // 问题描述（可选）
-	ProofPics  string `json:"proofPics"`   // 凭证图片（base64，逗号分隔）
+	ProofPics   string `json:"proofPics"` // 凭证图片（base64，逗号分隔）
 }
 
 // ApplyAfterSalesResp 售后申请响应（Story 6-4 Task 2）
 type ApplyAfterSalesResp {
 	Code     int64  `json:"code"`
 	Message  string `json:"message"`
-	ReturnId int64  `json:"returnId"`  // 售后单ID
-	ReturnNo string `json:"returnNo"`  // 售后单号
+	ReturnId int64  `json:"returnId"` // 售后单ID
+	ReturnNo string `json:"returnNo"` // 售后单号
+}
+
+// UpdateOrderStatusReq 统一更新订单状态请求（Story 6-5 Task 7）
+type UpdateOrderStatusReq {
+	OrderId int64  `json:"orderId"` // 订单ID
+	Action  int    `json:"action"` // 操作类型：1=创建订单,2=支付成功,3=支付失败,4=发货,5=确认收货,6=取消,7=退款,8=申请售后,9=售后关闭
+	BizData string `json:"bizData,optional"` // 扩展业务数据（JSON 字符串）
+}
+
+// UpdateOrderStatusResp 统一更新订单状态响应（Story 6-5 Task 7）
+type UpdateOrderStatusResp {
+	Code      int    `json:"code"`
+	Message   string `json:"message"`
+	OldStatus int    `json:"oldStatus"` // 变更前 order_status
+	NewStatus int    `json:"newStatus"` // 变更后 order_status
+	PayStatus int    `json:"payStatus"` // 变更后 pay_status
+	UpdatedAt string `json:"updatedAt"` // 变更时间
+}
+
+// QueryOrderStatusSnapshotReq 订单状态快照查询请求（Story 6-5 Task 7）
+type QueryOrderStatusSnapshotReq {
+	OrderId int64 `json:"orderId"` // 订单ID
+}
+
+// OrderOperationLogItem 操作日志条目（Story 6-5 Task 7）
+type OrderOperationLogItem {
+	Id            int64  `json:"id"`
+	OperationType int    `json:"operationType"` // 操作类型：1=创建,2=支付,3=发货,4=确认收货,5=取消,6=退款
+	OperatorType  int    `json:"operatorType"` // 操作人类型：1=用户,2=系统,3=管理员
+	OperatorNote  string `json:"operatorNote"` // 操作备注
+	CreateTime    string `json:"createTime"` // 操作时间
+}
+
+// QueryOrderStatusSnapshotResp 订单状态快照查询响应（Story 6-5 Task 7）
+type QueryOrderStatusSnapshotResp {
+	Code            int                     `json:"code"`
+	Message         string                  `json:"message"`
+	OrderId         int64                   `json:"orderId"`
+	OrderNo         string                  `json:"orderNo"`
+	OrderStatus     int                     `json:"orderStatus"` // OMS order_status
+	PayStatus       int                     `json:"payStatus"` // OMS pay_status
+	OrderStatusText string                  `json:"orderStatusText"` // 中文状态
+	PayStatusText   string                  `json:"payStatusText"` // 中文支付状态
+	OptLogs         []OrderOperationLogItem `json:"optLogs"` // 操作日志列表
 }
 
 @server (
@@ -342,5 +388,13 @@ service front-api {
 	//提交售后申请（Story 6-4 Task 2）
 	@handler ApplyAfterSales
 	post /applyAfterSales (ApplyAfterSalesReq) returns (ApplyAfterSalesResp)
+
+	//统一更新订单状态（Story 6-5 Task 7）
+	@handler UpdateOrderStatus
+	post /updateOrderStatus (UpdateOrderStatusReq) returns (UpdateOrderStatusResp)
+
+	//查询订单状态快照（Story 6-5 Task 7）
+	@handler QueryOrderStatusSnapshot
+	post /queryOrderStatusSnapshot (QueryOrderStatusSnapshotReq) returns (QueryOrderStatusSnapshotResp)
 }
 

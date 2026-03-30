@@ -12,6 +12,7 @@ import (
 	"github.com/feihua/zero-admin/rpc/oms/client/companyaddressservice"
 	"github.com/feihua/zero-admin/rpc/oms/client/orderdeliveryservice"
 	"github.com/feihua/zero-admin/rpc/oms/client/orderoperationlogservice"
+	"github.com/feihua/zero-admin/rpc/oms/client/orderpaymentservice"
 	"github.com/feihua/zero-admin/rpc/oms/client/orderreturnreasonservice"
 	"github.com/feihua/zero-admin/rpc/oms/client/orderreturnservice"
 	"github.com/feihua/zero-admin/rpc/oms/client/orderservice"
@@ -120,6 +121,7 @@ type ServiceContext struct {
 	CompanyAddressService    companyaddressservice.CompanyAddressService
 	OrderDeliveryService    orderdeliveryservice.OrderDeliveryService
 	OrderOperationLogService orderoperationlogservice.OrderOperationLogService
+	OrderPaymentService      orderpaymentservice.OrderPaymentService
 	OrderReturnService       orderreturnservice.OrderReturnService
 	OrderReturnReasonService orderreturnreasonservice.OrderReturnReasonService
 	OrderService             orderservice.OrderService
@@ -219,6 +221,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		CompanyAddressService:    companyaddressservice.NewCompanyAddressService(omsClient),
 		OrderDeliveryService:    orderdeliveryservice.NewOrderDeliveryService(omsClient),
 		OrderOperationLogService: orderoperationlogservice.NewOrderOperationLogService(omsClient),
+		OrderPaymentService:      orderpaymentservice.NewOrderPaymentService(omsClient),
 		OrderReturnService:       orderreturnservice.NewOrderReturnService(omsClient),
 		OrderReturnReasonService: orderreturnreasonservice.NewOrderReturnReasonService(omsClient),
 		OrderService:             orderservice.NewOrderService(omsClient),

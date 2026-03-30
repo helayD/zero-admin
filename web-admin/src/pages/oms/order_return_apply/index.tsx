@@ -9,6 +9,13 @@ import ProDescriptions from '@ant-design/pro-descriptions';
 import ReturnApplyDetailModel from './components/ReturnApplyDetailModel';
 import type {ReturnApplyListItem} from './data.d';
 import {queryReturnApplyList, updateReturnApply} from './service';
+import GovernanceScopeBar from '@/pages/system/components/GovernanceScopeBar';
+import {
+  buildGovernanceScopeLabel,
+  defaultGovernanceScope,
+  type GovernanceScopeValue,
+  toGovernancePayload,
+} from '@/pages/system/components/governance';
 
 
 /**
@@ -36,8 +43,8 @@ const ReturnApplyList: React.FC = () => {
   const [showDetail, setShowDetail] = useState<boolean>(false);
   const actionRef = useRef<ActionType>();
   const [currentRow, setCurrentRow] = useState<ReturnApplyListItem>();
-
   const [companyAddressId, setCompanyAddressId] = useState<number>(0);
+  const [scope, setScope] = useState<GovernanceScopeValue>(defaultGovernanceScope);
 
   const columns: ProColumns<ReturnApplyListItem>[] = [
     {
@@ -140,14 +147,33 @@ const ReturnApplyList: React.FC = () => {
   return (
     <PageContainer>
       <ProTable<ReturnApplyListItem>
-        headerTitle="退货列表"
+        headerTitle={buildGovernanceScopeLabel(scope)}
         actionRef={actionRef}
         rowKey="id"
         search={{
           labelWidth: 120,
         }}
-        toolBarRender={false}
-        request={queryReturnApplyList}
+        toolBarRender={() => [
+          <GovernanceScopeBar
+            key="scope"
+            value={scope}
+            onChange={(v) => {
+              setScope(v);
+              actionRef.current?.reload();
+            }}
+          />,
+        ]}
+        request={async (params) => {
+          const res = await queryReturnApplyList({
+            ...params,
+            ...toGovernancePayload(scope),
+          });
+          return {
+            data: res.data || [],
+            success: res.success,
+            total: res.total || 0,
+          };
+        }}
         columns={columns}
         rowSelection={{
           onChange: (_, selectedRows) => console.log(selectedRows),

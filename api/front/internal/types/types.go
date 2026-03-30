@@ -1107,8 +1107,10 @@ type ReturnApplyReq struct {
 }
 
 type ReturnApplyResp struct {
-	Code    int64  `json:"code"`
-	Message string `json:"message"`
+	Code     int64  `json:"code"`
+	Message  string `json:"message"`
+	ReturnId int64  `json:"returnId"` // 售后单ID（Story 6-5 Task 6.1）
+	ReturnNo string `json:"returnNo"`  // 售后单号
 }
 
 type ReturnItemData struct {
@@ -1251,3 +1253,47 @@ type ApplyAfterSalesResp struct {
 	ReturnNo string `json:"returnNo"` // 售后单号
 }
 
+
+// UpdateOrderStatusReq 统一更新订单状态请求（Story 6-5 Task 7）
+type UpdateOrderStatusReq struct {
+	OrderId int64  `json:"orderId"` // 订单ID
+	Action  int    `json:"action"`  // 操作类型：1=创建订单,2=支付成功,3=支付失败,4=发货,5=确认收货,6=取消,7=退款,8=申请售后,9=售后关闭
+	BizData string `json:"bizData,optional"` // 扩展业务数据（JSON 字符串）
+}
+
+// UpdateOrderStatusResp 统一更新订单状态响应（Story 6-5 Task 7）
+type UpdateOrderStatusResp struct {
+	Code      int    `json:"code"`
+	Message   string `json:"message"`
+	OldStatus int    `json:"oldStatus"` // 变更前 order_status
+	NewStatus int    `json:"newStatus"` // 变更后 order_status
+	PayStatus int    `json:"payStatus"` // 变更后 pay_status
+	UpdatedAt string `json:"updatedAt"` // 变更时间
+}
+
+// QueryOrderStatusSnapshotReq 订单状态快照查询请求（Story 6-5 Task 7）
+type QueryOrderStatusSnapshotReq struct {
+	OrderId int64 `json:"orderId"` // 订单ID
+}
+
+// OrderOperationLogItem 操作日志条目（Story 6-5 Task 7）
+type OrderOperationLogItem struct {
+	Id            int64  `json:"id"`
+	OperationType int    `json:"operationType"` // 操作类型：1=创建,2=支付,3=发货,4=确认收货,5=取消,6=退款
+	OperatorType  int    `json:"operatorType"`  // 操作人类型：1=用户,2=系统,3=管理员
+	OperatorNote  string `json:"operatorNote"`  // 操作备注
+	CreateTime    string `json:"createTime"`    // 操作时间
+}
+
+// QueryOrderStatusSnapshotResp 订单状态快照查询响应（Story 6-5 Task 7）
+type QueryOrderStatusSnapshotResp struct {
+	Code             int                      `json:"code"`
+	Message          string                   `json:"message"`
+	OrderId          int64                    `json:"orderId"`
+	OrderNo          string                   `json:"orderNo"`
+	OrderStatus      int                      `json:"orderStatus"`      // OMS order_status
+	PayStatus        int                      `json:"payStatus"`        // OMS pay_status
+	OrderStatusText  string                   `json:"orderStatusText"`  // 中文状态
+	PayStatusText    string                   `json:"payStatusText"`    // 中文支付状态
+	OptLogs          []OrderOperationLogItem  `json:"optLogs"`          // 操作日志列表
+}

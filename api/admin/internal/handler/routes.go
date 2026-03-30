@@ -10,6 +10,7 @@ import (
 	cmssubject "github.com/feihua/zero-admin/api/admin/internal/handler/cms/subject"
 	cmssubject_category "github.com/feihua/zero-admin/api/admin/internal/handler/cms/subject_category"
 	omscompany_address "github.com/feihua/zero-admin/api/admin/internal/handler/oms/company_address"
+	omscustomer_service_workstation "github.com/feihua/zero-admin/api/admin/internal/handler/oms/customer_service_workstation"
 	omsorder_delivery "github.com/feihua/zero-admin/api/admin/internal/handler/oms/order_delivery"
 	omsorder_main "github.com/feihua/zero-admin/api/admin/internal/handler/oms/order_main"
 	omsorder_return "github.com/feihua/zero-admin/api/admin/internal/handler/oms/order_return"
@@ -324,6 +325,31 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		),
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
 		rest.WithPrefix("/api/oms/orderReturn"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.CheckUrl},
+			[]rest.Route{
+				{
+					Method:  http.MethodPost,
+					Path:    "/customerServiceOrderList",
+					Handler: omscustomer_service_workstation.CustomerServiceOrderListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/companyAddress/list",
+					Handler: omscustomer_service_workstation.CompanyAddressListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/orderOperationLog/list",
+					Handler: omscustomer_service_workstation.QueryOrderOperationLogListHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/oms"),
 	)
 
 	server.AddRoutes(

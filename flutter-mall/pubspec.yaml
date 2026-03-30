@@ -49,6 +49,9 @@ dependencies:
   alipay_kit: ^6.0.0
   fluwx: ^5.0.0
 
+  # 图片选择（Story 6.4 Task 12）
+  image_picker: ^1.0.7
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

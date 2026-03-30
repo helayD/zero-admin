@@ -1,0 +1,163 @@
+import "../base/base.api"
+
+info (
+	desc:   "客服与履约订单工作台"
+	author: "David"
+	email:  "1002219331@qq.com"
+)
+
+type (
+	// CustomerServiceOrderListReq 客服工作台订单列表请求
+	CustomerServiceOrderListReq {
+		ScopeType     string `form:"scopeType,optional"` // 治理范围(platform/tenant/merchant)
+		PlatformId    int64  `form:"platformId,optional"` // 平台ID
+		TenantId      int64  `form:"tenantId,optional"` // 租户ID
+		MerchantId    int64  `form:"merchantId,optional"` // 商户ID
+		OrderNo       string `form:"orderNo,optional"` // 订单编号
+		OrderStatus   int32  `form:"orderStatus,optional"` // 订单状态：1-待支付,2-已支付,3-已发货,4-已完成,5-已取消,6-已退款,7-售后中
+		ReturnStatus  int32  `form:"returnStatus,optional"` // 售后状态（前端合成）：0=无售后,1=待审核,2=审核通过,3=审核拒绝
+		ReceiverName  string `form:"receiverName,optional"` // 收货人姓名
+		ReceiverPhone string `form:"receiverPhone,optional"` // 收货人手机
+		StartTime     string `form:"startTime,optional"` // 开始时间
+		EndTime       string `form:"endTime,optional"` // 结束时间
+		Current       int32  `form:"current,default=1"` // 第几页
+		PageSize      int32  `form:"pageSize,default=20"` // 每页数量
+	}
+
+	// CustomerServiceOrderItem 客服工作台订单列表项（聚合：订单+物流+售后+收货信息）
+	CustomerServiceOrderItem {
+		Id                 int64   `json:"id"` // 订单ID
+		OrderNo            string  `json:"orderNo"` // 订单编号
+		OrderStatus        int32   `json:"orderStatus"` // 订单状态
+		OrderStatusText    string  `json:"orderStatusText"` // 订单状态文本
+		PayStatus          int32   `json:"payStatus"` // 支付状态：0=待支付,1=支付成功,2=支付失败
+		PayStatusText      string  `json:"payStatusText"` // 支付状态文本
+		ReturnStatus       int32   `json:"returnStatus"` // 售后状态（前端合成）：0=无售后,1=待审核,2=审核通过,3=审核拒绝
+		ReturnStatusText   string  `json:"returnStatusText"` // 售后状态文本
+		MemberId           int64   `json:"memberId"` // 会员ID
+		MemberNickname     string  `json:"memberNickname"` // 会员昵称
+		ReceiverName       string  `json:"receiverName"` // 收货人姓名
+		ReceiverPhone      string  `json:"receiverPhone"` // 收货人手机
+		ReceiverAddress    string  `json:"receiverAddress"` // 收货地址
+		TotalAmount        float32 `json:"totalAmount"` // 订单总金额
+		PayAmount          float32 `json:"payAmount"` // 实付金额
+		DeliveryCompany    string  `json:"deliveryCompany"` // 物流公司
+		DeliverySn         string  `json:"deliverySn"` // 物流单号
+		CreateTime         string  `json:"createTime"` // 下单时间
+		PayTime            string  `json:"payTime,optional"` // 支付时间
+		DeliveryTime       string  `json:"deliveryTime,optional"` // 发货时间
+		ReceiveTime        string  `json:"receiveTime,optional"` // 收货时间
+		OrderItemData     []*OrderItemData `json:"orderItemData"` // 订单商品明细
+	}
+
+	// CustomerServiceOrderListResp 客服工作台订单列表响应
+	CustomerServiceOrderListResp {
+		Code    string                      `json:"code"`
+		Message string                      `json:"message"`
+		Total   int64                       `json:"total"`
+		Current int32                       `json:"current,default=1"`
+		PageSize int32                      `json:"pageSize,default=20"`
+		Data    []*CustomerServiceOrderItem `json:"data"`
+		Success bool                        `json:"success"`
+	}
+
+	// CompanyAddressListReq 公司退货地址列表请求
+	CompanyAddressListReq {
+		ScopeType  string `form:"scopeType,optional"` // 治理范围
+		PlatformId int64  `form:"platformId,optional"`
+		TenantId   int64  `form:"tenantId,optional"`
+		MerchantId int64  `form:"merchantId,optional"`
+		AddressName string `form:"addressName,optional"` // 地址名称
+		Name       string `form:"name,optional"` // 收货人姓名
+		Phone      string `form:"phone,optional"` // 联系电话
+		Current   int32  `form:"current,default=1"`
+		PageSize  int32  `form:"pageSize,default=20"`
+	}
+
+	// CompanyAddressItem 公司退货地址项
+	CompanyAddressItem {
+		Id            int64  `json:"id"`
+		AddressName   string `json:"addressName"` // 地址名称
+		ReceiverName  string `json:"receiverName"` // 收货人
+		Phone        string `json:"phone"` // 联系电话
+		Province      string `json:"province"` // 省
+		City          string `json:"city"` // 市
+		Region        string `json:"region"` // 区
+		DetailAddress string `json:"detailAddress"` // 详细地址
+		FullAddress   string `json:"fullAddress"` // 完整地址（前端组合）
+		DefaultStatus int32  `json:"defaultStatus"` // 是否默认：0-否,1-是
+		SendStatus    int32  `json:"sendStatus"` // 默认发货地址：0-否,1-是
+		ReceiveStatus int32  `json:"receiveStatus"` // 默认收货地址：0-否,1-是
+		CreateTime    string `json:"createTime"`
+	}
+
+	// CompanyAddressListResp 公司退货地址列表响应
+	CompanyAddressListResp {
+		Code     string                `json:"code"`
+		Message  string                `json:"message"`
+		Total    int64                 `json:"total"`
+		Current  int32                 `json:"current,default=1"`
+		PageSize int32                 `json:"pageSize,default=20"`
+		Data     []*CompanyAddressItem `json:"data"`
+		Success  bool                  `json:"success"`
+	}
+
+	// QueryOrderOperationLogListReq 查询订单操作日志列表请求
+	QueryOrderOperationLogListReq {
+		OrderId    int64  `form:"orderId,optional"` // 订单ID
+		OrderNo    string `form:"orderNo,optional"` // 订单编号
+		ScopeType  string `form:"scopeType,optional"`
+		PlatformId int64  `form:"platformId,optional"`
+		TenantId   int64  `form:"tenantId,optional"`
+		MerchantId int64  `form:"merchantId,optional"`
+		Current    int32  `form:"current,default=1"`
+		PageSize   int32  `form:"pageSize,default=20"`
+	}
+
+	// OrderOperationLogItem 订单操作日志项
+	OrderOperationLogItem {
+		Id            int64  `json:"id"` // 主键ID
+		OrderId       int64  `json:"orderId"` // 订单ID
+		OrderNo       string `json:"orderNo"` // 订单编号
+		OperationType int32  `json:"operationType"` // 操作类型：1-创建订单,2-支付订单,3-发货,4-确认收货,5-取消订单,6-退款
+		OperationTypeText string `json:"operationTypeText"` // 操作类型文本
+		OperatorId    int64  `json:"operatorId"` // 操作人ID
+		OperatorType  int32  `json:"operatorType"` // 操作人类型：1-用户,2-系统,3-管理员
+		OperatorTypeText string `json:"operatorTypeText"` // 操作人类型文本
+		OperatorNote  string `json:"operatorNote"` // 操作备注
+		CreateTime    string `json:"createTime"` // 操作时间
+	}
+
+	// QueryOrderOperationLogListResp 查询订单操作日志列表响应
+	QueryOrderOperationLogListResp {
+		Code     string                   `json:"code"`
+		Message  string                   `json:"message"`
+		Total    int64                    `json:"total"`
+		Current  int32                    `json:"current,default=1"`
+		PageSize int32                    `json:"pageSize,default=20"`
+		Data     []*OrderOperationLogItem `json:"data"`
+		Success  bool                     `json:"success"`
+	}
+)
+
+@server (
+	jwt:        Auth
+	middleware: CheckUrl
+	group:      oms/customer_service_workstation
+	prefix:     /api/oms
+	tags:       "客服与履约订单工作台"
+	authType:   apiKey
+)
+service admin-api {
+	// 客服工作台订单列表（聚合：订单+物流状态+售后状态+收货信息）
+	@handler CustomerServiceOrderList
+	post /customerServiceOrderList (CustomerServiceOrderListReq) returns (CustomerServiceOrderListResp)
+
+	// 公司退货地址列表
+	@handler CompanyAddressList
+	post /companyAddress/list (CompanyAddressListReq) returns (CompanyAddressListResp)
+
+	// 查询订单操作日志（客服工作台时间线）
+	@handler QueryOrderOperationLogList
+	post /orderOperationLog/list (QueryOrderOperationLogListReq) returns (QueryOrderOperationLogListResp)
+}

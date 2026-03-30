@@ -90,8 +90,8 @@ development_status:
   6-2-取消未支付订单与确认收货: done
   6-3-物流轨迹与配送关键状态: review
   6-4-售后申请提交与材料上传: review
-  6-5-订单状态编排与多角色视图一致: backlog
-  6-6-客服与履约订单工作台: backlog
+  6-5-订单状态编排与多角色视图一致: review
+  6-6-客服与履约订单工作台: review
   6-7-商户订单与售后处理工作台: backlog
   epic-6-retrospective: optional
 

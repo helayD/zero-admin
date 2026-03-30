@@ -1,10 +1,6 @@
-///
-/// 接口地址
-///
-/// 作者：刘飞华
-/// 日期：2023/11/21 17:17
-///
-///
+// 接口地址配置
+// 作者：刘飞华
+// 日期：2023/11/21 17:17
 
 // const baseUrl = "http://10.168.96.23:9999";
 // const baseUrl = "http://127.0.0.1:9999";
@@ -66,6 +62,12 @@ const orderDetailDataUrl = "$baseUrl/api/order/queryOrderDetail?orderId=";
 const cancelOrderUrl = "$baseUrl/api/order/cancelUserOrder?orderId=";
 // 确认收货（Story 6.2）
 const confirmReceiveUrl = "$baseUrl/api/order/confirmReceiveOrder?orderId=";
+// 物流查询（Story 6.3）
+const logisticsDataUrl = "$baseUrl/api/order/queryLogistics?orderId=";
+// 售后原因列表（Story 6.4）
+const queryReturnReasonListUrl = "$baseUrl/api/order/queryReturnReasonList";
+// 提交售后申请（Story 6.4）
+const applyAfterSalesUrl = "$baseUrl/api/order/applyAfterSales";
 // 收货地址列表
 const addressListDataUrl = "$baseUrl/api/member/queryAddressList";
 // 添加会员地址

@@ -5679,3 +5679,134 @@ type UserInfoResp struct {
 	Message string       `json:"message"`
 	Data    UserInfoData `json:"data"`
 }
+
+// 客服与履约订单工作台 - 客服工作台订单列表请求
+type CustomerServiceOrderListReq struct {
+	ScopeType     string `form:"scopeType,optional"`
+	PlatformId    int64  `form:"platformId,optional"`
+	TenantId      int64  `form:"tenantId,optional"`
+	MerchantId    int64  `form:"merchantId,optional"`
+	OrderNo       string `form:"orderNo,optional"`
+	OrderStatus   int32  `form:"orderStatus,optional"`
+	ReturnStatus  int32  `form:"returnStatus,optional"`
+	ReceiverName  string `form:"receiverName,optional"`
+	ReceiverPhone string `form:"receiverPhone,optional"`
+	StartTime     string `form:"startTime,optional"`
+	EndTime       string `form:"endTime,optional"`
+	Current       int32  `form:"current,default=1"`
+	PageSize      int32  `form:"pageSize,default=20"`
+}
+
+// 客服工作台订单列表项（聚合：订单+物流+售后+收货信息）
+type CustomerServiceOrderItem struct {
+	Id               int64             `json:"id"`
+	OrderNo          string            `json:"orderNo"`
+	OrderStatus      int32             `json:"orderStatus"`
+	OrderStatusText  string            `json:"orderStatusText"`
+	PayStatus        int32             `json:"payStatus"`
+	PayStatusText    string            `json:"payStatusText"`
+	ReturnStatus     int32             `json:"returnStatus"`
+	ReturnStatusText string            `json:"returnStatusText"`
+	MemberId         int64             `json:"memberId"`
+	ReceiverName     string            `json:"receiverName"`
+	ReceiverPhone    string            `json:"receiverPhone"`
+	ReceiverAddress  string            `json:"receiverAddress"`
+	TotalAmount      float32           `json:"totalAmount"`
+	PayAmount        float32           `json:"payAmount"`
+	DeliveryCompany  string            `json:"deliveryCompany"`
+	DeliverySn       string            `json:"deliverySn"`
+	CreateTime       string            `json:"createTime"`
+	PayTime          string            `json:"payTime,optional"`
+	DeliveryTime     string            `json:"deliveryTime,optional"`
+	ReceiveTime      string            `json:"receiveTime,optional"`
+	OrderItemData    []*OrderItemData  `json:"orderItemData"` // 订单商品明细
+}
+
+// 客服工作台订单列表响应
+type CustomerServiceOrderListResp struct {
+	Code    string                      `json:"code"`
+	Message string                      `json:"message"`
+	Total   int64                       `json:"total"`
+	Current int32                       `json:"current,default=1"`
+	PageSize int32                     `json:"pageSize,default=20"`
+	Data    []*CustomerServiceOrderItem `json:"data"`
+	Success bool                        `json:"success"`
+}
+
+// 公司退货地址列表请求
+type CompanyAddressListReq struct {
+	ScopeType   string `form:"scopeType,optional"`
+	PlatformId  int64  `form:"platformId,optional"`
+	TenantId    int64  `form:"tenantId,optional"`
+	MerchantId  int64  `form:"merchantId,optional"`
+	AddressName string `form:"addressName,optional"`
+	Name        string `form:"name,optional"`
+	Phone       string `form:"phone,optional"`
+	Current     int32  `form:"current,default=1"`
+	PageSize    int32  `form:"pageSize,default=20"`
+}
+
+// 公司退货地址项
+type CompanyAddressItem struct {
+	Id            int64  `json:"id"`
+	AddressName   string `json:"addressName"`
+	ReceiverName  string `json:"receiverName"`
+	Phone        string `json:"phone"`
+	Province      string `json:"province"`
+	City          string `json:"city"`
+	Region        string `json:"region"`
+	DetailAddress string `json:"detailAddress"`
+	FullAddress   string `json:"fullAddress"`
+	DefaultStatus int32  `json:"defaultStatus"`
+	SendStatus    int32  `json:"sendStatus"`
+	ReceiveStatus int32  `json:"receiveStatus"`
+	CreateTime    string `json:"createTime"`
+}
+
+// 公司退货地址列表响应
+type CompanyAddressListResp struct {
+	Code    string                `json:"code"`
+	Message string                `json:"message"`
+	Total   int64                 `json:"total"`
+	Current int32                 `json:"current,default=1"`
+	PageSize int32               `json:"pageSize,default=20"`
+	Data    []*CompanyAddressItem `json:"data"`
+	Success bool                  `json:"success"`
+}
+
+// 查询订单操作日志列表请求
+type QueryOrderOperationLogListReq struct {
+	OrderId    int64  `form:"orderId,optional"`
+	OrderNo    string `form:"orderNo,optional"`
+	ScopeType  string `form:"scopeType,optional"`
+	PlatformId int64  `form:"platformId,optional"`
+	TenantId   int64  `form:"tenantId,optional"`
+	MerchantId int64  `form:"merchantId,optional"`
+	Current    int32  `form:"current,default=1"`
+	PageSize   int32  `form:"pageSize,default=20"`
+}
+
+// 订单操作日志项
+type OrderOperationLogItem struct {
+	Id                 int64  `json:"id"`
+	OrderId            int64  `json:"orderId"`
+	OrderNo            string `json:"orderNo"`
+	OperationType      int32  `json:"operationType"`
+	OperationTypeText  string `json:"operationTypeText"`
+	OperatorId         int64  `json:"operatorId"`
+	OperatorType       int32  `json:"operatorType"`
+	OperatorTypeText   string `json:"operatorTypeText"`
+	OperatorNote       string `json:"operatorNote"`
+	CreateTime         string `json:"createTime"`
+}
+
+// 查询订单操作日志列表响应
+type QueryOrderOperationLogListResp struct {
+	Code    string                    `json:"code"`
+	Message string                    `json:"message"`
+	Total   int64                     `json:"total"`
+	Current int32                     `json:"current,default=1"`
+	PageSize int32                   `json:"pageSize,default=20"`
+	Data    []*OrderOperationLogItem `json:"data"`
+	Success bool                      `json:"success"`
+}

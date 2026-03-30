@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/feihua/zero-admin/api/front/internal/logic/order/order"
 	"github.com/feihua/zero-admin/api/front/internal/svc"
 	"github.com/feihua/zero-admin/rpc/oms/omsclient"
 	"github.com/smartwalle/alipay/v3"
@@ -13,10 +14,14 @@ import (
 )
 
 // PaymentOperationsUtils 支付相关工具
+// 重构说明（Story 6-5）：
+//  - AliPayNotify 支付成功：使用 OrderPaymentService.UpdateOrderPaymentStatus 更新 pay_status
+//  - 新增 AddOrderOperationLog 操作日志记录（operator_type=2 系统操作）
+//  - 幂等保护：Redis key = "pay:notify:{outTradeNo}"，TTL=24h（已实现，保留）
 /*
 Author: LiuFeiHua
 Date: 2023/12/15 10:05
-Story 5.5 Tasks 3, 4: 微信支付支持 + 回调幂等 + WechatNotify
+Story: 5.5 Tasks 3, 4: 微信支付支持 + 回调幂等 + WechatNotify
 */
 type PaymentOperationsUtils struct {
 	logx.Logger
@@ -88,6 +93,10 @@ func (l *PaymentOperationsUtils) TradeQueryWechat(outTradeNo string) (string, in
 // ==================== Task 4: 回调处理 ====================
 
 // AliPayNotify 支付宝回调通知（Story 5.5: 幂等处理 + Saga补偿）
+// 重构说明（Story 6-5 Task 5）：
+//  - 支付成功：更新 pay_status=1（OrderPaymentService）+ order_status=2（OrderService）
+//  - 新增 AddOrderOperationLog 操作日志（operator_type=2 系统操作）
+//  - 幂等保护：Redis key = "pay:notify:{outTradeNo}"（已实现，保留）
 func (l *PaymentOperationsUtils) AliPayNotify(writer http.ResponseWriter, request *http.Request) {
 	if err := request.ParseForm(); err != nil {
 		_, _ = writer.Write([]byte("error"))
@@ -105,29 +114,93 @@ func (l *PaymentOperationsUtils) AliPayNotify(writer http.ResponseWriter, reques
 	tradeStatus := notification.TradeStatus
 
 	if alipay.TradeStatusSuccess == tradeStatus {
-		// Task 4.3: 幂等处理 - 检查是否已处理过
+		// Task 4.3 幂等处理（已实现，保留）
 		if l.isPayStatusUpdated(outTradeNo) {
 			l.Logger.Infof("AliPayNotify 幂等命中 outTradeNo=%s，已更新过，跳过", outTradeNo)
 			_, _ = writer.Write([]byte("success"))
 			return
 		}
 
-		// 更新 OMS 状态: orderStatus=2(已支付), payStatus=1(已支付)
-		_, err = l.svcCtx.OrderService.UpdateOrder(l.ctx, &omsclient.UpdateOrderReq{
+		// Story 6-5 Task 5.2: 支付成功时更新 pay_status=1 + order_status=2
+
+		// Step 1: 查询支付记录获取 payment_id（UpdateOrderPaymentStatusReq.ids 是 payment_record.id）
+		paymentList, err := l.svcCtx.OrderPaymentService.QueryOrderPaymentList(l.ctx, &omsclient.QueryOrderPaymentListReq{
 			OrderNo: outTradeNo,
-			// Note: UpdateOrderReq 不含 pay_status 字段，
-			// 需通过 UpdateOrderPaymentStatusReq 或扩展 proto 更新 pay_status
-			// 此处先更新 orderStatus，pay_status 的更新见 Task 4.2 Saga 补偿说明
+		})
+		var paymentId int64
+		if err == nil && paymentList != nil && len(paymentList.List) > 0 {
+			paymentId = paymentList.List[0].Id
+		}
+
+		// Step 2: 更新 pay_status=1（OrderPaymentService.UpdateOrderPaymentStatus）
+		// ⚠️ UpdateOrderPaymentStatusReq.ids = payment_record.id，不是 order_id
+		if paymentId > 0 {
+			_, err = l.svcCtx.OrderPaymentService.UpdateOrderPaymentStatus(l.ctx, &omsclient.UpdateOrderPaymentStatusReq{
+				Ids:       []int64{paymentId},
+				PayStatus: order.PayStatusSuccess, // OMS 1=支付成功
+			})
+			if err != nil {
+				l.Logger.Errorf("AliPayNotify 更新支付状态失败 outTradeNo=%s err=%v", outTradeNo, err)
+			} else {
+				l.Logger.Infof("AliPayNotify 更新支付状态成功 outTradeNo=%s paymentId=%d", outTradeNo, paymentId)
+			}
+		}
+
+		// Step 3: 更新 order_status=2（OrderService.UpdateOrder）
+		_, err = l.svcCtx.OrderService.UpdateOrder(l.ctx, &omsclient.UpdateOrderReq{
+			OrderNo:     outTradeNo,
+			OrderStatus: order.OrderStatusPaid, // OMS 2=已支付
+		})
+		if err != nil {
+			l.Logger.Errorf("AliPayNotify 更新订单状态失败 outTradeNo=%s err=%v", outTradeNo, err)
+		} else {
+			l.Logger.Infof("AliPayNotify 更新订单状态成功 outTradeNo=%s", outTradeNo)
+		}
+
+		// Step 4: 写入操作日志（operator_type=2 系统操作，operation_type=2 支付订单）
+		if paymentId > 0 {
+			_, _ = l.svcCtx.OrderOperationLogService.AddOrderOperationLog(l.ctx, &omsclient.AddOrderOperationLogReq{
+				OrderId:      paymentList.List[0].OrderId,
+				OperatorType: order.OperatorTypeSystem, // 2=系统操作
+				OperationType: order.OpPaymentSuccess,   // 2=支付订单
+				OperatorNote:  fmt.Sprintf("支付宝回调支付成功 outTradeNo=%s", outTradeNo),
+			})
+		}
+
+		// Step 5: Saga 补偿链路（Epic 7 处理，本 Story 只标记，补偿在后续 Story 实施）
+		// 库存扣减（Story 7-3a）：下单时已锁定，取消时释放
+		// 优惠券核销（Story 7-3a）：CancelOrderResp.CouponIds 已归还
+		// 积分扣减（Story 7-3a）：支付成功时 saga 确认
+
+		l.svcCtx.AlipayClient.ACKNotification(writer)
+		return
+	}
+
+	// 支付失败：更新 pay_status=2，不改变 order_status
+	// Story 6-5 Task 5.3
+	l.Logger.Infof("AliPayNotify 支付失败 outTradeNo=%s tradeStatus=%s", outTradeNo, tradeStatus)
+
+	paymentList, err := l.svcCtx.OrderPaymentService.QueryOrderPaymentList(l.ctx, &omsclient.QueryOrderPaymentListReq{
+		OrderNo: outTradeNo,
+	})
+	var paymentId int64
+	if err == nil && paymentList != nil && len(paymentList.List) > 0 {
+		paymentId = paymentList.List[0].Id
+	}
+
+	if paymentId > 0 {
+		_, _ = l.svcCtx.OrderPaymentService.UpdateOrderPaymentStatus(l.ctx, &omsclient.UpdateOrderPaymentStatusReq{
+			Ids:       []int64{paymentId},
+			PayStatus: order.PayStatusFailed, // OMS 2=支付失败
 		})
 
-		if err == nil {
-			l.Logger.Infof("AliPayNotify 更新订单成功 outTradeNo=%s", outTradeNo)
-			l.svcCtx.AlipayClient.ACKNotification(writer)
-		} else {
-			l.Logger.Errorf("AliPayNotify 更新订单失败 outTradeNo=%s err=%v", outTradeNo, err)
-			_, _ = writer.Write([]byte("error"))
-		}
-		return
+		// 写入操作日志
+		_, _ = l.svcCtx.OrderOperationLogService.AddOrderOperationLog(l.ctx, &omsclient.AddOrderOperationLogReq{
+			OrderId:      paymentList.List[0].OrderId,
+			OperatorType: order.OperatorTypeSystem, // 2=系统操作
+			OperationType: order.OpPaymentFailed,   // 3=支付失败（映射到业务 OpPaymentFailed）
+			OperatorNote:  fmt.Sprintf("支付宝回调支付失败 outTradeNo=%s", outTradeNo),
+		})
 	}
 
 	_, _ = writer.Write([]byte("success"))
@@ -160,7 +233,7 @@ func (l *PaymentOperationsUtils) WechatNotify(writer http.ResponseWriter, reques
 	// 2. 构造签名串: timestamp + nonce + request_body
 	// 3. 使用平台证书验签
 	// 4. 解析 JSON 请求体获取 transaction_id, out_trade_no, trade_state
-	// 5. trade_state == "SUCCESS" → 更新 OMS 状态
+	// 5. trade_state == "SUCCESS" → 更新 OMS 状态（复用 AliPayNotify 逻辑）
 	// 6. 返回 HTTP 200
 
 	l.Logger.Infof("WechatNotify 收到回调")
@@ -168,7 +241,9 @@ func (l *PaymentOperationsUtils) WechatNotify(writer http.ResponseWriter, reques
 }
 
 // UpdatePaidStatus 支付成功后的 Saga 补偿（OMS 状态同步）
-// OMS orderStatus=2(已支付), payStatus=1(已支付)
+// ⚠️ 已废弃（Story 6-5 Task 5 重构）
+// AliPayNotify 已内联处理 pay_status=1 + order_status=2 + 操作日志
+// 此方法保留仅用于兼容外部调用，实际逻辑已迁移到 AliPayNotify
 func (l *PaymentOperationsUtils) UpdatePaidStatus(outTradeNo string) {
 	// Note: 当前 UpdateOrderReq 不含 pay_status
 	// Saga 补偿分两步：
@@ -177,7 +252,7 @@ func (l *PaymentOperationsUtils) UpdatePaidStatus(outTradeNo string) {
 	// 此处先用 orderStatus=2 表示已支付，payStatus 的更新见 Saga 说明
 	_, err := l.svcCtx.OrderService.UpdateOrder(l.ctx, &omsclient.UpdateOrderReq{
 		OrderNo:     outTradeNo,
-		OrderStatus: 2, // OMS 2=已支付
+		OrderStatus: order.OrderStatusPaid, // OMS 2=已支付
 	})
 	if err != nil {
 		l.Logger.Errorf("UpdatePaidStatus 更新订单状态失败 outTradeNo=%s err=%v", outTradeNo, err)
