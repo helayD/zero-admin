@@ -122,7 +122,7 @@ func sendCouponMsg(member *model.UmsMemberInfo, l *LoginLogic) {
 		if err != nil {
 			logc.Errorf(l.ctx, "序列化 JSON 失败: %v", err)
 		}
-		err = l.svcCtx.RabbitMQ.SendMessage("coupon.event.exchange", "first.login.queue", "first.login.key", body)
+		err = l.svcCtx.RabbitMQ.SendMessage("coupon.event.exchange", "direct", "first.login.queue", "first.login.key", body)
 
 		if err != nil {
 			logc.Errorf(l.ctx, "发送新手优惠券消息失败,参数：%+v,异常:%s", param, err.Error())

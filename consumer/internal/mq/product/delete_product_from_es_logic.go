@@ -10,22 +10,25 @@ import (
 
 // DeleteProductFromEs 删除es中商品的索引
 func DeleteProductFromEs(ctx context.Context, body []byte, Search search_client.Search, productSpuService productspuservice.ProductSpuService) {
-	logc.Infof(ctx, "需要删除es中商品的索引信息: %s", body)
+	logc.Infof(ctx, "[Consumer→ES] 收到商品ES删除消息, body=%s", body)
 	payload, current, err := pkgscope.DecodeProductESDeletePayload(body)
 	if err != nil {
-		logc.Errorf(ctx, "解析商品 ES 删除消息失败: %v", err)
+		logc.Errorf(ctx, "[Consumer→ES] 解析商品ES删除消息失败: %v", err)
 		return
 	}
-	logc.Infof(ctx, "处理商品ES删除消息,ids:%+v,traceId:%s,action:%s,actor:%d/%s,version:%d,scope:%s/%d/%d/%d", payload.IDs, payload.TraceID, payload.Action, payload.ActorID, payload.ActorName, payload.Version, current.ScopeType, current.PlatformID, current.TenantID, current.MerchantID)
+	logc.Infof(ctx, "[Consumer→ES] 处理商品ES删除消息, ids=%+v, traceId=%s, action=%s, actor=%d/%s, version=%d, scope=%s/%d/%d/%d",
+		payload.IDs, payload.TraceID, payload.Action, payload.ActorID, payload.ActorName, payload.Version,
+		current.ScopeType, current.PlatformID, current.TenantID, current.MerchantID)
 
 	_, err = Search.Delete(ctx, &search_client.DeleteReq{
 		Ids: payload.IDs,
 	})
 
 	if err != nil {
-		logc.Errorf(ctx, "删除es中商品的索引信息失败,请求参数：%s,错误信息：%+v", body, err)
+		logc.Errorf(ctx, "[Consumer→ES] 删除商品ES索引失败, ids=%+v, traceId=%s, err=%v", payload.IDs, payload.TraceID, err)
 		return
 	}
 
-	logc.Errorf(ctx, "删除es中商品的索引信息成功,请求参数：%s", body)
+	logc.Infof(ctx, "[Consumer→ES] 删除商品ES索引成功, ids=%+v, traceId=%s, scope=%s/%d/%d/%d",
+		payload.IDs, payload.TraceID, current.ScopeType, current.PlatformID, current.TenantID, current.MerchantID)
 }

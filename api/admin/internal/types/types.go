@@ -5733,6 +5733,61 @@ type CustomerServiceOrderListResp struct {
 	Success bool                        `json:"success"`
 }
 
+// 商户工作台订单列表请求（商户Id从JWT自动提取，无需前端传参）
+type MerchantOrderListReq struct {
+	ScopeType     string `form:"scopeType,optional"`
+	PlatformId    int64  `form:"platformId,optional"`
+	TenantId      int64  `form:"tenantId,optional"`
+	MerchantId    int64  `form:"merchantId,optional"`
+	OrderNo       string `form:"orderNo,optional"`
+	OrderStatus   int32  `form:"orderStatus,optional"`
+	ReturnStatus  int32  `form:"returnStatus,optional"`
+	ReceiverName  string `form:"receiverName,optional"`
+	ReceiverPhone string `form:"receiverPhone,optional"`
+	StartTime     string `form:"startTime,optional"`
+	EndTime       string `form:"endTime,optional"`
+	Current       int32  `form:"current,default=1"`
+	PageSize      int32  `form:"pageSize,default=20"`
+}
+
+// 商户工作台订单列表项（聚合：订单+物流+售后+收货信息）
+type MerchantOrderItem struct {
+	Id               int64            `json:"id"`
+	OrderNo          string           `json:"orderNo"`
+	OrderStatus      int32            `json:"orderStatus"`
+	OrderStatusText  string           `json:"orderStatusText"`
+	PayStatus        int32            `json:"payStatus"`
+	PayStatusText    string           `json:"payStatusText"`
+	ReturnStatus     int32            `json:"returnStatus"`
+	ReturnStatusText string           `json:"returnStatusText"`
+	MemberId         int64            `json:"memberId"`
+	MemberNickname   string           `json:"memberNickname"`
+	ReceiverName     string           `json:"receiverName"`
+	ReceiverPhone    string           `json:"receiverPhone"`
+	ReceiverAddress  string           `json:"receiverAddress"`
+	TotalAmount      float32         `json:"totalAmount"`
+	PayAmount        float32         `json:"payAmount"`
+	DeliveryCompany  string           `json:"deliveryCompany,optional"`
+	DeliverySn       string           `json:"deliverySn,optional"`
+	CreateTime       string           `json:"createTime"`
+	PayTime          string           `json:"payTime,optional"`
+	DeliveryTime     string           `json:"deliveryTime,optional"`
+	ReceiveTime      string           `json:"receiveTime,optional"`
+	MerchantNotes    string           `json:"merchantNotes,optional"`
+	OrderItemData    []*OrderItemData `json:"orderItemData"`
+}
+
+// 商户工作台订单列表响应
+type MerchantOrderListResp struct {
+	Code     string               `json:"code"`
+	Message  string               `json:"message"`
+	Total    int64                `json:"total"`
+	Current  int32                `json:"current,default=1"`
+	PageSize int32                `json:"pageSize,default=20"`
+	Success  bool                 `json:"success"`
+	Data     []*MerchantOrderItem `json:"data"`
+}
+
 // 公司退货地址列表请求
 type CompanyAddressListReq struct {
 	ScopeType   string `form:"scopeType,optional"`

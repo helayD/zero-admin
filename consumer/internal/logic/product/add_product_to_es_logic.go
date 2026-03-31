@@ -41,7 +41,7 @@ func (l *AddProductToEsLogic) AddProductToEs(req *types.ProductEsReq) (resp *typ
 			Action: "consumer.product_es.sync",
 		})
 		body, _ := sonic.Marshal(message)
-		err = l.svcCtx.RabbitMQ.SendMessage("product.event.exchange", "syn.product.to.es.queue", "syn.product.key", body)
+		err = l.svcCtx.RabbitMQ.SendMessage("product.event.exchange", "direct", "syn.product.to.es.queue", "syn.product.key", body)
 		if err != nil {
 			return nil, err
 		}

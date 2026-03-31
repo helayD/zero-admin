@@ -94,7 +94,7 @@ func (l *AddOrderLogic) AddOrder(in *omsclient.AddOrderReq) (*omsclient.AddOrder
 
 	message := map[string]any{"id": item.ID}
 	body, _ := sonic.Marshal(message)
-	err = l.svcCtx.RabbitMQ.SendMessage("order.event.exchange", "order.create.queue", "order.create.key", body)
+	err = l.svcCtx.RabbitMQ.SendMessage("order.event.exchange", "direct", "order.create.queue", "order.create.key", body)
 
 	return &omsclient.AddOrderResp{}, nil
 }

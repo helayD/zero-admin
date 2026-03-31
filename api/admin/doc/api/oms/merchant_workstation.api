@@ -1,0 +1,71 @@
+syntax = "v1"
+
+info(
+	doc: "商户工作台 API — Story 6-7 商户自服务订单与售后工作台"
+)
+
+type (
+	MerchantOrderListReq {
+		TenantId       int64  `form:"tenantId,optional"`      // 租户ID（从JWT自动获取，前端不传）
+		MerchantId     int64  `form:"merchantId,optional"`    // 商户ID（从JWT自动获取，前端不传）
+		OrderNo        string `form:"orderNo,optional"`        // 订单编号
+		OrderStatus    int32  `form:"orderStatus,optional"`    // 订单状态：1-待支付,2-已支付,3-已发货,4-已完成,5-已取消,6-已退款,7-售后中
+		ReturnStatus   int32  `form:"returnStatus,optional"`   // 售后状态：0=无售后, 1=待审核, 2=审核通过, 3=审核拒绝
+		ReceiverName   string `form:"receiverName,optional"`    // 收货人姓名
+		ReceiverPhone  string `form:"receiverPhone,optional"`   // 收货人手机
+		StartTime      string `form:"startTime,optional"`       // 开始时间
+		EndTime        string `form:"endTime,optional"`         // 结束时间
+		Current        int32  `form:"current,default=1"`        // 第几页（与项目现有 API 一致）
+		PageSize       int32  `form:"pageSize,default=20"`      // 每页数量
+	}
+
+	MerchantOrderItem {
+		Id                 int64             `json:"id"`
+		OrderNo            string            `json:"orderNo"`
+		OrderStatus        int32             `json:"orderStatus"`
+		OrderStatusText    string            `json:"orderStatusText"`
+		PayStatus          int32             `json:"payStatus"`
+		PayStatusText      string            `json:"payStatusText"`
+		ReturnStatus       int32             `json:"returnStatus"`
+		ReturnStatusText   string            `json:"returnStatusText"`
+		MemberId           int64             `json:"memberId"`
+		MemberNickname     string            `json:"memberNickname"`
+		ReceiverName       string            `json:"receiverName"`
+		ReceiverPhone      string            `json:"receiverPhone"`
+		ReceiverAddress    string            `json:"receiverAddress"`
+		TotalAmount        float32          `json:"totalAmount"`
+		PayAmount          float32          `json:"payAmount"`
+		DeliveryCompany    string            `json:"deliveryCompany,optional"`
+		DeliverySn         string            `json:"deliverySn,optional"`
+		CreateTime         string            `json:"createTime"`
+		PayTime            string            `json:"payTime,optional"`
+		DeliveryTime       string            `json:"deliveryTime,optional"`
+		ReceiveTime        string            `json:"receiveTime,optional"`
+		MerchantNotes      string            `json:"merchantNotes,optional"` // 商户内部备注
+		OrderItemData      []*OrderItemData  `json:"orderItemData"`          // 订单商品明细
+	}
+
+	MerchantOrderListResp {
+		Code     string                `json:"code"`
+		Message  string                `json:"message"`
+		Total    int64                 `json:"total"`
+		Current  int32                 `json:"current,default=1"`
+		PageSize int32                 `json:"pageSize,default=20"`
+		Success  bool                  `json:"success"`
+		Data     []*MerchantOrderItem  `json:"data"`
+	}
+)
+
+@server(
+	jwt: AdminAuth
+	middleware: Authority,Scope
+)
+service admin-api {
+	@doc "商户工作台订单列表（自动以当前 JWT MerchantId 过滤，无需前端传 MerchantId）"
+	@handler queryMerchantOrderList
+	post /api/oms/merchantOrder/list returns (MerchantOrderListResp)
+
+	@doc "商户发货确认（复用已有 DeliveryReq，直接调用 OrderService.Delivery RPC）"
+	@handler confirmMerchantDelivery
+	post /api/oms/merchantDelivery/confirm returns (BaseResp)
+}

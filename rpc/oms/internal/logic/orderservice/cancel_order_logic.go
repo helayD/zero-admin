@@ -69,7 +69,7 @@ func (l *CancelOrderLogic) CancelOrder(in *omsclient.CancelOrderReq) (*omsclient
 
 	message := map[string]any{"id": in.OrderId}
 	body, _ := sonic.Marshal(message)
-	err = l.svcCtx.RabbitMQ.SendMessage("order.event.exchange", "order.cancel.queue", "order.cancel.key", body)
+	err = l.svcCtx.RabbitMQ.SendMessage("order.event.exchange", "direct", "order.cancel.queue", "order.cancel.key", body)
 
 	return &omsclient.CancelOrderResp{
 		CouponIds:   couponIds,

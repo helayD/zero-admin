@@ -20,7 +20,7 @@ func sendOrderEvent(ctx context.Context, svcCtx *svc.ServiceContext, queue, rout
 		"tenantId":   current.TenantID,
 		"merchantId": current.MerchantID,
 	})
-	if err := svcCtx.RabbitMQ.SendMessage("order.event.exchange", queue, routingKey, body); err != nil {
+	if err := svcCtx.RabbitMQ.SendMessage("order.event.exchange", "direct", queue, routingKey, body); err != nil {
 		logc.Errorf(ctx, "发送订单异步消息失败,action:%s,orderId:%d,scope:%+v,异常:%s", action, orderID, current, err.Error())
 	}
 }

@@ -97,12 +97,12 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	}()
 
 	go func() {
-		rabbitmq.ConsumeSimple("syn.product.to.es.queue", func(body []byte) {
+		rabbitmq.ConsumeTopicQueue("pms.product.sync.queue", "product.event.exchange", "pms.product.*.key", func(body []byte) {
 			product.SynProductToEs(context.Background(), body, search, spuService)
 		})
 	}()
 	go func() {
-		rabbitmq.ConsumeSimple("delete.product.from.es.queue", func(body []byte) {
+		rabbitmq.ConsumeTopicQueue("pms.product.delete.queue", "product.event.exchange", "pms.product.*.key", func(body []byte) {
 			product.DeleteProductFromEs(context.Background(), body, search, spuService)
 		})
 	}()

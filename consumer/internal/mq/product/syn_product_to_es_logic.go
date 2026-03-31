@@ -11,13 +11,21 @@ import (
 
 // SynProductToEs 同步商品到es
 func SynProductToEs(ctx context.Context, body []byte, Search search_client.Search, productSpuService productspuservice.ProductSpuService) {
-	logc.Infof(ctx, "需要同步商品的id: %s", body)
+	logc.Infof(ctx, "[Consumer→ES] 收到商品ES同步消息, body=%s", body)
 	payload, current, err := pkgscope.DecodeProductESSyncPayload(body)
 	if err != nil {
-		logc.Errorf(ctx, "解析商品 ES 同步消息失败: %v", err)
+		logc.Errorf(ctx, "[Consumer→ES] 解析商品ES同步消息失败: %v", err)
 		return
 	}
-	logc.Infof(ctx, "处理商品ES同步消息,spuId:%d,traceId:%s,action:%s,actor:%d/%s,version:%d,scope:%s/%d/%d/%d", payload.ID, payload.TraceID, payload.Action, payload.ActorID, payload.ActorName, payload.Version, current.ScopeType, current.PlatformID, current.TenantID, current.MerchantID)
+	logc.Infof(ctx, "[Consumer→ES] 处理商品ES同步消息, spuId=%d, traceId=%s, action=%s, actor=%d/%s, version=%d, scope=%s/%d/%d/%d",
+		payload.ID, payload.TraceID, payload.Action, payload.ActorID, payload.ActorName, payload.Version,
+		current.ScopeType, current.PlatformID, current.TenantID, current.MerchantID)
+
+	// 防御性检查：忽略非法 payload
+	if payload.ID <= 0 {
+		logc.Errorf(ctx, "[Consumer→ES] 商品ID无效，跳过ES同步, traceId=%s, payload=%s", payload.TraceID, body)
+		return
+	}
 
 	res, err := productSpuService.QueryProductSpuDetail(ctx, &productspuservice.QueryProductSpuDetailReq{
 		Id: payload.ID,
@@ -30,10 +38,10 @@ func SynProductToEs(ctx context.Context, body []byte, Search search_client.Searc
 		},
 	})
 	if err != nil {
-		logc.Errorf(ctx, "查询商品异常,请求参数: %s, 异常信息: %+v", body, err)
+		logc.Errorf(ctx, "[Consumer→ES] 查询商品详情失败, spuId=%d, traceId=%s, err=%v", payload.ID, payload.TraceID, err)
 		return
 	}
-	logc.Infof(ctx, "需要同步商品的信息: %v", res)
+	logc.Infof(ctx, "[Consumer→ES] 查询商品详情成功, spuId=%d, name=%s, traceId=%s", res.Data.Id, res.Data.Name, payload.TraceID)
 
 	product := res.Data
 	product1 := &search_client.ProductData{
@@ -87,7 +95,10 @@ func SynProductToEs(ctx context.Context, body []byte, Search search_client.Searc
 		Data: list,
 	})
 	if err != nil {
-		logc.Errorf(ctx, "同步商品到es失败,请求参数：%+v,错误信息：%+v", body, err)
+		logc.Errorf(ctx, "[Consumer→ES] 同步商品到ES失败, spuId=%d, traceId=%s, err=%v", payload.ID, payload.TraceID, err)
+		return
 	}
 
+	logc.Infof(ctx, "[Consumer→ES] 同步商品到ES成功, spuId=%d, traceId=%s, scope=%s/%d/%d/%d",
+		payload.ID, payload.TraceID, current.ScopeType, current.PlatformID, current.TenantID, current.MerchantID)
 }

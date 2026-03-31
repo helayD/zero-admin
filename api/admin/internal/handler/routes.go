@@ -11,6 +11,7 @@ import (
 	cmssubject_category "github.com/feihua/zero-admin/api/admin/internal/handler/cms/subject_category"
 	omscompany_address "github.com/feihua/zero-admin/api/admin/internal/handler/oms/company_address"
 	omscustomer_service_workstation "github.com/feihua/zero-admin/api/admin/internal/handler/oms/customer_service_workstation"
+	omsmerchant_workstation "github.com/feihua/zero-admin/api/admin/internal/handler/oms/merchant_workstation"
 	omsorder_delivery "github.com/feihua/zero-admin/api/admin/internal/handler/oms/order_delivery"
 	omsorder_main "github.com/feihua/zero-admin/api/admin/internal/handler/oms/order_main"
 	omsorder_return "github.com/feihua/zero-admin/api/admin/internal/handler/oms/order_return"
@@ -345,6 +346,16 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Method:  http.MethodPost,
 					Path:    "/orderOperationLog/list",
 					Handler: omscustomer_service_workstation.QueryOrderOperationLogListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/merchantOrder/list",
+					Handler: omsmerchant_workstation.MerchantOrderListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/merchantDelivery/confirm",
+					Handler: omsmerchant_workstation.ConfirmDeliveryHandler(serverCtx),
 				},
 			}...,
 		),

@@ -250,8 +250,8 @@ func (r *RabbitMQ) SendDelayMessage(exchange, queueName, key string, message []b
 	return nil
 }
 
-// SendMessage 发送消息
-func (r *RabbitMQ) SendMessage(exchange, queueName, key string, message []byte) error {
+// SendMessage 发送消息（交换机类型由 caller 指定）
+func (r *RabbitMQ) SendMessage(exchange, exchangeType, queueName, key string, message []byte) error {
 	channel, err := r.openChannel()
 	if err != nil {
 		logx.Errorf("rabbitmq获取channel失败：%s:%+v", "failed to open a channel", err)
@@ -263,13 +263,13 @@ func (r *RabbitMQ) SendMessage(exchange, queueName, key string, message []byte) 
 
 	// 声明交换机
 	err = channel.ExchangeDeclare(
-		exchange, // 交换机名称
-		"direct", // 类型
-		true,     // 持久化
-		false,    // 自动删除
-		false,    // 内部
-		false,    // 不等待
-		nil,      // 其他属性
+		exchange,      // 交换机名称
+		exchangeType, // 类型（direct/topic/fanout）
+		true,         // 持久化
+		false,        // 自动删除
+		false,        // 内部
+		false,        // 不等待
+		nil,          // 其他属性
 	)
 	if err != nil {
 		logx.Errorf("声明交换机失败：%+v", err)
@@ -319,4 +319,92 @@ func (r *RabbitMQ) SendMessage(exchange, queueName, key string, message []byte) 
 	}
 
 	return nil
+}
+
+// ConsumeTopicQueue topic 交换机模式下的消费者
+// queueName: 队列名
+// exchange: 交换机名
+// routingKey: 路由键（支持通配符，如 pms.product.*.key）
+// handler: 消息处理函数
+func (r *RabbitMQ) ConsumeTopicQueue(queueName, exchange, routingKey string, handler func([]byte)) {
+	channel, err := r.openChannel()
+	if err != nil {
+		logx.Errorf("rabbitmq获取channel失败：%s:%+v", "failed to open a channel", err)
+		panic(err)
+	}
+
+	// 声明 topic 类型交换机
+	err = channel.ExchangeDeclare(
+		exchange,   // 交换机名称
+		"topic",    // 类型
+		true,       // 持久化
+		false,      // 自动删除
+		false,      // 内部
+		false,      // 不等待
+		nil,        // 其他属性
+	)
+	if err != nil {
+		_ = channel.Close()
+		logx.Errorf("声明topic交换机 %s 失败: %+v", exchange, err)
+		panic(err)
+	}
+
+	// 声明队列
+	q, err := channel.QueueDeclare(
+		queueName,
+		true,  // 持久化
+		false, // 自动删除
+		false, // 排他性
+		false, // 不阻塞
+		nil,
+	)
+	if err != nil {
+		_ = channel.Close()
+		logx.Errorf("声明队列 %s 失败: %+v", queueName, err)
+		panic(err)
+	}
+
+	// 绑定队列到 topic 交换机（使用通配符路由键）
+	err = channel.QueueBind(
+		queueName,  // 队列名
+		routingKey, // 路由键（支持 * 和 # 通配符）
+		exchange,   // 交换机
+		false,
+		nil,
+	)
+	if err != nil {
+		_ = channel.Close()
+		logx.Errorf("绑定队列 %s 到交换机 %s 失败(routingKey=%s): %+v", queueName, exchange, routingKey, err)
+		panic(err)
+	}
+
+	// 接收消息
+	msgs, err := channel.Consume(
+		q.Name, // queue
+		"",     // consumer tag
+		true,   // auto-ack（当前实现使用 auto-ack=true，后续 Story 7.4 可改进为手动 ACK）
+		false,  // exclusive
+		false,  // no-local
+		false,  // no-wait
+		nil,
+	)
+	if err != nil {
+		_ = channel.Close()
+		logx.Errorf("队列 %s 接收消息失败: %+v", queueName, err)
+		panic(err)
+	}
+
+	logx.Infof("topic consumer 已启动: queue=%s, exchange=%s, routingKey=%s", queueName, exchange, routingKey)
+
+	forever := make(chan bool)
+	go func() {
+		defer func() {
+			_ = channel.Close()
+		}()
+		for d := range msgs {
+			handler(d.Body)
+		}
+	}()
+
+	<-forever
 }

@@ -43,7 +43,7 @@ func (l *DeleteProductFromEsLogic) DeleteProductFromEs(req *types.ProductEsReq) 
 		Action: "consumer.product_es.delete",
 	})
 	body, _ := sonic.Marshal(message)
-	err = l.svcCtx.RabbitMQ.SendMessage("product.event.exchange", "delete.product.from.es.queue", "delete.product.key", body)
+	err = l.svcCtx.RabbitMQ.SendMessage("product.event.exchange", "direct", "delete.product.from.es.queue", "delete.product.key", body)
 
 	return &types.Response{
 		Message: "从es删除商品索引成功",
