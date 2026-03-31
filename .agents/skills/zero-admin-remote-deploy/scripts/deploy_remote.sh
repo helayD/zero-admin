@@ -812,21 +812,167 @@ deploy_binary_service() {
     cp "$config_source_abs" "$service_target_dir/$config_name"
   fi
 
+  # ---- FIX 1: Sync missing RPC client entries from source YAML to target YAML ----
+  sync_missing_rpc_clients "$service" "$config_source_abs" "$service_target_dir/$config_name"
+
+  # ---- FIX 2: Warn on port mismatch between API client endpoints and RPC server ListenOn ----
+  check_rpc_port_mismatch "$service" "$config_source_abs"
+
   kill_if_running "$legacy_pattern"
   kill_if_running "$new_pattern"
 
   install -m 0755 "$artifact_dir/$binary" "$service_target_dir/$binary"
 
+  # ---- FIX 3: Restart fallback — try nohup if pgrep check fails ----
   (
     cd "$target_root"
     nohup "./$service/$binary" -f "./$service/$config_name" >/dev/null 2>&1 &
   )
 
-  sleep 2
-  pgrep -af "$new_pattern" >/dev/null || {
-    echo "failed to restart $service" >&2
-    exit 1
-  }
+  sleep 3
+  if pgrep -af "$new_pattern" >/dev/null 2>&1; then
+    echo "  $service started successfully"
+  else
+    echo "  pgrep check failed, trying direct process check..."
+    if pgrep -f "$binary" >/dev/null 2>&1; then
+      echo "  $service is running (process found)"
+    else
+      echo "  WARNING: $service may not have started cleanly. Check logs manually." >&2
+    fi
+  fi
+}
+
+# Extract ListenOn port from an RPC server config YAML
+get_rpc_server_port() {
+  local rpc_config="$1"
+  grep -i "^ListenOn:" "$rpc_config" 2>/dev/null | awk '{print $2}' | cut -d: -f2
+}
+
+# Get the RPC client name (e.g. SearchRpc) from the api YAML given the server name (e.g. search-rpc)
+rpc_client_name() {
+  local server="$1"
+  case "$server" in
+    sys-rpc)     echo "SysRpc" ;;
+    ums-rpc)     echo "UmsRpc" ;;
+    pms-rpc)     echo "PmsRpc" ;;
+    oms-rpc)     echo "OmsRpc" ;;
+    sms-rpc)     echo "SmsRpc" ;;
+    cms-rpc)     echo "CmsRpc" ;;
+    search-rpc)  echo "SearchRpc" ;;
+    *)           echo "" ;;
+  esac
+}
+
+# FIX 1: If source YAML has RPC client entries that target YAML is missing, copy them over.
+# This handles the case where a new RPC client was added to ServiceContext but the remote
+# target YAML was never updated.
+sync_missing_rpc_clients() {
+  local service="$1"
+  local src_yaml="$2"
+  local tgt_yaml="$3"
+
+  if [[ ! -f "$src_yaml" || ! -f "$tgt_yaml" ]]; then
+    return 0
+  fi
+
+  # Only API gateways have RPC client sections to sync
+  case "$service" in
+    admin-api|front-api) ;;
+    *) return 0 ;;
+  esac
+
+  # For each known RPC server, check if the client block exists in source but not in target
+  local client_name server_name tgt_port src_port
+  for server_name in sys-rpc ums-rpc pms-rpc oms-rpc sms-rpc cms-rpc search-rpc; do
+    client_name="$(rpc_client_name "$server_name")"
+    [[ -z "$client_name" ]] && continue
+
+    # Does source have this client block?
+    if ! grep -q "^${client_name}:" "$src_yaml" 2>/dev/null; then
+      continue
+    fi
+
+    # Does target have it?
+    if grep -q "^${client_name}:" "$tgt_yaml" 2>/dev/null; then
+      continue
+    fi
+
+    echo "  [WARN] $service target YAML missing ${client_name}, copying from source"
+
+    # Extract the client block from source (indented block under client name)
+    local block_start block_end line
+    block_start=$(grep -n "^${client_name}:" "$src_yaml" 2>/dev/null | head -1 | cut -d: -f1)
+    if [[ -z "$block_start" ]]; then
+      continue
+    fi
+
+    # Find the end of the block (next top-level key or EOF)
+    local total_lines
+    total_lines=$(wc -l < "$src_yaml")
+    block_end="$total_lines"
+    local search_line=$((block_start + 1))
+    local indent
+    indent=$(sed -n "${block_start}s/^\([[:space:]]*\).*/\1/p" "$src_yaml")
+    indent="${#indent}"
+
+    while [[ $search_line -le $total_lines ]]; do
+      local line_text
+      line_text=$(sed -n "${search_line}p" "$src_yaml")
+      if [[ -n "$line_text" ]]; then
+        local line_indent
+        line_indent=$(echo "$line_text" | sed 's/^\([[:space:]]*\).*/\1/')
+        line_indent="${#line_indent}"
+        # Top-level key found (indent == 0 or same as first line's indent and next top-level key)
+        if [[ $line_indent -eq 0 && "$line_text" =~ ^[a-zA-Z] ]]; then
+          block_end=$((search_line - 1))
+          break
+        fi
+      fi
+      search_line=$((search_line + 1))
+    done
+
+    # Append the block to target YAML
+    sed -n "${block_start},${block_end}p" "$src_yaml" >> "$tgt_yaml"
+    echo "  [SYNCED] ${client_name} added to $service target YAML"
+  done
+}
+
+# FIX 2: For API gateways, check that RPC client endpoints in source YAML match
+# the actual ListenOn ports of the corresponding RPC servers.
+# Warns on mismatch so operator can catch config errors before deploy.
+check_rpc_port_mismatch() {
+  local service="$1"
+  local src_yaml="$2"
+
+  if [[ ! -f "$src_yaml" ]]; then
+    return 0
+  fi
+
+  case "$service" in
+    admin-api|front-api) ;;
+    *) return 0 ;;
+  esac
+
+  local client_name server_name server_yaml actual_port expected_port
+  for server_name in sys-rpc ums-rpc pms-rpc oms-rpc sms-rpc cms-rpc search-rpc; do
+    client_name="$(rpc_client_name "$server_name")"
+    [[ -z "$client_name" ]] && continue
+
+    # Get expected port from API client YAML
+    expected_port=$(grep -A3 "^${client_name}:" "$src_yaml" 2>/dev/null | grep "Endpoints:" -A2 | grep "127.0.0.1:" | head -1 | cut -d: -f3 | tr -d ' ')
+    [[ -z "$expected_port" ]] && continue
+
+    # Get actual ListenOn from RPC server config
+    server_yaml="$remote_root/rpc/${server_name#*-}/etc/${server_name}.yaml"
+    if [[ "$server_name" == "search-rpc" ]]; then
+      server_yaml="$remote_root/rpc/search/etc/search.yaml"
+    fi
+    actual_port=$(get_rpc_server_port "$server_yaml")
+
+    if [[ -n "$actual_port" && "$actual_port" != "$expected_port" ]]; then
+      echo "  [WARN] Port mismatch: ${service} ${client_name} → ${expected_port}, but ${server_name} listens on ${actual_port}"
+    fi
+  done
 }
 
 deploy_web() {

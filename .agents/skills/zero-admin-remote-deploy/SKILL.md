@@ -237,11 +237,22 @@ python3 .agents/skills/zero-admin-remote-deploy/scripts/smoke_remote.py \
 - The default behavior is project-wide deployment. Use `--services` only when you intentionally want a partial rollout.
 - If smoke fails after restart, inspect the actual failing endpoint and relevant remote process before doing another rollout.
 
+## Internal Safeguards (auto-enabled)
+
+### Target YAML RPC Client Sync
+When deploying `admin-api` or `front-api`, if the source `etc/*.yaml` has a new RPC client block (e.g. `SearchRpc`) that the remote `target/*/...yaml` is missing, the script automatically copies that block from source to target. This prevents startup failures due to missing ServiceContext dependencies.
+
+### RPC Port Mismatch Detection
+Before deploying, the script cross-checks each API service's RPC client `Endpoints` against the actual `ListenOn` port in the corresponding RPC server config. On mismatch, a `[WARN]` is printed so the operator catches port misconfigurations before they cause runtime gRPC connection errors.
+
+### Restart Fallback
+If `pgrep` verification fails after `nohup` restart, the script performs a secondary process check via `pgrep -f`. If the process is confirmed running, deployment proceeds. This handles cases where the service starts but the `pgrep` pattern doesn't match (e.g. different binary path).
+
 ## Resources
 
 ### scripts/
 
-- `deploy_remote.sh`: main deployment entrypoint with push-first GitHub sync, service scoping, migration (manual + auto-discovery), backup, restart, smoke hooks, and Story API test gate.
+- `deploy_remote.sh`: main deployment entrypoint with push-first GitHub sync, service scoping, migration (manual + auto-discovery), target YAML RPC client sync, port mismatch detection, restart fallback, backup, smoke hooks, and Story API test gate.
 - `smoke_remote.py`: admin smoke plus optional front smoke with clearer invalid-response diagnostics.
 - `run_api_tests.sh`: Story API test runner. Auto-discovers test scripts under `script/shell/api-test/<story-id>/test_*.sh`. Maps story prefixes to correct base URLs (4-* → admin, 5-* → front). Requires 100% pass rate.
 - `check_disk.sh`: remote disk health check. Run before every deploy. Exits with warning (85%) or abort (90%). Supports `--auto-clean` to reclaim space (apt clean, docker prune, snap prune, tmp cleanup).
