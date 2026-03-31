@@ -2,6 +2,418 @@
 
 请使用中文回答。
 
+---
+
+## 项目概述
+
+**Zero-Admin** 是一套基于 go-zero 框架实现的企业级电商系统，采用微服务架构。
+
+### 技术栈
+- **Go 1.25** + go-zero 1.9.3
+- **GORM** + MySQL (ORM持久层)
+- **gRPC** (服务间通信)
+- **MongoDB** / **Redis** / **Elasticsearch**
+
+### 微服务模块
+| 模块 | 描述 |
+|------|------|
+| sys | 系统管理（用户、角色、菜单、部门、租户） |
+| ums | 会员管理 |
+| pms | 商品管理 |
+| oms | 订单管理 |
+| sms | 营销管理 |
+| cms | 内容管理 |
+| search | 搜索服务 |
+
+---
+
+## 构建与测试命令
+
+### Makefile 常用命令
+
+```bash
+# 安装依赖
+make deps
+
+# 构建所有服务
+make build
+
+# 清理构建产物
+make clean
+
+# 格式化代码 (goctl)
+make format
+
+# 生成代码 (API + RPC)
+make gen
+
+# 生成 Model 代码 (GORM gen)
+make model
+
+# 构建 Docker 镜像
+make image
+
+# 运行测试
+make test
+```
+
+### 单个测试命令
+
+```bash
+# 运行单个测试文件
+go test ./rpc/sys/internal/logic/userservice/... -run TestUpdateUserRoleList -v
+
+# 运行单个测试函数
+go test ./api/admin/internal/logic/pms/product_spu/... -run TestAddProductSpuPassesScopeAndNestedDetailIDsToRPC -v
+
+# 运行带覆盖率
+go test ./rpc/sys/... -coverprofile=coverage.out -covermode=atomic
+
+# 运行所有测试
+go test ./...
+
+# 查看测试输出
+go test ./... -v -count=1
+```
+
+### 服务启动
+
+```bash
+# 启动所有服务
+make start
+
+# 停止所有服务
+make stop
+
+# 重启所有服务
+make restart
+```
+
+---
+
+## 代码风格指南
+
+### 1. 命名规范
+
+```go
+// 结构体：PascalCase
+type UpdateUserRoleListLogic struct {
+    ctx    context.Context
+    svcCtx *svc.ServiceContext
+    Logger logx.Logger
+}
+
+// 函数/方法：PascalCase
+func NewUpdateUserRoleListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *UpdateUserRoleListLogic
+
+// 变量/参数：camelCase
+userId := in.UserId
+roleIds := in.RoleIds
+
+// 常量：PascalCase 或 全大写+下划线
+const UserActivationDisabled int32 = 0
+const MAX_RETRY_COUNT = 3
+```
+
+### 2. 导入组织
+
+```go
+import (
+    "context"
+    "errors"
+    "fmt"
+    "strings"
+    "time"
+
+    // 第三方库
+    "github.com/zeromicro/go-zero/core/logc"
+    "gorm.io/gorm"
+    "gorm.io/gorm/clause"
+
+    // 本地包
+    "github.com/feihua/zero-admin/rpc/sys/gen/model"
+    "github.com/feihua/zero-admin/rpc/sys/gen/query"
+    logiccommon "github.com/feihua/zero-admin/rpc/sys/internal/logic/common"
+    "github.com/feihua/zero-admin/rpc/sys/internal/svc"
+    "github.com/feihua/zero-admin/rpc/sys/sysclient"
+)
+```
+
+**顺序**：标准库 → 第三方库 → 本地包（按字母排序）
+
+### 3. 错误处理
+
+```go
+// 使用 errors.New() 创建错误
+return nil, errors.New("不允许操作超级管理员用户")
+
+// 包装错误
+return nil, fmt.Errorf("角色[%s]主体范围配置非法: %w", row.RoleName, scopeErr)
+
+// 检查错误类型
+if errors.Is(err, gorm.ErrRecordNotFound) {
+    return nil, errors.New("指定的租户不存在")
+}
+
+// 事务回滚
+err = query.Q.Transaction(func(tx *query.Query) error {
+    // 操作
+    if err != nil {
+        return err  // 自动回滚
+    }
+    return nil
+})
+```
+
+### 4. 日志记录
+
+```go
+// 使用 logc (带上下文)
+logc.Errorf(l.ctx, "删除用户与角色的关联失败,参数:%+v,异常:%s", in, err.Error())
+
+// 使用 logx.WithContext
+Logger: logx.WithContext(ctx),
+
+// Info 日志
+logx.Infof("mysql已连接")
+```
+
+### 5. 数据库模型 (GORM)
+
+```go
+// 使用 gorm tag 映射列名
+type UserScopeBinding struct {
+    UserID           int64  `gorm:"column:user_id"`
+    ScopeType        string `gorm:"column:scope_type"`
+    PlatformID       int64  `gorm:"column:platform_id"`
+    TenantID         int64  `gorm:"column:tenant_id"`
+}
+
+// 实现 TableName 方法
+func (*UserScopeBinding) TableName() string {
+    return "sys_user_scope"
+}
+```
+
+### 6. gRPC Service 结构
+
+```go
+// Logic 结构体
+type UpdateUserRoleListLogic struct {
+    ctx    context.Context
+    svcCtx *svc.ServiceContext
+    logx.Logger
+}
+
+// 构造函数
+func NewUpdateUserRoleListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *UpdateUserRoleListLogic {
+    return &UpdateUserRoleListLogic{
+        ctx:    ctx,
+        svcCtx: svcCtx,
+        Logger: logx.WithContext(ctx),
+    }
+}
+
+// 业务方法
+func (l *UpdateUserRoleListLogic) UpdateUserRoleList(in *sysclient.UpdateUserRoleListReq) (*sysclient.UpdateUserRoleListResp, error) {
+    // 业务逻辑
+}
+```
+
+### 7. 注释规范
+
+```go
+// UpdateUserRoleList 分配用户角色
+/*
+Author: LiuFeiHua
+Date: 2024/5/23 17:38
+*/
+func (l *UpdateUserRoleListLogic) UpdateUserRoleList(in *sysclient.UpdateUserRoleListReq) (*sysclient.UpdateUserRoleListResp, error) {
+    // 1.判断是否为超级管理员
+    // 2.删除用户与角色的关联
+    // 3.添加用户与角色的关联
+}
+```
+
+### 8. 测试模式
+
+```go
+// Mock gRPC 客户端
+type mockProductSpuService struct {
+    productspuservice.ProductSpuService
+    addFn func(context.Context, *pmsclient.ProductSpuReq, ...grpc.CallOption) (*pmsclient.ProductSpuResp, error)
+}
+
+func (m *mockProductSpuService) AddProductSpu(ctx context.Context, in *pmsclient.ProductSpuReq, opts ...grpc.CallOption) (*pmsclient.ProductSpuResp, error) {
+    return m.addFn(ctx, in, opts...)
+}
+
+// 测试函数命名: Test{Method}{Scenario}
+func TestAddProductSpuPassesScopeAndNestedDetailIDsToRPC(t *testing.T) {
+    // given
+    ctx := newAdminProductSpuContext("merchant", 1, 88, 3001)
+    
+    // when
+    logic := NewAddProductSpuLogic(ctx, &svc.ServiceContext{
+        ProductSpuService: &mockProductSpuService{...},
+    })
+    _, err := logic.AddProductSpu(&types.AddProductSpuReq{...})
+    
+    // then
+    if err != nil {
+        t.Fatalf("AddProductSpu returned error: %v", err)
+    }
+}
+```
+
+### 9. Context 传递
+
+```go
+// 在请求中传递用户信息
+ctx := context.WithValue(ctx, "userId", json.Number("1001"))
+ctx = context.WithValue(ctx, "userName", "tester")
+ctx = context.WithValue(ctx, "scopeType", scopeType)
+
+// 使用 WithContext 执行数据库操作
+count, err := query.SysUser.WithContext(l.ctx).Where(query.SysUser.ID.Eq(in.UserId)).Count()
+```
+
+### 10. 目录结构
+
+```
+rpc/
+  {service}/
+    {service}.go              # main 入口
+    etc/{service}.yaml       # 配置文件
+    internal/
+      config/config.go       # 配置结构体
+      logic/                 # 业务逻辑
+        {service}service/
+          *logic.go
+      svc/servicecontext.go # 依赖注入
+    gen/
+      model/                 # GORM 模型
+      query/                 # GORM Gen 查询
+    proto/                   # proto 文件
+api/
+  {api}/
+    {api}.go                 # main 入口
+    internal/
+      handler/               # HTTP handler
+      logic/                 # 业务逻辑
+      types/                 # 请求/响应类型
+      middleware/            # 中间件
+pkg/
+  {shared_lib}/             # 共享包
+```
+
+---
+
+## 代码生成 (goctl)
+
+```bash
+# 生成 API 代码
+goctl api go -api ./api/admin/doc/api/admin.api -dir ./api/admin/
+
+# 生成 RPC 代码
+goctl rpc protoc rpc/sys/sys.proto \
+  --go_out=./rpc/sys/ \
+  --go-grpc_out=./rpc/sys/ \
+  --zrpc_out=./rpc/sys/ -m
+
+# 格式化 API 目录
+goctl api format --dir api/admin/doc/api
+```
+
+---
+
+## 静态分析与格式化
+
+项目已配置 **golangci-lint**（见 `.golangci.yml`）。使用以下命令：
+
+```bash
+# 安装依赖后运行
+make deps
+
+# 运行 golangci-lint 检查
+make lint
+
+# 自动修复可修复的问题
+make lint-fix
+
+# 基础检查（无 golangci-lint 时）
+go fmt ./...
+goimports -l -w .
+go vet ./...
+```
+
+### golangci-lint 配置
+
+启用以下 linter：
+- `errcheck` - 检查未处理的错误
+- `govet` / `staticcheck` - 可疑代码检查
+- `unused` / `ineffassign` - 未使用代码检测
+- `stylecheck` - 代码风格检查
+- `goimports` - 导入整理
+- `misspell` - 拼写错误检查
+- `bodyclose` - HTTP 响应体未关闭检测
+- `dupl` - 代码重复检测
+
+> 注：如需跳过某些文件，可添加 `//nolint:lintername` 注释
+
+---
+
+## 常见模式
+
+### ServiceContext 依赖注入
+
+```go
+type ServiceContext struct {
+    Config   config.Config
+    DB       *gorm.DB
+    Redis    *redis.Redis
+    RedisKey string
+}
+
+func NewServiceContext(c config.Config) *ServiceContext {
+    db, err := gorm.Open(mysql.Open(c.Mysql.Datasource), &gorm.Config{...})
+    if err != nil {
+        panic(err)
+    }
+    return &ServiceContext{Config: c, DB: db}
+}
+```
+
+### 事务处理
+
+```go
+err = query.Q.Transaction(func(tx *query.Query) error {
+    // 执行多个数据库操作
+    if _, err = q.WithContext(l.ctx).Where(...).Delete(); err != nil {
+        return err
+    }
+    if err = q.WithContext(l.ctx).CreateInBatches(...); err != nil {
+        return err
+    }
+    return nil
+})
+```
+
+### Scope 治理模式
+
+项目使用统一的 `scope.GovernanceScope` 进行多租户、多商户治理：
+
+```go
+// 验证角色在当前 scope 内
+if err = logiccommon.ValidateRoleIDsInScope(l.ctx, l.svcCtx.DB, currentScope, in.RoleIds); err != nil {
+    return nil, err
+}
+```
+
+---
+
+## 后续 BMAD 相关规则 (保持不变)
+
 ## Agent 任务感知与 codex-autopilot 绑定
 
 - 当前 agent 只负责本仓库：`/Users/helay/Documents/GitHub/zero-admin`

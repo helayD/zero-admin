@@ -28,7 +28,7 @@ type UpdateOrderStatusReq struct {
 
 // UpdateOrderStatusResp 统一状态更新响应
 type UpdateOrderStatusResp struct {
-	Code      int    // 0=成功，非0=失败
+	Code      int // 0=成功，非0=失败
 	Message   string
 	OldStatus int    // 变更前 order_status
 	NewStatus int    // 变更后 order_status
@@ -276,8 +276,8 @@ func (s *OrderStatusService) writeOperationLog(orderId int64, action int, operat
 	omsOpType := s.mapActionToOmsOpType(action)
 
 	_, err := s.svcCtx.OrderOperationLogService.AddOrderOperationLog(s.ctx, &omsclient.AddOrderOperationLogReq{
-		OrderId:      orderId,
-		OperatorType: int32(operatorType), // 1=用户, 2=系统, 3=管理员
+		OrderId:       orderId,
+		OperatorType:  int32(operatorType), // 1=用户, 2=系统, 3=管理员
 		OperationType: int32(omsOpType),
 		OperatorNote:  bizData,
 	})
@@ -333,6 +333,59 @@ func (s *OrderStatusService) setIdempotentKey(orderId int64, action int) {
 	_ = s.svcCtx.Redis.Setex(key, "1", 86400)
 }
 
+func (s *OrderStatusService) getCancelCompensationStatus(orderId int64) string {
+	key := fmt.Sprintf("order:cancel:compensation:%d", orderId)
+	val, err := s.svcCtx.Redis.GetCtx(s.ctx, key)
+	if err != nil {
+		return ""
+	}
+	return val
+}
+
+func (s *OrderStatusService) getLatestAfterSale(orderId, memberId int64) (int32, int64, string, string) {
+	returns, err := s.svcCtx.OrderReturnService.QueryOrderReturnList(s.ctx, &omsclient.QueryOrderReturnListReq{
+		OrderId:  orderId,
+		MemberId: memberId,
+		Status:   2,
+		PageNum:  1,
+		PageSize: 20,
+	})
+	if err != nil || returns == nil || len(returns.List) == 0 {
+		return 0, 0, "", ""
+	}
+
+	latest := returns.List[0]
+	for _, item := range returns.List[1:] {
+		if item.Id > latest.Id {
+			latest = item
+		}
+	}
+
+	lastAt := latest.CreateTime
+	switch latest.Status {
+	case 1:
+		if latest.HandleTime != "" {
+			lastAt = latest.HandleTime
+		}
+	case 2:
+		if latest.ReceiveTime != "" {
+			lastAt = latest.ReceiveTime
+		}
+	case 3:
+		if latest.RefundTime != "" {
+			lastAt = latest.RefundTime
+		}
+	case 4, 5:
+		if latest.CloseTime != "" {
+			lastAt = latest.CloseTime
+		} else if latest.HandleTime != "" {
+			lastAt = latest.HandleTime
+		}
+	}
+
+	return latest.Status, latest.Id, latest.ReturnNo, lastAt
+}
+
 // GetOrderStatusSnapshot 获取订单状态快照（聚合订单+支付+日志）
 func (s *OrderStatusService) GetOrderStatusSnapshot(orderId, memberId int64) (*OrderSnapshot, error) {
 	// 归属校验
@@ -357,10 +410,13 @@ func (s *OrderStatusService) GetOrderStatusSnapshot(orderId, memberId int64) (*O
 		payStatus = int(orderDetail.Data.PaymentData[0].PayStatus)
 	}
 
+	cancelCompensationStatus := s.getCancelCompensationStatus(orderId)
+	afterSaleStatus, returnId, returnNo, afterSaleUpdatedAt := s.getLatestAfterSale(orderId, memberId)
+
 	// 查询操作日志
 	logs, _ := s.svcCtx.OrderOperationLogService.QueryOrderOperationLogList(s.ctx, &omsclient.QueryOrderOperationLogListReq{
-		OrderId: orderId,
-		PageNum: 1,
+		OrderId:  orderId,
+		PageNum:  1,
 		PageSize: 20,
 	})
 
@@ -368,7 +424,7 @@ func (s *OrderStatusService) GetOrderStatusSnapshot(orderId, memberId int64) (*O
 	if logs != nil && logs.List != nil {
 		for _, log := range logs.List {
 			logEntries = append(logEntries, OperationLogEntry{
-				Id:           log.Id,
+				Id:            log.Id,
 				OperationType: int(log.OperationType),
 				OperatorType:  int(log.OperatorType),
 				OperatorNote:  log.OperatorNote,
@@ -377,18 +433,50 @@ func (s *OrderStatusService) GetOrderStatusSnapshot(orderId, memberId int64) (*O
 		}
 	}
 
+	// Story 7.3B: 计算一致性阶段
+	stage, pendingActions := CalcConsistencyStage(int(orderDetail.Data.OrderStatus), payStatus, cancelCompensationStatus, afterSaleStatus)
+	stageText := GetConsistencyStageText(stage)
+	consistencyResult := calcConsistencyResult(int(orderDetail.Data.OrderStatus), payStatus, cancelCompensationStatus, afterSaleStatus)
+	pendingActionsText := GetPendingActionsText(pendingActions)
+	consistencyMessage := buildConsistencyMessage(stage, consistencyResult, afterSaleStatus)
+
+	// 获取最近一次一致性更新时间（从操作日志中推断）
+	var lastConsistencyAt string
+	if afterSaleUpdatedAt != "" {
+		lastConsistencyAt = afterSaleUpdatedAt
+	} else if len(logEntries) > 0 {
+		lastConsistencyAt = logEntries[0].CreateTime
+	}
+
+	afterSaleStatusText := ""
+	if returnId > 0 {
+		afterSaleStatusText = getAfterSaleStatusText(afterSaleStatus)
+	}
+
 	return &OrderSnapshot{
-		OrderId:      orderDetail.Data.Id,
-		OrderNo:      orderDetail.Data.OrderNo,
-		OrderStatus:  int(orderDetail.Data.OrderStatus),
-		PayStatus:    payStatus,
-		OrderStatusText: GetStatusText(int(orderDetail.Data.OrderStatus)),
-		PayStatusText:   GetPayStatusText(payStatus),
-		OptLogs:      logEntries,
+		OrderId:              orderDetail.Data.Id,
+		OrderNo:              orderDetail.Data.OrderNo,
+		OrderStatus:          int(orderDetail.Data.OrderStatus),
+		PayStatus:            payStatus,
+		OrderStatusText:      GetStatusText(int(orderDetail.Data.OrderStatus)),
+		PayStatusText:        GetPayStatusText(payStatus),
+		OptLogs:              logEntries,
+		ConsistencyStage:     stage,
+		ConsistencyStageText: stageText,
+		ConsistencyResult:    consistencyResult,
+		ConsistencyMessage:   consistencyMessage,
+		LastConsistencyAt:    lastConsistencyAt,
+		PendingActions:       pendingActions,
+		PendingActionsText:   pendingActionsText,
+		AftersaleStatus:      afterSaleStatus,
+		AftersaleStatusText:  afterSaleStatusText,
+		ReturnId:             returnId,
+		ReturnNo:             returnNo,
 	}, nil
 }
 
 // OrderSnapshot 订单状态快照
+// Story 7.3B 扩展：新增一致性阶段字段，用于表达权益同步状态
 type OrderSnapshot struct {
 	OrderId         int64
 	OrderNo         string
@@ -397,6 +485,18 @@ type OrderSnapshot struct {
 	OrderStatusText string
 	PayStatusText   string
 	OptLogs         []OperationLogEntry
+	// ==================== Story 7.3B: 一致性阶段字段 ====================
+	ConsistencyStage     int      // 一致性阶段枚举值
+	ConsistencyStageText string   // 一致性阶段中文描述
+	ConsistencyResult    int      // 一致性结果枚举值
+	ConsistencyMessage   string   // 用户/运营可理解的状态提示
+	LastConsistencyAt    string   // 最近阶段更新时间
+	PendingActions       int      // 待处理动作位掩码
+	PendingActionsText   []string // 待处理动作中文描述列表
+	AftersaleStatus      int32
+	AftersaleStatusText  string
+	ReturnId             int64
+	ReturnNo             string
 }
 
 // OperationLogEntry 操作日志条目

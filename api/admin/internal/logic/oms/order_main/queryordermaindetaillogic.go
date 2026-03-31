@@ -9,6 +9,7 @@ import (
 	"github.com/feihua/zero-admin/api/admin/internal/types"
 	"github.com/feihua/zero-admin/rpc/oms/omsclient"
 	"github.com/zeromicro/go-zero/core/logc"
+	"github.com/zeromicro/go-zero/core/trace"
 	"google.golang.org/grpc/status"
 
 	"github.com/zeromicro/go-zero/core/logx"
@@ -57,31 +58,43 @@ func (l *QueryOrderMainDetailLogic) QueryOrderMainDetail(req *types.QueryOrderMa
 	}
 
 	detail := result.Data
+	consistency := buildConsistencyView(l.ctx, l.svcCtx, detail)
 	data := types.QueryOrderData{
-		Id:                 detail.Id,                 //
-		OrderNo:            detail.OrderNo,            // 订单编号
-		UserId:             detail.UserId,             // 用户ID
-		OrderStatus:        detail.OrderStatus,        // 订单状态：1-待支付,2-已支付,3-已发货,4-已完成,5-已取消,6-已退款,7-售后中
-		TotalAmount:        detail.TotalAmount,        // 订单总金额
-		PromotionAmount:    detail.PromotionAmount,    // 促销金额
-		CouponAmount:       detail.CouponAmount,       // 优惠券金额
-		PointsAmount:       detail.PointsAmount,       // 积分金额
-		DiscountAmount:     detail.DiscountAmount,     // 优惠金额
-		FreightAmount:      detail.FreightAmount,      // 运费金额
-		PayAmount:          detail.PayAmount,          // 实付金额
-		PayType:            detail.PayType,            // 支付方式：1-支付宝,2-微信,3-银联
-		PayTime:            detail.PayTime,            // 支付时间
-		DeliveryTime:       detail.DeliveryTime,       // 发货时间
-		ReceiveTime:        detail.ReceiveTime,        // 收货时间
-		CommentTime:        detail.CommentTime,        // 评价时间
-		SourceType:         detail.SourceType,         // 订单来源：1-APP,2-PC,3-小程序
-		ExpressOrderNumber: detail.ExpressOrderNumber, // 快递单号
-		UsePoints:          detail.UsePoints,          // 下单时使用的积分
-		ReceiveStatus:      detail.ReceiveStatus,      // 是否确认收货：0->否,1->是
-		Remark:             detail.Remark,             // 订单备注
-		CreateTime:         detail.CreateTime,         // 提交时间
-		UpdateTime:         detail.UpdateTime,         //
-
+		Id:                   detail.Id,      //
+		OrderNo:              detail.OrderNo, // 订单编号
+		UserId:               detail.UserId,  // 用户ID
+		RequestTraceId:       trace.TraceIDFromContext(l.ctx),
+		OrderStatus:          detail.OrderStatus,        // 订单状态：1-待支付,2-已支付,3-已发货,4-已完成,5-已取消,6-已退款,7-售后中
+		TotalAmount:          detail.TotalAmount,        // 订单总金额
+		PromotionAmount:      detail.PromotionAmount,    // 促销金额
+		CouponAmount:         detail.CouponAmount,       // 优惠券金额
+		PointsAmount:         detail.PointsAmount,       // 积分金额
+		DiscountAmount:       detail.DiscountAmount,     // 优惠金额
+		FreightAmount:        detail.FreightAmount,      // 运费金额
+		PayAmount:            detail.PayAmount,          // 实付金额
+		PayType:              detail.PayType,            // 支付方式：1-支付宝,2-微信,3-银联
+		PayTime:              detail.PayTime,            // 支付时间
+		DeliveryTime:         detail.DeliveryTime,       // 发货时间
+		ReceiveTime:          detail.ReceiveTime,        // 收货时间
+		CommentTime:          detail.CommentTime,        // 评价时间
+		SourceType:           detail.SourceType,         // 订单来源：1-APP,2-PC,3-小程序
+		ExpressOrderNumber:   detail.ExpressOrderNumber, // 快递单号
+		UsePoints:            detail.UsePoints,          // 下单时使用的积分
+		ReceiveStatus:        detail.ReceiveStatus,      // 是否确认收货：0->否,1->是
+		Remark:               detail.Remark,             // 订单备注
+		CreateTime:           detail.CreateTime,         // 提交时间
+		UpdateTime:           detail.UpdateTime,         //
+		ConsistencyStage:     consistency.ConsistencyStage,
+		ConsistencyStageText: consistency.ConsistencyStageText,
+		ConsistencyResult:    consistency.ConsistencyResult,
+		ConsistencyMessage:   consistency.ConsistencyMessage,
+		LastConsistencyAt:    consistency.LastConsistencyAt,
+		PendingActions:       consistency.PendingActions,
+		PendingActionsText:   consistency.PendingActionsText,
+		AftersaleStatus:      consistency.AftersaleStatus,
+		AftersaleStatusText:  consistency.AftersaleStatusText,
+		ReturnId:             consistency.ReturnId,
+		ReturnNo:             consistency.ReturnNo,
 	}
 
 	itemData := detail.OrderItemData

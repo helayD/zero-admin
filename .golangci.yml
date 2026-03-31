@@ -1,0 +1,88 @@
+# golangci-lint configuration
+# See https://golangci-lint.run/usage/configuration/
+
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+
+linters:
+  enable:
+    # 默认启用的 linter
+    - errcheck      # 检查未检查的错误
+    - gosimple      # 简化代码
+    - govet         # 可疑代码检查
+    - ineffassign   # 检测未使用的赋值
+    - staticcheck   # 静态分析
+    - unused        # 检测未使用的代码
+    # 风格类
+    - stylecheck    # 代码风格检查
+    - gofmt         # 格式化（相当于 go fmt）
+    - goimports     # 导入整理
+    - misspell      # 拼写错误
+    - unconvert     # 不必要的类型转换
+    - unparam       # 未使用的函数参数
+    - whitespace    # 多余的空白符
+    # 潜在问题
+    - bodyclose     # HTTP 响应体未关闭
+    - dupl          # 代码重复检测
+    - goconst       # 重复的字符串常量
+    - gocritic      # 代码质量检查
+    - gochecknoinits # 检查 init 函数
+    - prealloc      # 建议预先分配切片
+
+  disable:
+    - lll           # 行长度限制（项目使用长行）
+    - gochecknoglobals # 检查全局变量
+    - wsl           # 空行规则
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-embedded-alloc: true
+
+  govet:
+    enable-all: true
+    check-shadowing: true
+
+  gofmt:
+    simplify: true
+
+  goimports:
+    local-prefixes: github.com/feihua/zero-admin
+
+  stylecheck:
+    checks:
+      - "ALL"
+    dot-whitelist:
+      - "fmt.Errorf"
+      - "errors.New"
+
+  staticcheck:
+    checks:
+      - "all"
+
+  dupl:
+    threshold: 200
+
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+
+  misspell:
+    locale: ZH
+    ignore-words:
+      - "mustnt"
+      - "shoulnd"
+
+  unparam:
+    clean: true
+    exported: true
+
+  whitespace:
+    multi-if: true
+    multi-func: true
+
+issues:
+  exclude-use-default: false
+  max-issues-per-linter: 50
+  max-same-issues: 10

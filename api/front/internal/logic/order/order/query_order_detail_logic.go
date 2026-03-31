@@ -14,6 +14,7 @@ import (
 	"github.com/feihua/zero-admin/api/front/internal/types"
 
 	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/trace"
 )
 
 // maskPhone 手机号脱敏（中间4位用*替代）
@@ -190,13 +191,13 @@ func (l *QueryOrderDetailLogic) QueryOrderDetail(req *types.OrderDetailReq) (res
 
 	// Story 6-1 Task 2.3: 构建金额拆分
 	pb := &types.PriceBreakdown{
-		OrderAmount:    float64(detail.TotalAmount),
+		OrderAmount:     float64(detail.TotalAmount),
 		FreightAmount:   float64(detail.FreightAmount),
 		PromotionAmount: float64(detail.PromotionAmount),
-		CouponAmount:   float64(detail.CouponAmount),
-		PointsAmount:   float64(detail.PointsAmount),
-		DiscountAmount: float64(detail.DiscountAmount),
-		PayAmount:      float64(detail.PayAmount),
+		CouponAmount:    float64(detail.CouponAmount),
+		PointsAmount:    float64(detail.PointsAmount),
+		DiscountAmount:  float64(detail.DiscountAmount),
+		PayAmount:       float64(detail.PayAmount),
 	}
 
 	// Story 6-1 Task 2.2: 时间线构建
@@ -245,31 +246,32 @@ func (l *QueryOrderDetailLogic) QueryOrderDetail(req *types.OrderDetailReq) (res
 	}
 
 	data := types.QueryOrderData{
-		Id:                        detail.Id,
-		OrderNo:                   detail.OrderNo,
-		UserId:                    memberId,
-		OrderStatus:               detail.OrderStatus,
-		TotalAmount:               float64(detail.TotalAmount),
-		PromotionAmount:            float64(detail.PromotionAmount),
-		CouponAmount:               float64(detail.CouponAmount),
-		PointsAmount:               float64(detail.PointsAmount),
-		DiscountAmount:             float64(detail.DiscountAmount),
-		FreightAmount:              float64(detail.FreightAmount),
-		PayAmount:                  float64(detail.PayAmount),
-		PayType:                    detail.PayType,
-		PayTime:                    detail.PayTime,
-		DeliveryTime:               detail.DeliveryTime,
-		ReceiveTime:                detail.ReceiveTime,
-		CommentTime:                detail.CommentTime,
-		SourceType:                 detail.SourceType,
-		ExpressOrderNumber:         detail.ExpressOrderNumber,
-		UsePoints:                  detail.UsePoints,
-		ReceiveStatus:              detail.ReceiveStatus,
-		Remark:                     detail.Remark,
-		CreateTime:                 detail.CreateTime,
-		UpdateTime:                 detail.UpdateTime,
-		OrderItemData:              orderItemData,
-		MemberReceiveAddressList:   recvAddr,
+		Id:                       detail.Id,
+		OrderNo:                  detail.OrderNo,
+		UserId:                   memberId,
+		RequestTraceId:           trace.TraceIDFromContext(l.ctx),
+		OrderStatus:              detail.OrderStatus,
+		TotalAmount:              float64(detail.TotalAmount),
+		PromotionAmount:          float64(detail.PromotionAmount),
+		CouponAmount:             float64(detail.CouponAmount),
+		PointsAmount:             float64(detail.PointsAmount),
+		DiscountAmount:           float64(detail.DiscountAmount),
+		FreightAmount:            float64(detail.FreightAmount),
+		PayAmount:                float64(detail.PayAmount),
+		PayType:                  detail.PayType,
+		PayTime:                  detail.PayTime,
+		DeliveryTime:             detail.DeliveryTime,
+		ReceiveTime:              detail.ReceiveTime,
+		CommentTime:              detail.CommentTime,
+		SourceType:               detail.SourceType,
+		ExpressOrderNumber:       detail.ExpressOrderNumber,
+		UsePoints:                detail.UsePoints,
+		ReceiveStatus:            detail.ReceiveStatus,
+		Remark:                   detail.Remark,
+		CreateTime:               detail.CreateTime,
+		UpdateTime:               detail.UpdateTime,
+		OrderItemData:            orderItemData,
+		MemberReceiveAddressList: recvAddr,
 		// Story 6-1 新增
 		Timeline:       timeline,
 		PriceBreakdown: pb,

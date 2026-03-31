@@ -3,8 +3,9 @@ package orderservicelogic
 import (
 	"context"
 	"errors"
-	"github.com/bytedance/sonic"
+
 	"github.com/feihua/zero-admin/rpc/oms/gen/query"
+	"github.com/feihua/zero-admin/rpc/oms/internal/logic/common"
 	"github.com/zeromicro/go-zero/core/logc"
 	"gorm.io/gorm"
 
@@ -52,9 +53,14 @@ func (l *ConfirmOrderLogic) ConfirmOrder(in *omsclient.ConfirmOrderReq) (*omscli
 		return nil, errors.New("更新订单失败")
 	}
 
-	message := map[string]any{"id": in.OrderId}
-	body, _ := sonic.Marshal(message)
-	err = l.svcCtx.RabbitMQ.SendMessage("order.confirm.exchange", "direct", "order.confirm.queue", "order.confirm.key", body)
+	currentScope, scopeErr := common.ResolveActorScope(l.ctx, l.svcCtx.DB, in.MemberId)
+	if scopeErr != nil {
+		logc.Errorf(l.ctx, "解析用户作用域失败,memberId:%d,异常:%s", in.MemberId, scopeErr.Error())
+	}
+
+	sendOrderEvent(l.ctx, l.svcCtx, "order.confirm.queue", "order.confirmed.key", "order.confirmed", in.OrderId, currentScope, in.MemberId, map[string]interface{}{
+		"orderNo": item.OrderNo,
+	})
 
 	return &omsclient.ConfirmOrderResp{}, nil
 }

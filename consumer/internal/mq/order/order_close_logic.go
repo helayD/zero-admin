@@ -6,14 +6,15 @@ import (
 	"github.com/zeromicro/go-zero/core/logc"
 )
 
-// OrderClose 关闭订单通知
-func OrderClose(ctx context.Context, body []byte) {
-	logc.Infof(ctx, "关闭订单通知mq消息: %s", body)
-	var orderInfo eventPayload
-	err := sonic.Unmarshal(body, &orderInfo)
-	if err != nil {
-		logc.Errorf(ctx, "序列化 JSON 失败: %v", err)
-		return
+func OrderClose(ctx context.Context, body []byte) error {
+	var payload EventPayload
+	if err := sonic.Unmarshal(body, &payload); err != nil {
+		logc.Errorf(ctx, "OrderClose 反序列化失败: %v", err)
+		return err
 	}
-	logc.Infof(ctx, "订单关闭事件,orderId:%d,traceId:%s,scope:%s/%d/%d/%d", orderInfo.ID, orderInfo.TraceID, orderInfo.ScopeType, orderInfo.PlatformID, orderInfo.TenantID, orderInfo.MerchantID)
+
+	ctx = payload.ToContext(ctx)
+	LogWithEventPayload(ctx, "OrderClose 收到订单关闭事件, entityId=%d, action=%s", payload.EntityID, payload.Action)
+
+	return nil
 }

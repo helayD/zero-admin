@@ -3,8 +3,9 @@ package orderservicelogic
 import (
 	"context"
 	"errors"
-	"github.com/bytedance/sonic"
+
 	"github.com/feihua/zero-admin/rpc/oms/gen/query"
+	"github.com/feihua/zero-admin/rpc/oms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/oms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/oms/omsclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -67,9 +68,14 @@ func (l *CancelOrderLogic) CancelOrder(in *omsclient.CancelOrderReq) (*omsclient
 	p := query.OmsOrderPromotion
 	_ = p.WithContext(l.ctx).Select(p.PromotionID).Where(p.OrderID.Eq(item.ID), p.IsDeleted.Eq(0), p.PromotionType.Eq(1)).Scan(&couponIds)
 
-	message := map[string]any{"id": in.OrderId}
-	body, _ := sonic.Marshal(message)
-	err = l.svcCtx.RabbitMQ.SendMessage("order.event.exchange", "direct", "order.cancel.queue", "order.cancel.key", body)
+	currentScope, scopeErr := common.ResolveActorScope(l.ctx, l.svcCtx.DB, in.MemberId)
+	if scopeErr != nil {
+		logc.Errorf(l.ctx, "解析用户作用域失败,memberId:%d,异常:%s", in.MemberId, scopeErr.Error())
+	}
+
+	sendOrderEvent(l.ctx, l.svcCtx, "order.cancel.queue", "order.cancelled.key", "order.cancelled", in.OrderId, currentScope, in.MemberId, map[string]interface{}{
+		"orderNo": item.OrderNo,
+	})
 
 	return &omsclient.CancelOrderResp{
 		CouponIds:   couponIds,

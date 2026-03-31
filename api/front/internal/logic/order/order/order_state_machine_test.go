@@ -58,6 +58,59 @@ func TestIsValidTransition(t *testing.T) {
 	}
 }
 
+func TestCalcConsistencyStage(t *testing.T) {
+	tests := []struct {
+		name                     string
+		orderStatus              int
+		payStatus                int
+		cancelCompensationStatus string
+		afterSaleStatus          int32
+		wantStage                int
+		wantPending              int
+	}{
+		{"已支付进入权益同步中", OrderStatusPaid, PayStatusSuccess, "", 0, ConsistencyStagePaySuccess, PendingActionCoupon | PendingActionPoints},
+		{"支付后取消且补偿处理中", OrderStatusCancelled, PayStatusSuccess, "processing", 0, ConsistencyStageCancelling, PendingActionStock | PendingActionCoupon | PendingActionPoints},
+		{"支付后取消且补偿完成", OrderStatusCancelled, PayStatusSuccess, "completed", 0, ConsistencyStageCancelled, PendingActionNone},
+		{"售后待审核", OrderStatusAfterSale, PayStatusSuccess, "", 0, ConsistencyStageAfterSalePending, PendingActionNone},
+		{"售后已退款", OrderStatusAfterSale, PayStatusSuccess, "", 3, ConsistencyStageAfterSaleCompleted, PendingActionNone},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotStage, gotPending := CalcConsistencyStage(tt.orderStatus, tt.payStatus, tt.cancelCompensationStatus, tt.afterSaleStatus)
+			if gotStage != tt.wantStage || gotPending != tt.wantPending {
+				t.Fatalf("CalcConsistencyStage(%d, %d, %q, %d) = (%d, %d), want (%d, %d)", tt.orderStatus, tt.payStatus, tt.cancelCompensationStatus, tt.afterSaleStatus, gotStage, gotPending, tt.wantStage, tt.wantPending)
+			}
+		})
+	}
+}
+
+func TestCalcConsistencyResult(t *testing.T) {
+	tests := []struct {
+		name                     string
+		orderStatus              int
+		payStatus                int
+		cancelCompensationStatus string
+		afterSaleStatus          int32
+		want                     int
+	}{
+		{"待支付失败返回失败", OrderStatusPendingPayment, PayStatusFailed, "", 0, ConsistencyResultFailed},
+		{"已支付返回处理中", OrderStatusPaid, PayStatusSuccess, "", 0, ConsistencyResultProcessing},
+		{"取消补偿处理中返回处理中", OrderStatusCancelled, PayStatusSuccess, "processing", 0, ConsistencyResultProcessing},
+		{"售后拒绝返回失败", OrderStatusAfterSale, PayStatusSuccess, "", 4, ConsistencyResultFailed},
+		{"售后退款完成返回成功", OrderStatusAfterSale, PayStatusSuccess, "", 3, ConsistencyResultSucceeded},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := calcConsistencyResult(tt.orderStatus, tt.payStatus, tt.cancelCompensationStatus, tt.afterSaleStatus)
+			if got != tt.want {
+				t.Fatalf("calcConsistencyResult(%d, %d, %q, %d) = %d, want %d", tt.orderStatus, tt.payStatus, tt.cancelCompensationStatus, tt.afterSaleStatus, got, tt.want)
+			}
+		})
+	}
+}
+
 // TestGetStatusText 测试状态文本描述
 func TestGetStatusText(t *testing.T) {
 	tests := []struct {
@@ -134,10 +187,10 @@ func TestIsFinalStatus(t *testing.T) {
 // TestGetNextStatusByAction 测试根据操作获取目标状态
 func TestGetNextStatusByAction(t *testing.T) {
 	tests := []struct {
-		name         string
-		current      int
-		action       int
-		want         int
+		name    string
+		current int
+		action  int
+		want    int
 	}{
 		// 支付成功
 		{"支付成功-待支付→已支付", OrderStatusPendingPayment, OpPaymentSuccess, OrderStatusPaid},

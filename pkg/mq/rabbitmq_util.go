@@ -174,6 +174,63 @@ func (r *RabbitMQ) ConsumeSimple(queueName string, handler func([]byte)) {
 
 }
 
+// ConsumeSimpleWithAck simple 模式下消费者（手动 ACK）
+// handler 返回 error 时消息会被 NACK 并重新入队，成功时 ACK
+func (r *RabbitMQ) ConsumeSimpleWithAck(queueName string, handler func([]byte) error) {
+	channel, err := r.openChannel()
+	if err != nil {
+		logx.Errorf("rabbitmq获取channel失败：%s:%+v", "failed to open a channel", err)
+		panic(err)
+	}
+
+	q, err := channel.QueueDeclare(
+		queueName,
+		true,  // 持久化
+		false, // 自动删除
+		false, // 排他性
+		false, // 阻塞
+		nil,
+	)
+	if err != nil {
+		_ = channel.Close()
+		logx.Errorf("rabbitmq申请队列：%s失败, 错误消息: %+v", queueName, err)
+		panic(err)
+	}
+
+	msgs, err := channel.Consume(
+		q.Name,
+		"",
+		false, // auto-ack=false（手动模式）
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		_ = channel.Close()
+		logx.Errorf("rabbitmq队列：%s接收消息失败, 错误消息: %+v", queueName, err)
+		panic(err)
+	}
+
+	forever := make(chan bool)
+	go func() {
+		defer func() {
+			_ = channel.Close()
+		}()
+		for d := range msgs {
+			if err := handler(d.Body); err != nil {
+				logx.Errorf("消息处理失败，重新入队: %s, err: %v", d.Body, err)
+				_ = d.Nack(false, true)
+			} else {
+				_ = d.Ack(false)
+			}
+		}
+	}()
+
+	logx.Infof("queue(manual-ack): %s, consumers %d Waiting for messages ...", queueName, q.Consumers)
+	<-forever
+}
+
 // SendDelayMessage 发送延时取消消息
 func (r *RabbitMQ) SendDelayMessage(exchange, queueName, key string, message []byte, delayMinutes int) error {
 	channel, err := r.openChannel()
@@ -263,7 +320,7 @@ func (r *RabbitMQ) SendMessage(exchange, exchangeType, queueName, key string, me
 
 	// 声明交换机
 	err = channel.ExchangeDeclare(
-		exchange,      // 交换机名称
+		exchange,     // 交换机名称
 		exchangeType, // 类型（direct/topic/fanout）
 		true,         // 持久化
 		false,        // 自动删除
@@ -335,13 +392,13 @@ func (r *RabbitMQ) ConsumeTopicQueue(queueName, exchange, routingKey string, han
 
 	// 声明 topic 类型交换机
 	err = channel.ExchangeDeclare(
-		exchange,   // 交换机名称
-		"topic",    // 类型
-		true,       // 持久化
-		false,      // 自动删除
-		false,      // 内部
-		false,      // 不等待
-		nil,        // 其他属性
+		exchange, // 交换机名称
+		"topic",  // 类型
+		true,     // 持久化
+		false,    // 自动删除
+		false,    // 内部
+		false,    // 不等待
+		nil,      // 其他属性
 	)
 	if err != nil {
 		_ = channel.Close()

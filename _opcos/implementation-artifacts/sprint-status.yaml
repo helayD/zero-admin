@@ -98,8 +98,8 @@ development_status:
   epic-7: in-progress
   7-1-商品索引同步事件链: done
   7-2-前台关键词搜索与筛选排序: done
-  7-3a-统一交易事件契约与幂等消费: backlog
-  7-3b-支付与取消驱动的订单权益一致性编排: backlog
+  7-3a-统一交易事件契约与幂等消费: review
+  7-3b-支付与取消驱动的订单权益一致性编排: review
   7-4-超时订单关闭与资源补偿: backlog
   7-5-异步链路监控视图: backlog
   7-6-授权链路重试回放与升级: backlog

@@ -774,12 +774,23 @@ type OrderPayQueryReq struct {
 }
 
 type OrderPayQueryResp struct {
-	Code        int64  `json:"code"`
-	Message     string `json:"message"`
-	Data        string `json:"data"`
-	OrderStatus int64  `json:"orderStatus"` // 0=待支付 1=已支付 2=已取消
-	PayStatus   int64  `json:"payStatus"`   // 0=未支付 1=已支付
-	ExpireTime  int64  `json:"expireTime"`  // 剩余支付秒数
+	Code                 int64    `json:"code"`
+	Message              string   `json:"message"`
+	Data                 string   `json:"data"`
+	OrderStatus          int64    `json:"orderStatus"` // 0=待支付 1=已支付 2=已取消
+	PayStatus            int64    `json:"payStatus"`   // 0=未支付 1=已支付
+	ExpireTime           int64    `json:"expireTime"`  // 剩余支付秒数
+	ConsistencyStage     int      `json:"consistencyStage"`
+	ConsistencyStageText string   `json:"consistencyStageText"`
+	ConsistencyResult    int      `json:"consistencyResult"`
+	ConsistencyMessage   string   `json:"consistencyMessage"`
+	LastConsistencyAt    string   `json:"lastConsistencyAt"`
+	PendingActions       int      `json:"pendingActions"`
+	PendingActionsText   []string `json:"pendingActionsText"`
+	AftersaleStatus      int32    `json:"aftersaleStatus"`
+	AftersaleStatusText  string   `json:"aftersaleStatusText"`
+	ReturnId             int64    `json:"returnId"`
+	ReturnNo             string   `json:"returnNo"`
 }
 
 type OrderPayReq struct {
@@ -975,6 +986,7 @@ type QueryOrderData struct {
 	Id                       int64                    `json:"id"`                 //
 	OrderNo                  string                   `json:"orderNo"`            //订单编号
 	UserId                   int64                    `json:"userId"`             //用户ID
+	RequestTraceId           string                   `json:"requestTraceId"`     //当前详情请求链路追踪ID
 	OrderStatus              int32                    `json:"orderStatus"`        //OMS订单状态：0=待支付,1=已支付/待发货,2=已取消,3=已完成,4=售后中
 	PayStatus                int32                    `json:"payStatus"`          //支付状态：0=未支付,1=已支付
 	DeliveryStatus           int32                    `json:"deliveryStatus"`     //发货状态：0=未发货,1=已发货,2=已收货
@@ -1284,17 +1296,30 @@ type OrderOperationLogItem struct {
 	CreateTime    string `json:"createTime"`    // 操作时间
 }
 
-// QueryOrderStatusSnapshotResp 订单状态快照查询响应（Story 6-5 Task 7）
+// QueryOrderStatusSnapshotResp 订单状态快照查询响应（Story 6-5 Task 7, Story 7.3B 扩展）
 type QueryOrderStatusSnapshotResp struct {
 	Code            int                     `json:"code"`
 	Message         string                  `json:"message"`
 	OrderId         int64                   `json:"orderId"`
 	OrderNo         string                  `json:"orderNo"`
+	RequestTraceId  string                  `json:"requestTraceId"`
 	OrderStatus     int                     `json:"orderStatus"`     // OMS order_status
 	PayStatus       int                     `json:"payStatus"`       // OMS pay_status
 	OrderStatusText string                  `json:"orderStatusText"` // 中文状态
 	PayStatusText   string                  `json:"payStatusText"`   // 中文支付状态
 	OptLogs         []OrderOperationLogItem `json:"optLogs"`         // 操作日志列表
+	// Story 7.3B 扩展：一致性阶段字段
+	ConsistencyStage     int      `json:"consistencyStage"`     // 一致性阶段: 0=正常, 1=支付确认中, 2=支付成功同步中, 3=支付失败, 4=取消回退中, 5=已取消, 6=售后待处理, 7=售后处理中, 8=售后完成, 9=已完成
+	ConsistencyStageText string   `json:"consistencyStageText"` // 一致性阶段中文描述
+	ConsistencyResult    int      `json:"consistencyResult"`    // 一致性结果: 0=无, 1=处理中, 2=成功, 3=失败, 4=需人工介入
+	ConsistencyMessage   string   `json:"consistencyMessage"`   // 用户/运营可理解的状态提示
+	LastConsistencyAt    string   `json:"lastConsistencyAt"`    // 最近阶段更新时间
+	PendingActions       int      `json:"pendingActions"`       // 待处理动作位掩码: 1=库存, 2=优惠券, 4=积分
+	PendingActionsText   []string `json:"pendingActionsText"`   // 待处理动作中文描述
+	AftersaleStatus      int32    `json:"aftersaleStatus"`      // 售后状态：0=待审核,1=审核通过,2=已收货,3=已退款,4=已拒绝,5=已关闭
+	AftersaleStatusText  string   `json:"aftersaleStatusText"`  // 售后状态中文描述
+	ReturnId             int64    `json:"returnId"`             // 最近售后单ID
+	ReturnNo             string   `json:"returnNo"`             // 最近售后单号
 }
 
 // SearchReq 搜索请求（Story 7-2）

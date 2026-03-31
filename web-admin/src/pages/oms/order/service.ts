@@ -73,12 +73,13 @@ const normalizeOperateLogs = (logs?: Record<string, any>[]): OperateHistoryDataL
     : [];
 
 const normalizeOrder = (item: Record<string, any>): OrderListItem => {
-  const delivery = item.orderDeliveryData || {};
+  const deliveryData = item.orderDeliveryData || {};
   const promotions = Array.isArray(item.orderPromotionData) ? item.orderPromotionData : [];
 
   return {
     id: item.id,
     orderSn: item.orderNo,
+    requestTraceId: item.requestTraceId,
     createTime: item.createTime,
     memberUserName: item.userId ? `用户#${item.userId}` : '-',
     totalAmount: item.totalAmount,
@@ -91,15 +92,26 @@ const normalizeOrder = (item: Record<string, any>): OrderListItem => {
     payType: item.payType,
     sourceType: item.sourceType,
     status: normalizeStatus(item.orderStatus),
-    deliveryCompany: delivery.deliveryCompany,
-    deliverySn: delivery.deliveryNo || item.expressOrderNumber,
-    receiverName: delivery.receiverName,
-    receiverPhone: delivery.receiverPhone,
-    receiverProvince: delivery.receiverProvince,
-    receiverCity: delivery.receiverCity,
-    receiverRegion: delivery.receiverDistrict,
-    receiverDetailAddress: delivery.receiverAddress,
+    deliveryCompany: deliveryData.deliveryCompany,
+    deliverySn: deliveryData.deliveryNo || item.expressOrderNumber,
+    receiverName: deliveryData.receiverName,
+    receiverPhone: deliveryData.receiverPhone,
+    receiverProvince: deliveryData.receiverProvince,
+    receiverCity: deliveryData.receiverCity,
+    receiverRegion: deliveryData.receiverDistrict,
+    receiverDetailAddress: deliveryData.receiverAddress,
     note: item.remark,
+    consistencyStage: item.consistencyStage,
+    consistencyStageText: item.consistencyStageText,
+    consistencyResult: item.consistencyResult,
+    consistencyMessage: item.consistencyMessage,
+    lastConsistencyAt: item.lastConsistencyAt,
+    pendingActions: item.pendingActions,
+    pendingActionsText: item.pendingActionsText,
+    aftersaleStatus: item.aftersaleStatus,
+    aftersaleStatusText: item.aftersaleStatusText,
+    returnId: item.returnId,
+    returnNo: item.returnNo,
     listOrderItemData: normalizeOrderItems(item.orderItemData),
     listOperateHistoryData: normalizeOperateLogs(item.orderOperationLogData),
     promotionInfo: promotions.map((promotion) => promotion.promotionName).filter(Boolean).join(' / '),

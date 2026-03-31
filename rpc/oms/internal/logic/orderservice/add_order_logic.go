@@ -3,9 +3,10 @@ package orderservicelogic
 import (
 	"context"
 	"fmt"
-	"github.com/bytedance/sonic"
+
 	"github.com/feihua/zero-admin/rpc/oms/gen/model"
 	"github.com/feihua/zero-admin/rpc/oms/gen/query"
+	"github.com/feihua/zero-admin/rpc/oms/internal/logic/common"
 	"github.com/zeromicro/go-zero/core/logc"
 
 	"github.com/feihua/zero-admin/rpc/oms/internal/svc"
@@ -92,9 +93,16 @@ func (l *AddOrderLogic) AddOrder(in *omsclient.AddOrderReq) (*omsclient.AddOrder
 		return nil, fmt.Errorf("删除购物车失败")
 	}
 
-	message := map[string]any{"id": item.ID}
-	body, _ := sonic.Marshal(message)
-	err = l.svcCtx.RabbitMQ.SendMessage("order.event.exchange", "direct", "order.create.queue", "order.create.key", body)
+	currentScope, err := common.ResolveActorScope(l.ctx, l.svcCtx.DB, in.UserId)
+	if err != nil {
+		logc.Errorf(l.ctx, "解析用户作用域失败,userId:%d,异常:%s", in.UserId, err.Error())
+		return nil, fmt.Errorf("解析用户作用域失败")
+	}
+
+	sendOrderEvent(l.ctx, l.svcCtx, "order.create.queue", "order.created.key", "order.created", item.ID, currentScope, in.UserId, map[string]interface{}{
+		"orderNo":     item.OrderNo,
+		"totalAmount": item.TotalAmount,
+	})
 
 	return &omsclient.AddOrderResp{}, nil
 }

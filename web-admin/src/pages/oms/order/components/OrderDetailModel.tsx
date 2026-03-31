@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Button, Card, message, Modal, Space, Steps } from 'antd';
+import { Button, Card, message, Modal, Space, Steps, Tag } from 'antd';
 import { DeleteOutlined, EditOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import type { OrderListItem } from '../data.d';
 import '../index.less';
@@ -36,6 +36,21 @@ const steps = [
 ];
 
 const { confirm } = Modal;
+
+const consistencyResultMeta = (result?: number) => {
+  switch (result) {
+    case 1:
+      return { color: 'processing', text: '处理中' };
+    case 2:
+      return { color: 'success', text: '成功' };
+    case 3:
+      return { color: 'error', text: '失败' };
+    case 4:
+      return { color: 'warning', text: '人工处理' };
+    default:
+      return { color: 'default', text: '无' };
+  }
+};
 
 const statusMeta = (status?: number) => {
   switch (status) {
@@ -94,6 +109,7 @@ const OrderDetailModel: React.FC<UpdateFormProps> = (props) => {
 
   const { current, message: statusMsg } = useMemo(() => statusMeta(detailData.status), [detailData.status]);
   const items = steps.map((item) => ({ key: item.title, title: item.title }));
+  const consistencyMeta = useMemo(() => consistencyResultMeta(detailData.consistencyResult), [detailData.consistencyResult]);
 
   const scopeLabel = buildGovernanceScopeLabel(scope);
 
@@ -166,6 +182,21 @@ const OrderDetailModel: React.FC<UpdateFormProps> = (props) => {
             </Card>
             <Card style={{ marginTop: 16 }} type="inner" title="费用信息">
               <CostInfo currentData={detailData} />
+            </Card>
+            <Card style={{ marginTop: 16 }} type="inner" title="一致性状态">
+              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                <Space wrap>
+                  <span>阶段：</span>
+                  <Tag color="processing">{detailData.consistencyStageText || '未计算'}</Tag>
+                  <span>结果：</span>
+                  <Tag color={consistencyMeta.color}>{consistencyMeta.text}</Tag>
+                  {detailData.returnNo && <Tag color="purple">售后单号：{detailData.returnNo}</Tag>}
+                </Space>
+                <div>状态说明：{detailData.consistencyMessage || '-'}</div>
+                <div>最近更新时间：{detailData.lastConsistencyAt || '-'}</div>
+                <div>待处理动作：{detailData.pendingActionsText && detailData.pendingActionsText.length > 0 ? detailData.pendingActionsText.join(' / ') : '-'}</div>
+                <div>售后状态：{detailData.aftersaleStatusText || '-'}</div>
+              </Space>
             </Card>
             <Card style={{ marginTop: 16 }} type="inner" title="操作信息">
               <OperationInfo currentData={detailData.listOperateHistoryData} />

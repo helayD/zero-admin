@@ -3,6 +3,7 @@ export interface OrderListItem {
   memberId?: number;
   couponId?: number;
   orderSn?: string;
+  requestTraceId?: string;
   createTime?: string;
   memberUserName?: string;
   totalAmount?: number;
@@ -30,6 +31,17 @@ export interface OrderListItem {
   receiverRegion?: string;
   receiverDetailAddress?: string;
   note?: string;
+  consistencyStage?: number;
+  consistencyStageText?: string;
+  consistencyResult?: number;
+  consistencyMessage?: string;
+  lastConsistencyAt?: string;
+  pendingActions?: number;
+  pendingActionsText?: string[];
+  aftersaleStatus?: number;
+  aftersaleStatusText?: string;
+  returnId?: number;
+  returnNo?: string;
   confirmStatus?: number;
   deleteStatus?: number;
   modifyTime?: string;

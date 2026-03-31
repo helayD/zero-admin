@@ -48,6 +48,12 @@ const BaseInfo: React.FC<BaseInfoProps> = (props) => {
         <Col span={4}>{item.growth}</Col>
         <Col span={4}>{item.promotionInfo}</Col>
       </Row>
+      <Row style={{background: '#fafafa', height: 30, marginTop: 8}}>
+        <Col span={4}>请求追踪ID</Col>
+      </Row>
+      <Row style={{marginTop: 8}}>
+        <Col span={24}>{item.requestTraceId || '-'}</Col>
+      </Row>
     </>
   );
 };

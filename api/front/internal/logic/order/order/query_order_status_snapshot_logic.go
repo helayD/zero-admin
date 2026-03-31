@@ -8,6 +8,7 @@ import (
 	"github.com/feihua/zero-admin/api/front/internal/types"
 
 	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/zeromicro/go-zero/core/trace"
 )
 
 // QueryOrderStatusSnapshotLogic 查询订单状态快照
@@ -57,14 +58,26 @@ func (l *QueryOrderStatusSnapshotLogic) QueryOrderStatusSnapshot(req *types.Quer
 	}
 
 	return &types.QueryOrderStatusSnapshotResp{
-		Code:             0,
-		Message:          "查询成功",
-		OrderId:          snapshot.OrderId,
-		OrderNo:          snapshot.OrderNo,
-		OrderStatus:      snapshot.OrderStatus,
-		PayStatus:        snapshot.PayStatus,
-		OrderStatusText:  snapshot.OrderStatusText,
-		PayStatusText:    snapshot.PayStatusText,
-		OptLogs:          optLogs,
+		Code:                 0,
+		Message:              "查询成功",
+		OrderId:              snapshot.OrderId,
+		OrderNo:              snapshot.OrderNo,
+		RequestTraceId:       trace.TraceIDFromContext(l.ctx),
+		OrderStatus:          snapshot.OrderStatus,
+		PayStatus:            snapshot.PayStatus,
+		OrderStatusText:      snapshot.OrderStatusText,
+		PayStatusText:        snapshot.PayStatusText,
+		OptLogs:              optLogs,
+		ConsistencyStage:     snapshot.ConsistencyStage,
+		ConsistencyStageText: snapshot.ConsistencyStageText,
+		ConsistencyResult:    snapshot.ConsistencyResult,
+		ConsistencyMessage:   snapshot.ConsistencyMessage,
+		LastConsistencyAt:    snapshot.LastConsistencyAt,
+		PendingActions:       snapshot.PendingActions,
+		PendingActionsText:   snapshot.PendingActionsText,
+		AftersaleStatus:      snapshot.AftersaleStatus,
+		AftersaleStatusText:  snapshot.AftersaleStatusText,
+		ReturnId:             snapshot.ReturnId,
+		ReturnNo:             snapshot.ReturnNo,
 	}, nil
 }

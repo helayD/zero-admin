@@ -6,14 +6,15 @@ import (
 	"github.com/zeromicro/go-zero/core/logc"
 )
 
-// OrderReturn 申请退款通知
-func OrderReturn(ctx context.Context, body []byte) {
-	logc.Infof(ctx, "申请退款通知mq消息: %s", body)
-	var orderInfo map[string]int64
-	err := sonic.Unmarshal(body, &orderInfo)
-	if err != nil {
-		logc.Errorf(ctx, "序列化 JSON 失败: %v", err)
-		return
+func OrderReturn(ctx context.Context, body []byte) error {
+	var payload EventPayload
+	if err := sonic.Unmarshal(body, &payload); err != nil {
+		logc.Errorf(ctx, "OrderReturn 反序列化失败: %v", err)
+		return err
 	}
 
+	ctx = payload.ToContext(ctx)
+	LogWithEventPayload(ctx, "OrderReturn 收到售后申请事件, entityId=%d, action=%s", payload.EntityID, payload.Action)
+
+	return nil
 }

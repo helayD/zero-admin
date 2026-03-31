@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/feihua/zero-admin/api/front/internal/logic/common"
+	orderlogic "github.com/feihua/zero-admin/api/front/internal/logic/order/order"
 	"github.com/feihua/zero-admin/api/front/internal/svc"
 	"github.com/feihua/zero-admin/api/front/internal/types"
 	"github.com/feihua/zero-admin/rpc/oms/omsclient"
@@ -45,7 +46,7 @@ func (l *OrderPayQueryLogic) OrderPayQuery(req *types.OrderPayQueryReq) (resp *t
 		UserId: memberId,
 	})
 	if err != nil || orderInfo.Data == nil {
-		return payQueryResp(1, "查询订单失败", "", 0, 0, 0), nil
+		return payQueryResp(1, "查询订单失败", "", 0, 0, 0, nil), nil
 	}
 
 	order := orderInfo.Data
@@ -87,7 +88,12 @@ func (l *OrderPayQueryLogic) OrderPayQuery(req *types.OrderPayQueryReq) (resp *t
 	// 5. 计算剩余支付时间
 	expireTime := calculateExpireTime(order.CreateTime)
 
-	return payQueryResp(0, message, "", frontendOrderStatus, frontendPayStatus, expireTime), nil
+	snapshot, snapshotErr := orderlogic.NewOrderStatusService(l.ctx, l.svcCtx).GetOrderStatusSnapshot(req.OrderId, memberId)
+	if snapshotErr != nil {
+		return payQueryResp(0, message, "", frontendOrderStatus, frontendPayStatus, expireTime, nil), nil
+	}
+
+	return payQueryResp(0, message, "", frontendOrderStatus, frontendPayStatus, expireTime, snapshot), nil
 }
 
 // calculateExpireTime 计算剩余支付秒数
@@ -107,8 +113,8 @@ func calculateExpireTime(createTime string) int64 {
 	return int64(remaining)
 }
 
-func payQueryResp(code int64, message, data string, orderStatus, payStatus, expireTime int64) *types.OrderPayQueryResp {
-	return &types.OrderPayQueryResp{
+func payQueryResp(code int64, message, data string, orderStatus, payStatus, expireTime int64, snapshot *orderlogic.OrderSnapshot) *types.OrderPayQueryResp {
+	resp := &types.OrderPayQueryResp{
 		Code:        code,
 		Message:     message,
 		Data:        data,
@@ -116,4 +122,18 @@ func payQueryResp(code int64, message, data string, orderStatus, payStatus, expi
 		PayStatus:   payStatus,
 		ExpireTime:  expireTime,
 	}
+	if snapshot != nil {
+		resp.ConsistencyStage = snapshot.ConsistencyStage
+		resp.ConsistencyStageText = snapshot.ConsistencyStageText
+		resp.ConsistencyResult = snapshot.ConsistencyResult
+		resp.ConsistencyMessage = snapshot.ConsistencyMessage
+		resp.LastConsistencyAt = snapshot.LastConsistencyAt
+		resp.PendingActions = snapshot.PendingActions
+		resp.PendingActionsText = snapshot.PendingActionsText
+		resp.AftersaleStatus = snapshot.AftersaleStatus
+		resp.AftersaleStatusText = snapshot.AftersaleStatusText
+		resp.ReturnId = snapshot.ReturnId
+		resp.ReturnNo = snapshot.ReturnNo
+	}
+	return resp
 }

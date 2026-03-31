@@ -19,12 +19,14 @@ import (
 	"github.com/feihua/zero-admin/rpc/ums/client/memberinfoservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/memberpointslogservice"
 	"github.com/zeromicro/go-zero/core/logc"
+	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/zrpc"
 )
 
 type ServiceContext struct {
 	Config   config.Config
 	RabbitMQ *mq.RabbitMQ
+	Redis    *redis.Redis
 
 	// 会员相关
 	MemberInfoService      memberinfoservice.MemberInfoService
@@ -56,6 +58,14 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	mqUrl := fmt.Sprintf("amqp://%s:%s@%s:%d/", c.Rabbitmq.UserName, c.Rabbitmq.Password, c.Rabbitmq.Host, c.Rabbitmq.Port)
 	rabbitmq := mq.NewRabbitMQSimple(mqUrl)
 
+	redisConf := redis.RedisConf{
+		Host: c.Redis.Address,
+		Type: "node",
+		Pass: c.Redis.Pass,
+		Tls:  false,
+	}
+	r := redis.MustNewRedis(redisConf)
+
 	memberInfoService := memberinfoservice.NewMemberInfoService(umsClient)
 	couponService := couponservice.NewCouponService(smsClient)
 	couponRecordService := couponrecordservice.NewCouponRecordService(smsClient)
@@ -66,6 +76,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	s := &ServiceContext{
 		Config:                 c,
 		RabbitMQ:               rabbitmq,
+		Redis:                  r,
 		MemberInfoService:      memberInfoService,
 		MemberGrowthLogService: membergrowthlogservice.NewMemberGrowthLogService(umsClient),
 		MemberPointsLogService: memberpointslogservice.NewMemberPointsLogService(umsClient),
@@ -91,8 +102,8 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	}()
 
 	go func() {
-		rabbitmq.ConsumeSimple("order.delay.cancel.queue", func(body []byte) {
-			order.OrderDelayCancel(context.Background(), body, skuService, orderService, couponRecordService, memberInfoService)
+		rabbitmq.ConsumeSimpleWithAck("order.delay.cancel.queue", func(body []byte) error {
+			return order.OrderDelayCancel(context.Background(), body, r, skuService, orderService, couponRecordService, memberInfoService)
 		})
 	}()
 
@@ -108,37 +119,37 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	}()
 
 	go func() {
-		rabbitmq.ConsumeSimple("order.return.queue", func(body []byte) {
-			order.OrderReturn(context.Background(), body)
+		rabbitmq.ConsumeSimpleWithAck("order.return.queue", func(body []byte) error {
+			return order.OrderReturn(context.Background(), body)
 		})
 	}()
 
 	go func() {
-		rabbitmq.ConsumeSimple("order.cancel.queue", func(body []byte) {
-			order.OrderCancel(context.Background(), body)
+		rabbitmq.ConsumeSimpleWithAck("order.cancel.queue", func(body []byte) error {
+			return order.OrderCancel(context.Background(), body)
 		})
 	}()
 
 	go func() {
-		rabbitmq.ConsumeSimple("order.close.queue", func(body []byte) {
-			order.OrderClose(context.Background(), body)
+		rabbitmq.ConsumeSimpleWithAck("order.close.queue", func(body []byte) error {
+			return order.OrderClose(context.Background(), body)
 		})
 	}()
 
 	go func() {
-		rabbitmq.ConsumeSimple("order.delivery.queue", func(body []byte) {
-			order.OrderDelivery(context.Background(), body)
+		rabbitmq.ConsumeSimpleWithAck("order.delivery.queue", func(body []byte) error {
+			return order.OrderDelivery(context.Background(), body)
 		})
 	}()
 
 	go func() {
-		rabbitmq.ConsumeSimple("order.confirm.queue", func(body []byte) {
-			order.OrderConfirm(context.Background(), body)
+		rabbitmq.ConsumeSimpleWithAck("order.confirm.queue", func(body []byte) error {
+			return order.OrderConfirm(context.Background(), body)
 		})
 	}()
 	go func() {
-		rabbitmq.ConsumeSimple("order.create.queue", func(body []byte) {
-			order.OrderCreate(context.Background(), body)
+		rabbitmq.ConsumeSimpleWithAck("order.create.queue", func(body []byte) error {
+			return order.OrderCreate(context.Background(), body)
 		})
 	}()
 	return s

@@ -12,9 +12,18 @@ GOGET=$(GOCMD) mod tidy
 GOCTL=$(GOBIN)/goctl ## goctl
 GOCTL_VERSION=v1.9.2
 
+GOLANGCI_LINT=$(GOBIN)/golangci-lint ## golangci-lint
+GOLANGCI_VERSION=v1.62.2
+
 # 安装goctl代码生成工具
 $(shell if [ ! -x "$(GOCTL)" ] || ! "$(GOCTL)" --version 2>/dev/null | grep -q "goctl version 1.9.2"; then \
 	$(GOCMD) install github.com/zeromicro/go-zero/tools/goctl@$(GOCTL_VERSION); \
+fi; \
+)
+
+# 安装golangci-lint代码检查工具
+$(shell if [ ! -x "$(GOLANGCI_LINT)" ] || ! "$(GOLANGCI_LINT)" --version 2>/dev/null | grep -q "golangci-lint has version $(GOLANGCI_VERSION)"; then \
+	$(GOCMD) install github.com/golangci/golangci-lint/cmd/golangci-lint@v$(GOLANGCI_VERSION); \
 fi; \
 )
 
@@ -101,6 +110,12 @@ test: build restart ## 快速测试
 format: ## 格式化代码
 	$(GOCTL) api format --dir api/admin/doc/api
 	$(GOCTL) api format --dir api/front/doc/api
+
+lint: ## 运行 golangci-lint 代码检查
+	$(GOLANGCI_LINT) run ./...
+
+lint-fix: ## 运行 golangci-lint 自动修复
+	$(GOLANGCI_LINT) run ./... --fix
 
 gen:	## 生成所有模块代码
 	$(GOCTL) api go -api ./api/admin/doc/api/admin.api -dir ./api/admin/
