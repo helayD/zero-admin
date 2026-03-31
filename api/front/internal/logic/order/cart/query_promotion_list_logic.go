@@ -219,7 +219,7 @@ func QueryCartListPromotion(ids []int64, ctx context.Context, svcCtx *svc.Servic
 					_ = copier.Copy(&cartPromotionItem, &item)
 					cartPromotionItem.Price = float32(skuStock.Price)
 					c := strconv.FormatInt(int64(productLadder.Count), 10)
-					d := fmt.Sprintf("%1.0f", productLadder.Discount*10)
+					d := fmt.Sprintf("%1.0f", float64(productLadder.Discount)*10)
 					cartPromotionItem.PromotionMessage = "打折优惠：满" + c + "件,打" + d + "折"
 					// 商品原价-折扣*商品原价
 					cartPromotionItem.ReduceAmount = int64(float32(skuStock.Price)) - productLadder.Price

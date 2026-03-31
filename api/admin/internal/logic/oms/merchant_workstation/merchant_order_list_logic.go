@@ -242,8 +242,8 @@ func (l *MerchantOrderListLogic) MerchantOrderList(req *types.MerchantOrderListR
 
 	// 正确计算分页后的总数（过滤条件下的真实总数）
 	total := int64(len(list))
-	start := (req.Current - 1) * req.PageSize
-	end := start + req.PageSize
+	start := int64((req.Current - 1) * req.PageSize)
+	end := start + int64(req.PageSize)
 	if end > total {
 		end = total
 	}
