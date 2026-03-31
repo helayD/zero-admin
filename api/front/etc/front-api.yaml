@@ -49,7 +49,7 @@ CmsRpc:
 #搜索
 SearchRpc:
   Endpoints:
-    - 127.0.0.1:8087
+    - 127.0.0.1:8088
   NonBlock: true
 
 Log:
