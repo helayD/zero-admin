@@ -1299,12 +1299,12 @@ type QueryOrderStatusSnapshotResp struct {
 
 // SearchReq 搜索请求（Story 7-2）
 type SearchReq struct {
-	Keyword    string `form:"keyword"`             // 关键字
-	PageNum    int64  `form:"pageNum,default=1"`   // 页码
-	PageSize   int64  `form:"pageSize,default=20"` // 每页数量
-	Sort       int32  `form:"sort,default=0"`      // 排序: 0->相关度, 1->新品, 2->销量, 3->价格升序, 4->价格降序
-	CategoryId int64  `form:"categoryId"`          // 分类ID
-	BrandId    int64  `form:"brandId"`             // 品牌ID
+	Keyword    string `form:"keyword"`              // 关键字
+	PageNum    int64  `form:"pageNum,default=1"`    // 页码
+	PageSize   int64  `form:"pageSize,default=20"`  // 每页数量
+	Sort       int32  `form:"sort,default=0"`       // 排序: 0->相关度, 1->新品, 2->销量, 3->价格升序, 4->价格降序
+	CategoryId int64  `form:"categoryId,default=0"` // 分类ID
+	BrandId    int64  `form:"brandId,default=0"`    // 品牌ID
 }
 
 // ProductItem 搜索结果商品项（Story 7-2）
