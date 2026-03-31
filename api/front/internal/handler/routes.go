@@ -8,17 +8,18 @@ import (
 
 	"github.com/feihua/zero-admin/api/front/internal/handler/home"
 	"github.com/feihua/zero-admin/api/front/internal/handler/member/address"
-	"github.com/feihua/zero-admin/api/front/internal/handler/member/member"
-	"github.com/feihua/zero-admin/api/front/internal/handler/member/coupon"
-	"github.com/feihua/zero-admin/api/front/internal/handler/member/history"
 	"github.com/feihua/zero-admin/api/front/internal/handler/member/attention"
 	"github.com/feihua/zero-admin/api/front/internal/handler/member/collection"
+	"github.com/feihua/zero-admin/api/front/internal/handler/member/coupon"
+	"github.com/feihua/zero-admin/api/front/internal/handler/member/history"
+	"github.com/feihua/zero-admin/api/front/internal/handler/member/member"
 	"github.com/feihua/zero-admin/api/front/internal/handler/order/cart"
 	"github.com/feihua/zero-admin/api/front/internal/handler/order/order"
 	"github.com/feihua/zero-admin/api/front/internal/handler/order/pay"
 	"github.com/feihua/zero-admin/api/front/internal/handler/product/brand"
 	"github.com/feihua/zero-admin/api/front/internal/handler/product/category"
 	"github.com/feihua/zero-admin/api/front/internal/handler/product/product"
+	"github.com/feihua/zero-admin/api/front/internal/handler/product/search"
 	"github.com/feihua/zero-admin/api/front/internal/svc"
 
 	"github.com/zeromicro/go-zero/rest"
@@ -55,6 +56,14 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			{Method: http.MethodGet, Path: "/api/product/queryBrandDetail", Handler: brand.QueryBrandDetailHandler(serverCtx)},
 			{Method: http.MethodGet, Path: "/api/product/queryProductCateList", Handler: category.QueryProductCateListHandler(serverCtx)},
 		},
+	)
+
+	// 商品搜索（需 JWT — Story 7-2: Scope 隔离要求认证）
+	server.AddRoutes(
+		[]rest.Route{
+			{Method: http.MethodGet, Path: "/api/product/search", Handler: search.SearchHandler(serverCtx)},
+		},
+		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
 	)
 
 	// ===== 需 JWT 认证的路由 =====

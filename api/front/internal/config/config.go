@@ -22,6 +22,8 @@ type Config struct {
 	PayRpc zrpc.RpcClientConf
 	// 内容相关
 	CmsRpc zrpc.RpcClientConf
+	// 搜索
+	SearchRpc zrpc.RpcClientConf
 
 	Auth struct {
 		AccessSecret string

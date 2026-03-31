@@ -121,10 +121,10 @@ type BrandProductData struct {
 
 // CalcAmount 确认单金额试算（Story 5-3 HIGH-5: 统一为 int64 单位分，避免 float32 精度截断）
 type CalcAmount struct {
-	TotalAmount     int64 `json:"totalAmount"`      // 商品合计（分）
-	FreightAmount   int64 `json:"freightAmount"`    // 运费（分）
-	PromotionAmount int64 `json:"promotionAmount"`   // 促销优惠（分）
-	PayAmount       int64 `json:"payAmount"`        // 应付金额（分）
+	TotalAmount     int64 `json:"totalAmount"`     // 商品合计（分）
+	FreightAmount   int64 `json:"freightAmount"`   // 运费（分）
+	PromotionAmount int64 `json:"promotionAmount"` // 促销优惠（分）
+	PayAmount       int64 `json:"payAmount"`       // 应付金额（分）
 }
 
 type CancelUserOrderReq struct {
@@ -477,12 +477,12 @@ type GenerateOrderData struct {
 }
 
 type GenerateOrderReq struct {
-	CartIds                []int64 `json:"cartIds"`                //购物车id
-	CouponId               int64   `json:"couponId"`               //优惠券id
-	MemberReceiveAddressId int64   `json:"memberReceiveAddressId"` //
-	PayType                int32   `json:"payType"`                //支付方式
-	UseIntegration         int32   `json:"useIntegration"`         //使用的积分
-	Note                   string  `json:"note,optional"`          //订单备注（MEDIUM-3：后端目前不写 OMS proto，仅透传）
+	CartIds                []int64 `json:"cartIds"`                 //购物车id
+	CouponId               int64   `json:"couponId"`                //优惠券id
+	MemberReceiveAddressId int64   `json:"memberReceiveAddressId"`  //
+	PayType                int32   `json:"payType"`                 //支付方式
+	UseIntegration         int32   `json:"useIntegration"`          //使用的积分
+	Note                   string  `json:"note,optional"`           //订单备注（MEDIUM-3：后端目前不写 OMS proto，仅透传）
 	IdempotencyKey         string  `json:"idempotencyKey,optional"` //幂等键，格式：{userId}:{timestamp}:{hash}（Story 5.4 新增）
 }
 
@@ -714,10 +714,10 @@ type OrderItemData struct {
 
 // TimelineNode 时间线节点（Story 6-1 Task 3）
 type TimelineNode struct {
-	Status  string `json:"status"`  // 节点状态：completed/current/pending/interrupted
-	Title   string `json:"title"`   // 节点标题
-	Time    string `json:"time"`    // 节点时间（HH:mm）
-	Detail  string `json:"detail"`  // 附加信息（如物流单号）
+	Status string `json:"status"` // 节点状态：completed/current/pending/interrupted
+	Title  string `json:"title"`  // 节点标题
+	Time   string `json:"time"`   // 节点时间（HH:mm）
+	Detail string `json:"detail"` // 附加信息（如物流单号）
 }
 
 // PriceBreakdown 金额拆分（Story 6-1 Task 3）
@@ -749,15 +749,15 @@ type OrderListRespV2 struct {
 
 // OrderListItemV2 订单列表项（Story 6-1 Task 3）
 type OrderListItemV2 struct {
-	Id           int64   `json:"id"`            // 订单ID
-	OrderSn      string  `json:"orderSn"`       // 订单编号
-	MerchantName string  `json:"merchantName"`   // 商户名称
-	Status       int32   `json:"status"`        // OMS订单状态：0=待支付,1=已支付/待发货,2=已取消,3=已完成,4=售后中
-	PayStatus    int32   `json:"payStatus"`     // 支付状态：0=未支付,1=已支付
-	PayAmount    float64 `json:"payAmount"`     // 实付金额
-	TotalAmount  float64 `json:"totalAmount"`   // 订单总金额
-	Thumbnail    string  `json:"thumbnail"`     // 首商品缩略图
-	CreatedAt    string  `json:"createdAt"`      // 下单时间
+	Id           int64   `json:"id"`           // 订单ID
+	OrderSn      string  `json:"orderSn"`      // 订单编号
+	MerchantName string  `json:"merchantName"` // 商户名称
+	Status       int32   `json:"status"`       // OMS订单状态：0=待支付,1=已支付/待发货,2=已取消,3=已完成,4=售后中
+	PayStatus    int32   `json:"payStatus"`    // 支付状态：0=未支付,1=已支付
+	PayAmount    float64 `json:"payAmount"`    // 实付金额
+	TotalAmount  float64 `json:"totalAmount"`  // 订单总金额
+	Thumbnail    string  `json:"thumbnail"`    // 首商品缩略图
+	CreatedAt    string  `json:"createdAt"`    // 下单时间
 }
 
 type OrderListResp struct {
@@ -976,9 +976,9 @@ type QueryOrderData struct {
 	OrderNo                  string                   `json:"orderNo"`            //订单编号
 	UserId                   int64                    `json:"userId"`             //用户ID
 	OrderStatus              int32                    `json:"orderStatus"`        //OMS订单状态：0=待支付,1=已支付/待发货,2=已取消,3=已完成,4=售后中
-	PayStatus                int32                    `json:"payStatus"`         //支付状态：0=未支付,1=已支付
-	DeliveryStatus           int32                    `json:"deliveryStatus"`    //发货状态：0=未发货,1=已发货,2=已收货
-	AftersaleStatus          int32                    `json:"aftersaleStatus"`  //售后状态：0=无售后,1=售后申请中,2=售后完成
+	PayStatus                int32                    `json:"payStatus"`          //支付状态：0=未支付,1=已支付
+	DeliveryStatus           int32                    `json:"deliveryStatus"`     //发货状态：0=未发货,1=已发货,2=已收货
+	AftersaleStatus          int32                    `json:"aftersaleStatus"`    //售后状态：0=无售后,1=售后申请中,2=售后完成
 	TotalAmount              float64                  `json:"totalAmount"`        //订单总金额
 	PromotionAmount          float64                  `json:"promotionAmount"`    //促销金额
 	CouponAmount             float64                  `json:"couponAmount"`       //优惠券金额
@@ -995,7 +995,7 @@ type QueryOrderData struct {
 	CommentTime              string                   `json:"commentTime"`        //评价时间
 	SourceType               int32                    `json:"sourceType"`         //订单来源：1-APP,2-PC,3-小程序
 	ExpressOrderNumber       string                   `json:"expressOrderNumber"` //快递单号
-	LogisticsCompany         string                   `json:"logisticsCompany"`  //物流公司
+	LogisticsCompany         string                   `json:"logisticsCompany"`   //物流公司
 	UsePoints                int32                    `json:"usePoints"`          //下单时使用的积分
 	ReceiveStatus            int32                    `json:"receiveStatus"`      //是否确认收货：0->否,1->是
 	Remark                   string                   `json:"remark"`             //订单备注
@@ -1003,9 +1003,9 @@ type QueryOrderData struct {
 	UpdateTime               string                   `json:"updateTime"`         //
 	OrderItemData            []*OrderItemData         `json:"orderItemData"`      // 商品数据
 	MemberReceiveAddressList MemberReceiveAddressList `json:"memberReceiveAddress"`
-	Thumbnail                string                  `json:"thumbnail"`          // 首商品缩略图（Story 6-1 Task 3）
+	Thumbnail                string                   `json:"thumbnail"` // 首商品缩略图（Story 6-1 Task 3）
 	// Story 6-1 增强字段
-	Timeline       []TimelineNode  `json:"timeline"`        // 时间线节点列表
+	Timeline       []TimelineNode  `json:"timeline"`       // 时间线节点列表
 	PriceBreakdown *PriceBreakdown `json:"priceBreakdown"` // 金额拆分
 }
 
@@ -1110,7 +1110,7 @@ type ReturnApplyResp struct {
 	Code     int64  `json:"code"`
 	Message  string `json:"message"`
 	ReturnId int64  `json:"returnId"` // 售后单ID（Story 6-5 Task 6.1）
-	ReturnNo string `json:"returnNo"`  // 售后单号
+	ReturnNo string `json:"returnNo"` // 售后单号
 }
 
 type ReturnItemData struct {
@@ -1199,17 +1199,17 @@ type QueryLogisticsReq struct {
 
 // LogisticsNode 物流轨迹节点（Story 6-3 Task 2）
 type LogisticsNode struct {
-	Status      string `json:"status"`        // completed/pending/current/error
+	Status      string `json:"status"`      // completed/pending/current/error
 	Description string `json:"description"` // 状态描述
 	Time        string `json:"time"`        // 时间
 }
 
 // LogisticsData 物流数据（Story 6-3 Task 2）
 type LogisticsData struct {
-	DeliveryCompany string         `json:"deliveryCompany"` // 物流公司
-	DeliveryNo      string         `json:"deliveryNo"`     // 物流单号
-	CurrentStatus   string         `json:"currentStatus"`  // 当前状态描述
-	LogisticsNodes  []LogisticsNode `json:"logisticsNodes"` // 轨迹节点列表
+	DeliveryCompany string          `json:"deliveryCompany"` // 物流公司
+	DeliveryNo      string          `json:"deliveryNo"`      // 物流单号
+	CurrentStatus   string          `json:"currentStatus"`   // 当前状态描述
+	LogisticsNodes  []LogisticsNode `json:"logisticsNodes"`  // 轨迹节点列表
 }
 
 // QueryLogisticsResp 物流查询响应（Story 6-3 Task 2）
@@ -1231,8 +1231,8 @@ type ReturnReasonItem struct {
 
 // QueryReturnReasonListResp 售后原因列表响应（Story 6-4 Task 3）
 type QueryReturnReasonListResp struct {
-	Code       int64            `json:"code"`
-	Message    string           `json:"message"`
+	Code       int64              `json:"code"`
+	Message    string             `json:"message"`
 	ReasonList []ReturnReasonItem `json:"reasonList"`
 }
 
@@ -1241,8 +1241,8 @@ type ApplyAfterSalesReq struct {
 	OrderId     int64  `json:"orderId"`     // 关联订单ID
 	Type        int32  `json:"type"`        // 售后类型：0=退货退款, 1=仅退款, 2=换货
 	ReasonId    int64  `json:"reasonId"`    // 退货原因ID
-	Description string `json:"description"`   // 问题描述（可选）
-	ProofPics  string `json:"proofPics"`    // 凭证图片（base64，逗号分隔）
+	Description string `json:"description"` // 问题描述（可选）
+	ProofPics   string `json:"proofPics"`   // 凭证图片（base64，逗号分隔）
 }
 
 // ApplyAfterSalesResp 售后申请响应（Story 6-4 Task 3）
@@ -1253,11 +1253,10 @@ type ApplyAfterSalesResp struct {
 	ReturnNo string `json:"returnNo"` // 售后单号
 }
 
-
 // UpdateOrderStatusReq 统一更新订单状态请求（Story 6-5 Task 7）
 type UpdateOrderStatusReq struct {
-	OrderId int64  `json:"orderId"` // 订单ID
-	Action  int    `json:"action"`  // 操作类型：1=创建订单,2=支付成功,3=支付失败,4=发货,5=确认收货,6=取消,7=退款,8=申请售后,9=售后关闭
+	OrderId int64  `json:"orderId"`          // 订单ID
+	Action  int    `json:"action"`           // 操作类型：1=创建订单,2=支付成功,3=支付失败,4=发货,5=确认收货,6=取消,7=退款,8=申请售后,9=售后关闭
 	BizData string `json:"bizData,optional"` // 扩展业务数据（JSON 字符串）
 }
 
@@ -1287,13 +1286,49 @@ type OrderOperationLogItem struct {
 
 // QueryOrderStatusSnapshotResp 订单状态快照查询响应（Story 6-5 Task 7）
 type QueryOrderStatusSnapshotResp struct {
-	Code             int                      `json:"code"`
-	Message          string                   `json:"message"`
-	OrderId          int64                    `json:"orderId"`
-	OrderNo          string                   `json:"orderNo"`
-	OrderStatus      int                      `json:"orderStatus"`      // OMS order_status
-	PayStatus        int                      `json:"payStatus"`        // OMS pay_status
-	OrderStatusText  string                   `json:"orderStatusText"`  // 中文状态
-	PayStatusText    string                   `json:"payStatusText"`    // 中文支付状态
-	OptLogs          []OrderOperationLogItem  `json:"optLogs"`          // 操作日志列表
+	Code            int                     `json:"code"`
+	Message         string                  `json:"message"`
+	OrderId         int64                   `json:"orderId"`
+	OrderNo         string                  `json:"orderNo"`
+	OrderStatus     int                     `json:"orderStatus"`     // OMS order_status
+	PayStatus       int                     `json:"payStatus"`       // OMS pay_status
+	OrderStatusText string                  `json:"orderStatusText"` // 中文状态
+	PayStatusText   string                  `json:"payStatusText"`   // 中文支付状态
+	OptLogs         []OrderOperationLogItem `json:"optLogs"`         // 操作日志列表
+}
+
+// SearchReq 搜索请求（Story 7-2）
+type SearchReq struct {
+	Keyword    string `form:"keyword"`             // 关键字
+	PageNum    int64  `form:"pageNum,default=1"`   // 页码
+	PageSize   int64  `form:"pageSize,default=20"` // 每页数量
+	Sort       int32  `form:"sort,default=0"`      // 排序: 0->相关度, 1->新品, 2->销量, 3->价格升序, 4->价格降序
+	CategoryId int64  `form:"categoryId"`          // 分类ID
+	BrandId    int64  `form:"brandId"`             // 品牌ID
+}
+
+// ProductItem 搜索结果商品项（Story 7-2）
+type ProductItem struct {
+	Id            int64   `json:"id"`            // 商品SpuId
+	Name          string  `json:"name"`          // 商品名称
+	Brief         string  `json:"brief"`         // 简介
+	Price         string  `json:"price"`         // 价格
+	OriginalPrice float64 `json:"originalPrice"` // 原价
+	MainPic       string  `json:"mainPic"`       // 主图
+	Stock         int     `json:"stock"`         // 库存
+	Sales         int     `json:"sales"`         // 销量
+	CategoryId    int64   `json:"categoryId"`    // 分类ID
+	CategoryName  string  `json:"categoryName"`  // 分类名称
+	BrandId       int64   `json:"brandId"`       // 品牌ID
+	BrandName     string  `json:"brandName"`     // 品牌名称
+}
+
+// SearchResp 搜索响应（Story 7-2）
+type SearchResp struct {
+	Code      int64         `json:"code"`
+	Message   string        `json:"message"`
+	Data      []ProductItem `json:"data"`
+	Total     int64         `json:"total"`
+	Empty     bool          `json:"empty"`
+	EmptyHint string        `json:"emptyHint,omitempty"`
 }

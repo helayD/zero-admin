@@ -34,6 +34,7 @@ import (
 	"github.com/feihua/zero-admin/rpc/pms/client/productspecvalueservice"
 	"github.com/feihua/zero-admin/rpc/pms/client/productspuservice"
 	"github.com/feihua/zero-admin/rpc/pms/client/productvertifyrecordservice"
+	"github.com/feihua/zero-admin/rpc/search/search_client"
 	"github.com/feihua/zero-admin/rpc/sms/client/couponrecordservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/couponscopeservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/couponservice"
@@ -119,7 +120,7 @@ type ServiceContext struct {
 	// 订单相关
 	CartItemService          cartitemservice.CartItemService
 	CompanyAddressService    companyaddressservice.CompanyAddressService
-	OrderDeliveryService    orderdeliveryservice.OrderDeliveryService
+	OrderDeliveryService     orderdeliveryservice.OrderDeliveryService
 	OrderOperationLogService orderoperationlogservice.OrderOperationLogService
 	OrderPaymentService      orderpaymentservice.OrderPaymentService
 	OrderReturnService       orderreturnservice.OrderReturnService
@@ -141,6 +142,8 @@ type ServiceContext struct {
 	SubjectProductRelationService       subjectproductrelationservice.SubjectProductRelationService
 	PreferredAreaService                preferredareaservice.PreferredAreaService
 	PreferredAreaProductRelationService preferredareaproductrelationservice.PreferredAreaProductRelationService
+	// 搜索相关
+	SearchClient search_client.Search
 
 	AlipayClient *alipay.Client
 
@@ -170,6 +173,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	omsClient := zrpc.MustNewClient(c.OmsRpc)
 	smsClient := zrpc.MustNewClient(c.SmsRpc)
 	cmsClient := zrpc.MustNewClient(c.CmsRpc)
+	searchClient := zrpc.MustNewClient(c.SearchRpc)
 
 	mqUrl := fmt.Sprintf("amqp://%s:%s@%s:%d/", c.Rabbitmq.UserName, c.Rabbitmq.Password, c.Rabbitmq.Host, c.Rabbitmq.Port)
 	rabbitmq := mq.NewRabbitMQSimple(mqUrl)
@@ -219,7 +223,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 
 		CartItemService:          cartitemservice.NewCartItemService(omsClient),
 		CompanyAddressService:    companyaddressservice.NewCompanyAddressService(omsClient),
-		OrderDeliveryService:    orderdeliveryservice.NewOrderDeliveryService(omsClient),
+		OrderDeliveryService:     orderdeliveryservice.NewOrderDeliveryService(omsClient),
 		OrderOperationLogService: orderoperationlogservice.NewOrderOperationLogService(omsClient),
 		OrderPaymentService:      orderpaymentservice.NewOrderPaymentService(omsClient),
 		OrderReturnService:       orderreturnservice.NewOrderReturnService(omsClient),
@@ -241,6 +245,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		SubjectProductRelationService:       subjectproductrelationservice.NewSubjectProductRelationService(cmsClient),
 		PreferredAreaService:                preferredareaservice.NewPreferredAreaService(cmsClient),
 		PreferredAreaProductRelationService: preferredareaproductrelationservice.NewPreferredAreaProductRelationService(cmsClient),
+		SearchClient:                        search_client.NewSearch(searchClient),
 
 		AlipayClient: client,
 		RabbitMQ:     rabbitmq,

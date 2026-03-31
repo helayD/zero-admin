@@ -92,12 +92,12 @@ development_status:
   6-4-售后申请提交与材料上传: review
   6-5-订单状态编排与多角色视图一致: review
   6-6-客服与履约订单工作台: review
-  6-7-商户订单与售后处理工作台: backlog
+  6-7-商户订单与售后处理工作台: review
   epic-6-retrospective: optional
 
-  epic-7: backlog
-  7-1-商品索引同步事件链: backlog
-  7-2-前台关键词搜索与筛选排序: backlog
+  epic-7: in-progress
+  7-1-商品索引同步事件链: done
+  7-2-前台关键词搜索与筛选排序: done
   7-3a-统一交易事件契约与幂等消费: backlog
   7-3b-支付与取消驱动的订单权益一致性编排: backlog
   7-4-超时订单关闭与资源补偿: backlog
