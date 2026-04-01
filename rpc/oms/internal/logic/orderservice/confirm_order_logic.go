@@ -58,7 +58,7 @@ func (l *ConfirmOrderLogic) ConfirmOrder(in *omsclient.ConfirmOrderReq) (*omscli
 		logc.Errorf(l.ctx, "解析用户作用域失败,memberId:%d,异常:%s", in.MemberId, scopeErr.Error())
 	}
 
-	sendOrderEvent(l.ctx, l.svcCtx, "order.confirm.queue", "order.confirmed.key", "order.confirmed", in.OrderId, currentScope, in.MemberId, map[string]interface{}{
+	sendOrderEvent(l.ctx, l.svcCtx, "order.confirm.queue", "order.confirmed.key", "order.confirmed", "", in.OrderId, currentScope, in.MemberId, map[string]interface{}{
 		"orderNo": item.OrderNo,
 	})
 

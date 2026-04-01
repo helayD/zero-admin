@@ -99,7 +99,7 @@ func (l *AddOrderLogic) AddOrder(in *omsclient.AddOrderReq) (*omsclient.AddOrder
 		return nil, fmt.Errorf("解析用户作用域失败")
 	}
 
-	sendOrderEvent(l.ctx, l.svcCtx, "order.create.queue", "order.created.key", "order.created", item.ID, currentScope, in.UserId, map[string]interface{}{
+	sendOrderEvent(l.ctx, l.svcCtx, "order.create.queue", "order.created.key", "order.created", "", item.ID, currentScope, in.UserId, map[string]interface{}{
 		"orderNo":     item.OrderNo,
 		"totalAmount": item.TotalAmount,
 	})

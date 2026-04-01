@@ -81,6 +81,8 @@ type (
 	QueryCompanyAddressListReq        = omsclient.QueryCompanyAddressListReq
 	QueryCompanyAddressListResp       = omsclient.QueryCompanyAddressListResp
 	QueryDefaultSettingReq            = omsclient.QueryDefaultSettingReq
+	QueryManualRequiredOrdersReq      = omsclient.QueryManualRequiredOrdersReq
+	QueryManualRequiredOrdersResp     = omsclient.QueryManualRequiredOrdersResp
 	QueryOrderDeliveryDetailReq       = omsclient.QueryOrderDeliveryDetailReq
 	QueryOrderDeliveryDetailResp      = omsclient.QueryOrderDeliveryDetailResp
 	QueryOrderDeliveryListReq         = omsclient.QueryOrderDeliveryListReq
@@ -118,6 +120,8 @@ type (
 	UpdateCompanyAddressResp          = omsclient.UpdateCompanyAddressResp
 	UpdateCompanyAddressStatusReq     = omsclient.UpdateCompanyAddressStatusReq
 	UpdateCompanyAddressStatusResp    = omsclient.UpdateCompanyAddressStatusResp
+	UpdateOrderConsistencyReq         = omsclient.UpdateOrderConsistencyReq
+	UpdateOrderConsistencyResp        = omsclient.UpdateOrderConsistencyResp
 	UpdateOrderDeliveryReq            = omsclient.UpdateOrderDeliveryReq
 	UpdateOrderDeliveryResp           = omsclient.UpdateOrderDeliveryResp
 	UpdateOrderPaymentStatusReq       = omsclient.UpdateOrderPaymentStatusReq

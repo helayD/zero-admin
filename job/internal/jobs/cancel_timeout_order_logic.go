@@ -2,6 +2,9 @@ package jobs
 
 import (
 	"context"
+	"fmt"
+	"time"
+
 	"github.com/feihua/zero-admin/pkg/time_util"
 	"github.com/feihua/zero-admin/rpc/oms/client/orderservice"
 	"github.com/feihua/zero-admin/rpc/oms/client/ordersettingservice"
@@ -13,24 +16,46 @@ import (
 	"github.com/feihua/zero-admin/rpc/ums/client/memberinfoservice"
 	"github.com/feihua/zero-admin/rpc/ums/umsclient"
 	"github.com/zeromicro/go-zero/core/logc"
-	"time"
+	"github.com/zeromicro/go-zero/core/stores/redis"
 )
 
-// CancelTimeOutOrder 自动取消超时订单
-func CancelTimeOutOrder(ctx context.Context, productSkuService productskuservice.ProductSkuService, orderService orderservice.OrderService, couponRecordService couponrecordservice.CouponRecordService, memberService memberinfoservice.MemberInfoService, settingService ordersettingservice.OrderSettingService) {
+// 一致性阶段常量（与 api/front/.../order_state_machine.go 保持同步）
+const (
+	consistencyStageNone       = 0 // 无一致性阶段
+	consistencyStageCancelling = 4 // 取消回退中
+	consistencyStageCancelled  = 5 // 取消回退完成
+)
 
-	setting, err1 := settingService.QueryDefaultSetting(ctx, &ordersettingservice.QueryDefaultSettingReq{})
-	if err1 != nil {
-		logc.Errorf(ctx, "查询订单设置失败,错误信息：%+v", err1)
+// 一致性结果常量
+const (
+	consistencyResultNone           = 0 // 无结果
+	consistencyResultProcessing     = 1 // 处理中
+	consistencyResultSucceeded      = 2 // 成功
+	consistencyResultFailed         = 3 // 失败
+	consistencyResultManualRequired = 4 // 需要人工介入
+)
+
+const (
+	cancelCompensationKeyPrefix = "order:cancel:compensation:"
+	cancelCompensationTTL      = 86400
+)
+
+func CancelTimeOutOrder(ctx context.Context, rds *redis.Redis, productSkuService productskuservice.ProductSkuService, orderService orderservice.OrderService, couponRecordService couponrecordservice.CouponRecordService, memberService memberinfoservice.MemberInfoService, settingService ordersettingservice.OrderSettingService) {
+
+	setting, err := settingService.QueryDefaultSetting(ctx, &ordersettingservice.QueryDefaultSettingReq{})
+	if err != nil {
+		logc.Errorf(ctx, "查询订单设置失败,错误信息：%+v", err)
 		return
 	}
 
 	overtime := setting.NormalOrderOvertime
-	timeOutOrderList, err2 := orderService.QueryTimeOutOrderList(ctx, &omsclient.QueryTimeOutOrderListReq{
+	logc.Infof(ctx, "开始扫描超时订单,超时时间=%d分钟,当前时间=%s", overtime, time_util.TimeToStr(time.Now()))
+
+	timeOutOrderList, err := orderService.QueryTimeOutOrderList(ctx, &omsclient.QueryTimeOutOrderListReq{
 		Minute: overtime,
 	})
-	if err2 != nil {
-		logc.Errorf(ctx, "查询超时订单列表失败,请求参数：%+v,错误信息：%+v", overtime, err2)
+	if err != nil {
+		logc.Errorf(ctx, "查询超时订单列表失败,请求参数：%+v,错误信息：%+v", overtime, err)
 		return
 	}
 
@@ -43,63 +68,125 @@ func CancelTimeOutOrder(ctx context.Context, productSkuService productskuservice
 		orderId := orderInfo.Id
 		memberId := orderInfo.UserId
 
-		// todo 暂时没有分布式事务
-		// 1.查询订单是否存在
-		// 2.修改订单状态
-		resp, err := orderService.CancelOrder(ctx, &omsclient.CancelOrderReq{
-			MemberId: memberId,
-			OrderId:  orderId,
-		})
+		idempotentKey := fmt.Sprintf("%s%d", cancelCompensationKeyPrefix, orderId)
+
+		set, err := rds.SetnxExCtx(ctx, idempotentKey, "processing", cancelCompensationTTL)
 		if err != nil {
-			logc.Errorf(ctx, "查询订单是否存在失败,请求参数：%+v,错误信息：%+v", orderInfo, err)
-			return
+			logc.Errorf(ctx, "Redis 幂等检查异常 orderId=%d err=%v，跳过此订单", orderId, err)
+			continue
+		}
+		if !set {
+			logc.Infof(ctx, "取消补偿幂等命中 orderId=%d，已处理过，跳过", orderId)
+			continue
 		}
 
-		couponIds := resp.CouponIds
-		integration := resp.Integration
-		stockLockData := resp.Data
+		curRetryCount := orderInfo.RetryCount
 
-		var data []*pmsclient.UpdateSkuStockData
-		for _, item := range stockLockData {
-			data = append(data, &pmsclient.UpdateSkuStockData{
-				Id:              item.ProductSkuId,
-				ProductQuantity: item.ProductQuantity,
-			})
-		}
-		// 3.释放库存
-		_, err = productSkuService.ReleaseSkuStockLock(ctx, &pmsclient.UpdateSkuStockReq{
-			Data: data,
+		// 通知补偿开始
+		_, _ = orderService.UpdateOrderConsistency(ctx, &omsclient.UpdateOrderConsistencyReq{
+			OrderId:           orderId,
+			ConsistencyStage:  consistencyStageCancelling,
+			ConsistencyResult: consistencyResultProcessing,
+			RetryCount:        curRetryCount,
+			ActorId:           memberId,
 		})
-		if err != nil {
-			logc.Errorf(ctx, "释放库存失败,请求参数：%+v,错误信息：%+v", orderInfo, err)
-			return
-		}
 
-		// 4.如果使用优惠券,更新优惠券使用状态
-		// 4.1修改sms_coupon_history表的use_status字段
-		// 4.2记得修改sms_coupon的use_count字段,下单的时候要加1,取消订单的时候,要减1
-		if len(couponIds) > 0 {
-			_, err = couponRecordService.UpdateCouponRecord(ctx, &smsclient.UpdateCouponRecordReq{
-				MemberId:  memberId,
-				Status:    0,
-				CouponIds: couponIds,
+		// 执行业务补偿：CancelOrder → 释放库存 → 回退优惠券 → 返还积分
+		compensationErrMsg, compensationSuccess := executeCompensation(ctx, idempotentKey, orderId, memberId,
+			productSkuService, orderService, couponRecordService, memberService)
+
+		if compensationSuccess {
+			_, _ = orderService.UpdateOrderConsistency(ctx, &omsclient.UpdateOrderConsistencyReq{
+				OrderId:           orderId,
+				ConsistencyStage:  consistencyStageCancelled,
+				ConsistencyResult: consistencyResultSucceeded,
+				RetryCount:        curRetryCount,
+				ActorId:           memberId,
 			})
+			err = rds.SetexCtx(ctx, idempotentKey, "completed", cancelCompensationTTL)
 			if err != nil {
-				logc.Errorf(ctx, "更新优惠券使用状态失败,请求参数：%+v,错误信息：%+v", orderInfo, err)
-				return
+				logc.Errorf(ctx, "更新补偿状态为 completed 失败 orderId=%d err=%v", orderId, err)
 			}
+			logc.Infof(ctx, "取消用户：%d 未支付的订单：%d 成功", memberId, orderId)
+		} else {
+			newRetryCount := curRetryCount + 1
+			var finalResult int32
+			if newRetryCount >= 3 {
+				finalResult = consistencyResultManualRequired
+				logc.Errorf(ctx, "订单 %d 补偿失败超过 3 次, 请人工介入, lastError=%s", orderId, compensationErrMsg)
+			} else {
+				finalResult = consistencyResultFailed
+				logc.Errorf(ctx, "订单 %d 补偿失败, 第 %d 次重试, lastError=%s", orderId, newRetryCount, compensationErrMsg)
+			}
+			_, _ = orderService.UpdateOrderConsistency(ctx, &omsclient.UpdateOrderConsistencyReq{
+				OrderId:           orderId,
+				ConsistencyStage:  consistencyStageCancelling,
+				ConsistencyResult: finalResult,
+				LastError:         compensationErrMsg,
+				RetryCount:        newRetryCount,
+				ActorId:           memberId,
+			})
+			_, _ = rds.DelCtx(ctx, idempotentKey)
 		}
-
-		// 5.返还使用积分
-		member, _ := memberService.QueryMemberInfoDetail(ctx, &umsclient.QueryMemberInfoDetailReq{MemberId: memberId})
-		i := member.Points + integration
-		_, err = memberService.UpdateMemberPoints(ctx, &umsclient.UpdateMemberPointsReq{MemberId: memberId, Points: i})
-		if err != nil {
-			logc.Errorf(ctx, "返还使用积分失败,请求参数：%+v,错误信息：%+v", orderInfo, err)
-			return
-		}
-
-		logc.Errorf(ctx, "取消用户：%d 未支付的订单：%d 成功", memberId, orderId)
 	}
 
+}
+
+// executeCompensation 执行补偿链路，返回 (错误信息, 是否成功)
+func executeCompensation(ctx context.Context, idempotentKey string, orderId, memberId int64,
+	productSkuService productskuservice.ProductSkuService, orderService orderservice.OrderService,
+	couponRecordService couponrecordservice.CouponRecordService, memberService memberinfoservice.MemberInfoService) (string, bool) {
+
+	// Step 1: CancelOrder
+	resp, err := orderService.CancelOrder(ctx, &omsclient.CancelOrderReq{
+		MemberId: memberId,
+		OrderId:  orderId,
+		Source:   "timeout",
+	})
+	if err != nil {
+		return fmt.Sprintf("CancelOrder 失败: %s", err.Error()), false
+	}
+
+	couponIds := resp.CouponIds
+	integration := resp.Integration
+	stockLockData := resp.Data
+
+	// Step 2: ReleaseStockLock
+	var data []*pmsclient.UpdateSkuStockData
+	for _, item := range stockLockData {
+		data = append(data, &pmsclient.UpdateSkuStockData{
+			Id:              item.ProductSkuId,
+			ProductQuantity: item.ProductQuantity,
+		})
+	}
+	_, err = productSkuService.ReleaseSkuStockLock(ctx, &pmsclient.UpdateSkuStockReq{Data: data})
+	if err != nil {
+		return fmt.Sprintf("释放库存失败: %s", err.Error()), false
+	}
+
+	// Step 3: 回退优惠券
+	if len(couponIds) > 0 {
+		_, err = couponRecordService.UpdateCouponRecord(ctx, &smsclient.UpdateCouponRecordReq{
+			MemberId:  memberId,
+			Status:    0,
+			CouponIds: couponIds,
+		})
+		if err != nil {
+			return fmt.Sprintf("更新优惠券使用状态失败: %s", err.Error()), false
+		}
+	}
+
+	// Step 4: 返还积分
+	member, err := memberService.QueryMemberInfoDetail(ctx, &umsclient.QueryMemberInfoDetailReq{MemberId: memberId})
+	if err != nil || member == nil {
+		return fmt.Sprintf("查询会员信息失败: %v", err), false
+	}
+
+	i := member.Points + integration
+	_, err = memberService.UpdateMemberPoints(ctx, &umsclient.UpdateMemberPointsReq{MemberId: memberId, Points: i})
+	if err != nil {
+		return fmt.Sprintf("返还使用积分失败: %s", err.Error()), false
+	}
+
+	return "", true
 }

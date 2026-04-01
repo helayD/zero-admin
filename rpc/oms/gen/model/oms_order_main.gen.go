@@ -36,6 +36,13 @@ type OmsOrderMain struct {
 	CreateTime         time.Time  `gorm:"column:create_time;not null;default:CURRENT_TIMESTAMP;comment:提交时间" json:"create_time"`                             // 提交时间
 	UpdateTime         *time.Time `gorm:"column:update_time" json:"update_time"`
 	IsDeleted          int32      `gorm:"column:is_deleted;not null;comment:是否删除" json:"is_deleted"` // 是否删除
+	// 一致性阶段（来自 7.3B）
+	ConsistencyStage   int32      `gorm:"column:consistency_stage;default:0;comment:一致性阶段：0-无阶段,1-支付确认中,2-支付成功同步中,3-支付失败,4-取消回退中,5-取消回退完成,6-售后待处理,7-售后处理中,8-售后完成,9-全部同步完成" json:"consistency_stage"` // 一致性阶段
+	ConsistencyResult  int32      `gorm:"column:consistency_result;default:0;comment:一致性结果：0-无结果,1-处理中,2-成功,3-失败,4-需要人工介入" json:"consistency_result"`                                                // 一致性结果
+	LastError          string     `gorm:"column:last_error;size:500;comment:最近错误摘要" json:"last_error"`                                                                                               // 最近错误摘要
+	RetryCount         int32      `gorm:"column:retry_count;default:0;comment:重试次数" json:"retry_count"`                                                                                              // 重试次数
+	LastCompensationAt *time.Time `gorm:"column:last_compensation_at;comment:最近补偿时间" json:"last_compensation_at"`                                                                                    // 最近补偿时间
+	ManualRequired     int32      `gorm:"column:manual_required;default:0;comment:是否需要人工介入：0-否,1-是" json:"manual_required"`                                                                          // 是否需要人工介入
 }
 
 // TableName OmsOrderMain's table name

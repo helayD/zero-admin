@@ -52,6 +52,12 @@ func newOmsOrderMain(db *gorm.DB, opts ...gen.DOOption) omsOrderMain {
 	_omsOrderMain.CreateTime = field.NewTime(tableName, "create_time")
 	_omsOrderMain.UpdateTime = field.NewTime(tableName, "update_time")
 	_omsOrderMain.IsDeleted = field.NewInt32(tableName, "is_deleted")
+	_omsOrderMain.ConsistencyStage = field.NewInt32(tableName, "consistency_stage")
+	_omsOrderMain.ConsistencyResult = field.NewInt32(tableName, "consistency_result")
+	_omsOrderMain.LastError = field.NewString(tableName, "last_error")
+	_omsOrderMain.RetryCount = field.NewInt32(tableName, "retry_count")
+	_omsOrderMain.LastCompensationAt = field.NewTime(tableName, "last_compensation_at")
+	_omsOrderMain.ManualRequired = field.NewInt32(tableName, "manual_required")
 
 	_omsOrderMain.fillFieldMap()
 
@@ -86,7 +92,13 @@ type omsOrderMain struct {
 	Remark             field.String  // 订单备注
 	CreateTime         field.Time    // 提交时间
 	UpdateTime         field.Time
-	IsDeleted          field.Int32 // 是否删除
+	IsDeleted          field.Int32   // 是否删除
+	ConsistencyStage   field.Int32   // 一致性阶段：0-无阶段,1-支付确认中,2-支付成功同步中,3-支付失败,4-取消回退中,5-取消回退完成,6-售后待处理,7-售后处理中,8-售后完成,9-全部同步完成
+	ConsistencyResult  field.Int32   // 一致性结果：0-无结果,1-处理中,2-成功,3-失败,4-需要人工介入
+	LastError          field.String  // 最近错误摘要
+	RetryCount         field.Int32   // 重试次数
+	LastCompensationAt field.Time    // 最近补偿时间
+	ManualRequired     field.Int32   // 是否需要人工介入：0-否,1-是
 
 	fieldMap map[string]field.Expr
 }
@@ -127,6 +139,12 @@ func (o *omsOrderMain) updateTableName(table string) *omsOrderMain {
 	o.CreateTime = field.NewTime(table, "create_time")
 	o.UpdateTime = field.NewTime(table, "update_time")
 	o.IsDeleted = field.NewInt32(table, "is_deleted")
+	o.ConsistencyStage = field.NewInt32(table, "consistency_stage")
+	o.ConsistencyResult = field.NewInt32(table, "consistency_result")
+	o.LastError = field.NewString(table, "last_error")
+	o.RetryCount = field.NewInt32(table, "retry_count")
+	o.LastCompensationAt = field.NewTime(table, "last_compensation_at")
+	o.ManualRequired = field.NewInt32(table, "manual_required")
 
 	o.fillFieldMap()
 
@@ -155,7 +173,7 @@ func (o *omsOrderMain) GetFieldByName(fieldName string) (field.OrderExpr, bool) 
 }
 
 func (o *omsOrderMain) fillFieldMap() {
-	o.fieldMap = make(map[string]field.Expr, 24)
+	o.fieldMap = make(map[string]field.Expr, 33)
 	o.fieldMap["id"] = o.ID
 	o.fieldMap["order_no"] = o.OrderNo
 	o.fieldMap["user_id"] = o.UserID
@@ -180,6 +198,12 @@ func (o *omsOrderMain) fillFieldMap() {
 	o.fieldMap["create_time"] = o.CreateTime
 	o.fieldMap["update_time"] = o.UpdateTime
 	o.fieldMap["is_deleted"] = o.IsDeleted
+	o.fieldMap["consistency_stage"] = o.ConsistencyStage
+	o.fieldMap["consistency_result"] = o.ConsistencyResult
+	o.fieldMap["last_error"] = o.LastError
+	o.fieldMap["retry_count"] = o.RetryCount
+	o.fieldMap["last_compensation_at"] = o.LastCompensationAt
+	o.fieldMap["manual_required"] = o.ManualRequired
 }
 
 func (o omsOrderMain) clone(db *gorm.DB) omsOrderMain {

@@ -88,3 +88,15 @@ func (s *OrderServiceServer) QueryTimeOutOrderList(ctx context.Context, in *omsc
 	l := orderservicelogic.NewQueryTimeOutOrderListLogic(ctx, s.svcCtx)
 	return l.QueryTimeOutOrderList(in)
 }
+
+// 更新订单一致性阶段（用于补偿链路）
+func (s *OrderServiceServer) UpdateOrderConsistency(ctx context.Context, in *omsclient.UpdateOrderConsistencyReq) (*omsclient.UpdateOrderConsistencyResp, error) {
+	l := orderservicelogic.NewUpdateOrderConsistencyLogic(ctx, s.svcCtx)
+	return l.UpdateOrderConsistency(in)
+}
+
+// 查询需要人工介入的补偿订单
+func (s *OrderServiceServer) QueryManualRequiredOrders(ctx context.Context, in *omsclient.QueryManualRequiredOrdersReq) (*omsclient.QueryManualRequiredOrdersResp, error) {
+	l := orderservicelogic.NewQueryManualRequiredOrdersLogic(ctx, s.svcCtx)
+	return l.QueryManualRequiredOrders(in)
+}

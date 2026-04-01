@@ -65,7 +65,7 @@ func (l *CloseOrderLogic) CloseOrder(in *omsclient.CloseOrderReq) (*omsclient.Cl
 	}
 
 	for _, id := range in.Ids {
-		sendOrderEvent(l.ctx, l.svcCtx, "order.close.queue", "order.closed.key", "order.closed", id, currentScope, in.OperatorId, map[string]interface{}{
+		sendOrderEvent(l.ctx, l.svcCtx, "order.close.queue", "order.closed.key", "order.closed", "", id, currentScope, in.OperatorId, map[string]interface{}{
 			"orderNo": in.OrderNo,
 		})
 	}

@@ -81,6 +81,8 @@ type (
 	QueryCompanyAddressListReq        = omsclient.QueryCompanyAddressListReq
 	QueryCompanyAddressListResp       = omsclient.QueryCompanyAddressListResp
 	QueryDefaultSettingReq            = omsclient.QueryDefaultSettingReq
+	QueryManualRequiredOrdersReq      = omsclient.QueryManualRequiredOrdersReq
+	QueryManualRequiredOrdersResp     = omsclient.QueryManualRequiredOrdersResp
 	QueryOrderDeliveryDetailReq       = omsclient.QueryOrderDeliveryDetailReq
 	QueryOrderDeliveryDetailResp      = omsclient.QueryOrderDeliveryDetailResp
 	QueryOrderDeliveryListReq         = omsclient.QueryOrderDeliveryListReq
@@ -118,6 +120,8 @@ type (
 	UpdateCompanyAddressResp          = omsclient.UpdateCompanyAddressResp
 	UpdateCompanyAddressStatusReq     = omsclient.UpdateCompanyAddressStatusReq
 	UpdateCompanyAddressStatusResp    = omsclient.UpdateCompanyAddressStatusResp
+	UpdateOrderConsistencyReq         = omsclient.UpdateOrderConsistencyReq
+	UpdateOrderConsistencyResp        = omsclient.UpdateOrderConsistencyResp
 	UpdateOrderDeliveryReq            = omsclient.UpdateOrderDeliveryReq
 	UpdateOrderDeliveryResp           = omsclient.UpdateOrderDeliveryResp
 	UpdateOrderPaymentStatusReq       = omsclient.UpdateOrderPaymentStatusReq
@@ -159,6 +163,10 @@ type (
 		ConfirmOrder(ctx context.Context, in *ConfirmOrderReq, opts ...grpc.CallOption) (*ConfirmOrderResp, error)
 		// 查询超时、未支付的订单及订单详情
 		QueryTimeOutOrderList(ctx context.Context, in *QueryTimeOutOrderListReq, opts ...grpc.CallOption) (*QueryOrderListResp, error)
+		// 更新订单一致性阶段（用于补偿链路）
+		UpdateOrderConsistency(ctx context.Context, in *UpdateOrderConsistencyReq, opts ...grpc.CallOption) (*UpdateOrderConsistencyResp, error)
+		// 查询需要人工介入的补偿订单
+		QueryManualRequiredOrders(ctx context.Context, in *QueryManualRequiredOrdersReq, opts ...grpc.CallOption) (*QueryManualRequiredOrdersResp, error)
 	}
 
 	defaultOrderService struct {
@@ -236,4 +244,16 @@ func (m *defaultOrderService) ConfirmOrder(ctx context.Context, in *ConfirmOrder
 func (m *defaultOrderService) QueryTimeOutOrderList(ctx context.Context, in *QueryTimeOutOrderListReq, opts ...grpc.CallOption) (*QueryOrderListResp, error) {
 	client := omsclient.NewOrderServiceClient(m.cli.Conn())
 	return client.QueryTimeOutOrderList(ctx, in, opts...)
+}
+
+// 更新订单一致性阶段（用于补偿链路）
+func (m *defaultOrderService) UpdateOrderConsistency(ctx context.Context, in *UpdateOrderConsistencyReq, opts ...grpc.CallOption) (*UpdateOrderConsistencyResp, error) {
+	client := omsclient.NewOrderServiceClient(m.cli.Conn())
+	return client.UpdateOrderConsistency(ctx, in, opts...)
+}
+
+// 查询需要人工介入的补偿订单
+func (m *defaultOrderService) QueryManualRequiredOrders(ctx context.Context, in *QueryManualRequiredOrdersReq, opts ...grpc.CallOption) (*QueryManualRequiredOrdersResp, error) {
+	client := omsclient.NewOrderServiceClient(m.cli.Conn())
+	return client.QueryManualRequiredOrders(ctx, in, opts...)
 }

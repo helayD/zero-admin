@@ -78,7 +78,7 @@ func (l *DeliveryLogic) Delivery(in *omsclient.DeliveryReq) (*omsclient.Delivery
 		return nil, errors.New("添加订单操作记录失败")
 	}
 
-	sendOrderEvent(l.ctx, l.svcCtx, "order.delivery.queue", "order.delivered.key", "order.delivered", in.OrderId, currentScope, in.OperatorId, map[string]interface{}{
+	sendOrderEvent(l.ctx, l.svcCtx, "order.delivery.queue", "order.delivered.key", "order.delivered", "", in.OrderId, currentScope, in.OperatorId, map[string]interface{}{
 		"orderNo":        in.OrderNo,
 		"expressOrderNo": in.DeliverySn,
 	})

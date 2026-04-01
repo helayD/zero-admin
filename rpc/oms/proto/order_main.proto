@@ -229,6 +229,7 @@ message UpdateReceiverInfoResp {
 message CancelOrderReq {
   int64 MemberId = 1;
   int64 OrderId = 2;
+  string Source = 3; //取消来源：user-用户主动取消,timeout-超时自动关闭
 }
 
 message ReleaseSkuStockLockData {
@@ -253,6 +254,33 @@ message QueryTimeOutOrderListReq {
   int32 minute = 1; //超时的时间
 
 }
+
+// 更新订单一致性阶段
+message UpdateOrderConsistencyReq {
+  int64 order_id = 1; //订单ID
+  int32 consistency_stage = 2; //一致性阶段：0-无阶段,4-取消回退中,5-取消回退完成
+  int32 consistency_result = 3; //一致性结果：0-无结果,1-处理中,2-成功,3-失败,4-需要人工介入
+  string last_error = 4; //最近错误摘要
+  int32 retry_count = 5; //重试次数
+  int64 actor_id = 6; //操作者ID
+}
+
+message UpdateOrderConsistencyResp {
+  string pong = 1;
+}
+
+// 查询需要人工介入的补偿订单
+message QueryManualRequiredOrdersReq {
+  int32 page_num = 1; //第几页
+  int32 page_size = 2; //每页的数量
+  GovernanceScope scope = 3; //治理范围(platform/tenant/merchant)
+}
+
+message QueryManualRequiredOrdersResp {
+  int64 total = 1;
+  repeated OrderListData list = 2;
+}
+
 // 订单
 service OrderService {
   // 添加订单(app)
@@ -280,4 +308,10 @@ service OrderService {
 
   //查询超时、未支付的订单及订单详情
   rpc QueryTimeOutOrderList(QueryTimeOutOrderListReq) returns(QueryOrderListResp);
+
+  //更新订单一致性阶段（用于补偿链路）
+  rpc UpdateOrderConsistency(UpdateOrderConsistencyReq) returns(UpdateOrderConsistencyResp);
+
+  //查询需要人工介入的补偿订单
+  rpc QueryManualRequiredOrders(QueryManualRequiredOrdersReq) returns(QueryManualRequiredOrdersResp);
 }

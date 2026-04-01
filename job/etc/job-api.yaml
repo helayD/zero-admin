@@ -2,29 +2,24 @@ Name: job-api
 Host: 0.0.0.0
 Port: 8089
 
-#会员
 UmsRpc:
   Etcd:
     Hosts:
       - localhost:2379
     Key: ums.rpc
   NonBlock: true
-#商品
 PmsRpc:
   Etcd:
     Hosts:
       - localhost:2379
     Key: pms.rpc
   NonBlock: true
-
-#订单
 OmsRpc:
   Etcd:
     Hosts:
       - localhost:2379
     Key: oms.rpc
   NonBlock: true
-#营销
 SmsRpc:
   Etcd:
     Hosts:
@@ -32,8 +27,12 @@ SmsRpc:
     Key: sms.rpc
   NonBlock: true
 
+Redis:
+  Address: localhost:6379
+  Pass: ""
+
 Log:
-  ServiceName: consumer
+  ServiceName: job
   Stat: false
   Mode: file
   Path: logs/job

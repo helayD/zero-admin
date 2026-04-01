@@ -73,7 +73,7 @@ func (l *CancelOrderLogic) CancelOrder(in *omsclient.CancelOrderReq) (*omsclient
 		logc.Errorf(l.ctx, "解析用户作用域失败,memberId:%d,异常:%s", in.MemberId, scopeErr.Error())
 	}
 
-	sendOrderEvent(l.ctx, l.svcCtx, "order.cancel.queue", "order.cancelled.key", "order.cancelled", in.OrderId, currentScope, in.MemberId, map[string]interface{}{
+	sendOrderEvent(l.ctx, l.svcCtx, "order.cancel.queue", "order.cancelled.key", "oms.order.cancelled.v1", in.Source, in.OrderId, currentScope, in.MemberId, map[string]interface{}{
 		"orderNo": item.OrderNo,
 	})
 

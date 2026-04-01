@@ -49,6 +49,7 @@ func OrderDelayCancel(ctx context.Context, body []byte, rds *redis.Redis, produc
 	resp, err := orderService.CancelOrder(ctx, &omsclient.CancelOrderReq{
 		MemberId: memberId,
 		OrderId:  orderId,
+		Source:   "timeout",
 	})
 	if err != nil {
 		logc.Errorf(ctx, "CancelOrder 失败,orderId=%d,错误信息：%+v", orderId, err)
@@ -89,7 +90,12 @@ func OrderDelayCancel(ctx context.Context, body []byte, rds *redis.Redis, produc
 		}
 	}
 
-	member, _ := memberService.QueryMemberInfoDetail(ctx, &umsclient.QueryMemberInfoDetailReq{MemberId: memberId})
+	member, err := memberService.QueryMemberInfoDetail(ctx, &umsclient.QueryMemberInfoDetailReq{MemberId: memberId})
+	if err != nil || member == nil {
+		logc.Errorf(ctx, "查询会员信息失败,orderId=%d,err=%v", orderId, err)
+		_, _ = rds.DelCtx(ctx, idempotentKey)
+		return fmt.Errorf("查询会员信息失败: %w", err)
+	}
 	i := member.Points + integration
 	_, err = memberService.UpdateMemberPoints(ctx, &umsclient.UpdateMemberPointsReq{MemberId: memberId, Points: i})
 	if err != nil {
