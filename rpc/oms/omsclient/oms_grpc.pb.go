@@ -894,6 +894,11 @@ const (
 	OrderService_UpdateOrderConsistency_FullMethodName     = "/omsclient.OrderService/UpdateOrderConsistency"
 	OrderService_QueryManualRequiredOrders_FullMethodName  = "/omsclient.OrderService/QueryManualRequiredOrders"
 	OrderService_QueryCompensationChainList_FullMethodName = "/omsclient.OrderService/QueryCompensationChainList"
+	OrderService_RetryCompensationChain_FullMethodName     = "/omsclient.OrderService/RetryCompensationChain"
+	OrderService_ReplayCompensationChain_FullMethodName    = "/omsclient.OrderService/ReplayCompensationChain"
+	OrderService_PauseCompensationChain_FullMethodName     = "/omsclient.OrderService/PauseCompensationChain"
+	OrderService_EscalateChain_FullMethodName              = "/omsclient.OrderService/EscalateChain"
+	OrderService_QueryChainActions_FullMethodName          = "/omsclient.OrderService/QueryChainActions"
 )
 
 // OrderServiceClient is the client API for OrderService service.
@@ -928,6 +933,16 @@ type OrderServiceClient interface {
 	QueryManualRequiredOrders(ctx context.Context, in *QueryManualRequiredOrdersReq, opts ...grpc.CallOption) (*QueryManualRequiredOrdersResp, error)
 	// 查询补偿链路列表（支持一致性筛选+时间范围）
 	QueryCompensationChainList(ctx context.Context, in *QueryCompensationChainListReq, opts ...grpc.CallOption) (*QueryCompensationChainListResp, error)
+	// 重试链路（7.6 新增）
+	RetryCompensationChain(ctx context.Context, in *RetryCompensationChainReq, opts ...grpc.CallOption) (*RetryCompensationChainResp, error)
+	// 回放链路（7.6 新增）
+	ReplayCompensationChain(ctx context.Context, in *ReplayCompensationChainReq, opts ...grpc.CallOption) (*ReplayCompensationChainResp, error)
+	// 暂停链路（7.6 新增）
+	PauseCompensationChain(ctx context.Context, in *PauseCompensationChainReq, opts ...grpc.CallOption) (*PauseCompensationChainResp, error)
+	// 升级链路（7.6 新增）
+	EscalateChain(ctx context.Context, in *EscalateChainReq, opts ...grpc.CallOption) (*EscalateChainResp, error)
+	// 查询可用干预动作（7.6 新增）
+	QueryChainActions(ctx context.Context, in *QueryChainActionsReq, opts ...grpc.CallOption) (*QueryChainActionsResp, error)
 }
 
 type orderServiceClient struct {
@@ -1064,6 +1079,51 @@ func (c *orderServiceClient) QueryCompensationChainList(ctx context.Context, in 
 	return out, nil
 }
 
+func (c *orderServiceClient) RetryCompensationChain(ctx context.Context, in *RetryCompensationChainReq, opts ...grpc.CallOption) (*RetryCompensationChainResp, error) {
+	out := new(RetryCompensationChainResp)
+	err := c.cc.Invoke(ctx, OrderService_RetryCompensationChain_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *orderServiceClient) ReplayCompensationChain(ctx context.Context, in *ReplayCompensationChainReq, opts ...grpc.CallOption) (*ReplayCompensationChainResp, error) {
+	out := new(ReplayCompensationChainResp)
+	err := c.cc.Invoke(ctx, OrderService_ReplayCompensationChain_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *orderServiceClient) PauseCompensationChain(ctx context.Context, in *PauseCompensationChainReq, opts ...grpc.CallOption) (*PauseCompensationChainResp, error) {
+	out := new(PauseCompensationChainResp)
+	err := c.cc.Invoke(ctx, OrderService_PauseCompensationChain_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *orderServiceClient) EscalateChain(ctx context.Context, in *EscalateChainReq, opts ...grpc.CallOption) (*EscalateChainResp, error) {
+	out := new(EscalateChainResp)
+	err := c.cc.Invoke(ctx, OrderService_EscalateChain_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *orderServiceClient) QueryChainActions(ctx context.Context, in *QueryChainActionsReq, opts ...grpc.CallOption) (*QueryChainActionsResp, error) {
+	out := new(QueryChainActionsResp)
+	err := c.cc.Invoke(ctx, OrderService_QueryChainActions_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // OrderServiceServer is the server API for OrderService service.
 // All implementations must embed UnimplementedOrderServiceServer
 // for forward compatibility
@@ -1096,6 +1156,16 @@ type OrderServiceServer interface {
 	QueryManualRequiredOrders(context.Context, *QueryManualRequiredOrdersReq) (*QueryManualRequiredOrdersResp, error)
 	// 查询补偿链路列表（支持一致性筛选+时间范围）
 	QueryCompensationChainList(context.Context, *QueryCompensationChainListReq) (*QueryCompensationChainListResp, error)
+	// 重试链路（7.6 新增）
+	RetryCompensationChain(context.Context, *RetryCompensationChainReq) (*RetryCompensationChainResp, error)
+	// 回放链路（7.6 新增）
+	ReplayCompensationChain(context.Context, *ReplayCompensationChainReq) (*ReplayCompensationChainResp, error)
+	// 暂停链路（7.6 新增）
+	PauseCompensationChain(context.Context, *PauseCompensationChainReq) (*PauseCompensationChainResp, error)
+	// 升级链路（7.6 新增）
+	EscalateChain(context.Context, *EscalateChainReq) (*EscalateChainResp, error)
+	// 查询可用干预动作（7.6 新增）
+	QueryChainActions(context.Context, *QueryChainActionsReq) (*QueryChainActionsResp, error)
 	mustEmbedUnimplementedOrderServiceServer()
 }
 
@@ -1144,6 +1214,21 @@ func (UnimplementedOrderServiceServer) QueryManualRequiredOrders(context.Context
 }
 func (UnimplementedOrderServiceServer) QueryCompensationChainList(context.Context, *QueryCompensationChainListReq) (*QueryCompensationChainListResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QueryCompensationChainList not implemented")
+}
+func (UnimplementedOrderServiceServer) RetryCompensationChain(context.Context, *RetryCompensationChainReq) (*RetryCompensationChainResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RetryCompensationChain not implemented")
+}
+func (UnimplementedOrderServiceServer) ReplayCompensationChain(context.Context, *ReplayCompensationChainReq) (*ReplayCompensationChainResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ReplayCompensationChain not implemented")
+}
+func (UnimplementedOrderServiceServer) PauseCompensationChain(context.Context, *PauseCompensationChainReq) (*PauseCompensationChainResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PauseCompensationChain not implemented")
+}
+func (UnimplementedOrderServiceServer) EscalateChain(context.Context, *EscalateChainReq) (*EscalateChainResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EscalateChain not implemented")
+}
+func (UnimplementedOrderServiceServer) QueryChainActions(context.Context, *QueryChainActionsReq) (*QueryChainActionsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QueryChainActions not implemented")
 }
 func (UnimplementedOrderServiceServer) mustEmbedUnimplementedOrderServiceServer() {}
 
@@ -1410,6 +1495,96 @@ func _OrderService_QueryCompensationChainList_Handler(srv interface{}, ctx conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _OrderService_RetryCompensationChain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RetryCompensationChainReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrderServiceServer).RetryCompensationChain(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrderService_RetryCompensationChain_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrderServiceServer).RetryCompensationChain(ctx, req.(*RetryCompensationChainReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OrderService_ReplayCompensationChain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReplayCompensationChainReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrderServiceServer).ReplayCompensationChain(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrderService_ReplayCompensationChain_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrderServiceServer).ReplayCompensationChain(ctx, req.(*ReplayCompensationChainReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OrderService_PauseCompensationChain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PauseCompensationChainReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrderServiceServer).PauseCompensationChain(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrderService_PauseCompensationChain_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrderServiceServer).PauseCompensationChain(ctx, req.(*PauseCompensationChainReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OrderService_EscalateChain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EscalateChainReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrderServiceServer).EscalateChain(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrderService_EscalateChain_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrderServiceServer).EscalateChain(ctx, req.(*EscalateChainReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OrderService_QueryChainActions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryChainActionsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrderServiceServer).QueryChainActions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrderService_QueryChainActions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrderServiceServer).QueryChainActions(ctx, req.(*QueryChainActionsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // OrderService_ServiceDesc is the grpc.ServiceDesc for OrderService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1472,6 +1647,26 @@ var OrderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "QueryCompensationChainList",
 			Handler:    _OrderService_QueryCompensationChainList_Handler,
+		},
+		{
+			MethodName: "RetryCompensationChain",
+			Handler:    _OrderService_RetryCompensationChain_Handler,
+		},
+		{
+			MethodName: "ReplayCompensationChain",
+			Handler:    _OrderService_ReplayCompensationChain_Handler,
+		},
+		{
+			MethodName: "PauseCompensationChain",
+			Handler:    _OrderService_PauseCompensationChain_Handler,
+		},
+		{
+			MethodName: "EscalateChain",
+			Handler:    _OrderService_EscalateChain_Handler,
+		},
+		{
+			MethodName: "QueryChainActions",
+			Handler:    _OrderService_QueryChainActions_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

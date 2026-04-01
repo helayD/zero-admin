@@ -308,6 +308,31 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Path:    "/exportChainMonitorList",
 					Handler: omschain_monitor.ExportChainMonitorListHandler(serverCtx),
 				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/retryChain",
+					Handler: omschain_monitor.RetryChainHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/replayChain",
+					Handler: omschain_monitor.ReplayChainHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/pauseChain",
+					Handler: omschain_monitor.PauseChainHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/escalateChain",
+					Handler: omschain_monitor.EscalateChainHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryChainActions",
+					Handler: omschain_monitor.QueryChainActionsHandler(serverCtx),
+				},
 			}...,
 		),
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),

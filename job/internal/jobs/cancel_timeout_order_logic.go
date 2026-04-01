@@ -68,6 +68,12 @@ func CancelTimeOutOrder(ctx context.Context, rds *redis.Redis, productSkuService
 		orderId := orderInfo.Id
 		memberId := orderInfo.UserId
 
+		// Story 7.6: 跳过已暂停的链路
+		if orderInfo.Paused == 1 {
+			logc.Infof(ctx, "跳过已暂停链路, orderId=%d", orderId)
+			continue
+		}
+
 		idempotentKey := fmt.Sprintf("%s%d", cancelCompensationKeyPrefix, orderId)
 
 		set, err := rds.SetnxExCtx(ctx, idempotentKey, "processing", cancelCompensationTTL)

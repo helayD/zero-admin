@@ -17,6 +17,36 @@ export interface ChainMonitorItem {
   lastExecuteAt: string;
   createdAt: string;
   actorId: number;
+  paused: number;        // 是否暂停（0-否，1-是）
+  pauseReason: string;   // 暂停原因
+}
+
+// 链路干预响应类型（7.6 新增）
+export interface ChainInterventionBase {
+  code: string;
+  message: string;
+  success: boolean;
+}
+
+export interface RetryChainResp extends ChainInterventionBase {
+  newRetryCount: number;
+  traceId: string;
+}
+
+export interface ReplayChainResp extends ChainInterventionBase {
+  traceId: string;
+}
+
+export interface PauseChainResp extends ChainInterventionBase {
+  paused: boolean;
+}
+
+export interface EscalateChainResp extends ChainInterventionBase {
+  manualRequired: boolean;
+}
+
+export interface ChainActionsResp extends ChainInterventionBase {
+  availableActions: string[]; // 可用动作列表，如 ["retry","pause","escalate"]
 }
 
 export interface ChainMonitorListPagination {

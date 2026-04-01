@@ -102,7 +102,7 @@ development_status:
   7-3b-支付与取消驱动的订单权益一致性编排: review
   7-4-超时订单关闭与资源补偿: done
   7-5-异步链路监控视图: done
-  7-6-授权链路重试回放与升级: backlog
+  7-6-授权链路重试回放与升级: review
   epic-7-retrospective: optional
 
   epic-8: backlog

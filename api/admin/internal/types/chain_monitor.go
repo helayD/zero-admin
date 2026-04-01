@@ -37,6 +37,8 @@ type ChainMonitorItem struct {
 	LastExecuteAt  string `json:"lastExecuteAt"` // 最近执行时间
 	CreatedAt      string `json:"createdAt"`      // 链路创建时间
 	ActorId        int64  `json:"actorId"`        // 触发操作人ID
+	Paused         int32  `json:"paused"`         // 是否暂停（0-否，1-是）（7.6新增）
+	PauseReason    string `json:"pauseReason"`   // 暂停原因（7.6新增）
 }
 
 type QueryChainMonitorListResp struct {

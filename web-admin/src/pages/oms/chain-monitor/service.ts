@@ -44,3 +44,42 @@ export async function exportChainMonitorList(params: ChainMonitorListParams & Go
   });
   return res;
 }
+
+// ============================================================
+// 链路干预 API（Story 7.6 新增）
+// ============================================================
+
+export async function retryChain(orderId: number, remark?: string) {
+  return request('/api/oms/order/retryChain', {
+    method: 'POST',
+    data: { orderId, remark },
+  });
+}
+
+export async function replayChain(orderId: number, replayReason: string) {
+  return request('/api/oms/order/replayChain', {
+    method: 'POST',
+    data: { orderId, replayReason },
+  });
+}
+
+export async function pauseChain(orderId: number, pauseReason: string) {
+  return request('/api/oms/order/pauseChain', {
+    method: 'POST',
+    data: { orderId, pauseReason },
+  });
+}
+
+export async function escalateChain(orderId: number, escalateReason: string) {
+  return request('/api/oms/order/escalateChain', {
+    method: 'POST',
+    data: { orderId, escalateReason },
+  });
+}
+
+export async function queryChainActions(orderId: number) {
+  return request('/api/oms/order/queryChainActions', {
+    method: 'GET',
+    params: { orderId },
+  });
+}

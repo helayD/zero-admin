@@ -78,6 +78,8 @@ func (l *QueryChainMonitorListLogic) QueryChainMonitorList(req *types.QueryChain
 			LastExecuteAt:  item.LastExecuteAt,
 			CreatedAt:      item.CreatedAt,
 			ActorId:        item.ActorId,
+			Paused:         item.Paused,
+			PauseReason:    item.PauseReason,
 		})
 	}
 

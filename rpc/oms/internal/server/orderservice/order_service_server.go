@@ -106,3 +106,33 @@ func (s *OrderServiceServer) QueryCompensationChainList(ctx context.Context, in 
 	l := orderservicelogic.NewQueryCompensationChainListLogic(ctx, s.svcCtx)
 	return l.QueryCompensationChainList(in)
 }
+
+// 重试链路（7.6 新增）
+func (s *OrderServiceServer) RetryCompensationChain(ctx context.Context, in *omsclient.RetryCompensationChainReq) (*omsclient.RetryCompensationChainResp, error) {
+	l := orderservicelogic.NewRetryCompensationChainLogic(ctx, s.svcCtx)
+	return l.RetryCompensationChain(in)
+}
+
+// 回放链路（7.6 新增）
+func (s *OrderServiceServer) ReplayCompensationChain(ctx context.Context, in *omsclient.ReplayCompensationChainReq) (*omsclient.ReplayCompensationChainResp, error) {
+	l := orderservicelogic.NewReplayCompensationChainLogic(ctx, s.svcCtx)
+	return l.ReplayCompensationChain(in)
+}
+
+// 暂停链路（7.6 新增）
+func (s *OrderServiceServer) PauseCompensationChain(ctx context.Context, in *omsclient.PauseCompensationChainReq) (*omsclient.PauseCompensationChainResp, error) {
+	l := orderservicelogic.NewPauseCompensationChainLogic(ctx, s.svcCtx)
+	return l.PauseCompensationChain(in)
+}
+
+// 升级链路（7.6 新增）
+func (s *OrderServiceServer) EscalateChain(ctx context.Context, in *omsclient.EscalateChainReq) (*omsclient.EscalateChainResp, error) {
+	l := orderservicelogic.NewEscalateChainLogic(ctx, s.svcCtx)
+	return l.EscalateChain(in)
+}
+
+// 查询可用干预动作（7.6 新增）
+func (s *OrderServiceServer) QueryChainActions(ctx context.Context, in *omsclient.QueryChainActionsReq) (*omsclient.QueryChainActionsResp, error) {
+	l := orderservicelogic.NewQueryChainActionsLogic(ctx, s.svcCtx)
+	return l.QueryChainActions(in)
+}

@@ -112,9 +112,9 @@ func (l *QueryCompensationChainListLogic) QueryCompensationChainList(in *omsclie
 func buildChainMonitorItemFromOrder(item *model.OmsOrderMain, current *pkgscope.GovernanceScope) *omsclient.ChainMonitorItem {
 	return &omsclient.ChainMonitorItem{
 		TraceId:       fmt.Sprintf("order-comp-%d", item.ID),
-		PlatformId:   current.PlatformID,
-		TenantId:     current.TenantID,
-		MerchantId:   current.MerchantID,
+		PlatformId:   item.PlatformID,
+		TenantId:     item.TenantID,
+		MerchantId:   item.MerchantID,
 		ChainType:    int32(omsclient.ChainType_CHAIN_TYPE_COMPENSATION),
 		ChainTypeText: "订单超时补偿",
 		EntityId:     item.ID,
@@ -129,6 +129,8 @@ func buildChainMonitorItemFromOrder(item *model.OmsOrderMain, current *pkgscope.
 		LastExecuteAt: time_util.TimeToString(item.LastCompensationAt),
 		CreatedAt:    time_util.TimeToStr(item.CreateTime),
 		ActorId:      item.UserID,
+		Paused:        item.Paused,
+		PauseReason:   item.PauseReason,
 	}
 }
 

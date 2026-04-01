@@ -13,7 +13,10 @@ const TableNameOmsOrderMain = "oms_order_main"
 // OmsOrderMain 订单主表
 type OmsOrderMain struct {
 	ID                 int64      `gorm:"column:id;primaryKey;autoIncrement:true" json:"id"`
-	OrderNo            string     `gorm:"column:order_no;not null;comment:订单编号" json:"order_no"`                                                             // 订单编号
+	PlatformID        int64      `gorm:"column:platform_id;default:1;not null;comment:平台ID" json:"platform_id"`                                                 // 平台ID（来自 7.5 Review Follow-up）
+	TenantID          int64      `gorm:"column:tenant_id;default:0;not null;comment:租户ID" json:"tenant_id"`                                                 // 租户ID
+	MerchantID        int64      `gorm:"column:merchant_id;default:0;not null;comment:商户ID" json:"merchant_id"`                                               // 商户ID
+	OrderNo           string     `gorm:"column:order_no;not null;comment:订单编号" json:"order_no"`                                                             // 订单编号
 	UserID             int64      `gorm:"column:user_id;not null;comment:用户ID" json:"user_id"`                                                               // 用户ID
 	OrderStatus        int32      `gorm:"column:order_status;not null;default:1;comment:订单状态：1-待支付,2-已支付,3-已发货,4-已完成,5-已取消,6-已退款,7-售后中" json:"order_status"` // 订单状态：1-待支付,2-已支付,3-已发货,4-已完成,5-已取消,6-已退款,7-售后中
 	TotalAmount        float64    `gorm:"column:total_amount;not null;comment:订单总金额" json:"total_amount"`                                                    // 订单总金额
@@ -43,6 +46,11 @@ type OmsOrderMain struct {
 	RetryCount         int32      `gorm:"column:retry_count;default:0;comment:重试次数" json:"retry_count"`                                                                                              // 重试次数
 	LastCompensationAt *time.Time `gorm:"column:last_compensation_at;comment:最近补偿时间" json:"last_compensation_at"`                                                                                    // 最近补偿时间
 	ManualRequired     int32      `gorm:"column:manual_required;default:0;comment:是否需要人工介入：0-否,1-是" json:"manual_required"`                                                                          // 是否需要人工介入
+	// 暂停链路相关字段（Story 7.6 新增）
+	Paused             int32      `gorm:"column:paused;default:0;comment:是否暂停：0-否,1-是" json:"paused"`                                                                                             // 是否暂停
+	PausedAt           *time.Time `gorm:"column:paused_at;comment:暂停时间" json:"paused_at"`                                                                                                            // 暂停时间
+	PauseReason        string     `gorm:"column:pause_reason;size:500;comment:暂停原因" json:"pause_reason"`                                                                                            // 暂停原因
+	PauseOperatorId    int64      `gorm:"column:pause_operator_id;default:0;comment:暂停操作人ID" json:"pause_operator_id"`                                                                               // 暂停操作人ID
 }
 
 // TableName OmsOrderMain's table name

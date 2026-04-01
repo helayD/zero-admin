@@ -56,6 +56,8 @@ type (
 	DeliveryData                      = omsclient.DeliveryData
 	DeliveryReq                       = omsclient.DeliveryReq
 	DeliveryResp                      = omsclient.DeliveryResp
+	EscalateChainReq                  = omsclient.EscalateChainReq
+	EscalateChainResp                 = omsclient.EscalateChainResp
 	GovernanceScope                   = omsclient.GovernanceScope
 	OrderDeliveryListData             = omsclient.OrderDeliveryListData
 	OrderItemData                     = omsclient.OrderItemData
@@ -72,11 +74,15 @@ type (
 	OrderReturnReq                    = omsclient.OrderReturnReq
 	OrderReturnResp                   = omsclient.OrderReturnResp
 	OrderSettingListData              = omsclient.OrderSettingListData
+	PauseCompensationChainReq         = omsclient.PauseCompensationChainReq
+	PauseCompensationChainResp        = omsclient.PauseCompensationChainResp
 	PaymentData                       = omsclient.PaymentData
 	PromotionListData                 = omsclient.PromotionListData
 	QueryCartItemDetailReq            = omsclient.QueryCartItemDetailReq
 	QueryCartItemListReq              = omsclient.QueryCartItemListReq
 	QueryCartItemListResp             = omsclient.QueryCartItemListResp
+	QueryChainActionsReq              = omsclient.QueryChainActionsReq
+	QueryChainActionsResp             = omsclient.QueryChainActionsResp
 	QueryCompanyAddressDetailReq      = omsclient.QueryCompanyAddressDetailReq
 	QueryCompanyAddressDetailResp     = omsclient.QueryCompanyAddressDetailResp
 	QueryCompanyAddressListReq        = omsclient.QueryCompanyAddressListReq
@@ -117,6 +123,10 @@ type (
 	QueryOrderSettingListResp         = omsclient.QueryOrderSettingListResp
 	QueryTimeOutOrderListReq          = omsclient.QueryTimeOutOrderListReq
 	ReleaseSkuStockLockData           = omsclient.ReleaseSkuStockLockData
+	ReplayCompensationChainReq        = omsclient.ReplayCompensationChainReq
+	ReplayCompensationChainResp       = omsclient.ReplayCompensationChainResp
+	RetryCompensationChainReq         = omsclient.RetryCompensationChainReq
+	RetryCompensationChainResp        = omsclient.RetryCompensationChainResp
 	UpdateCartItemQuantityReq         = omsclient.UpdateCartItemQuantityReq
 	UpdateCartItemReq                 = omsclient.UpdateCartItemReq
 	UpdateCompanyAddressReq           = omsclient.UpdateCompanyAddressReq

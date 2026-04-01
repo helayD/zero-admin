@@ -30,16 +30,10 @@ func NewQueryTimeOutOrderListLogic(ctx context.Context, svcCtx *svc.ServiceConte
 // QueryTimeOutOrderList 查询超时、未支付的订单及订单详情
 func (l *QueryTimeOutOrderListLogic) QueryTimeOutOrderList(in *omsclient.QueryTimeOutOrderListReq) (*omsclient.QueryOrderListResp, error) {
 	var result []model.OmsOrderMain
-	query := `SELECT o.id,
-				   o.order_no,
-				   o.user_id,
-				   o.use_points,
-				   ot.id           as ot_id,
-				   ot.sku_name     as sku_name,
-				   ot.sku_id       as sku_id,
-				   ot.sku_quantity as sku_quantity
+	query := `SELECT o.id, o.order_no, o.user_id, o.use_points, o.retry_count, o.paused,
+			       ot.id as ot_id, ot.sku_name as sku_name, ot.sku_id as sku_id, ot.sku_quantity as sku_quantity
 			FROM oms_order_main o
-					 LEFT JOIN oms_order_item ot ON o.id = ot.order_id
+			LEFT JOIN oms_order_item ot ON o.id = ot.order_id
 			WHERE o.order_status = 0
             AND o.create_time < date_add(NOW(), INTERVAL -? MINUTE)`
 	db := l.svcCtx.DB
@@ -77,6 +71,8 @@ func (l *QueryTimeOutOrderListLogic) QueryTimeOutOrderList(in *omsclient.QueryTi
 			Remark:             item.Remark,                               // 订单备注
 			CreateTime:         time_util.TimeToStr(item.CreateTime),      // 提交时间
 			UpdateTime:         time_util.TimeToString(item.UpdateTime),   //
+			RetryCount:         item.RetryCount,                           // 重试次数
+			Paused:             item.Paused,                               // 是否暂停（7.6新增）
 		})
 	}
 
