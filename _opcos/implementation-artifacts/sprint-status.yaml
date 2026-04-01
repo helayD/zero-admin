@@ -101,7 +101,7 @@ development_status:
   7-3a-统一交易事件契约与幂等消费: review
   7-3b-支付与取消驱动的订单权益一致性编排: review
   7-4-超时订单关闭与资源补偿: done
-  7-5-异步链路监控视图: backlog
+  7-5-异步链路监控视图: done
   7-6-授权链路重试回放与升级: backlog
   epic-7-retrospective: optional
 

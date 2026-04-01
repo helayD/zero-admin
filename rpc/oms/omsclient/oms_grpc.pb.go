@@ -880,19 +880,20 @@ var OrderDeliveryService_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
-	OrderService_AddOrder_FullMethodName                  = "/omsclient.OrderService/AddOrder"
-	OrderService_DeleteOrder_FullMethodName               = "/omsclient.OrderService/DeleteOrder"
-	OrderService_UpdateOrder_FullMethodName               = "/omsclient.OrderService/UpdateOrder"
-	OrderService_UpdateOrderStatus_FullMethodName         = "/omsclient.OrderService/UpdateOrderStatus"
-	OrderService_QueryOrderDetail_FullMethodName          = "/omsclient.OrderService/QueryOrderDetail"
-	OrderService_QueryOrderList_FullMethodName            = "/omsclient.OrderService/QueryOrderList"
-	OrderService_Delivery_FullMethodName                  = "/omsclient.OrderService/Delivery"
-	OrderService_CloseOrder_FullMethodName                = "/omsclient.OrderService/CloseOrder"
-	OrderService_CancelOrder_FullMethodName               = "/omsclient.OrderService/CancelOrder"
-	OrderService_ConfirmOrder_FullMethodName              = "/omsclient.OrderService/ConfirmOrder"
-	OrderService_QueryTimeOutOrderList_FullMethodName     = "/omsclient.OrderService/QueryTimeOutOrderList"
-	OrderService_UpdateOrderConsistency_FullMethodName    = "/omsclient.OrderService/UpdateOrderConsistency"
-	OrderService_QueryManualRequiredOrders_FullMethodName = "/omsclient.OrderService/QueryManualRequiredOrders"
+	OrderService_AddOrder_FullMethodName                   = "/omsclient.OrderService/AddOrder"
+	OrderService_DeleteOrder_FullMethodName                = "/omsclient.OrderService/DeleteOrder"
+	OrderService_UpdateOrder_FullMethodName                = "/omsclient.OrderService/UpdateOrder"
+	OrderService_UpdateOrderStatus_FullMethodName          = "/omsclient.OrderService/UpdateOrderStatus"
+	OrderService_QueryOrderDetail_FullMethodName           = "/omsclient.OrderService/QueryOrderDetail"
+	OrderService_QueryOrderList_FullMethodName             = "/omsclient.OrderService/QueryOrderList"
+	OrderService_Delivery_FullMethodName                   = "/omsclient.OrderService/Delivery"
+	OrderService_CloseOrder_FullMethodName                 = "/omsclient.OrderService/CloseOrder"
+	OrderService_CancelOrder_FullMethodName                = "/omsclient.OrderService/CancelOrder"
+	OrderService_ConfirmOrder_FullMethodName               = "/omsclient.OrderService/ConfirmOrder"
+	OrderService_QueryTimeOutOrderList_FullMethodName      = "/omsclient.OrderService/QueryTimeOutOrderList"
+	OrderService_UpdateOrderConsistency_FullMethodName     = "/omsclient.OrderService/UpdateOrderConsistency"
+	OrderService_QueryManualRequiredOrders_FullMethodName  = "/omsclient.OrderService/QueryManualRequiredOrders"
+	OrderService_QueryCompensationChainList_FullMethodName = "/omsclient.OrderService/QueryCompensationChainList"
 )
 
 // OrderServiceClient is the client API for OrderService service.
@@ -925,6 +926,8 @@ type OrderServiceClient interface {
 	UpdateOrderConsistency(ctx context.Context, in *UpdateOrderConsistencyReq, opts ...grpc.CallOption) (*UpdateOrderConsistencyResp, error)
 	// 查询需要人工介入的补偿订单
 	QueryManualRequiredOrders(ctx context.Context, in *QueryManualRequiredOrdersReq, opts ...grpc.CallOption) (*QueryManualRequiredOrdersResp, error)
+	// 查询补偿链路列表（支持一致性筛选+时间范围）
+	QueryCompensationChainList(ctx context.Context, in *QueryCompensationChainListReq, opts ...grpc.CallOption) (*QueryCompensationChainListResp, error)
 }
 
 type orderServiceClient struct {
@@ -1052,6 +1055,15 @@ func (c *orderServiceClient) QueryManualRequiredOrders(ctx context.Context, in *
 	return out, nil
 }
 
+func (c *orderServiceClient) QueryCompensationChainList(ctx context.Context, in *QueryCompensationChainListReq, opts ...grpc.CallOption) (*QueryCompensationChainListResp, error) {
+	out := new(QueryCompensationChainListResp)
+	err := c.cc.Invoke(ctx, OrderService_QueryCompensationChainList_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // OrderServiceServer is the server API for OrderService service.
 // All implementations must embed UnimplementedOrderServiceServer
 // for forward compatibility
@@ -1082,6 +1094,8 @@ type OrderServiceServer interface {
 	UpdateOrderConsistency(context.Context, *UpdateOrderConsistencyReq) (*UpdateOrderConsistencyResp, error)
 	// 查询需要人工介入的补偿订单
 	QueryManualRequiredOrders(context.Context, *QueryManualRequiredOrdersReq) (*QueryManualRequiredOrdersResp, error)
+	// 查询补偿链路列表（支持一致性筛选+时间范围）
+	QueryCompensationChainList(context.Context, *QueryCompensationChainListReq) (*QueryCompensationChainListResp, error)
 	mustEmbedUnimplementedOrderServiceServer()
 }
 
@@ -1127,6 +1141,9 @@ func (UnimplementedOrderServiceServer) UpdateOrderConsistency(context.Context, *
 }
 func (UnimplementedOrderServiceServer) QueryManualRequiredOrders(context.Context, *QueryManualRequiredOrdersReq) (*QueryManualRequiredOrdersResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QueryManualRequiredOrders not implemented")
+}
+func (UnimplementedOrderServiceServer) QueryCompensationChainList(context.Context, *QueryCompensationChainListReq) (*QueryCompensationChainListResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QueryCompensationChainList not implemented")
 }
 func (UnimplementedOrderServiceServer) mustEmbedUnimplementedOrderServiceServer() {}
 
@@ -1375,6 +1392,24 @@ func _OrderService_QueryManualRequiredOrders_Handler(srv interface{}, ctx contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _OrderService_QueryCompensationChainList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryCompensationChainListReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrderServiceServer).QueryCompensationChainList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrderService_QueryCompensationChainList_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrderServiceServer).QueryCompensationChainList(ctx, req.(*QueryCompensationChainListReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // OrderService_ServiceDesc is the grpc.ServiceDesc for OrderService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1433,6 +1468,10 @@ var OrderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "QueryManualRequiredOrders",
 			Handler:    _OrderService_QueryManualRequiredOrders_Handler,
+		},
+		{
+			MethodName: "QueryCompensationChainList",
+			Handler:    _OrderService_QueryCompensationChainList_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -33,6 +33,7 @@ type (
 	CancelOrderResp                   = omsclient.CancelOrderResp
 	CartItemData                      = omsclient.CartItemData
 	CartItemResp                      = omsclient.CartItemResp
+	ChainMonitorItem                  = omsclient.ChainMonitorItem
 	CloseOrderReq                     = omsclient.CloseOrderReq
 	CloseOrderResp                    = omsclient.CloseOrderResp
 	CompanyAddressListData            = omsclient.CompanyAddressListData
@@ -80,6 +81,8 @@ type (
 	QueryCompanyAddressDetailResp     = omsclient.QueryCompanyAddressDetailResp
 	QueryCompanyAddressListReq        = omsclient.QueryCompanyAddressListReq
 	QueryCompanyAddressListResp       = omsclient.QueryCompanyAddressListResp
+	QueryCompensationChainListReq     = omsclient.QueryCompensationChainListReq
+	QueryCompensationChainListResp    = omsclient.QueryCompensationChainListResp
 	QueryDefaultSettingReq            = omsclient.QueryDefaultSettingReq
 	QueryManualRequiredOrdersReq      = omsclient.QueryManualRequiredOrdersReq
 	QueryManualRequiredOrdersResp     = omsclient.QueryManualRequiredOrdersResp
@@ -167,6 +170,8 @@ type (
 		UpdateOrderConsistency(ctx context.Context, in *UpdateOrderConsistencyReq, opts ...grpc.CallOption) (*UpdateOrderConsistencyResp, error)
 		// 查询需要人工介入的补偿订单
 		QueryManualRequiredOrders(ctx context.Context, in *QueryManualRequiredOrdersReq, opts ...grpc.CallOption) (*QueryManualRequiredOrdersResp, error)
+		// 查询补偿链路列表（支持一致性筛选+时间范围）
+		QueryCompensationChainList(ctx context.Context, in *QueryCompensationChainListReq, opts ...grpc.CallOption) (*QueryCompensationChainListResp, error)
 	}
 
 	defaultOrderService struct {
@@ -256,4 +261,10 @@ func (m *defaultOrderService) UpdateOrderConsistency(ctx context.Context, in *Up
 func (m *defaultOrderService) QueryManualRequiredOrders(ctx context.Context, in *QueryManualRequiredOrdersReq, opts ...grpc.CallOption) (*QueryManualRequiredOrdersResp, error) {
 	client := omsclient.NewOrderServiceClient(m.cli.Conn())
 	return client.QueryManualRequiredOrders(ctx, in, opts...)
+}
+
+// 查询补偿链路列表（支持一致性筛选+时间范围）
+func (m *defaultOrderService) QueryCompensationChainList(ctx context.Context, in *QueryCompensationChainListReq, opts ...grpc.CallOption) (*QueryCompensationChainListResp, error) {
+	client := omsclient.NewOrderServiceClient(m.cli.Conn())
+	return client.QueryCompensationChainList(ctx, in, opts...)
 }

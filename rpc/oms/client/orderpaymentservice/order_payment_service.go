@@ -33,6 +33,7 @@ type (
 	CancelOrderResp                   = omsclient.CancelOrderResp
 	CartItemData                      = omsclient.CartItemData
 	CartItemResp                      = omsclient.CartItemResp
+	ChainMonitorItem                  = omsclient.ChainMonitorItem
 	CloseOrderReq                     = omsclient.CloseOrderReq
 	CloseOrderResp                    = omsclient.CloseOrderResp
 	CompanyAddressListData            = omsclient.CompanyAddressListData
@@ -80,6 +81,8 @@ type (
 	QueryCompanyAddressDetailResp     = omsclient.QueryCompanyAddressDetailResp
 	QueryCompanyAddressListReq        = omsclient.QueryCompanyAddressListReq
 	QueryCompanyAddressListResp       = omsclient.QueryCompanyAddressListResp
+	QueryCompensationChainListReq     = omsclient.QueryCompensationChainListReq
+	QueryCompensationChainListResp    = omsclient.QueryCompensationChainListResp
 	QueryDefaultSettingReq            = omsclient.QueryDefaultSettingReq
 	QueryManualRequiredOrdersReq      = omsclient.QueryManualRequiredOrdersReq
 	QueryManualRequiredOrdersResp     = omsclient.QueryManualRequiredOrdersResp

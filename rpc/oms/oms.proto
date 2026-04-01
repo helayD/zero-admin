@@ -488,6 +488,11 @@ message QueryOrderListReq {
   int32 page_num = 7; //第几页
   int32 page_size = 8; //每页的数量
   GovernanceScope scope = 9; //治理范围(platform/tenant/merchant)
+  int32 consistency_stage = 10; //一致性阶段筛选（0=不限）
+  int32 consistency_result = 11; //一致性结果筛选（0=不限）
+  int32 manual_required = 12; //是否人工介入（0=不限，1=仅人工介入）
+  string start_time = 13; //开始时间
+  string end_time = 14; //结束时间
 }
 
 message OrderOptLogData {
@@ -577,6 +582,7 @@ message OrderListData {
   string last_error = 31; //最近错误摘要
   int32 retry_count = 32; //重试次数
   int32 manual_required = 33; //是否需要人工介入
+  string last_compensation_at = 34; //最近补偿时间
 }
 
 message QueryOrderListResp {
@@ -652,16 +658,66 @@ message UpdateOrderConsistencyResp {
   string pong = 1;
 }
 
-// 查询需要人工介入的补偿订单
-message QueryManualRequiredOrdersReq {
-  int32 page_num = 1; //第几页
-  int32 page_size = 2; //每页的数量
-  GovernanceScope scope = 3; //治理范围(platform/tenant/merchant)
+// 链路监控视图类型枚举
+enum ChainType {
+  CHAIN_TYPE_UNSPECIFIED = 0;
+  CHAIN_TYPE_COMPENSATION = 1; // 订单超时补偿链路
+  CHAIN_TYPE_SEARCH_SYNC = 2;   // 商品ES搜索同步链路
+  CHAIN_TYPE_PAYMENT_CALLBACK = 3; // 支付回调链路
+  CHAIN_TYPE_GOVERNANCE = 4;   // 主体治理事件链路
+}
+
+// 统一链路监控项（复用ConsistencyStage/Result）
+message ChainMonitorItem {
+  string trace_id = 1;         // 链路追踪ID
+  int64 platform_id = 2;       // 平台ID
+  int64 tenant_id = 3;          // 租户ID
+  int64 merchant_id = 4;       // 商户ID
+  int32 chain_type = 5;         // 链路类型 ChainType
+  string chain_type_text = 6;   // 链路类型文本
+  int64 entity_id = 7;          // 关联业务对象ID（订单ID/商品ID）
+  string entity_no = 8;          // 关联业务对象编号
+  int32 entity_type = 9;        // 业务对象类型：1-order 2-product 3-coupon 4-points
+  int32 stage = 10;            // 一致性阶段（复用ConsistencyStage）
+  string stage_text = 11;       // 阶段文本
+  int32 result = 12;           // 处理结果（复用ConsistencyResult）
+  string result_text = 13;       // 结果文本
+  int32 retry_count = 14;       // 重试次数
+  string last_error = 15;        // 最近错误摘要
+  string last_execute_at = 16;  // 最近执行时间
+  string created_at = 17;       // 链路创建时间
+  int64 actor_id = 18;          // 触发操作人ID
+}
+
+// 查询补偿链路列表（新RPC，支持全量一致性筛选+时间范围）
+message QueryCompensationChainListReq {
+  GovernanceScope scope = 1;
+  int32 page_num = 2;
+  int32 page_size = 3;
+  int32 chain_type = 4;          // 链路类型（0=不限，1=补偿链路）
+  int32 consistency_stage = 5;   // 一致性阶段（0=不限）
+  int32 consistency_result = 6; // 一致性结果（0=不限）
+  int32 manual_required = 7;    // 人工介入（0=不限，1=仅人工介入，2=仅自动处理）
+  string start_time = 8;         // 开始时间
+  string end_time = 9;           // 结束时间
+  string order_no = 10;          // 订单编号（可选）
+}
+
+message QueryCompensationChainListResp {
+  int64 total = 1;
+  repeated ChainMonitorItem list = 2;
 }
 
 message QueryManualRequiredOrdersResp {
   int64 total = 1;
   repeated OrderListData list = 2;
+}
+
+// 查询需要人工介入的补偿订单
+message QueryManualRequiredOrdersReq {
+  int32 page_num = 1; //第几页
+  int32 page_size = 2; //每页的数量
+  GovernanceScope scope = 3; //治理范围(platform/tenant/merchant)
 }
 
 // 订单
@@ -697,6 +753,9 @@ service OrderService {
 
   //查询需要人工介入的补偿订单
   rpc QueryManualRequiredOrders(QueryManualRequiredOrdersReq) returns(QueryManualRequiredOrdersResp);
+
+  //查询补偿链路列表（支持一致性筛选+时间范围）
+  rpc QueryCompensationChainList(QueryCompensationChainListReq) returns(QueryCompensationChainListResp);
 }
 // 添加订单操作记录
 message AddOrderOperationLogReq {

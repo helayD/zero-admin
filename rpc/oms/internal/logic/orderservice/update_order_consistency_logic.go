@@ -30,11 +30,21 @@ func NewUpdateOrderConsistencyLogic(ctx context.Context, svcCtx *svc.ServiceCont
 // UpdateOrderConsistency 更新订单一致性阶段（用于补偿链路）
 func (l *UpdateOrderConsistencyLogic) UpdateOrderConsistency(in *omsclient.UpdateOrderConsistencyReq) (*omsclient.UpdateOrderConsistencyResp, error) {
 	updates := map[string]interface{}{
-		"consistency_stage":     in.ConsistencyStage,
-		"consistency_result":   in.ConsistencyResult,
-		"last_error":          in.LastError,
-		"retry_count":          in.RetryCount,
-		"last_compensation_at": time.Now(),
+		"consistency_stage":      in.ConsistencyStage,
+		"consistency_result":    in.ConsistencyResult,
+		"last_error":            in.LastError,
+		"retry_count":           in.RetryCount,
+		"last_compensation_at":  time.Now(),
+	}
+
+	// NFR12 硬约束：连续失败 3 次自动标记需人工介入
+	// ConsistencyResult: 0=Unknown, 1=Processing, 2=Succeeded, 3=Failed, 4=ManualRequired
+	if in.RetryCount >= 3 && in.ConsistencyResult == 3 {
+		updates["manual_required"] = 1
+		logc.Infof(l.ctx, "NFR12 触发: orderId=%d retryCount=%d, 自动标记 manualRequired=true", in.OrderId, in.RetryCount)
+	} else if in.ConsistencyResult == 2 {
+		// 成功后清除人工介入标记
+		updates["manual_required"] = 0
 	}
 
 	result := l.svcCtx.DB.WithContext(l.ctx).Model(&model.OmsOrderMain{}).

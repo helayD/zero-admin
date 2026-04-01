@@ -23,7 +23,7 @@ func NewUpdateOrderStatusLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 	}
 }
 
-// UpdateOrderStatus 更新订单状态
+// 更新订单状态
 func (l *UpdateOrderStatusLogic) UpdateOrderStatus(in *omsclient.UpdateOrderStatusReq) (*omsclient.UpdateOrderStatusResp, error) {
 	// todo: add your logic here and delete this line
 

@@ -9,6 +9,7 @@ import (
 	cmsprefrence_area "github.com/feihua/zero-admin/api/admin/internal/handler/cms/prefrence_area"
 	cmssubject "github.com/feihua/zero-admin/api/admin/internal/handler/cms/subject"
 	cmssubject_category "github.com/feihua/zero-admin/api/admin/internal/handler/cms/subject_category"
+	omschain_monitor "github.com/feihua/zero-admin/api/admin/internal/handler/oms/chain_monitor"
 	omscompany_address "github.com/feihua/zero-admin/api/admin/internal/handler/oms/company_address"
 	omscustomer_service_workstation "github.com/feihua/zero-admin/api/admin/internal/handler/oms/customer_service_workstation"
 	omsmerchant_workstation "github.com/feihua/zero-admin/api/admin/internal/handler/oms/merchant_workstation"
@@ -296,6 +297,16 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Method:  http.MethodPost,
 					Path:    "/updateOrderMain",
 					Handler: omsorder_main.UpdateOrderMainHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryChainMonitorList",
+					Handler: omschain_monitor.QueryChainMonitorListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/exportChainMonitorList",
+					Handler: omschain_monitor.ExportChainMonitorListHandler(serverCtx),
 				},
 			}...,
 		),

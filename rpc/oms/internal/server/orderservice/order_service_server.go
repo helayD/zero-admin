@@ -100,3 +100,9 @@ func (s *OrderServiceServer) QueryManualRequiredOrders(ctx context.Context, in *
 	l := orderservicelogic.NewQueryManualRequiredOrdersLogic(ctx, s.svcCtx)
 	return l.QueryManualRequiredOrders(in)
 }
+
+// 查询补偿链路列表（支持一致性筛选+时间范围）
+func (s *OrderServiceServer) QueryCompensationChainList(ctx context.Context, in *omsclient.QueryCompensationChainListReq) (*omsclient.QueryCompensationChainListResp, error) {
+	l := orderservicelogic.NewQueryCompensationChainListLogic(ctx, s.svcCtx)
+	return l.QueryCompensationChainList(in)
+}
