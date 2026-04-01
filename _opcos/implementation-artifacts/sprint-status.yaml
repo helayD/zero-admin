@@ -106,7 +106,7 @@ development_status:
   epic-7-retrospective: optional
 
   epic-8: backlog
-  8-1-交易与召回消息提醒: backlog
+  8-1-交易与召回消息提醒: ready-for-dev
   8-2-已购商品评价提交与查看: backlog
   8-3-评价审核-屏蔽与申诉跟踪: backlog
   8-4-经营漏斗与优惠券核销看板: backlog
