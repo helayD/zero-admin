@@ -14,6 +14,11 @@ type Config struct {
 		UserName string
 		Password string
 	}
+	Redis struct {
+		Host string
+		Type string
+		Pass string
+	}
 	Cart struct {
 		Timeout int
 	}

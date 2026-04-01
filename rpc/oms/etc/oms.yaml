@@ -21,5 +21,9 @@ Prometheus:
   Host: 127.0.0.1
   Port: 8183
   Path: /metrics
+Redis:
+  Host: 127.0.0.1:16379
+  Type: "node"
+  Pass: "123456"
 Cart:
   Timeout: 60 #购物车商品过期时间（单位为天）
