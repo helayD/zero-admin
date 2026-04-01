@@ -78,17 +78,42 @@ zero-admin/
 
 ### 服务端口配置
 
-| 服务 | 端口 | 配置文件 |
-|------|------|---------|
-| admin-api | 8888 | `api/admin/etc/admin-api.yaml` |
-| front-api | 8001 | `api/front/etc/front-api.yaml` |
-| sys-rpc | 8070 | `rpc/sys/etc/sys.yaml` |
-| ums-rpc | 8081 | `rpc/ums/etc/ums.yaml` |
-| pms-rpc | 8082 | `rpc/pms/etc/pms.yaml` |
-| oms-rpc | 8083 | `rpc/oms/etc/oms.yaml` |
-| sms-rpc | 8084 | `rpc/sms/etc/sms.yaml` |
-| cms-rpc | 8086 | `rpc/cms/etc/cms.yaml` |
-| search-rpc | 8087 | `rpc/search/etc/search.yaml` |
+**⚠️ 本地开发 vs 远程测试环境的区别：**
+
+| 服务 | 本地端口 | 远程端口 | 远程完整 URL |
+|------|---------|---------|-------------|
+| admin-api | 8888 | 8000 | `http://47.107.224.56:8000` |
+| front-api | 8001 | 9999 | `http://47.107.224.56:9999` |
+| sys-rpc | 8070 | 8070 | — |
+| ums-rpc | 8081 | 8081 | — |
+| pms-rpc | 8082 | 8082 | — |
+| oms-rpc | 8083 | 8083 | — |
+| sms-rpc | 8084 | 8084 | — |
+| cms-rpc | 8086 | 8086 | — |
+| search-rpc | 8087 | 8087 | — |
+
+**远程服务器信息（来自 zero-admin-remote-deploy skill）：**
+- SSH: `root@47.107.224.56`
+- 远程目录: `/root/zero-admin`
+- Admin 账号: `admin / 123456`
+- MySQL: `127.0.0.1:3306` (在远程服务器上)
+
+**远程部署命令：**
+```bash
+# 部署到远程测试服务器
+bash .agents/skills/zero-admin-remote-deploy/scripts/deploy_remote.sh
+
+# 检查远程服务状态
+ssh root@47.107.224.56 'lsof -i :8000 -i :9999 -i :8070 -i :8082'
+
+# 查看远程服务日志
+ssh root@47.107.224.56 'tail -50 /root/zero-admin/target/logs/front/front-api.log'
+
+# 运行远程 Smoke Test
+python3 .agents/skills/zero-admin-remote-deploy/scripts/smoke_remote.py \
+  --base-url http://47.107.224.56:8000 \
+  --front-base-url http://47.107.224.56:9999
+```
 
 ---
 
@@ -269,71 +294,81 @@ grep -n "EquipmentVendorBatchDelete" rpc/*/internal/logic/*/*.go
 
 ### 6.1 确认服务运行
 
+**优先使用远程测试服务器**，本地环境可能缺少 MySQL/Redis 依赖。
+
 ```bash
-# 检查 admin-api 端口（默认 8888）
-lsof -i :8888
+# 方式1：使用远程部署脚本（推荐）
+bash .agents/skills/zero-admin-remote-deploy/scripts/deploy_remote.sh
 
-# 检查 front-api 端口（默认 8001）
-lsof -i :8001
+# 方式2：检查远程服务状态
+ssh root@47.107.224.56 'lsof -i :8000 -i :9999 -i :8070 -i :8082'
 
-# 或健康检查
+# 方式3：本地检查（如已启动本地服务）
+lsof -i :8888   # admin-api
+lsof -i :8001    # front-api
 curl -sf http://127.0.0.1:8888/health
 ```
 
+**远程服务器已验证可用的服务：**
+- Admin API: `http://47.107.224.56:8000` ✅
+- Front API: `http://47.107.224.56:9999` ✅
+- sys-rpc: `47.107.224.56:8070` ✅
+- oms-rpc: `47.107.224.56:8082` ✅
+
 ### 6.2 JWT Token 获取
 
-**登录接口**：
-```
-POST /api/sys/user/login
-Content-Type: application/json
-
-Request:
-{
-  "account": "<账号>",
-  "password": "<密码>"
-}
-
-Response (成功):
-{
-  "code": "0",
-  "message": "",
-  "data": {
-    "token": "<token>"
-  }
-}
-```
-
-**获取 Token 脚本**：
+**Admin 登录接口（远程）：**
 ```bash
-BASE_URL="http://127.0.0.1:8888"
+BASE_URL="http://47.107.224.56:8000"
 
-LOGIN_RESP=$(curl -s -X POST "$BASE_URL/api/sys/user/login" \
+curl -s -X POST "$BASE_URL/api/sys/user/login" \
   -H 'Content-Type: application/json' \
-  -d "{\"account\":\"<账号>\",\"password\":\"<密码>\"}")
-
-TOKEN=$(echo "$LOGIN_RESP" | python3 -c \
-  "import sys,json; print(json.load(sys.stdin).get('data',{}).get('token',''))" 2>/dev/null)
-
-if [ -z "$TOKEN" ]; then
-  echo "❌ Token 获取失败"; exit 1
-fi
-echo "✅ Token 获取成功: $TOKEN"
+  -d '{"account":"admin","password":"123456"}'
+# Response: {"code":"000000","message":"登录成功","data":{"token":"..."}}
 ```
 
-**测试账号来源**：
-- 查看 `rpc/*/etc/*.yaml` 配置文件中的数据库初始化数据
-- 默认开发账号：`admin / 123456`
+**Front 会员登录接口：**
+```bash
+BASE_URL="http://47.107.224.56:9999"
 
-### 6.3 生成 test_api.sh
+# 注意：front-api 使用 mobile 字段
+curl -s -X POST "$BASE_URL/api/member/login" \
+  -H 'Content-Type: application/json' \
+  -d '{"mobile":"13800000000","password":"123456"}'
+```
+
+**获取 Token 脚本（远程）：**
+```bash
+# Admin API Token
+ADMIN_BASE="http://47.107.224.56:8000"
+ADMIN_TOKEN=$(curl -s -X POST "$ADMIN_BASE/api/sys/user/login" \
+  -H 'Content-Type: application/json' \
+  -d '{"account":"admin","password":"123456"}' | \
+  python3 -c "import sys,json; print(json.load(sys.stdin).get('data',{}).get('token',''))")
+echo "Admin Token: ${ADMIN_TOKEN:0:50}..."
+
+# Front API Token
+FRONT_BASE="http://47.107.224.56:9999"
+FRONT_TOKEN=$(curl -s -X POST "$FRONT_BASE/api/member/login" \
+  -H 'Content-Type: application/json' \
+  -d '{"mobile":"13800000000","password":"123456"}' | \
+  python3 -c "import sys,json; print(json.load(sys.stdin).get('data',{}).get('token',''))")
+echo "Front Token: ${FRONT_TOKEN:0:50}..."
+```
+
+### 6.3 生成 test_api.sh（远程版）
 
 **基本模板**：
 ```bash
 #!/bin/bash
-# Zero-Admin API 测试脚本
+# Zero-Admin API 测试脚本（远程版）
 # Issue: <名称>
-BASE_URL="http://127.0.0.1:8888"
-PASS=0; FAIL=0; TOTAL=0
 
+# 远程服务器配置
+ADMIN_BASE="http://47.107.224.56:8000"
+FRONT_BASE="http://47.107.224.56:9999"
+
+PASS=0; FAIL=0; TOTAL=0
 RED='\033[0;31m'; GREEN='\033[0;32m'; NC='\033[0m'
 
 run_test() {
@@ -354,25 +389,30 @@ run_test() {
   fi
 }
 
-# 1. 获取 Token
-LOGIN_RESP=$(curl -s -X POST "$BASE_URL/api/sys/user/login" \
+# 1. 获取 Admin Token
+ADMIN_RESP=$(curl -s -X POST "$ADMIN_BASE/api/sys/user/login" \
   -H 'Content-Type: application/json' \
   -d '{"account":"admin","password":"123456"}')
-TOKEN=$(echo "$LOGIN_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin).get('data',{}).get('token',''))" 2>/dev/null)
-AUTH="Authorization: Bearer $TOKEN"
+ADMIN_TOKEN=$(echo "$ADMIN_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin).get('data',{}).get('token',''))" 2>/dev/null)
+ADMIN_AUTH="Authorization: Bearer $ADMIN_TOKEN"
 
-# 2. 测试用例
-# List 操作
-run_test "List <资源>" "0" \
-  -X GET "$BASE_URL/<api_path>?current=1&pageSize=20" -H "$AUTH"
-
-# Create 操作（使用唯一值避免冲突）
-TS=$(date +%s)
-UNIQUE_NO="<前缀>${TS}"
-run_test "Create <资源>" "0" \
-  -X POST "$BASE_URL/<api_path>" -H "$AUTH" \
+# 2. 获取 Front Token（用于需要会员身份的测试）
+FRONT_RESP=$(curl -s -X POST "$FRONT_BASE/api/member/login" \
   -H 'Content-Type: application/json' \
-  --data-raw "{\"name\":\"${UNIQUE_NO}\",\"desc\":\"测试${TS}\"}"
+  -d '{"mobile":"13800000000","password":"123456"}')
+FRONT_TOKEN=$(echo "$FRONT_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin).get('data',{}).get('token',''))" 2>/dev/null)
+FRONT_AUTH="Authorization: Bearer $FRONT_TOKEN"
+
+# 3. 测试用例
+# Admin API - 订单列表
+run_test "[Admin] List Orders" "000000" \
+  -X GET "$ADMIN_BASE/api/oms/order/queryOrderMainList?current=1&pageSize=20" \
+  -H "$ADMIN_AUTH"
+
+# Front API - 订单列表（需要会员身份）
+run_test "[Front] List Orders" "0" \
+  -X GET "$FRONT_BASE/api/order/queryOrderList?current=1&pageSize=20" \
+  -H "$FRONT_AUTH"
 
 # ... 更多用例
 
@@ -384,7 +424,16 @@ echo -e "结果: ${GREEN}${PASS}/${TOTAL}${NC} 通过, ${RED}${FAIL}${NC} 失败
 ### 6.4 执行测试
 
 ```bash
+# 部署到远程服务器
+bash .agents/skills/zero-admin-remote-deploy/scripts/deploy_remote.sh
+
+# 执行 API 测试
 bash <issue_dir>/test_api.sh
+
+# 或直接运行 smoke test 验证服务可用性
+python3 .agents/skills/zero-admin-remote-deploy/scripts/smoke_remote.py \
+  --base-url http://47.107.224.56:8000 \
+  --front-base-url http://47.107.224.56:9999
 ```
 
 ### 6.5 测试覆盖标准
@@ -512,26 +561,35 @@ make lint                     # golangci-lint 检查
 make lint-fix                 # golangci-lint 自动修复
 ```
 
-### API 测试
+### API 测试（远程服务器）
 ```bash
-# 健康检查
-curl http://127.0.0.1:8888/health
+# 远程部署（自动编译 + 重启服务）
+bash .agents/skills/zero-admin-remote-deploy/scripts/deploy_remote.sh
 
-# JWT 登录（路径: /api/sys/user/login）
+# 远程 Smoke Test
+python3 .agents/skills/zero-admin-remote-deploy/scripts/smoke_remote.py \
+  --base-url http://47.107.224.56:8000 \
+  --front-base-url http://47.107.224.56:9999
+
+# 远程服务健康检查
+ssh root@47.107.224.56 'lsof -i :8000 -i :9999 -i :8070 -i :8082'
+
+# 本地测试（如服务在本地运行）
+curl http://127.0.0.1:8888/health
 curl -X POST http://127.0.0.1:8888/api/sys/user/login \
   -H 'Content-Type: application/json' \
   -d '{"account":"admin","password":"123456"}'
-
-# 带 Token 请求
-curl -X GET "http://127.0.0.1:8888/<api_path>" \
-  -H "Authorization: Bearer <token>"
 ```
 
 ### 日志查看
 ```bash
-# 查看服务日志
+# 本地日志
 tail -f target/logs/admin/admin-api.log   # admin-api 日志
 tail -f target/logs/oms/oms-service.log   # oms-rpc 日志
+
+# 远程日志
+ssh root@47.107.224.56 'tail -50 /root/zero-admin/target/logs/front/front-api.log'
+ssh root@47.107.224.56 'journalctl -u zero-admin -f'
 ```
 
 ---
@@ -545,14 +603,32 @@ tail -f target/logs/oms/oms-service.log   # oms-rpc 日志
 | API 500 Table not exist | 检查 GORM 模型和数据库 |
 | API 404 Route not found | 检查 API 路由注册 |
 | API 401 Unauthorized | 重新获取 JWT token |
-| 端口被占用 | `lsof -ti:<port> | xargs kill -9` |
+| API 400 field "mobile" is not set | Front 登录使用 `mobile` 而非 `account` |
+| 端口被占用 | 本地: `lsof -ti:<port> \| xargs kill -9` |
 | 唯一索引冲突 (1062) | 使用时间戳生成唯一值重试 |
-| 数据库连接失败 | 检查 etc/*.yaml 配置 |
+| 数据库连接失败 | 检查本地 MySQL 是否运行；远程部署已包含可用数据库 |
+| 远程服务未启动 | 执行 `bash .agents/skills/zero-admin-remote-deploy/scripts/deploy_remote.sh` |
+
+**远程部署特有故障排查：**
+```bash
+# 1. 检查远程服务是否运行
+ssh root@47.107.224.56 'ps aux | grep -E "admin-api|front-api|sys-rpc" | grep -v grep'
+
+# 2. 检查端口监听
+ssh root@47.107.224.56 'lsof -i :8000 -i :9999 -i :8070'
+
+# 3. 查看服务日志
+ssh root@47.107.224.56 'tail -100 /root/zero-admin/target/logs/front/front-api.log'
+
+# 4. 重启远程服务（如需要）
+ssh root@47.107.224.56 'cd /root/zero-admin && nohup ./target/admin-api/admin-api -f ./target/admin-api/admin-api.yaml > /dev/null 2>&1 &'
+```
 
 ---
 
 ## 关键文件参考
 
+### 本地项目文件
 | 文件 | 用途 |
 |------|------|
 | `rpc/*/internal/logic/` | RPC 业务逻辑层 |
@@ -564,3 +640,21 @@ tail -f target/logs/oms/oms-service.log   # oms-rpc 日志
 | `makefile` | 构建脚本 |
 | `target/` | 构建产物目录 |
 | `_opcos/implementation-artifacts/` | Issue 规格文件目录 |
+
+### 远程部署相关文件
+| 文件 | 用途 |
+|------|------|
+| `.agents/skills/zero-admin-remote-deploy/scripts/deploy_remote.sh` | 远程部署主脚本 |
+| `.agents/skills/zero-admin-remote-deploy/scripts/smoke_remote.py` | 远程 Smoke Test 脚本 |
+| `.agents/skills/zero-admin-remote-deploy/scripts/check_disk.sh` | 远程磁盘健康检查 |
+| `.agents/skills/zero-admin-remote-deploy/scripts/run_api_tests.sh` | Story API 测试运行器 |
+
+### 远程服务器信息
+| 项目 | 值 |
+|------|-----|
+| SSH | `root@47.107.224.56` |
+| 远程目录 | `/root/zero-admin` |
+| Admin API | `http://47.107.224.56:8000` |
+| Front API | `http://47.107.224.56:9999` |
+| Admin 账号 | `admin / 123456` |
+| 数据库 | `127.0.0.1:3306` (MySQL) |

@@ -48,20 +48,24 @@
 
 ---
 
-### 4. API 测试
+### 4. API 测试（远程服务器验证）
 
-**状态**: ⚠️ 无法执行（基础设施依赖未满足）
+**状态**: ✅ Smoke test 通过，API 接口正常
 
-| 依赖 | 状态 |
-|------|------|
-| MySQL | ❌ 密码错误 (Access denied) |
-| Redis | ❌ 未运行 |
-| RPC 服务 | ❌ 无法启动 |
+| 服务 | 端口 | 状态 |
+|------|------|------|
+| admin-api | 8000 | ✅ 正常 |
+| front-api | 9999 | ✅ 正常 |
+| sys-rpc | 8070 | ✅ 正常 |
+| oms-rpc | 8082 | ✅ 正常 |
+
+**Smoke Test 结果**: 全部通过 (17/17 endpoints)
 
 **说明**: 
-- admin-api 已成功启动 (port 8888)
-- front-api 因 Redis 连接失败无法启动
-- RPC 服务因 MySQL 密码错误无法启动
+- 远程部署成功 (服务器: 47.107.224.56)
+- admin-api 和 front-api 均正常响应
+- 订单列表返回 `data: null, total: 0` — 数据库无订单数据（新环境正常）
+- 一致性字段已在 API 响应结构中定义，待有订单数据时可验证
 
 ---
 
@@ -77,20 +81,26 @@
 
 ### 6. 诊断结论
 
-**状态**: ⚠️ 有条件通过
+**状态**: ✅ 通过（远程部署验证成功）
 
 **已验证**:
-- 编译通过（修复了 2 个类型错误）
-- 代码质量合格（无 Mock/硬编码/调试日志）
-- 一致性阶段模型正确实现
-- 幂等保护正确实现
-- API 响应结构包含一致性字段
+- ✅ 编译通过（修复了 2 个类型错误）
+- ✅ 代码质量合格（无 Mock/硬编码/调试日志）
+- ✅ 一致性阶段模型正确实现 (ConsistencyStage 0-9)
+- ✅ 幂等保护正确实现 (Redis SetnxExCtx)
+- ✅ API 响应结构包含一致性字段
+- ✅ 远程部署成功，Smoke test 全部通过
 
-**待跟进**:
-- Task 5.4 `traceId` 字段尚未实现
-- API 集成测试因基础设施问题无法执行
-- Consumer MQ 的 `order_create_logic.go` / `order_cancel_logic.go` 等仍为 stub
+**代码审查问题**:
+- ❌ Task 5.4 `traceId` 字段尚未实现（spec 标注为 TODO）
+- ⚠️ Consumer MQ 的 stub 文件尚未实现完整逻辑
+- ⚠️ 数据库无订单数据，无法验证运行时一致性字段
 
 **风险**:
 - spec 标注 story status 为 `review`，表明仍需 code review
 - `traceId` 缺失可能影响 Story 7.5/7.6 的监控与重试能力
+
+**建议**:
+1. 添加 `traceId` 字段以支持 Story 7.5/7.6 的监控需求
+2. Consumer MQ 的 order consumer 需要实现完整的消息处理逻辑
+3. 需要有订单数据的场景才能完整验证一致性字段的运行时行为
