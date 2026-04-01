@@ -41,3 +41,12 @@ build
 logs
 uploads
 target
+
+# compiled binaries
+/admin
+/cms
+/oms
+/pms
+/sms
+/search
+/sys
