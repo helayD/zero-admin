@@ -2,6 +2,8 @@ package order
 
 import (
 	"context"
+	"fmt"
+
 	"github.com/zeromicro/go-zero/core/logc"
 )
 
@@ -30,6 +32,10 @@ func (p *EventPayload) ToContext(ctx context.Context) context.Context {
 	ctx = context.WithValue(ctx, "eventId", p.EventID)
 	ctx = context.WithValue(ctx, "action", p.Action)
 	return ctx
+}
+
+func (p *EventPayload) EntityIDToString() string {
+	return fmt.Sprintf("%d", p.EntityID)
 }
 
 func LogWithEventPayload(ctx context.Context, msg string, args ...interface{}) {

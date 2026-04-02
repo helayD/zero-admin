@@ -292,77 +292,121 @@ grep -n "EquipmentVendorBatchDelete" rpc/*/internal/logic/*/*.go
 
 ## 步骤 6：API 测试
 
+### 🚨 测试前必读：网络代理问题处理
+
+**本地环境有代理时，curl 请求会被路由到代理导致超时。**
+
+```bash
+# 检查是否有代理设置
+echo $http_proxy
+echo $https_proxy
+
+# 如果有代理设置，API 测试必须使用以下方法之一：
+# 1. 方案A：临时清除代理（推荐用于单次测试）
+unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY
+
+# 2. 方案B：curl 使用 --noproxy 绕过
+curl --noproxy '*' -s -X POST "http://47.107.224.56:8000/api/sys/user/login" ...
+
+# 3. 方案C：使用 Python 脚本（不受代理影响，推荐）
+python3 .agents/skills/zero-admin-remote-deploy/scripts/smoke_remote.py --base-url http://47.107.224.56:8000
+```
+
 ### 6.1 确认服务运行
 
-**优先使用远程测试服务器**，本地环境可能缺少 MySQL/Redis 依赖。
+**分三步检查：SSH直连 → 端口检测 → 服务探活**
 
 ```bash
-# 方式1：使用远程部署脚本（推荐）
-bash .agents/skills/zero-admin-remote-deploy/scripts/deploy_remote.sh
+# 步骤1：SSH直连检查（不依赖代理）
+ssh -o ConnectTimeout=10 root@47.107.224.56 'echo "SSH OK"' 2>&1
 
-# 方式2：检查远程服务状态
-ssh root@47.107.224.56 'lsof -i :8000 -i :9999 -i :8070 -i :8082'
+# 步骤2：检查远程服务进程
+ssh root@47.107.224.56 'ps aux | grep -E "oms-rpc|admin-api|front-api" | grep -v grep' 2>&1
 
-# 方式3：本地检查（如已启动本地服务）
+# 步骤3：检查端口监听
+ssh root@47.107.224.56 'lsof -i :8000 -i :9999 -i :8070 -i :8082 -i :8083' 2>&1
+
+# 步骤4：本地检查（如已启动本地服务）
 lsof -i :8888   # admin-api
 lsof -i :8001    # front-api
-curl -sf http://127.0.0.1:8888/health
 ```
 
-**远程服务器已验证可用的服务：**
-- Admin API: `http://47.107.224.56:8000` ✅
-- Front API: `http://47.107.224.56:9999` ✅
-- sys-rpc: `47.107.224.56:8070` ✅
-- oms-rpc: `47.107.224.56:8082` ✅
+### 6.2 服务健康检查（优先使用 Python）
 
-### 6.2 JWT Token 获取
+**使用 Python 脚本可以避免代理问题，并且自带超时处理：**
 
-**Admin 登录接口（远程）：**
 ```bash
-BASE_URL="http://47.107.224.56:8000"
+# 先清除代理（如果存在）
+unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY
 
-curl -s -X POST "$BASE_URL/api/sys/user/login" \
-  -H 'Content-Type: application/json' \
-  -d '{"account":"admin","password":"123456"}'
-# Response: {"code":"000000","message":"登录成功","data":{"token":"..."}}
+# 运行 Smoke Test（优先方案）
+python3 .agents/skills/zero-admin-remote-deploy/scripts/smoke_remote.py \
+  --base-url http://47.107.224.56:8000 \
+  --front-base-url http://47.107.224.56:9999 \
+  --timeout 60
+
+# 如果失败，尝试直接部署
+if [ $? -ne 0 ]; then
+  echo "Smoke Test 失败，尝试重新部署..."
+  bash .agents/skills/zero-admin-remote-deploy/scripts/deploy_remote.sh
+fi
 ```
 
-**Front 会员登录接口：**
-```bash
-BASE_URL="http://47.107.224.56:9999"
+### 6.3 JWT Token 获取
 
-# 注意：front-api 使用 mobile 字段
-curl -s -X POST "$BASE_URL/api/member/login" \
-  -H 'Content-Type: application/json' \
-  -d '{"mobile":"13800000000","password":"123456"}'
+**推荐使用 Python 脚本获取 Token：**
+
+```python
+#!/usr/bin/env python3
+import urllib.request
+import json
+
+def get_admin_token():
+    url = "http://47.107.224.56:8000/api/sys/user/login"
+    data = json.dumps({"account": "admin", "password": "123456"}).encode()
+    req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'}, method='POST')
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        body = json.loads(resp.read().decode())
+        return body.get('data', {}).get('token', '')
+
+token = get_admin_token()
+print(f"Token: {token[:50]}...")
 ```
 
-**获取 Token 脚本（远程）：**
+**或使用 curl（需清除代理）：**
 ```bash
-# Admin API Token
-ADMIN_BASE="http://47.107.224.56:8000"
-ADMIN_TOKEN=$(curl -s -X POST "$ADMIN_BASE/api/sys/user/login" \
+unset http_proxy https_proxy
+TOKEN=$(curl -s --noproxy '*' -X POST "http://47.107.224.56:8000/api/sys/user/login" \
   -H 'Content-Type: application/json' \
   -d '{"account":"admin","password":"123456"}' | \
   python3 -c "import sys,json; print(json.load(sys.stdin).get('data',{}).get('token',''))")
-echo "Admin Token: ${ADMIN_TOKEN:0:50}..."
-
-# Front API Token
-FRONT_BASE="http://47.107.224.56:9999"
-FRONT_TOKEN=$(curl -s -X POST "$FRONT_BASE/api/member/login" \
-  -H 'Content-Type: application/json' \
-  -d '{"mobile":"13800000000","password":"123456"}' | \
-  python3 -c "import sys,json; print(json.load(sys.stdin).get('data',{}).get('token',''))")
-echo "Front Token: ${FRONT_TOKEN:0:50}..."
+echo "Token: ${TOKEN:0:50}..."
 ```
 
-### 6.3 生成 test_api.sh（远程版）
+### 6.4 API 测试分类与策略
 
-**基本模板**：
+**区分两种测试类型：**
+
+| 测试类型 | 说明 | 风险 | 要求 |
+|---------|------|------|------|
+| **验证性测试** | 只读操作（List、Get、Query） | 低 | 可以执行 |
+| **干预性测试** | 写操作（Create、Update、干预RPC） | 中 | 需谨慎，按 Issue 需求 |
+
+**根据 Issue 需求决定是否执行干预性测试：**
+- 如果 Issue 是"链路干预"，干预性测试是核心需求 → 必须执行
+- 如果 Issue 是"查询功能优化"，干预性测试是辅助 → 可跳过
+
+### 6.5 生成 test_api.sh（远程版）
+
+**模板已优化，增加了代理处理和超时控制：**
 ```bash
 #!/bin/bash
 # Zero-Admin API 测试脚本（远程版）
 # Issue: <名称>
+
+# === 代理处理（必须放在最前面）===
+unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY
+export no_proxy='*'
 
 # 远程服务器配置
 ADMIN_BASE="http://47.107.224.56:8000"
@@ -375,7 +419,7 @@ run_test() {
   local name="$1"; local expected="$2"; shift 2
   TOTAL=$((TOTAL+1))
   echo "--- [$TOTAL] $name ---"
-  RESP=$(curl -s -w "\n%{http_code}" "$@")
+  RESP=$(curl -s --noproxy '*' -m 30 -w "\n%{http_code}" "$@")
   HTTP=$(echo "$RESP" | tail -1)
   BODY=$(echo "$RESP" | sed '$d')
   CODE=$(echo "$BODY" | python3 -c "import sys,json; print(json.load(sys.stdin).get('code','N/A'))" 2>/dev/null || echo "N/A")
@@ -390,64 +434,38 @@ run_test() {
 }
 
 # 1. 获取 Admin Token
-ADMIN_RESP=$(curl -s -X POST "$ADMIN_BASE/api/sys/user/login" \
+ADMIN_RESP=$(curl -s --noproxy '*' -m 30 -X POST "$ADMIN_BASE/api/sys/user/login" \
   -H 'Content-Type: application/json' \
   -d '{"account":"admin","password":"123456"}')
 ADMIN_TOKEN=$(echo "$ADMIN_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin).get('data',{}).get('token',''))" 2>/dev/null)
 ADMIN_AUTH="Authorization: Bearer $ADMIN_TOKEN"
 
-# 2. 获取 Front Token（用于需要会员身份的测试）
-FRONT_RESP=$(curl -s -X POST "$FRONT_BASE/api/member/login" \
-  -H 'Content-Type: application/json' \
-  -d '{"mobile":"13800000000","password":"123456"}')
-FRONT_TOKEN=$(echo "$FRONT_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin).get('data',{}).get('token',''))" 2>/dev/null)
-FRONT_AUTH="Authorization: Bearer $FRONT_TOKEN"
-
-# 3. 测试用例
-# Admin API - 订单列表
-run_test "[Admin] List Orders" "000000" \
-  -X GET "$ADMIN_BASE/api/oms/order/queryOrderMainList?current=1&pageSize=20" \
-  -H "$ADMIN_AUTH"
-
-# Front API - 订单列表（需要会员身份）
-run_test "[Front] List Orders" "0" \
-  -X GET "$FRONT_BASE/api/order/queryOrderList?current=1&pageSize=20" \
-  -H "$FRONT_AUTH"
-
-# ... 更多用例
+# 2. 测试用例...
 
 echo "==============================="
 echo -e "结果: ${GREEN}${PASS}/${TOTAL}${NC} 通过, ${RED}${FAIL}${NC} 失败"
 [ $FAIL -gt 0 ] && exit 1 || exit 0
 ```
 
-### 6.4 执行测试
+### 6.6 执行测试
 
 ```bash
-# 部署到远程服务器
+# 1. 清除代理
+unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY
+
+# 2. 部署到远程服务器
 bash .agents/skills/zero-admin-remote-deploy/scripts/deploy_remote.sh
 
-# 执行 API 测试
-bash <issue_dir>/test_api.sh
-
-# 或直接运行 smoke test 验证服务可用性
+# 3. 运行 Smoke Test 验证基础服务
 python3 .agents/skills/zero-admin-remote-deploy/scripts/smoke_remote.py \
   --base-url http://47.107.224.56:8000 \
   --front-base-url http://47.107.224.56:9999
+
+# 4. 执行 API 测试（如需要）
+bash <issue_dir>/test_api.sh
 ```
 
-### 6.5 测试覆盖标准
-
-| 类型 | 要求 |
-|------|------|
-| List | ✅ 必测，验证分页和返回格式 |
-| Create | ✅ 必测，验证唯一约束和必填校验 |
-| Get | ✅ 必测，验证单个资源获取 |
-| Update | ✅ 必测，验证更新生效 |
-| Delete | ⚠️ 按需，禁止删除测试数据 |
-| 错误场景 | ✅ 必测，无效 ID、缺少参数 |
-
-### 6.6 🚨 测试通过率要求：100%
+### 6.7 🚨 测试通过率要求：100%
 
 > **🚨 硬性要求：API 测试必须 100% 通过。任何失败用例都必须立即修复，修复后重新执行测试，直到全部通过。不允许带着失败用例进入下一步骤。**
 
@@ -457,20 +475,77 @@ python3 .agents/skills/zero-admin-remote-deploy/scripts/smoke_remote.py \
 3. 如果是 API 实现问题 → 修复代码，重新编译，再测试
 4. 重复直到 100% 通过
 
-### 6.7 唯一值策略
+### 6.8 唯一值策略
 
 > ⚠️ 禁止清理数据，唯一索引冲突使用时间戳生成唯一值
 
 ```bash
 TS=$(date +%s)  # Unix 时间戳
-
-# 唯一编号
 NO="PREFIX${TS}"
 
 # 如遇冲突，等待下一秒重试
 sleep 1
 TS=$(date +%s)
 NO="PREFIX${TS}"
+```
+
+---
+
+## API 测试故障排查
+
+### 问题：Smoke Test 超时
+
+```bash
+# 1. 检查代理是否还在影响
+echo $http_proxy
+
+# 2. 检查远程服务是否运行
+ssh root@47.107.224.56 'ps aux | grep -E "oms-rpc|admin-api" | grep -v grep'
+
+# 3. 检查端口是否监听
+ssh root@47.107.224.56 'lsof -i :8083 -i :8888'
+
+# 4. 查看服务日志
+ssh root@47.107.224.56 'tail -50 /root/zero-admin/target/logs/admin/admin-api.log'
+
+# 5. 重新部署
+bash .agents/skills/zero-admin-remote-deploy/scripts/deploy_remote.sh
+```
+
+### 问题：API 返回 HTML 而不是 JSON
+
+```bash
+# 说明请求被路由到了 Nginx/前端，而不是后端 API
+# 可能原因：
+# 1. admin-api 服务未运行
+ssh root@47.107.224.56 'lsof -i :8888'
+
+# 2. 端口配置错误
+# 远程 admin-api 监听 8888，但 Nginx 代理到 8000
+# 应该访问 http://47.107.224.56:8888 而非 http://47.107.224.56:8000
+```
+
+### 问题：curl 返回空响应
+
+```bash
+# 1. 检查是否被代理拦截
+curl -v --noproxy '*' http://47.107.224.56:8888/api/sys/user/login 2>&1 | head -30
+
+# 2. 检查服务日志是否有请求到达
+ssh root@47.107.224.56 'tail -20 /root/zero-admin/target/logs/admin/admin-api.log'
+
+# 3. 使用 Python 脚本重试
+python3 -c "
+import urllib.request, json
+url = 'http://47.107.224.56:8000/api/sys/user/login'
+data = json.dumps({'account':'admin','password':'123456'}).encode()
+req = urllib.request.Request(url, data=data, headers={'Content-Type':'application/json'})
+try:
+    with urllib.request.urlopen(req, timeout=30) as r:
+        print(r.read().decode())
+except Exception as e:
+    print(f'Error: {e}')
+"
 ```
 
 ---
@@ -609,19 +684,59 @@ ssh root@47.107.224.56 'journalctl -u zero-admin -f'
 | 数据库连接失败 | 检查本地 MySQL 是否运行；远程部署已包含可用数据库 |
 | 远程服务未启动 | 执行 `bash .agents/skills/zero-admin-remote-deploy/scripts/deploy_remote.sh` |
 
-**远程部署特有故障排查：**
+### 🚨 网络/代理问题（最常见）
+
+**问题：curl/请求超时或返回空响应**
+
+```bash
+# 1. 立即检查代理环境变量
+echo "http_proxy=$http_proxy"
+echo "https_proxy=$https_proxy"
+
+# 2. 清除所有代理环境变量
+unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY
+export no_proxy='*'
+
+# 3. 使用 --noproxy '*' 绕过代理
+curl --noproxy '*' -s http://example.com
+
+# 4. 使用 Python 脚本（不受代理影响）
+python3 -c "import urllib.request; print(urllib.request.urlopen('http://example.com').read().decode())"
+```
+
+**问题：API 返回 HTML 而不是 JSON**
+
+```bash
+# 说明请求没有到达后端服务
+# 可能原因：服务未运行或端口配置错误
+
+# 检查 admin-api 是否监听在 8888
+ssh root@47.107.224.56 'lsof -i :8888'
+
+# 如果监听的是 nginx(8000) 而不是 admin-api(8888)
+# 说明请求被 nginx 拦截了
+```
+
+### 远程部署特有故障排查
+
 ```bash
 # 1. 检查远程服务是否运行
-ssh root@47.107.224.56 'ps aux | grep -E "admin-api|front-api|sys-rpc" | grep -v grep'
+ssh root@47.107.224.56 'ps aux | grep -E "oms-rpc|admin-api|front-api" | grep -v grep'
 
 # 2. 检查端口监听
-ssh root@47.107.224.56 'lsof -i :8000 -i :9999 -i :8070'
+ssh root@47.107.224.56 'lsof -i :8000 -i :9999 -i :8070 -i :8082 -i :8083'
 
-# 3. 查看服务日志
-ssh root@47.107.224.56 'tail -100 /root/zero-admin/target/logs/front/front-api.log'
+# 3. 查看 admin-api 日志
+ssh root@47.107.224.56 'tail -100 /root/zero-admin/target/logs/admin/admin-api.log'
 
-# 4. 重启远程服务（如需要）
-ssh root@47.107.224.56 'cd /root/zero-admin && nohup ./target/admin-api/admin-api -f ./target/admin-api/admin-api.yaml > /dev/null 2>&1 &'
+# 4. 查看 oms-rpc 日志
+ssh root@47.107.224.56 'tail -50 /tmp/oms-rpc.log'
+
+# 5. 重启远程服务（如需要）
+ssh root@47.107.224.56 'cd /root/zero-admin && pkill -f admin-api; nohup ./target/admin-api/admin-api -f ./target/admin-api/admin-api.yaml > /tmp/admin-api.log 2>&1 &'
+
+# 6. 重新部署（最彻底）
+bash .agents/skills/zero-admin-remote-deploy/scripts/deploy_remote.sh
 ```
 
 ---

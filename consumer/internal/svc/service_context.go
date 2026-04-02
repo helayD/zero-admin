@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/feihua/zero-admin/consumer/internal/config"
 	"github.com/feihua/zero-admin/consumer/internal/mq/coupon"
+	"github.com/feihua/zero-admin/consumer/internal/mq/member"
 	"github.com/feihua/zero-admin/consumer/internal/mq/order"
 	"github.com/feihua/zero-admin/consumer/internal/mq/product"
 	"github.com/feihua/zero-admin/pkg/mq"
@@ -17,6 +18,7 @@ import (
 	"github.com/feihua/zero-admin/rpc/sms/client/coupontypeservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/membergrowthlogservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/memberinfoservice"
+	"github.com/feihua/zero-admin/rpc/ums/client/membermessageservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/memberpointslogservice"
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/stores/redis"
@@ -32,6 +34,7 @@ type ServiceContext struct {
 	MemberInfoService      memberinfoservice.MemberInfoService
 	MemberGrowthLogService membergrowthlogservice.MemberGrowthLogService
 	MemberPointsLogService memberpointslogservice.MemberPointsLogService
+	MemberMessageService   membermessageservice.MemberMessageService
 
 	// 营销相关
 	CouponRecordService couponrecordservice.CouponRecordService
@@ -67,6 +70,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	r := redis.MustNewRedis(redisConf)
 
 	memberInfoService := memberinfoservice.NewMemberInfoService(umsClient)
+	memberMessageService := membermessageservice.NewMemberMessageService(umsClient)
 	couponService := couponservice.NewCouponService(smsClient)
 	couponRecordService := couponrecordservice.NewCouponRecordService(smsClient)
 	skuService := productskuservice.NewProductSkuService(pmsClient)
@@ -80,6 +84,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		MemberInfoService:      memberInfoService,
 		MemberGrowthLogService: membergrowthlogservice.NewMemberGrowthLogService(umsClient),
 		MemberPointsLogService: memberpointslogservice.NewMemberPointsLogService(umsClient),
+		MemberMessageService:   memberMessageService,
 		CouponRecordService:    couponRecordService,
 		CouponService:          couponService,
 		CouponTypeService:      coupontypeservice.NewCouponTypeService(smsClient),
@@ -102,6 +107,12 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	}()
 
 	go func() {
+		rabbitmq.ConsumeSimpleWithAck("coupon.issued.queue", func(body []byte) error {
+			return coupon.CouponIssued(context.Background(), body, memberMessageService)
+		})
+	}()
+
+	go func() {
 		rabbitmq.ConsumeSimpleWithAck("order.delay.cancel.queue", func(body []byte) error {
 			return order.OrderDelayCancel(context.Background(), body, r, skuService, orderService, couponRecordService, memberInfoService)
 		})
@@ -120,7 +131,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 
 	go func() {
 		rabbitmq.ConsumeSimpleWithAck("order.return.queue", func(body []byte) error {
-			return order.OrderReturn(context.Background(), body)
+			return order.OrderReturn(context.Background(), body, memberMessageService)
 		})
 	}()
 
@@ -138,19 +149,33 @@ func NewServiceContext(c config.Config) *ServiceContext {
 
 	go func() {
 		rabbitmq.ConsumeSimpleWithAck("order.delivery.queue", func(body []byte) error {
-			return order.OrderDelivery(context.Background(), body)
+			return order.OrderDelivery(context.Background(), body, memberMessageService)
 		})
 	}()
 
 	go func() {
 		rabbitmq.ConsumeSimpleWithAck("order.confirm.queue", func(body []byte) error {
-			return order.OrderConfirm(context.Background(), body)
+			return order.OrderConfirm(context.Background(), body, memberMessageService)
 		})
 	}()
+
+	go func() {
+		rabbitmq.ConsumeSimpleWithAck("order.pay.queue", func(body []byte) error {
+			return order.OrderPay(context.Background(), body, memberMessageService)
+		})
+	}()
+
 	go func() {
 		rabbitmq.ConsumeSimpleWithAck("order.create.queue", func(body []byte) error {
-			return order.OrderCreate(context.Background(), body)
+			return order.OrderCreate(context.Background(), body, memberMessageService)
 		})
 	}()
+
+	go func() {
+		rabbitmq.ConsumeSimpleWithAck("member.message.queue", func(body []byte) error {
+			return member.CreateMemberMessage(context.Background(), body, memberMessageService)
+		})
+	}()
+
 	return s
 }

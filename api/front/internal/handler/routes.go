@@ -13,6 +13,7 @@ import (
 	"github.com/feihua/zero-admin/api/front/internal/handler/member/coupon"
 	"github.com/feihua/zero-admin/api/front/internal/handler/member/history"
 	"github.com/feihua/zero-admin/api/front/internal/handler/member/member"
+	"github.com/feihua/zero-admin/api/front/internal/handler/member/message"
 	"github.com/feihua/zero-admin/api/front/internal/handler/order/cart"
 	"github.com/feihua/zero-admin/api/front/internal/handler/order/order"
 	"github.com/feihua/zero-admin/api/front/internal/handler/order/pay"
@@ -129,6 +130,19 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			{Method: http.MethodGet, Path: "/api/member/coupon/queryAvailableCoupons", Handler: coupon.QueryAvailableCouponsHandler(serverCtx)},
 			{Method: http.MethodGet, Path: "/api/member/coupon/queryCouponListByCart", Handler: coupon.QueryCouponListByCartHandler(serverCtx)},
 			{Method: http.MethodPost, Path: "/api/member/coupon/addCoupon", Handler: coupon.AddCouponHandler(serverCtx)},
+		},
+		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+	)
+
+	// 会员消息（需 JWT）
+	server.AddRoutes(
+		[]rest.Route{
+			{Method: http.MethodGet, Path: "/api/member/message/list", Handler: message.MessageListHandler(serverCtx)},
+			{Method: http.MethodGet, Path: "/api/member/message/:id", Handler: message.MessageDetailHandler(serverCtx)},
+			{Method: http.MethodGet, Path: "/api/member/message/unreadCount", Handler: message.QueryUnreadCountHandler(serverCtx)},
+			{Method: http.MethodPost, Path: "/api/member/message/:id/read", Handler: message.MarkMessageReadHandler(serverCtx)},
+			{Method: http.MethodPost, Path: "/api/member/message/readAll", Handler: message.MarkAllMessagesReadHandler(serverCtx)},
+			{Method: http.MethodDelete, Path: "/api/member/message/:id", Handler: message.DeleteMessageHandler(serverCtx)},
 		},
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
 	)

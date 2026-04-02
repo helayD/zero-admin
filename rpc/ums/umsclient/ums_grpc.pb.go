@@ -4102,3 +4102,329 @@ var MemberTaskRelationService_ServiceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "rpc/ums/ums.proto",
 }
+
+const (
+	MemberMessageService_AddMemberMessage_FullMethodName         = "/umsclient.MemberMessageService/AddMemberMessage"
+	MemberMessageService_QueryMemberMessageList_FullMethodName   = "/umsclient.MemberMessageService/QueryMemberMessageList"
+	MemberMessageService_QueryMemberMessageDetail_FullMethodName = "/umsclient.MemberMessageService/QueryMemberMessageDetail"
+	MemberMessageService_MarkMessageAsRead_FullMethodName        = "/umsclient.MemberMessageService/MarkMessageAsRead"
+	MemberMessageService_MarkAllMessagesAsRead_FullMethodName    = "/umsclient.MemberMessageService/MarkAllMessagesAsRead"
+	MemberMessageService_DeleteMemberMessage_FullMethodName      = "/umsclient.MemberMessageService/DeleteMemberMessage"
+	MemberMessageService_QueryUnreadCount_FullMethodName         = "/umsclient.MemberMessageService/QueryUnreadCount"
+)
+
+// MemberMessageServiceClient is the client API for MemberMessageService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type MemberMessageServiceClient interface {
+	// 创建消息
+	AddMemberMessage(ctx context.Context, in *AddMemberMessageReq, opts ...grpc.CallOption) (*AddMemberMessageResp, error)
+	// 查询消息列表
+	QueryMemberMessageList(ctx context.Context, in *QueryMemberMessageListReq, opts ...grpc.CallOption) (*QueryMemberMessageListResp, error)
+	// 查询消息详情
+	QueryMemberMessageDetail(ctx context.Context, in *QueryMemberMessageDetailReq, opts ...grpc.CallOption) (*QueryMemberMessageDetailResp, error)
+	// 标记已读
+	MarkMessageAsRead(ctx context.Context, in *MarkMessageAsReadReq, opts ...grpc.CallOption) (*MarkMessageAsReadResp, error)
+	// 标记全部已读
+	MarkAllMessagesAsRead(ctx context.Context, in *MarkAllMessagesAsReadReq, opts ...grpc.CallOption) (*MarkAllMessagesAsReadResp, error)
+	// 删除消息
+	DeleteMemberMessage(ctx context.Context, in *DeleteMemberMessageReq, opts ...grpc.CallOption) (*DeleteMemberMessageResp, error)
+	// 查询未读数量
+	QueryUnreadCount(ctx context.Context, in *QueryUnreadCountReq, opts ...grpc.CallOption) (*QueryUnreadCountResp, error)
+}
+
+type memberMessageServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewMemberMessageServiceClient(cc grpc.ClientConnInterface) MemberMessageServiceClient {
+	return &memberMessageServiceClient{cc}
+}
+
+func (c *memberMessageServiceClient) AddMemberMessage(ctx context.Context, in *AddMemberMessageReq, opts ...grpc.CallOption) (*AddMemberMessageResp, error) {
+	out := new(AddMemberMessageResp)
+	err := c.cc.Invoke(ctx, MemberMessageService_AddMemberMessage_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *memberMessageServiceClient) QueryMemberMessageList(ctx context.Context, in *QueryMemberMessageListReq, opts ...grpc.CallOption) (*QueryMemberMessageListResp, error) {
+	out := new(QueryMemberMessageListResp)
+	err := c.cc.Invoke(ctx, MemberMessageService_QueryMemberMessageList_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *memberMessageServiceClient) QueryMemberMessageDetail(ctx context.Context, in *QueryMemberMessageDetailReq, opts ...grpc.CallOption) (*QueryMemberMessageDetailResp, error) {
+	out := new(QueryMemberMessageDetailResp)
+	err := c.cc.Invoke(ctx, MemberMessageService_QueryMemberMessageDetail_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *memberMessageServiceClient) MarkMessageAsRead(ctx context.Context, in *MarkMessageAsReadReq, opts ...grpc.CallOption) (*MarkMessageAsReadResp, error) {
+	out := new(MarkMessageAsReadResp)
+	err := c.cc.Invoke(ctx, MemberMessageService_MarkMessageAsRead_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *memberMessageServiceClient) MarkAllMessagesAsRead(ctx context.Context, in *MarkAllMessagesAsReadReq, opts ...grpc.CallOption) (*MarkAllMessagesAsReadResp, error) {
+	out := new(MarkAllMessagesAsReadResp)
+	err := c.cc.Invoke(ctx, MemberMessageService_MarkAllMessagesAsRead_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *memberMessageServiceClient) DeleteMemberMessage(ctx context.Context, in *DeleteMemberMessageReq, opts ...grpc.CallOption) (*DeleteMemberMessageResp, error) {
+	out := new(DeleteMemberMessageResp)
+	err := c.cc.Invoke(ctx, MemberMessageService_DeleteMemberMessage_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *memberMessageServiceClient) QueryUnreadCount(ctx context.Context, in *QueryUnreadCountReq, opts ...grpc.CallOption) (*QueryUnreadCountResp, error) {
+	out := new(QueryUnreadCountResp)
+	err := c.cc.Invoke(ctx, MemberMessageService_QueryUnreadCount_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// MemberMessageServiceServer is the server API for MemberMessageService service.
+// All implementations must embed UnimplementedMemberMessageServiceServer
+// for forward compatibility
+type MemberMessageServiceServer interface {
+	// 创建消息
+	AddMemberMessage(context.Context, *AddMemberMessageReq) (*AddMemberMessageResp, error)
+	// 查询消息列表
+	QueryMemberMessageList(context.Context, *QueryMemberMessageListReq) (*QueryMemberMessageListResp, error)
+	// 查询消息详情
+	QueryMemberMessageDetail(context.Context, *QueryMemberMessageDetailReq) (*QueryMemberMessageDetailResp, error)
+	// 标记已读
+	MarkMessageAsRead(context.Context, *MarkMessageAsReadReq) (*MarkMessageAsReadResp, error)
+	// 标记全部已读
+	MarkAllMessagesAsRead(context.Context, *MarkAllMessagesAsReadReq) (*MarkAllMessagesAsReadResp, error)
+	// 删除消息
+	DeleteMemberMessage(context.Context, *DeleteMemberMessageReq) (*DeleteMemberMessageResp, error)
+	// 查询未读数量
+	QueryUnreadCount(context.Context, *QueryUnreadCountReq) (*QueryUnreadCountResp, error)
+	mustEmbedUnimplementedMemberMessageServiceServer()
+}
+
+// UnimplementedMemberMessageServiceServer must be embedded to have forward compatible implementations.
+type UnimplementedMemberMessageServiceServer struct {
+}
+
+func (UnimplementedMemberMessageServiceServer) AddMemberMessage(context.Context, *AddMemberMessageReq) (*AddMemberMessageResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddMemberMessage not implemented")
+}
+func (UnimplementedMemberMessageServiceServer) QueryMemberMessageList(context.Context, *QueryMemberMessageListReq) (*QueryMemberMessageListResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QueryMemberMessageList not implemented")
+}
+func (UnimplementedMemberMessageServiceServer) QueryMemberMessageDetail(context.Context, *QueryMemberMessageDetailReq) (*QueryMemberMessageDetailResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QueryMemberMessageDetail not implemented")
+}
+func (UnimplementedMemberMessageServiceServer) MarkMessageAsRead(context.Context, *MarkMessageAsReadReq) (*MarkMessageAsReadResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MarkMessageAsRead not implemented")
+}
+func (UnimplementedMemberMessageServiceServer) MarkAllMessagesAsRead(context.Context, *MarkAllMessagesAsReadReq) (*MarkAllMessagesAsReadResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MarkAllMessagesAsRead not implemented")
+}
+func (UnimplementedMemberMessageServiceServer) DeleteMemberMessage(context.Context, *DeleteMemberMessageReq) (*DeleteMemberMessageResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteMemberMessage not implemented")
+}
+func (UnimplementedMemberMessageServiceServer) QueryUnreadCount(context.Context, *QueryUnreadCountReq) (*QueryUnreadCountResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QueryUnreadCount not implemented")
+}
+func (UnimplementedMemberMessageServiceServer) mustEmbedUnimplementedMemberMessageServiceServer() {}
+
+// UnsafeMemberMessageServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to MemberMessageServiceServer will
+// result in compilation errors.
+type UnsafeMemberMessageServiceServer interface {
+	mustEmbedUnimplementedMemberMessageServiceServer()
+}
+
+func RegisterMemberMessageServiceServer(s grpc.ServiceRegistrar, srv MemberMessageServiceServer) {
+	s.RegisterService(&MemberMessageService_ServiceDesc, srv)
+}
+
+func _MemberMessageService_AddMemberMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddMemberMessageReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MemberMessageServiceServer).AddMemberMessage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MemberMessageService_AddMemberMessage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MemberMessageServiceServer).AddMemberMessage(ctx, req.(*AddMemberMessageReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MemberMessageService_QueryMemberMessageList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryMemberMessageListReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MemberMessageServiceServer).QueryMemberMessageList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MemberMessageService_QueryMemberMessageList_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MemberMessageServiceServer).QueryMemberMessageList(ctx, req.(*QueryMemberMessageListReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MemberMessageService_QueryMemberMessageDetail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryMemberMessageDetailReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MemberMessageServiceServer).QueryMemberMessageDetail(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MemberMessageService_QueryMemberMessageDetail_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MemberMessageServiceServer).QueryMemberMessageDetail(ctx, req.(*QueryMemberMessageDetailReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MemberMessageService_MarkMessageAsRead_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MarkMessageAsReadReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MemberMessageServiceServer).MarkMessageAsRead(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MemberMessageService_MarkMessageAsRead_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MemberMessageServiceServer).MarkMessageAsRead(ctx, req.(*MarkMessageAsReadReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MemberMessageService_MarkAllMessagesAsRead_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MarkAllMessagesAsReadReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MemberMessageServiceServer).MarkAllMessagesAsRead(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MemberMessageService_MarkAllMessagesAsRead_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MemberMessageServiceServer).MarkAllMessagesAsRead(ctx, req.(*MarkAllMessagesAsReadReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MemberMessageService_DeleteMemberMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteMemberMessageReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MemberMessageServiceServer).DeleteMemberMessage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MemberMessageService_DeleteMemberMessage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MemberMessageServiceServer).DeleteMemberMessage(ctx, req.(*DeleteMemberMessageReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MemberMessageService_QueryUnreadCount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryUnreadCountReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MemberMessageServiceServer).QueryUnreadCount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MemberMessageService_QueryUnreadCount_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MemberMessageServiceServer).QueryUnreadCount(ctx, req.(*QueryUnreadCountReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// MemberMessageService_ServiceDesc is the grpc.ServiceDesc for MemberMessageService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var MemberMessageService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "umsclient.MemberMessageService",
+	HandlerType: (*MemberMessageServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "AddMemberMessage",
+			Handler:    _MemberMessageService_AddMemberMessage_Handler,
+		},
+		{
+			MethodName: "QueryMemberMessageList",
+			Handler:    _MemberMessageService_QueryMemberMessageList_Handler,
+		},
+		{
+			MethodName: "QueryMemberMessageDetail",
+			Handler:    _MemberMessageService_QueryMemberMessageDetail_Handler,
+		},
+		{
+			MethodName: "MarkMessageAsRead",
+			Handler:    _MemberMessageService_MarkMessageAsRead_Handler,
+		},
+		{
+			MethodName: "MarkAllMessagesAsRead",
+			Handler:    _MemberMessageService_MarkAllMessagesAsRead_Handler,
+		},
+		{
+			MethodName: "DeleteMemberMessage",
+			Handler:    _MemberMessageService_DeleteMemberMessage_Handler,
+		},
+		{
+			MethodName: "QueryUnreadCount",
+			Handler:    _MemberMessageService_QueryUnreadCount_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "rpc/ums/ums.proto",
+}

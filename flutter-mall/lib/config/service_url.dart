@@ -46,8 +46,16 @@ const cartAddUrl = "$baseUrl/api/order/addCart";
 const productListDataUrl = "$baseUrl/api/product/queryProductList?productCategoryId=";
 // 商品详情
 const productDetailDataUrl = "$baseUrl/api/product/queryProductDetail?productId=";
-// 通知消息
-const messageListDataUrl = "$baseUrl/api/member/message/list/";
+// 通知消息列表（全部）
+const messageListDataUrl = "$baseUrl/api/member/message/list";
+// 标记单条消息已读
+const messageReadUrl = "$baseUrl/api/member/message/read";
+// 标记全部已读
+const markAllReadUrl = "$baseUrl/api/member/message/readAll";
+// 查询未读消息数
+const unreadCountUrl = "$baseUrl/api/member/message/unreadCount";
+// 删除消息
+const messageDeleteUrl = "$baseUrl/api/member/message/delete";
 // 优惠券
 const couponDataUrl = "$baseUrl/api/member/coupon/queryCouponList?useStatus=";
 // 可领取优惠券列表

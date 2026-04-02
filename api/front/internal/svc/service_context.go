@@ -51,6 +51,7 @@ import (
 	"github.com/feihua/zero-admin/rpc/sys/client/userservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/memberaddressservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/memberbrandattentionservice"
+	"github.com/feihua/zero-admin/rpc/ums/client/membermessageservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/memberconsumesettingservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/membergrowthlogservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/memberinfoservice"
@@ -92,6 +93,7 @@ type ServiceContext struct {
 	MemberTaskService                    membertaskservice.MemberTaskService
 	MemberTaskRelationService            membertaskrelationservice.MemberTaskRelationService
 	MemberBrandAttentionService          memberbrandattentionservice.MemberBrandAttentionService
+	MemberMessageService                 membermessageservice.MemberMessageService
 
 	// 系统相关
 	DeptService     deptservice.DeptService
@@ -196,6 +198,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		MemberTaskService:                    membertaskservice.NewMemberTaskService(umsClient),
 		MemberTaskRelationService:            membertaskrelationservice.NewMemberTaskRelationService(umsClient),
 		MemberBrandAttentionService:          memberbrandattentionservice.NewMemberBrandAttentionService(umsClient),
+		MemberMessageService:                 membermessageservice.NewMemberMessageService(umsClient),
 
 		DeptService:     deptservice.NewDeptService(sysClient),
 		LoginLogService: loginlogservice.NewLoginLogService(sysClient),
