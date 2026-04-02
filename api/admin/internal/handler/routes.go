@@ -9,10 +9,7 @@ import (
 	cmsprefrence_area "github.com/feihua/zero-admin/api/admin/internal/handler/cms/prefrence_area"
 	cmssubject "github.com/feihua/zero-admin/api/admin/internal/handler/cms/subject"
 	cmssubject_category "github.com/feihua/zero-admin/api/admin/internal/handler/cms/subject_category"
-	omschain_monitor "github.com/feihua/zero-admin/api/admin/internal/handler/oms/chain_monitor"
 	omscompany_address "github.com/feihua/zero-admin/api/admin/internal/handler/oms/company_address"
-	omscustomer_service_workstation "github.com/feihua/zero-admin/api/admin/internal/handler/oms/customer_service_workstation"
-	omsmerchant_workstation "github.com/feihua/zero-admin/api/admin/internal/handler/oms/merchant_workstation"
 	omsorder_delivery "github.com/feihua/zero-admin/api/admin/internal/handler/oms/order_delivery"
 	omsorder_main "github.com/feihua/zero-admin/api/admin/internal/handler/oms/order_main"
 	omsorder_return "github.com/feihua/zero-admin/api/admin/internal/handler/oms/order_return"
@@ -298,41 +295,6 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Path:    "/updateOrderMain",
 					Handler: omsorder_main.UpdateOrderMainHandler(serverCtx),
 				},
-				{
-					Method:  http.MethodGet,
-					Path:    "/queryChainMonitorList",
-					Handler: omschain_monitor.QueryChainMonitorListHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodGet,
-					Path:    "/exportChainMonitorList",
-					Handler: omschain_monitor.ExportChainMonitorListHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodPost,
-					Path:    "/retryChain",
-					Handler: omschain_monitor.RetryChainHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodPost,
-					Path:    "/replayChain",
-					Handler: omschain_monitor.ReplayChainHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodPost,
-					Path:    "/pauseChain",
-					Handler: omschain_monitor.PauseChainHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodPost,
-					Path:    "/escalateChain",
-					Handler: omschain_monitor.EscalateChainHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodGet,
-					Path:    "/queryChainActions",
-					Handler: omschain_monitor.QueryChainActionsHandler(serverCtx),
-				},
 			}...,
 		),
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
@@ -362,41 +324,6 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		),
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
 		rest.WithPrefix("/api/oms/orderReturn"),
-	)
-
-	server.AddRoutes(
-		rest.WithMiddlewares(
-			[]rest.Middleware{serverCtx.CheckUrl},
-			[]rest.Route{
-				{
-					Method:  http.MethodPost,
-					Path:    "/customerServiceOrderList",
-					Handler: omscustomer_service_workstation.CustomerServiceOrderListHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodPost,
-					Path:    "/companyAddress/list",
-					Handler: omscustomer_service_workstation.CompanyAddressListHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodPost,
-					Path:    "/orderOperationLog/list",
-					Handler: omscustomer_service_workstation.QueryOrderOperationLogListHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodPost,
-					Path:    "/merchantOrder/list",
-					Handler: omsmerchant_workstation.MerchantOrderListHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodPost,
-					Path:    "/merchantDelivery/confirm",
-					Handler: omsmerchant_workstation.ConfirmDeliveryHandler(serverCtx),
-				},
-			}...,
-		),
-		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
-		rest.WithPrefix("/api/oms"),
 	)
 
 	server.AddRoutes(
@@ -1390,31 +1317,6 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Route{
 				{
 					Method:  http.MethodGet,
-					Path:    "/deleteLoginLog",
-					Handler: syslog.DeleteLoginLogHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodGet,
-					Path:    "/queryLoginLogDetail",
-					Handler: syslog.QueryLoginLogDetailHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodGet,
-					Path:    "/queryLoginLogList",
-					Handler: syslog.QueryLoginLogListHandler(serverCtx),
-				},
-			}...,
-		),
-		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
-		rest.WithPrefix("/api/sys/log"),
-	)
-
-	server.AddRoutes(
-		rest.WithMiddlewares(
-			[]rest.Middleware{serverCtx.CheckUrl},
-			[]rest.Route{
-				{
-					Method:  http.MethodGet,
 					Path:    "/queryAuditCenterDetail",
 					Handler: syslog.QueryAuditCenterDetailHandler(serverCtx),
 				},
@@ -1447,6 +1349,31 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Method:  http.MethodGet,
 					Path:    "/queryOperateLogList",
 					Handler: syslog.QueryOperateLogListHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/sys/log"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.CheckUrl},
+			[]rest.Route{
+				{
+					Method:  http.MethodGet,
+					Path:    "/deleteLoginLog",
+					Handler: syslog.DeleteLoginLogHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryLoginLogDetail",
+					Handler: syslog.QueryLoginLogDetailHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryLoginLogList",
+					Handler: syslog.QueryLoginLogListHandler(serverCtx),
 				},
 			}...,
 		),

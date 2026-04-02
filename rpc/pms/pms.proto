@@ -726,7 +726,11 @@ message AddCommentReq {
   string content = 12; //内容
   string pics = 13; //上传图片地址，以逗号隔开
   string member_icon = 14; //评论用户头像
-
+  int64 member_id = 16; //会员ID
+  int64 platform_id = 17; //平台ID
+  int64 tenant_id = 18; //租户ID
+  int64 merchant_id = 19; //商户ID
+  int64 order_id = 20; //订单ID
 }
 
 message AddCommentResp {
@@ -758,16 +762,27 @@ message UpdateCommentReq {
   string pics = 13; //上传图片地址，以逗号隔开
   string member_icon = 14; //评论用户头像
   int32 replay_count = 15; //回复数量
+  string update_by = 16; //处理人
+  // Review Fix H-NEW-2: scope 字段防越权
+  int64 platform_id = 17; //平台ID
+  int64 tenant_id = 18; //租户ID
+  int64 merchant_id = 19; //商户ID
+  // Review Fix H-NEW-1: 支持批量操作
+  string ids = 20; //批量操作时多个ID，逗号分隔
 }
 
 message UpdateCommentResp {
   string pong = 1;
+  int64 affected_count = 2; //影响的记录数（批量操作时>1）
 }
 
 
 // 查询商品评价详情
 message QueryCommentDetailReq {
   string id = 1;
+  int64 platform_id = 2; // 平台ID（用于作用域校验）
+  int64 tenant_id = 3; // 租户ID
+  int64 merchant_id = 4; // 商户ID
 }
 
 message QueryCommentDetailResp {
@@ -786,7 +801,10 @@ message QueryCommentDetailResp {
   string pics = 13; //上传图片地址，以逗号隔开
   string member_icon = 14; //评论用户头像
   int32 replay_count = 15; //回复数量
-
+  int64 member_id = 16; // 会员ID
+  int64 platform_id = 17; // 平台ID
+  int64 tenant_id = 18; // 租户ID
+  int64 merchant_id = 19; // 商户ID
 }
 
 // 分页查询商品评价列表
@@ -794,6 +812,10 @@ message QueryCommentListReq {
   int64 page_num = 1; //第几页
   int64 page_size = 2; //每页的数量
   int64 product_id = 3;
+  int64 platform_id = 4; //平台ID
+  int64 tenant_id = 5; //租户ID
+  int64 merchant_id = 6; //商户ID
+  int32 show_status = 7; //筛选审核状态（可选，默认查已通过）
 }
 
 message CommentListData {
@@ -812,7 +834,7 @@ message CommentListData {
   string pics = 13; //上传图片地址，以逗号隔开
   string member_icon = 14; //评论用户头像
   int32 replay_count = 15; //回复数量
-
+  int64 member_id = 16; //会员ID
 }
 
 message QueryCommentListResp {
@@ -838,7 +860,7 @@ service CommentService {
 // 添加产品评价回复
 message AddCommentReplayReq {
   int32 type = 1; //评论人员类型；0->会员；1->管理员
-  int64 comment_id = 2; //评论id
+  string comment_id = 2; //评论ID（MongoDB ObjectID）
   string member_nick_name = 3; //评论人员昵称
   string member_icon = 4; //评论人员头像
   string content = 5; //内容
@@ -861,7 +883,7 @@ message DeleteCommentReplayResp {
 // 更新产品评价回复
 message UpdateCommentReplayReq {
   string id = 1; //
-  int64 comment_id = 2; //评论id
+  string comment_id = 2; //评论ID（MongoDB ObjectID）
   string member_nick_name = 3; //评论人员昵称
   string member_icon = 4; //评论人员头像
   string content = 5; //内容
@@ -879,7 +901,7 @@ message QueryCommentReplayDetailReq {
 
 message QueryCommentReplayDetailResp {
   string id = 1; //
-  int64 comment_id = 2; //评论id
+  string comment_id = 2; //评论ID（MongoDB ObjectID）
   string member_nick_name = 3; //评论人员昵称
   string member_icon = 4; //评论人员头像
   string content = 5; //内容
@@ -892,12 +914,12 @@ message QueryCommentReplayDetailResp {
 message QueryCommentReplayListReq {
   int64 page_num = 1; //第几页
   int64 page_size = 2; //每页的数量
-  int64 comment_id = 3; //
+  string comment_id = 3; //评论ID（MongoDB ObjectID）
 }
 
 message CommentReplayListData {
   string id = 1; //
-  int64 comment_id = 2; //评论id
+  string comment_id = 2; //评论ID（MongoDB ObjectID）
   string member_nick_name = 3; //评论人员昵称
   string member_icon = 4; //评论人员头像
   string content = 5; //内容

@@ -38,6 +38,17 @@ func (l *QueryCommentDetailLogic) QueryCommentDetail(in *pmsclient.QueryCommentD
 		return nil, errors.New("查询商品评价详情失败")
 	}
 
+	// 作用域校验：防止通过猜测 ObjectID 越权访问
+	if in.PlatformId > 0 && item.PlatformId != in.PlatformId {
+		return nil, errors.New("无权访问该评价")
+	}
+	if in.TenantId > 0 && item.TenantId != in.TenantId {
+		return nil, errors.New("无权访问该评价")
+	}
+	if in.MerchantId > 0 && item.MerchantId != in.MerchantId {
+		return nil, errors.New("无权访问该评价")
+	}
+
 	data := &pmsclient.QueryCommentDetailResp{
 		Id:               item.ID.Hex(),                      //
 		ProductId:        item.ProductId,                     // 商品id
@@ -54,6 +65,10 @@ func (l *QueryCommentDetailLogic) QueryCommentDetail(in *pmsclient.QueryCommentD
 		Pics:             item.Pics,                          // 上传图片地址，以逗号隔开
 		MemberIcon:       item.MemberIcon,                    // 评论用户头像
 		ReplayCount:      item.ReplayCount,                   // 回复数量
+		MemberId:         item.MemberId,                      // 会员ID
+		PlatformId:       item.PlatformId,                    // 平台ID
+		TenantId:         item.TenantId,                      // 租户ID
+		MerchantId:       item.MerchantId,                    // 商户ID
 	}
 
 	return data, nil

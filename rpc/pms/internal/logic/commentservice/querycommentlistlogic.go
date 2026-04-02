@@ -33,7 +33,14 @@ func NewQueryCommentListLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 
 // QueryCommentList 查询商品评价列表
 func (l *QueryCommentListLogic) QueryCommentList(in *pmsclient.QueryCommentListReq) (*pmsclient.QueryCommentListResp, error) {
-	result, err := l.svcCtx.ProductCommentModel.FindPage(l.ctx, in.ProductId, in.PageNum, in.PageSize)
+	// showStatus=-1 表示查全部；前台默认传 1（已通过）
+	showStatus := int32(-1)
+	if in.ShowStatus > 0 {
+		showStatus = in.ShowStatus
+	}
+
+	result, total, err := l.svcCtx.ProductCommentModel.FindPage(
+		l.ctx, in.ProductId, in.PlatformId, in.TenantId, in.MerchantId, in.PageNum, in.PageSize, showStatus)
 
 	if err != nil {
 		logc.Errorf(l.ctx, "查询商品评价列表失败,参数:%+v,异常:%s", in, err.Error())
@@ -59,11 +66,12 @@ func (l *QueryCommentListLogic) QueryCommentList(in *pmsclient.QueryCommentListR
 			Pics:             item.Pics,                          // 上传图片地址，以逗号隔开
 			MemberIcon:       item.MemberIcon,                    // 评论用户头像
 			ReplayCount:      item.ReplayCount,                   // 回复数量
+			MemberId:         item.MemberId,                      // 会员ID（前端判断是否可删除/编辑）
 		})
 	}
 
 	return &pmsclient.QueryCommentListResp{
-		Total: 0,
+		Total: total,
 		List:  list,
 	}, nil
 

@@ -1,5 +1,12 @@
 syntax = "proto3";
 
+// -----------------------------------------------------------
+// ⚠️  DEPRECATED - 此文件已废弃，请勿使用！
+// 评价功能 Proto 现统一在 pms.proto 中定义（package: pmsclient）
+// 此文件的 CommentService 与 pms.proto 中重复，且生成代码未被引用
+// 如需修改评价相关 Proto，请修改 rpc/pms/pms.proto
+// -----------------------------------------------------------
+
 package main;
 
 option go_package = "./proto";
@@ -19,7 +26,11 @@ message AddCommentReq {
   string content = 12; //内容
   string pics = 13; //上传图片地址，以逗号隔开
   string member_icon = 14; //评论用户头像
-
+  int64 member_id = 16; //会员ID
+  int64 platform_id = 17; //平台ID
+  int64 tenant_id = 18; //租户ID
+  int64 merchant_id = 19; //商户ID
+  int64 order_id = 20; //订单ID
 }
 
 message AddCommentResp {
@@ -51,6 +62,7 @@ message UpdateCommentReq {
   string pics = 13; //上传图片地址，以逗号隔开
   string member_icon = 14; //评论用户头像
   int32 replay_count = 15; //回复数量
+  string update_by = 16; //处理人
 }
 
 message UpdateCommentResp {
@@ -87,6 +99,10 @@ message QueryCommentListReq {
   int64 page_num = 1; //第几页
   int64 page_size = 2; //每页的数量
   int64 product_id = 3;
+  int64 platform_id = 4; //平台ID
+  int64 tenant_id = 5; //租户ID
+  int64 merchant_id = 6; //商户ID
+  int32 show_status = 7; //筛选审核状态（可选，默认查已通过）
 }
 
 message CommentListData {
@@ -105,7 +121,7 @@ message CommentListData {
   string pics = 13; //上传图片地址，以逗号隔开
   string member_icon = 14; //评论用户头像
   int32 replay_count = 15; //回复数量
-
+  int64 member_id = 16; //会员ID
 }
 
 message QueryCommentListResp {
