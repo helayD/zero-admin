@@ -845,7 +845,8 @@ deploy_binary_service() {
 # Extract ListenOn port from an RPC server config YAML
 get_rpc_server_port() {
   local rpc_config="$1"
-  grep -i "^ListenOn:" "$rpc_config" 2>/dev/null | awk '{print $2}' | cut -d: -f2
+  [[ -f "$rpc_config" ]] || return 0
+  grep -i "^ListenOn:" "$rpc_config" 2>/dev/null | awk '{print $2}' | cut -d: -f2 || true
 }
 
 extract_yaml_top_level_block() {
@@ -920,6 +921,19 @@ rpc_client_name() {
     cms-rpc)     echo "CmsRpc" ;;
     search-rpc)  echo "SearchRpc" ;;
     *)           echo "" ;;
+  esac
+}
+
+rpc_server_config_path() {
+  local server="$1"
+
+  case "$server" in
+    sys-rpc|ums-rpc|pms-rpc|oms-rpc|sms-rpc|cms-rpc|search-rpc)
+      printf '%s/%s' "$remote_root" "$(service_config_source "$server")"
+      ;;
+    *)
+      printf '%s' ""
+      ;;
   esac
 }
 
@@ -1028,10 +1042,7 @@ check_rpc_port_mismatch() {
     fi
 
     # Get actual ListenOn from RPC server config
-    server_yaml="$remote_root/rpc/${server_name%-*}/etc/${server_name}.yaml"
-    if [[ "$server_name" == "search-rpc" ]]; then
-      server_yaml="$remote_root/rpc/search/etc/search.yaml"
-    fi
+    server_yaml="$(rpc_server_config_path "$server_name")"
     actual_port=$(get_rpc_server_port "$server_yaml")
 
     if [[ -n "$actual_port" && "$actual_port" != "$expected_port" ]]; then
