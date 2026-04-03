@@ -2,6 +2,7 @@ package chain_monitor
 
 import (
 	"context"
+	"strconv"
 
 	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
@@ -35,9 +36,9 @@ func (l *QueryChainActionsLogic) QueryChainActions(req *types.ChainActionsReq) (
 	}
 
 	result, err := l.svcCtx.OrderService.QueryChainActions(l.ctx, &omsclient.QueryChainActionsReq{
-		OrderId:   req.OrderId,
+		OrderId:    req.OrderId,
 		PlatformId: current.PlatformID,
-		TenantId:  current.TenantID,
+		TenantId:   current.TenantID,
 		MerchantId: current.MerchantID,
 	})
 	if err != nil {
@@ -48,16 +49,18 @@ func (l *QueryChainActionsLogic) QueryChainActions(req *types.ChainActionsReq) (
 
 	if result.Code != 0 {
 		return &types.ChainActionsResp{
-			Code:             "0",
+			Code:             strconv.FormatInt(result.Code, 10),
 			Message:          result.Msg,
+			Data:             types.ChainActionsData{AvailableActions: []string{}},
 			AvailableActions: []string{},
-			Success:         false,
+			Success:          false,
 		}, nil
 	}
 
 	return &types.ChainActionsResp{
 		Code:             "000000",
 		Message:          "查询成功",
+		Data:             types.ChainActionsData{AvailableActions: result.AvailableActions},
 		AvailableActions: result.AvailableActions,
 		Success:          true,
 	}, nil

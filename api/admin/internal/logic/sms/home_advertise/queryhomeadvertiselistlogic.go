@@ -2,6 +2,7 @@ package home_advertise
 
 import (
 	"context"
+	"time"
 
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
@@ -51,23 +52,25 @@ func (l *QueryHomeAdvertiseListLogic) QueryHomeAdvertiseList(req *types.QueryHom
 	}
 
 	var list []*types.QueryHomeAdvertiseListData
+	now := time.Now()
 
 	for _, detail := range result.List {
 		list = append(list, &types.QueryHomeAdvertiseListData{
-			Id:         detail.Id,         // 编号
-			Name:       detail.Name,       // 名称
-			Type:       detail.Type,       // 轮播位置：0->PC首页轮播；1->app首页轮播
-			Pic:        detail.Pic,        // 图片地址
-			StartTime:  detail.StartTime,  // 开始时间
-			EndTime:    detail.EndTime,    // 结束时间
-			Status:     detail.Status,     // 上下线状态：0->下线；1->上线
-			ClickCount: detail.ClickCount, // 点击数
-			OrderCount: detail.OrderCount, // 下单数
-			Url:        detail.Url,        // 链接地址
-			Remark:     detail.Remark,     // 备注
-			Sort:       detail.Sort,       // 排序
-			CreateTime: detail.CreateTime, // 创建时间
-			UpdateTime: detail.UpdateTime, // 更新时间
+			Id:              detail.Id,         // 编号
+			Name:            detail.Name,       // 名称
+			Type:            detail.Type,       // 轮播位置：0->PC首页轮播；1->app首页轮播
+			Pic:             detail.Pic,        // 图片地址
+			StartTime:       detail.StartTime,  // 开始时间
+			EndTime:         detail.EndTime,    // 结束时间
+			Status:          detail.Status,     // 上下线状态：0->下线；1->上线
+			ClickCount:      detail.ClickCount, // 点击数
+			OrderCount:      detail.OrderCount, // 下单数
+			Url:             detail.Url,        // 链接地址
+			Remark:          detail.Remark,     // 备注
+			Sort:            detail.Sort,       // 排序
+			CreateTime:      detail.CreateTime, // 创建时间
+			UpdateTime:      detail.UpdateTime, // 更新时间
+			EffectiveStatus: computeHomeAdvertiseEffectiveStatus(detail.Status, detail.StartTime, detail.EndTime, now),
 		})
 	}
 

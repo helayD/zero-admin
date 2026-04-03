@@ -1578,6 +1578,7 @@ type QueryCouponDetailData struct {
 	UpdateTime      string             `json:"updateTime"`      //更新时间
 	ScopeType       int32              `json:"scopeType"`       //范围类型：0-全场，1-分类，2-商品
 	CouponScopeData []*CouponScopeData `json:"couponScopeData"` //使用范围
+	EffectiveStatus string             `json:"effectiveStatus"` //综合生效状态
 }
 
 type QueryCouponDetailReq struct {
@@ -1595,27 +1596,28 @@ type QueryCouponDetailResp struct {
 }
 
 type QueryCouponListData struct {
-	Id            int64   `json:"id"`            //优惠券ID
-	TypeId        int64   `json:"typeId"`        //优惠券类型ID
-	Name          string  `json:"name"`          //优惠券名称
-	Code          string  `json:"code"`          //优惠券码
-	Amount        float32 `json:"amount"`        //优惠金额/折扣率
-	MinAmount     float32 `json:"minAmount"`     //最低使用金额
-	StartTime     string  `json:"startTime"`     //生效时间
-	EndTime       string  `json:"endTime"`       //失效时间
-	TotalCount    int32   `json:"totalCount"`    //发放总量
-	ReceivedCount int32   `json:"receivedCount"` //已领取数量
-	UsedCount     int32   `json:"usedCount"`     //已使用数量
-	PerLimit      int32   `json:"perLimit"`      //每人限领数量
-	Status        int32   `json:"status"`        //状态：0-未开始，1-进行中，2-已结束，3-已取消
-	IsEnabled     int32   `json:"isEnabled"`     //是否启用
-	Description   string  `json:"description"`   //使用说明
-	CreateBy      int64   `json:"createBy"`      //创建人ID
-	CreateTime    string  `json:"createTime"`    //创建时间
-	UpdateBy      int64   `json:"updateBy"`      //更新人ID
-	UpdateTime    string  `json:"updateTime"`    //更新时间
-	ScopeCount    int64   `json:"scopeCount"`    //关联scope数量
-	TypeName      string  `json:"typeName"`      //优惠券类型名称
+	Id              int64   `json:"id"`              //优惠券ID
+	TypeId          int64   `json:"typeId"`          //优惠券类型ID
+	Name            string  `json:"name"`            //优惠券名称
+	Code            string  `json:"code"`            //优惠券码
+	Amount          float32 `json:"amount"`          //优惠金额/折扣率
+	MinAmount       float32 `json:"minAmount"`       //最低使用金额
+	StartTime       string  `json:"startTime"`       //生效时间
+	EndTime         string  `json:"endTime"`         //失效时间
+	TotalCount      int32   `json:"totalCount"`      //发放总量
+	ReceivedCount   int32   `json:"receivedCount"`   //已领取数量
+	UsedCount       int32   `json:"usedCount"`       //已使用数量
+	PerLimit        int32   `json:"perLimit"`        //每人限领数量
+	Status          int32   `json:"status"`          //状态：0-未开始，1-进行中，2-已结束，3-已取消
+	IsEnabled       int32   `json:"isEnabled"`       //是否启用
+	Description     string  `json:"description"`     //使用说明
+	CreateBy        int64   `json:"createBy"`        //创建人ID
+	CreateTime      string  `json:"createTime"`      //创建时间
+	UpdateBy        int64   `json:"updateBy"`        //更新人ID
+	UpdateTime      string  `json:"updateTime"`      //更新时间
+	ScopeCount      int64   `json:"scopeCount"`      //关联scope数量
+	TypeName        string  `json:"typeName"`        //优惠券类型名称
+	EffectiveStatus string  `json:"effectiveStatus"` //综合生效状态
 }
 
 type QueryCouponListReq struct {
@@ -2045,20 +2047,21 @@ type QueryHomeAdvertiseDetailResp struct {
 }
 
 type QueryHomeAdvertiseListData struct {
-	Id         int64  `json:"id"`         //编号
-	Name       string `json:"name"`       //名称
-	Type       int32  `json:"type"`       //轮播位置：0->PC首页轮播；1->app首页轮播
-	Pic        string `json:"pic"`        //图片地址
-	StartTime  string `json:"startTime"`  //开始时间
-	EndTime    string `json:"endTime"`    //结束时间
-	Status     int32  `json:"status"`     //上下线状态：0->下线；1->上线
-	ClickCount int32  `json:"clickCount"` //点击数
-	OrderCount int32  `json:"orderCount"` //下单数
-	Url        string `json:"url"`        //链接地址
-	Remark     string `json:"remark"`     //备注
-	Sort       int32  `json:"sort"`       //排序
-	CreateTime string `json:"createTime"` //创建时间
-	UpdateTime string `json:"updateTime"` //更新时间
+	Id              int64  `json:"id"`              //编号
+	Name            string `json:"name"`            //名称
+	Type            int32  `json:"type"`            //轮播位置：0->PC首页轮播；1->app首页轮播
+	Pic             string `json:"pic"`             //图片地址
+	StartTime       string `json:"startTime"`       //开始时间
+	EndTime         string `json:"endTime"`         //结束时间
+	Status          int32  `json:"status"`          //上下线状态：0->下线；1->上线
+	ClickCount      int32  `json:"clickCount"`      //点击数
+	OrderCount      int32  `json:"orderCount"`      //下单数
+	Url             string `json:"url"`             //链接地址
+	Remark          string `json:"remark"`          //备注
+	Sort            int32  `json:"sort"`            //排序
+	CreateTime      string `json:"createTime"`      //创建时间
+	UpdateTime      string `json:"updateTime"`      //更新时间
+	EffectiveStatus string `json:"effectiveStatus"` //综合生效状态
 }
 
 type QueryHomeAdvertiseListReq struct {
@@ -4401,20 +4404,21 @@ type QuerySeckillActivityDetailResp struct {
 }
 
 type QuerySeckillActivityListData struct {
-	Id           int64  `json:"id"`           //编号
-	Name         string `json:"name"`         //活动名称
-	Description  string `json:"description"`  //活动描述
-	StartTime    string `json:"startTime"`    //开始时间
-	EndTime      string `json:"endTime"`      //结束时间
-	Status       int32  `json:"status"`       //状态:0-上线,1-下线
-	IsEnabled    int32  `json:"isEnabled"`    //是否启用
-	CreateBy     int64  `json:"createBy"`     //创建人ID
-	CreateTime   string `json:"createTime"`   //创建时间
-	UpdateBy     int64  `json:"updateBy"`     //更新人ID
-	UpdateTime   string `json:"updateTime"`   //更新时间
-	IsDeleted    int32  `json:"isDeleted"`    //是否删除
-	ProductCount int64  `json:"productCount"` //关联已上架秒杀商品数量
-	SessionCount int64  `json:"sessionCount"` //关联场次数量
+	Id              int64  `json:"id"`              //编号
+	Name            string `json:"name"`            //活动名称
+	Description     string `json:"description"`     //活动描述
+	StartTime       string `json:"startTime"`       //开始时间
+	EndTime         string `json:"endTime"`         //结束时间
+	Status          int32  `json:"status"`          //状态:0-上线,1-下线
+	IsEnabled       int32  `json:"isEnabled"`       //是否启用
+	CreateBy        int64  `json:"createBy"`        //创建人ID
+	CreateTime      string `json:"createTime"`      //创建时间
+	UpdateBy        int64  `json:"updateBy"`        //更新人ID
+	UpdateTime      string `json:"updateTime"`      //更新时间
+	IsDeleted       int32  `json:"isDeleted"`       //是否删除
+	ProductCount    int64  `json:"productCount"`    //关联已上架秒杀商品数量
+	SessionCount    int64  `json:"sessionCount"`    //关联场次数量
+	EffectiveStatus string `json:"effectiveStatus"` //综合生效状态
 }
 
 type QuerySeckillActivityListReq struct {

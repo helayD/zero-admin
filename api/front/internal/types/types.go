@@ -168,7 +168,7 @@ type CancelUserOrderResp struct {
 }
 
 type CarItemListPromotionReq struct {
-	Ids []int64 `json:"ids,optional"`
+	Ids []int64 `json:"ids,optional" form:"ids,optional"`
 }
 
 type CarItemtListPromotionResp struct {
@@ -454,6 +454,7 @@ type CouponData struct {
 	ReceiveStatus int32   `json:"receiveStatus"` //领取状态：0-可领取，1-已领取，2-已领完，3-未开始，4-已过期
 	TotalCount    int32   `json:"totalCount"`    //发放总量
 	ReceivedCount int32   `json:"receivedCount"` //已领取数量
+	DisableReason string  `json:"disableReason"` //不可用原因
 }
 
 type CouponListByCartData struct {
@@ -499,7 +500,7 @@ type DeleteOrderResp struct {
 }
 
 type GenerateConfirmOrderReq struct {
-	Ids []int64 `json:"ids,optional"`
+	Ids []int64 `json:"ids,optional" form:"ids,optional"`
 }
 
 type GenerateConfirmOrderResp struct {
@@ -1106,8 +1107,8 @@ type QueryOrderData struct {
 	Thumbnail                string                   `json:"thumbnail"`          //首商品缩略图
 	OrderItemData            []*OrderItemData         `json:"orderItemData"`      // 商品数据
 	MemberReceiveAddressList MemberReceiveAddressList `json:"memberReceiveAddress"`
-	Timeline                 []TimelineNode           `json:"timeline"`           // 订单状态时间线
-	PriceBreakdown           *PriceBreakdown          `json:"priceBreakdown"`     // 金额拆分
+	Timeline                 []TimelineNode           `json:"timeline"`       // 订单状态时间线
+	PriceBreakdown           *PriceBreakdown          `json:"priceBreakdown"` // 金额拆分
 }
 
 type QueryOrderStatusSnapshotReq struct {
@@ -1171,12 +1172,12 @@ type QueryProductListResp struct {
 }
 
 type SearchReq struct {
-	Keyword    string `form:"keyword,optional"`            // 搜索关键字
-	PageNum    int64  `form:"pageNum,default=1"`           // 当前页
-	PageSize   int64  `form:"pageSize,default=10"`         // 每页条数
-	Sort       int32  `form:"sort,default=0"`              // 排序字段
-	CategoryId int64  `form:"categoryId,default=0"`        // 分类ID
-	BrandId    int64  `form:"brandId,default=0"`           // 品牌ID
+	Keyword    string `form:"keyword,optional"`     // 搜索关键字
+	PageNum    int64  `form:"pageNum,default=1"`    // 当前页
+	PageSize   int64  `form:"pageSize,default=10"`  // 每页条数
+	Sort       int32  `form:"sort,default=0"`       // 排序字段
+	CategoryId int64  `form:"categoryId,default=0"` // 分类ID
+	BrandId    int64  `form:"brandId,default=0"`    // 品牌ID
 }
 
 type ProductItem struct {

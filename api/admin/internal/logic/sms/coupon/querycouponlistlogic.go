@@ -2,6 +2,7 @@ package coupon
 
 import (
 	"context"
+	"time"
 
 	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
@@ -98,30 +99,32 @@ func (l *QueryCouponListLogic) QueryCouponList(req *types.QueryCouponListReq) (r
 	}
 
 	var list []*types.QueryCouponListData
+	now := time.Now()
 
 	for _, detail := range result.List {
 		list = append(list, &types.QueryCouponListData{
-			Id:            detail.Id,                // 优惠券ID
-			TypeId:        detail.TypeId,            // 优惠券类型ID
-			Name:          detail.Name,              // 优惠券名称
-			Code:          detail.Code,              // 优惠券码
-			Amount:        detail.Amount,            // 优惠金额/折扣率
-			MinAmount:     detail.MinAmount,         // 最低使用金额
-			StartTime:     detail.StartTime,         // 生效时间
-			EndTime:       detail.EndTime,           // 失效时间
-			TotalCount:    detail.TotalCount,        // 发放总量
-			ReceivedCount: detail.ReceivedCount,     // 已领取数量
-			UsedCount:     detail.UsedCount,         // 已使用数量
-			PerLimit:      detail.PerLimit,          // 每人限领数量
-			Status:        detail.Status,            // 状态：0-未开始，1-进行中，2-已结束，3-已取消
-			IsEnabled:     detail.IsEnabled,         // 是否启用
-			Description:   detail.Description,       // 使用说明
-			CreateBy:      detail.CreateBy,          // 创建人ID
-			CreateTime:    detail.CreateTime,        // 创建时间
-			UpdateBy:      detail.UpdateBy,          // 更新人ID
-			UpdateTime:    detail.UpdateTime,        // 更新时间
-			ScopeCount:    scopeCountMap[detail.Id], // 关联scope数量
-			TypeName:      typeMap[detail.TypeId],   // 优惠券类型名称
+			Id:              detail.Id,                                                        // 优惠券ID
+			TypeId:          detail.TypeId,                                                    // 优惠券类型ID
+			Name:            detail.Name,                                                      // 优惠券名称
+			Code:            detail.Code,                                                      // 优惠券码
+			Amount:          detail.Amount,                                                    // 优惠金额/折扣率
+			MinAmount:       detail.MinAmount,                                                 // 最低使用金额
+			StartTime:       detail.StartTime,                                                 // 生效时间
+			EndTime:         detail.EndTime,                                                   // 失效时间
+			TotalCount:      detail.TotalCount,                                                // 发放总量
+			ReceivedCount:   detail.ReceivedCount,                                             // 已领取数量
+			UsedCount:       detail.UsedCount,                                                 // 已使用数量
+			PerLimit:        detail.PerLimit,                                                  // 每人限领数量
+			Status:          detail.Status,                                                    // 状态：0-未开始，1-进行中，2-已结束，3-已取消
+			IsEnabled:       detail.IsEnabled,                                                 // 是否启用
+			Description:     detail.Description,                                               // 使用说明
+			CreateBy:        detail.CreateBy,                                                  // 创建人ID
+			CreateTime:      detail.CreateTime,                                                // 创建时间
+			UpdateBy:        detail.UpdateBy,                                                  // 更新人ID
+			UpdateTime:      detail.UpdateTime,                                                // 更新时间
+			ScopeCount:      scopeCountMap[detail.Id],                                         // 关联scope数量
+			TypeName:        typeMap[detail.TypeId],                                           // 优惠券类型名称
+			EffectiveStatus: computeCouponEffectiveStatus(detail.Status, detail.EndTime, now), // 综合生效状态
 		})
 	}
 

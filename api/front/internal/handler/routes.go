@@ -248,6 +248,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: ordercart.QueryCartItemDetailHandler(serverCtx),
 			},
 			{
+				Method:  http.MethodGet,
+				Path:    "/queryPromotionList",
+				Handler: ordercart.QueryPromotionListHandler(serverCtx),
+			},
+			{
 				Method:  http.MethodPost,
 				Path:    "/queryPromotionList",
 				Handler: ordercart.QueryPromotionListHandler(serverCtx),
@@ -293,6 +298,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodGet,
 				Path:    "/deleteOrder",
 				Handler: orderorder.DeleteOrderHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/generateConfirmOrder",
+				Handler: orderorder.GenerateConfirmOrderHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodPost,
