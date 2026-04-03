@@ -36,40 +36,12 @@ except Exception:
 " 2>/dev/null <<< "$2" || echo ''
 }
 
-NOW_START=$(python3 - <<'PY'
-from datetime import datetime, timedelta, timezone
-import zoneinfo
-tz = zoneinfo.ZoneInfo("Asia/Shanghai")
-now = datetime.now(tz)
-print((now - timedelta(hours=1)).strftime("%Y-%m-%d %H:00:00"))
-PY
-)
-NOW_END=$(python3 - <<'PY'
-from datetime import datetime, timedelta, timezone
-import zoneinfo
-tz = zoneinfo.ZoneInfo("Asia/Shanghai")
-now = datetime.now(tz)
-print((now + timedelta(hours=1)).strftime("%Y-%m-%d %H:00:00"))
-PY
-)
+NOW_START=$(TZ=Asia/Shanghai date -v-1H '+%Y-%m-%d %H:00:00')
+NOW_END=$(TZ=Asia/Shanghai date -v+1H '+%Y-%m-%d %H:00:00')
 NOW_START_ESC="${NOW_START// /%20}"
 NOW_END_ESC="${NOW_END// /%20}"
-AD_START=$(python3 - <<'PY'
-from datetime import datetime, timedelta
-import zoneinfo
-tz = zoneinfo.ZoneInfo("Asia/Shanghai")
-now = datetime.now(tz)
-print((now - timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S"))
-PY
-)
-AD_END=$(python3 - <<'PY'
-from datetime import datetime, timedelta
-import zoneinfo
-tz = zoneinfo.ZoneInfo("Asia/Shanghai")
-now = datetime.now(tz)
-print((now + timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S"))
-PY
-)
+AD_START=$(TZ=Asia/Shanghai date -v-1d '+%Y-%m-%d %H:%M:%S')
+AD_END=$(TZ=Asia/Shanghai date -v+1d '+%Y-%m-%d %H:%M:%S')
 
 TMP_NAME="8-4-acceptance-$(date +%s)"
 TMP_AD_ID=""
