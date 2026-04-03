@@ -16,8 +16,30 @@ type (
 		ClickCount int32  `json:"clickCount"` //点击数
 		OrderCount int32  `json:"orderCount"` //下单数
 		Url        string `json:"url"` //链接地址
+		ActivityType string `json:"activityType"` //活动类型
+		ActivityId int64 `json:"activityId"` //活动ID
 		Remark     string `json:"remark"` //备注
 		Sort       int32  `json:"sort"` //排序
 	}
+
+	RecordHomeAdvertiseClickReq {
+		AdvertiseId int64 `json:"advertiseId"` //首页广告ID
+		TraceId string `json:"traceId,optional"` //幂等追踪ID
+	}
+
+	RecordHomeAdvertiseClickResp {
+		Code int64 `json:"code"`
+		Message string `json:"message"`
+	}
 )
 
+@server (
+	group:  home
+	prefix: /api/home
+	tags:   "首页广告埋点"
+)
+service front-api {
+	//记录首页广告点击
+	@handler RecordHomeAdvertiseClick
+	post /recordHomeAdvertiseClick (RecordHomeAdvertiseClickReq) returns (RecordHomeAdvertiseClickResp)
+}
