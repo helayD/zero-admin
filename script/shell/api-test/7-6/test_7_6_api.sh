@@ -88,7 +88,7 @@ if [ "$ORDER_ID" = "0" ] || [ -z "$ORDER_ID" ]; then
     -d '{"orderId":999999,"remark":"test"}')
   RETRY_CODE=$(json_val "d.get('code','')" "$RETRY_RESP")
   if [ "$RETRY_CODE" != "" ] && [ "$RETRY_CODE" != "404" ]; then
-    log_pass "retryChain 路由存在 (code=$RETRY_CODE，非 404)"
+    log_pass "retryChain 路由存在 (code=${RETRY_CODE}，非 404)"
   else
     log_fail "retryChain 路由返回 404，路由未注册"
   fi
@@ -99,7 +99,7 @@ if [ "$ORDER_ID" = "0" ] || [ -z "$ORDER_ID" ]; then
     -d '{"orderId":999999,"replayReason":"test"}')
   REPLAY_CODE=$(json_val "d.get('code','')" "$REPLAY_RESP")
   if [ "$REPLAY_CODE" != "" ] && [ "$REPLAY_CODE" != "404" ]; then
-    log_pass "replayChain 路由存在 (code=$REPLAY_CODE，非 404)"
+    log_pass "replayChain 路由存在 (code=${REPLAY_CODE}，非 404)"
   else
     log_fail "replayChain 路由返回 404，路由未注册"
   fi
@@ -110,7 +110,7 @@ if [ "$ORDER_ID" = "0" ] || [ -z "$ORDER_ID" ]; then
     -d '{"orderId":999999,"pauseReason":"test"}')
   PAUSE_CODE=$(json_val "d.get('code','')" "$PAUSE_RESP")
   if [ "$PAUSE_CODE" != "" ] && [ "$PAUSE_CODE" != "404" ]; then
-    log_pass "pauseChain 路由存在 (code=$PAUSE_CODE，非 404)"
+    log_pass "pauseChain 路由存在 (code=${PAUSE_CODE}，非 404)"
   else
     log_fail "pauseChain 路由返回 404，路由未注册"
   fi
@@ -121,7 +121,7 @@ if [ "$ORDER_ID" = "0" ] || [ -z "$ORDER_ID" ]; then
     -d '{"orderId":999999,"escalateReason":"test"}')
   ESC_CODE=$(json_val "d.get('code','')" "$ESC_RESP")
   if [ "$ESC_CODE" != "" ] && [ "$ESC_CODE" != "404" ]; then
-    log_pass "escalateChain 路由存在 (code=$ESC_CODE，非 404)"
+    log_pass "escalateChain 路由存在 (code=${ESC_CODE}，非 404)"
   else
     log_fail "escalateChain 路由返回 404，路由未注册"
   fi
@@ -131,7 +131,7 @@ if [ "$ORDER_ID" = "0" ] || [ -z "$ORDER_ID" ]; then
     -H "$AUTH")
   ACTIONS_CODE=$(json_val "d.get('code','')" "$ACTIONS_RESP")
   if [ "$ACTIONS_CODE" != "" ] && [ "$ACTIONS_CODE" != "404" ]; then
-    log_pass "queryChainActions 路由存在 (code=$ACTIONS_CODE，非 404)"
+    log_pass "queryChainActions 路由存在 (code=${ACTIONS_CODE}，非 404)"
   else
     log_fail "queryChainActions 路由返回 404，路由未注册"
   fi
