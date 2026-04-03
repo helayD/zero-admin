@@ -8,6 +8,7 @@ import (
 	frontcommon "github.com/feihua/zero-admin/api/front/internal/logic/common"
 	"github.com/feihua/zero-admin/api/front/internal/svc"
 	"github.com/feihua/zero-admin/api/front/internal/types"
+	"github.com/feihua/zero-admin/pkg/operatefunnel"
 	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/rpc/cms/cmsclient"
 	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
@@ -447,18 +448,20 @@ func queryAdvertiseList(l *IndexLogic, currentScope pkgscope.GovernanceScope) []
 			}
 		}
 		list = append(list, types.AdvertiseList{
-			Id:         detail.Id,         // 编号
-			Name:       detail.Name,       // 名称
-			Type:       detail.Type,       // 轮播位置：0->PC首页轮播；1->app首页轮播
-			Pic:        detail.Pic,        // 图片地址
-			StartTime:  detail.StartTime,  // 开始时间
-			EndTime:    detail.EndTime,    // 结束时间
-			Status:     detail.Status,     // 上下线状态：0->下线；1->上线
-			ClickCount: detail.ClickCount, // 点击数
-			OrderCount: detail.OrderCount, // 下单数
-			Url:        detail.Url,        // 链接地址
-			Remark:     detail.Remark,     // 备注
-			Sort:       detail.Sort,       // 排序
+			Id:           detail.Id,                           // 编号
+			Name:         detail.Name,                         // 名称
+			Type:         detail.Type,                         // 轮播位置：0->PC首页轮播；1->app首页轮播
+			Pic:          detail.Pic,                          // 图片地址
+			StartTime:    detail.StartTime,                    // 开始时间
+			EndTime:      detail.EndTime,                      // 结束时间
+			Status:       detail.Status,                       // 上下线状态：0->下线；1->上线
+			ClickCount:   detail.ClickCount,                   // 点击数
+			OrderCount:   detail.OrderCount,                   // 下单数
+			Url:          detail.Url,                          // 链接地址
+			ActivityType: operatefunnel.ActivityHomeAdvertise, // 活动类型
+			ActivityId:   detail.Id,                           // 活动ID
+			Remark:       detail.Remark,                       // 备注
+			Sort:         detail.Sort,                         // 排序
 
 		})
 	}

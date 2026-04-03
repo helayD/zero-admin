@@ -33,6 +33,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Path:    "/index",
 				Handler: home.IndexHandler(serverCtx),
 			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/recordHomeAdvertiseClick",
+				Handler: home.RecordHomeAdvertiseClickHandler(serverCtx),
+			},
 		},
 		rest.WithPrefix("/api/home"),
 	)

@@ -34,6 +34,7 @@ import (
 	smshome_new_product "github.com/feihua/zero-admin/api/admin/internal/handler/sms/home_new_product"
 	smshome_recommend_product "github.com/feihua/zero-admin/api/admin/internal/handler/sms/home_recommend_product"
 	smshome_recommend_subject "github.com/feihua/zero-admin/api/admin/internal/handler/sms/home_recommend_subject"
+	smsoperate_dashboard "github.com/feihua/zero-admin/api/admin/internal/handler/sms/operate_dashboard"
 	smsseckill_activity "github.com/feihua/zero-admin/api/admin/internal/handler/sms/seckill_activity"
 	smsseckill_product "github.com/feihua/zero-admin/api/admin/internal/handler/sms/seckill_product"
 	smsseckill_reservation "github.com/feihua/zero-admin/api/admin/internal/handler/sms/seckill_reservation"
@@ -1006,6 +1007,21 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		),
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
 		rest.WithPrefix("/api/sms/homeAdvertise"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.CheckUrl},
+			[]rest.Route{
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryOperateFunnelDashboard",
+					Handler: smsoperate_dashboard.QueryOperateFunnelDashboardHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/sms/operateDashboard"),
 	)
 
 	server.AddRoutes(

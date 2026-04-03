@@ -59,6 +59,48 @@ func (s *OrderServiceServer) QueryOrderList(ctx context.Context, in *omsclient.Q
 	return l.QueryOrderList(in)
 }
 
+// 查询经营漏斗订单聚合
+func (s *OrderServiceServer) QueryOperateOrderFunnel(ctx context.Context, in *omsclient.QueryOperateOrderFunnelReq) (*omsclient.QueryOperateOrderFunnelResp, error) {
+	l := orderservicelogic.NewQueryOperateOrderFunnelLogic(ctx, s.svcCtx)
+	return l.QueryOperateOrderFunnel(in)
+}
+
+// 查询链路监控列表
+func (s *OrderServiceServer) QueryCompensationChainList(ctx context.Context, in *omsclient.QueryCompensationChainListReq) (*omsclient.QueryCompensationChainListResp, error) {
+	l := orderservicelogic.NewQueryCompensationChainListLogic(ctx, s.svcCtx)
+	return l.QueryCompensationChainList(in)
+}
+
+// 查询可用干预动作
+func (s *OrderServiceServer) QueryChainActions(ctx context.Context, in *omsclient.QueryChainActionsReq) (*omsclient.QueryChainActionsResp, error) {
+	l := orderservicelogic.NewQueryChainActionsLogic(ctx, s.svcCtx)
+	return l.QueryChainActions(in)
+}
+
+// 重试补偿链路
+func (s *OrderServiceServer) RetryCompensationChain(ctx context.Context, in *omsclient.RetryCompensationChainReq) (*omsclient.RetryCompensationChainResp, error) {
+	l := orderservicelogic.NewRetryCompensationChainLogic(ctx, s.svcCtx)
+	return l.RetryCompensationChain(in)
+}
+
+// 回放补偿链路
+func (s *OrderServiceServer) ReplayCompensationChain(ctx context.Context, in *omsclient.ReplayCompensationChainReq) (*omsclient.ReplayCompensationChainResp, error) {
+	l := orderservicelogic.NewReplayCompensationChainLogic(ctx, s.svcCtx)
+	return l.ReplayCompensationChain(in)
+}
+
+// 暂停补偿链路
+func (s *OrderServiceServer) PauseCompensationChain(ctx context.Context, in *omsclient.PauseCompensationChainReq) (*omsclient.PauseCompensationChainResp, error) {
+	l := orderservicelogic.NewPauseCompensationChainLogic(ctx, s.svcCtx)
+	return l.PauseCompensationChain(in)
+}
+
+// 升级为人工介入
+func (s *OrderServiceServer) EscalateChain(ctx context.Context, in *omsclient.EscalateChainReq) (*omsclient.EscalateChainResp, error) {
+	l := orderservicelogic.NewEscalateChainLogic(ctx, s.svcCtx)
+	return l.EscalateChain(in)
+}
+
 // 订单发货
 func (s *OrderServiceServer) Delivery(ctx context.Context, in *omsclient.DeliveryReq) (*omsclient.DeliveryResp, error) {
 	l := orderservicelogic.NewDeliveryLogic(ctx, s.svcCtx)
@@ -99,40 +141,4 @@ func (s *OrderServiceServer) UpdateOrderConsistency(ctx context.Context, in *oms
 func (s *OrderServiceServer) QueryManualRequiredOrders(ctx context.Context, in *omsclient.QueryManualRequiredOrdersReq) (*omsclient.QueryManualRequiredOrdersResp, error) {
 	l := orderservicelogic.NewQueryManualRequiredOrdersLogic(ctx, s.svcCtx)
 	return l.QueryManualRequiredOrders(in)
-}
-
-// 查询补偿链路列表（支持一致性筛选+时间范围）
-func (s *OrderServiceServer) QueryCompensationChainList(ctx context.Context, in *omsclient.QueryCompensationChainListReq) (*omsclient.QueryCompensationChainListResp, error) {
-	l := orderservicelogic.NewQueryCompensationChainListLogic(ctx, s.svcCtx)
-	return l.QueryCompensationChainList(in)
-}
-
-// 重试链路（7.6 新增）
-func (s *OrderServiceServer) RetryCompensationChain(ctx context.Context, in *omsclient.RetryCompensationChainReq) (*omsclient.RetryCompensationChainResp, error) {
-	l := orderservicelogic.NewRetryCompensationChainLogic(ctx, s.svcCtx)
-	return l.RetryCompensationChain(in)
-}
-
-// 回放链路（7.6 新增）
-func (s *OrderServiceServer) ReplayCompensationChain(ctx context.Context, in *omsclient.ReplayCompensationChainReq) (*omsclient.ReplayCompensationChainResp, error) {
-	l := orderservicelogic.NewReplayCompensationChainLogic(ctx, s.svcCtx)
-	return l.ReplayCompensationChain(in)
-}
-
-// 暂停链路（7.6 新增）
-func (s *OrderServiceServer) PauseCompensationChain(ctx context.Context, in *omsclient.PauseCompensationChainReq) (*omsclient.PauseCompensationChainResp, error) {
-	l := orderservicelogic.NewPauseCompensationChainLogic(ctx, s.svcCtx)
-	return l.PauseCompensationChain(in)
-}
-
-// 升级链路（7.6 新增）
-func (s *OrderServiceServer) EscalateChain(ctx context.Context, in *omsclient.EscalateChainReq) (*omsclient.EscalateChainResp, error) {
-	l := orderservicelogic.NewEscalateChainLogic(ctx, s.svcCtx)
-	return l.EscalateChain(in)
-}
-
-// 查询可用干预动作（7.6 新增）
-func (s *OrderServiceServer) QueryChainActions(ctx context.Context, in *omsclient.QueryChainActionsReq) (*omsclient.QueryChainActionsResp, error) {
-	l := orderservicelogic.NewQueryChainActionsLogic(ctx, s.svcCtx)
-	return l.QueryChainActions(in)
 }

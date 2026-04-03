@@ -58,3 +58,9 @@ func (s *CartItemServiceServer) QueryCartItemList(ctx context.Context, in *omscl
 	l := cartitemservicelogic.NewQueryCartItemListLogic(ctx, s.svcCtx)
 	return l.QueryCartItemList(in)
 }
+
+// 查询经营漏斗加购聚合
+func (s *CartItemServiceServer) QueryOperateCartFunnel(ctx context.Context, in *omsclient.QueryOperateCartFunnelReq) (*omsclient.QueryOperateCartFunnelResp, error) {
+	l := cartitemservicelogic.NewQueryOperateCartFunnelLogic(ctx, s.svcCtx)
+	return l.QueryOperateCartFunnel(in)
+}

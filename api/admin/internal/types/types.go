@@ -2084,6 +2084,82 @@ type QueryHomeAdvertiseListResp struct {
 	Total    int64                         `json:"total"`
 }
 
+type QueryOperateFunnelDashboardReq struct {
+	ScopeType    string `form:"scopeType,optional"`    //查询主体范围(platform/tenant/merchant)
+	PlatformId   int64  `form:"platformId,optional"`   //平台ID
+	TenantId     int64  `form:"tenantId,optional"`     //租户ID
+	MerchantId   int64  `form:"merchantId,optional"`   //商户ID
+	StartTime    string `form:"startTime,optional"`    //开始时间，按 Asia/Shanghai 解析
+	EndTime      string `form:"endTime,optional"`      //结束时间，按 Asia/Shanghai 解析
+	Channel      string `form:"channel,optional"`      //统一渠道(app/pc/h5/mini_program/unknown)
+	ActivityType string `form:"activityType,optional"` //活动类型(home_advertise/coupon/seckill_activity/none)
+	ActivityId   int64  `form:"activityId,optional"`   //活动ID
+	Bucket       string `form:"bucket,optional"`       //时间桶(day/hour)
+}
+
+type OperateFunnelMetricCard struct {
+	Key       string  `json:"key"`       //指标标识
+	Label     string  `json:"label"`     //指标名称
+	Value     int64   `json:"value"`     //指标值
+	Rate      float64 `json:"rate"`      //上一阶段转化率
+	RateLabel string  `json:"rateLabel"` //转化率文案
+}
+
+type OperateFunnelOverview struct {
+	Exposure         int64                     `json:"exposure"`         //曝光数
+	Click            int64                     `json:"click"`            //点击数
+	AddCart          int64                     `json:"addCart"`          //加购数
+	OrderCreated     int64                     `json:"orderCreated"`     //下单数
+	PaySuccess       int64                     `json:"paySuccess"`       //支付数
+	CouponRedeem     int64                     `json:"couponRedeem"`     //优惠券核销数
+	ClickRate        float64                   `json:"clickRate"`        //点击率
+	AddCartRate      float64                   `json:"addCartRate"`      //加购率
+	OrderRate        float64                   `json:"orderRate"`        //下单率
+	PayRate          float64                   `json:"payRate"`          //支付率
+	CouponRedeemRate float64                   `json:"couponRedeemRate"` //核销率
+	Cards            []OperateFunnelMetricCard `json:"cards"`            //概览卡片
+}
+
+type OperateFunnelSeriesPoint struct {
+	BucketLabel      string  `json:"bucketLabel"`      //时间桶标签
+	BucketStart      string  `json:"bucketStart"`      //时间桶开始
+	BucketEnd        string  `json:"bucketEnd"`        //时间桶结束
+	Exposure         int64   `json:"exposure"`         //曝光数
+	Click            int64   `json:"click"`            //点击数
+	AddCart          int64   `json:"addCart"`          //加购数
+	OrderCreated     int64   `json:"orderCreated"`     //下单数
+	PaySuccess       int64   `json:"paySuccess"`       //支付数
+	CouponRedeem     int64   `json:"couponRedeem"`     //优惠券核销数
+	ClickRate        float64 `json:"clickRate"`        //点击率
+	AddCartRate      float64 `json:"addCartRate"`      //加购率
+	OrderRate        float64 `json:"orderRate"`        //下单率
+	PayRate          float64 `json:"payRate"`          //支付率
+	CouponRedeemRate float64 `json:"couponRedeemRate"` //核销率
+}
+
+type OperateFunnelActivityOption struct {
+	ActivityType  string `json:"activityType"`  //活动类型
+	ActivityId    int64  `json:"activityId"`    //活动ID
+	ActivityName  string `json:"activityName"`  //活动名称
+	ActivityLabel string `json:"activityLabel"` //活动展示名
+}
+
+type QueryOperateFunnelDashboardData struct {
+	Overview          OperateFunnelOverview         `json:"overview"`          //总览数据
+	Series            []OperateFunnelSeriesPoint    `json:"series"`            //时间序列
+	ActivityOptions   []OperateFunnelActivityOption `json:"activityOptions"`   //活动选项
+	TrackingStartedAt string                        `json:"trackingStartedAt"` //可信起点
+	PartialMetrics    []string                      `json:"partialMetrics"`    //部分可用指标
+	Bucket            string                        `json:"bucket"`            //实际时间桶
+}
+
+type QueryOperateFunnelDashboardResp struct {
+	Code    string                          `json:"code"`
+	Message string                          `json:"message"`
+	Data    QueryOperateFunnelDashboardData `json:"data"`
+	Success bool                            `json:"success"`
+}
+
 type QueryHomeBrandDetailData struct {
 	Id                  int64  `json:"id"`                  //
 	Name                string `json:"name"`                //品牌名称

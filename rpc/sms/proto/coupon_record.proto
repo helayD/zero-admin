@@ -115,8 +115,23 @@ message QueryCouponData {
   int32 status = 13; //状态：0-未开始，1-进行中，2-已结束，3-已取消
   string description = 14; //使用说明
   int32 scope_type = 15; //范围类型：0-全场，1-分类，2-商品
+  int32 receive_status = 16; //领取状态：0-可领取，1-已领取，2-已领完，3-未开始，4-已过期
+  int32 total_count = 17; //发放总量
+  int32 received_count = 18; //已领取数量
 
 }
+
+message QueryAvailableCouponsReq {
+  int64 member_id = 1; //会员ID
+  int32 page_num = 2; //第几页
+  int32 page_size = 3; //每页的数量
+  GovernanceScope scope = 4; //治理范围(platform/tenant/merchant)
+}
+
+message QueryAvailableCouponsResp {
+  repeated QueryCouponData list = 1;
+}
+
 message QueryMemberCouponListResp {
   repeated  QueryCouponData list = 1;
 }
@@ -136,5 +151,7 @@ service CouponRecordService {
 
   //获取会员优惠券
   rpc QueryMemberCouponList(QueryMemberCouponListReq) returns(QueryMemberCouponListResp);
+  //获取可领取优惠券
+  rpc QueryAvailableCoupons(QueryAvailableCouponsReq) returns(QueryAvailableCouponsResp);
 
 }

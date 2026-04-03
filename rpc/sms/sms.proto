@@ -316,9 +316,6 @@ message QueryCouponData {
   int32 received_count = 18; //已领取数量
 
 }
-message QueryMemberCouponListResp {
-  repeated  QueryCouponData list = 1;
-}
 
 message QueryAvailableCouponsReq {
   int64 member_id = 1; //会员ID
@@ -328,6 +325,10 @@ message QueryAvailableCouponsReq {
 }
 
 message QueryAvailableCouponsResp {
+  repeated QueryCouponData list = 1;
+}
+
+message QueryMemberCouponListResp {
   repeated  QueryCouponData list = 1;
 }
 
@@ -346,8 +347,7 @@ service CouponRecordService {
 
   //获取会员优惠券
   rpc QueryMemberCouponList(QueryMemberCouponListReq) returns(QueryMemberCouponListResp);
-
-  //查询可领取的优惠券列表
+  //获取可领取优惠券
   rpc QueryAvailableCoupons(QueryAvailableCouponsReq) returns(QueryAvailableCouponsResp);
 
 }
@@ -697,6 +697,96 @@ service HomeAdvertiseService {
   rpc QueryHomeAdvertiseList(QueryHomeAdvertiseListReq) returns (QueryHomeAdvertiseListResp){}
 
 
+}
+message RecordOperateFunnelEventReq {
+  GovernanceScope scope = 1; //治理范围(platform/tenant/merchant)
+  string event_type = 2; //漏斗阶段(exposure/click)
+  string stat_time = 3; //事件时间，按 Asia/Shanghai 解析
+  string channel = 4; //统一渠道(app/pc/h5/mini_program/unknown)
+  string activity_type = 5; //活动类型(home_advertise/coupon/seckill_activity/none)
+  int64 activity_id = 6; //活动ID
+  int64 member_id = 7; //会员ID
+  int64 product_id = 8; //商品ID
+  int64 order_id = 9; //订单ID
+  int64 coupon_id = 10; //优惠券ID
+  string trace_id = 11; //幂等追踪ID
+  string extra_json = 12; //扩展信息
+}
+
+message RecordOperateFunnelEventResp {
+  string pong = 1;
+}
+
+message OperateTrafficBucketPoint {
+  string bucket_label = 1; //时间桶标签
+  string bucket_start = 2; //时间桶开始(闭区间)
+  string bucket_end = 3; //时间桶结束(开区间)
+  int64 exposure = 4; //曝光数
+  int64 click = 5; //点击数
+}
+
+message QueryOperateTrafficFunnelReq {
+  GovernanceScope scope = 1; //治理范围(platform/tenant/merchant)
+  string start_time = 2; //开始时间，按 Asia/Shanghai 解析
+  string end_time = 3; //结束时间，按 Asia/Shanghai 解析
+  string channel = 4; //统一渠道(app/pc/h5/mini_program/unknown)
+  string activity_type = 5; //活动类型(home_advertise/coupon/seckill_activity/none)
+  int64 activity_id = 6; //活动ID
+  string bucket = 7; //时间桶(day/hour)
+}
+
+message QueryOperateTrafficFunnelResp {
+  repeated OperateTrafficBucketPoint buckets = 1;
+  int64 total_exposure = 2; //曝光总量
+  int64 total_click = 3; //点击总量
+  string tracking_started_at = 4; //埋点可信起点
+  repeated string partial_metrics = 5; //部分可用指标
+}
+
+message OperateCouponRedeemBucketPoint {
+  string bucket_label = 1; //时间桶标签
+  string bucket_start = 2; //时间桶开始(闭区间)
+  string bucket_end = 3; //时间桶结束(开区间)
+  int64 coupon_redeem = 4; //优惠券核销数
+}
+
+message QueryOperateCouponRedeemReq {
+  GovernanceScope scope = 1; //治理范围(platform/tenant/merchant)
+  string start_time = 2; //开始时间，按 Asia/Shanghai 解析
+  string end_time = 3; //结束时间，按 Asia/Shanghai 解析
+  string channel = 4; //统一渠道(app/pc/h5/mini_program/unknown)
+  string activity_type = 5; //活动类型(home_advertise/coupon/seckill_activity/none)
+  int64 activity_id = 6; //活动ID
+  string bucket = 7; //时间桶(day/hour)
+}
+
+message QueryOperateCouponRedeemResp {
+  repeated OperateCouponRedeemBucketPoint buckets = 1;
+  int64 total_coupon_redeem = 2; //优惠券核销总量
+  string tracking_started_at = 3; //埋点可信起点
+  repeated string partial_metrics = 4; //部分可用指标
+}
+
+message OperateFunnelActivityOption {
+  string activity_type = 1; //活动类型
+  int64 activity_id = 2; //活动ID
+  string activity_name = 3; //活动名称
+  string activity_label = 4; //活动展示标签
+}
+
+message QueryOperateActivityOptionsReq {
+  GovernanceScope scope = 1; //治理范围(platform/tenant/merchant)
+}
+
+message QueryOperateActivityOptionsResp {
+  repeated OperateFunnelActivityOption list = 1;
+}
+
+service OperateDashboardService {
+  rpc RecordOperateFunnelEvent(RecordOperateFunnelEventReq) returns (RecordOperateFunnelEventResp){}
+  rpc QueryOperateTrafficFunnel(QueryOperateTrafficFunnelReq) returns (QueryOperateTrafficFunnelResp){}
+  rpc QueryOperateCouponRedeem(QueryOperateCouponRedeemReq) returns (QueryOperateCouponRedeemResp){}
+  rpc QueryOperateActivityOptions(QueryOperateActivityOptionsReq) returns (QueryOperateActivityOptionsResp){}
 }
 // 添加秒杀活动
 message AddSeckillActivityReq {
