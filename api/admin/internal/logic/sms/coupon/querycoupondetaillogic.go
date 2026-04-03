@@ -2,8 +2,6 @@ package coupon
 
 import (
 	"context"
-	"fmt"
-	"time"
 
 	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
@@ -120,27 +118,6 @@ func (l *QueryCouponDetailLogic) QueryCouponDetail(req *types.QueryCouponDetailR
 
 			data.CouponScopeData = couponScopeDataList
 		}
-
-		// 构建适用范围摘要
-		switch one.ScopeType {
-		case 0:
-			data.ScopeSummary = "全场通用"
-		case 1:
-			data.ScopeSummary = fmt.Sprintf("指定分类(%d)", scopeRes.Total)
-		case 2:
-			data.ScopeSummary = fmt.Sprintf("指定商品(%d)", scopeRes.Total)
-		default:
-			data.ScopeSummary = "未配置适用范围"
-		}
-	}
-
-	// 计算综合生效状态
-	now := time.Now()
-	data.EffectiveStatus = computeCouponEffectiveStatus(detail.Status, detail.EndTime, now)
-
-	// 影响链路
-	if detail.Status == 1 {
-		data.AffectedPaths = "购物车试算, 确认单试算"
 	}
 
 	return &types.QueryCouponDetailResp{

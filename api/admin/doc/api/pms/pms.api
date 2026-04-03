@@ -6,6 +6,7 @@ import "./product_attribute_group.api"
 import "./product_spec.api"
 import "./product_spec_value.api"
 import "./product_spu.api"
+import "./product_comment.api"
 
 info (
 	title:                       "商品管理 API"

@@ -47,6 +47,8 @@ func (l *QueryCommentListLogic) QueryCommentList(req *types.QueryCommentListReq)
 		TenantId:   scope.TenantID,
 		MerchantId: scope.MerchantID,
 		ShowStatus: 1, // 前台固定查已审核通过
+		AuditStatus: 1,
+		Hidden:      0,
 		PageNum:    int64(req.PageNum),
 		PageSize:   int64(req.PageSize),
 	})
@@ -65,12 +67,12 @@ func (l *QueryCommentListLogic) QueryCommentList(req *types.QueryCommentListReq)
 			MemberNickName:   item.MemberNickName,
 			MemberId:         item.MemberId,
 			MemberIcon:       item.MemberIcon,
-			Star:             int(item.Star),
+			Star:             item.Star,
 			Content:          item.Content,
 			Pics:             item.Pics,
 			ProductAttribute: item.ProductAttribute,
-			ShowStatus:       int(item.ShowStatus),
-			ReplayCount:      int(item.ReplayCount),
+			ShowStatus:       item.ShowStatus,
+			ReplayCount:      item.ReplayCount,
 			MemberIp:         item.MemberIp,
 			CreateTime:       item.CreateTime,
 		})

@@ -2,7 +2,6 @@ package coupon
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	frontcommon "github.com/feihua/zero-admin/api/front/internal/logic/common"
@@ -121,11 +120,6 @@ func QueryCouponList(svcCtx *svc.ServiceContext, ctx context.Context, cartPromot
 		if subtotal >= minAmount && usableNow {
 			enableList = append(enableList, couponData)
 		} else {
-			if !usableNow {
-				couponData.DisableReason = "优惠券不在有效期内"
-			} else if subtotal < minAmount {
-				couponData.DisableReason = fmt.Sprintf("订单金额未满 ¥%.2f", couponData.MinAmount)
-			}
 			disableList = append(disableList, couponData)
 		}
 	}

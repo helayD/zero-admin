@@ -488,6 +488,26 @@ type AddUserReq struct {
 	RoleMode         string  `json:"roleMode,optional"`         //角色模式
 }
 
+type AuditCommentReq struct {
+	Id          string `path:"id"`
+	AuditStatus int32  `json:"auditStatus"`
+	AuditRemark string `json:"auditRemark,optional"`
+	ScopeType   string `json:"scopeType,optional"`
+	PlatformId  int64  `json:"platformId,optional"`
+	TenantId    int64  `json:"tenantId,optional"`
+	MerchantId  int64  `json:"merchantId,optional"`
+}
+
+type HandleCommentAppealReq struct {
+	Id           string `path:"id"`
+	AppealStatus int32  `json:"appealStatus"`
+	AppealReply  string `json:"appealReply"`
+	ScopeType    string `json:"scopeType,optional"`
+	PlatformId   int64  `json:"platformId,optional"`
+	TenantId     int64  `json:"tenantId,optional"`
+	MerchantId   int64  `json:"merchantId,optional"`
+}
+
 type AuditTimelineItem struct {
 	SourceType     string `json:"sourceType"`
 	SourceId       int64  `json:"sourceId"`
@@ -531,6 +551,86 @@ type CloseOrderReq struct {
 	PlatformId int64   `json:"platformId,optional"` //平台ID
 	TenantId   int64   `json:"tenantId,optional"`   //租户ID
 	MerchantId int64   `json:"merchantId,optional"` //商户ID
+}
+
+type CommentAuditLogData struct {
+	Id           int64  `json:"id"`
+	CommentId    string `json:"commentId"`
+	Action       string `json:"action"`
+	FromStatus   int32  `json:"fromStatus"`
+	ToStatus     int32  `json:"toStatus"`
+	OperatorId   int64  `json:"operatorId"`
+	OperatorName string `json:"operatorName"`
+	Remark       string `json:"remark"`
+	CreatedAt    string `json:"createdAt"`
+}
+
+type CommentDetailData struct {
+	Id               string `json:"id"`
+	ProductId        int64  `json:"productId"`
+	ProductName      string `json:"productName"`
+	MemberNickName   string `json:"memberNickName"`
+	MemberId         int64  `json:"memberId"`
+	MemberIcon       string `json:"memberIcon"`
+	Star             int32  `json:"star"`
+	Content          string `json:"content"`
+	Pics             string `json:"pics"`
+	ShowStatus       int32  `json:"showStatus"`
+	AuditStatus      int32  `json:"auditStatus"`
+	Hidden           int32  `json:"hidden"`
+	AuditRemark      string `json:"auditRemark"`
+	AuditorId        int64  `json:"auditorId"`
+	AuditorName      string `json:"auditorName"`
+	AuditedAt        string `json:"auditedAt"`
+	AppealStatus     int32  `json:"appealStatus"`
+	AppealReason     string `json:"appealReason"`
+	AppealReply      string `json:"appealReply"`
+	AppealedAt       string `json:"appealedAt"`
+	AppealHandledAt  string `json:"appealHandledAt"`
+	ProductAttribute string `json:"productAttribute"`
+	CollectCount     int32  `json:"collectCount"`
+	ReadCount        int32  `json:"readCount"`
+	ReplayCount      int32  `json:"replayCount"`
+	MemberIp         string `json:"memberIp"`
+	CreateTime       string `json:"createTime"`
+}
+
+type CommentListData struct {
+	Id               string `json:"id"`
+	ProductId        int64  `json:"productId"`
+	ProductName      string `json:"productName"`
+	MemberNickName   string `json:"memberNickName"`
+	MemberId         int64  `json:"memberId"`
+	Star             int32  `json:"star"`
+	Content          string `json:"content"`
+	Pics             string `json:"pics"`
+	MemberIcon       string `json:"memberIcon"`
+	ShowStatus       int32  `json:"showStatus"`
+	AuditStatus      int32  `json:"auditStatus"`
+	Hidden           int32  `json:"hidden"`
+	AuditRemark      string `json:"auditRemark"`
+	AuditorId        int64  `json:"auditorId"`
+	AuditorName      string `json:"auditorName"`
+	AuditedAt        string `json:"auditedAt"`
+	AppealStatus     int32  `json:"appealStatus"`
+	AppealReason     string `json:"appealReason"`
+	AppealReply      string `json:"appealReply"`
+	AppealedAt       string `json:"appealedAt"`
+	AppealHandledAt  string `json:"appealHandledAt"`
+	ProductAttribute string `json:"productAttribute"`
+	ReplayCount      int32  `json:"replayCount"`
+	MemberIp         string `json:"memberIp"`
+	CreateTime       string `json:"createTime"`
+}
+
+type CommentReplayItemData struct {
+	Id             string `json:"id"`
+	CommentId      string `json:"commentId"`
+	Type           int32  `json:"type"`
+	MemberNickName string `json:"memberNickName"`
+	MemberIcon     string `json:"memberIcon"`
+	Content        string `json:"content"`
+	CreateTime     string `json:"createTime"`
 }
 
 type CouponScopeData struct {
@@ -1327,6 +1427,69 @@ type QueryAuditCenterListResp struct {
 	PageSize int64                       `json:"pageSize"`
 	Success  bool                        `json:"success"`
 	Total    int64                       `json:"total"`
+}
+
+type QueryCommentAuditLogReq struct {
+	Id         string `form:"id"`
+	Current    int32  `form:"current,default=1"`
+	PageSize   int32  `form:"pageSize,default=20"`
+	ScopeType  string `form:"scopeType,optional"`
+	PlatformId int64  `form:"platformId,optional"`
+	TenantId   int64  `form:"tenantId,optional"`
+	MerchantId int64  `form:"merchantId,optional"`
+}
+
+type QueryCommentAuditLogResp struct {
+	Code     string                 `json:"code"`
+	Message  string                 `json:"message"`
+	Current  int32                  `json:"current,default=1"`
+	Data     []*CommentAuditLogData `json:"data"`
+	PageSize int32                  `json:"pageSize,default=20"`
+	Success  bool                   `json:"success"`
+	Total    int64                  `json:"total"`
+}
+
+type QueryCommentDetailReq struct {
+	Id         string `form:"id"`
+	ScopeType  string `form:"scopeType,optional"`
+	PlatformId int64  `form:"platformId,optional"`
+	TenantId   int64  `form:"tenantId,optional"`
+	MerchantId int64  `form:"merchantId,optional"`
+}
+
+type QueryCommentDetailResp struct {
+	Code      string                   `json:"code"`
+	Message   string                   `json:"message"`
+	Data      CommentDetailData        `json:"data"`
+	Replays   []*CommentReplayItemData `json:"replays"`
+	AuditLogs []*CommentAuditLogData   `json:"auditLogs"`
+}
+
+type QueryCommentListReq struct {
+	Current     int32  `form:"current,default=1"`
+	PageSize    int32  `form:"pageSize,default=20"`
+	ProductId   int64  `form:"productId,optional"`
+	ProductName string `form:"productName,optional"`
+	MemberName  string `form:"memberName,optional"`
+	ShowStatus  int32  `form:"showStatus,default=-1"`
+	AuditStatus int32  `form:"auditStatus,default=-1"`
+	Hidden      int32  `form:"hidden,default=-1"`
+	StartTime   string `form:"startTime,optional"`
+	EndTime     string `form:"endTime,optional"`
+	ScopeType   string `form:"scopeType,optional"`
+	PlatformId  int64  `form:"platformId,optional"`
+	TenantId    int64  `form:"tenantId,optional"`
+	MerchantId  int64  `form:"merchantId,optional"`
+}
+
+type QueryCommentListResp struct {
+	Code     string             `json:"code"`
+	Message  string             `json:"message"`
+	Current  int32              `json:"current,default=1"`
+	Data     []*CommentListData `json:"data"`
+	PageSize int32              `json:"pageSize,default=20"`
+	Success  bool               `json:"success"`
+	Total    int64              `json:"total"`
 }
 
 type QueryCompanyAddressDetailData struct {
@@ -4730,6 +4893,14 @@ type ReSetPasswordReq struct {
 	UserId int64 `json:"userId"`
 }
 
+type RestoreCommentReq struct {
+	Id         string `path:"id"`
+	ScopeType  string `json:"scopeType,optional"`
+	PlatformId int64  `json:"platformId,optional"`
+	TenantId   int64  `json:"tenantId,optional"`
+	MerchantId int64  `json:"merchantId,optional"`
+}
+
 type ReturnItemListData struct {
 	Id           int64   `json:"id"`           //主键ID
 	ReturnId     int64   `json:"returnId"`     //退货单ID（关联oms_order_return.id）
@@ -4796,6 +4967,16 @@ type TenantData struct {
 	CreatedAt             string   `json:"createdAt"`
 	UpdatedBy             string   `json:"updatedBy"`
 	UpdatedAt             string   `json:"updatedAt"`
+}
+
+type UpdateCommentReq struct {
+	Id         string `json:"id,optional"`
+	Ids        string `json:"ids,optional"`
+	ShowStatus int32  `json:"showStatus"`
+	ScopeType  string `json:"scopeType,optional"`
+	PlatformId int64  `json:"platformId,optional"`
+	TenantId   int64  `json:"tenantId,optional"`
+	MerchantId int64  `json:"merchantId,optional"`
 }
 
 type UpdateCompanyAddressReq struct {
@@ -5665,92 +5846,3 @@ type UserInfoResp struct {
 	Message string       `json:"message"`
 	Data    UserInfoData `json:"data"`
 }
-
-// ==================== 商品评价类型 (Review Fix) ====================
-
-type UpdateCommentReq struct {
-	Id         string `json:"id"`
-	ShowStatus int32  `json:"showStatus"`
-	UpdateBy   string `json:"updateBy"`
-}
-
-type UpdateCommentResp struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
-}
-
-type QueryCommentListReq struct {
-	ProductId  int64 `form:"productId"`
-	ShowStatus int32 `form:"showStatus"`
-	PageSize   int   `form:"pageSize"`
-	Current    int   `form:"current"`
-}
-
-type CommentListData struct {
-	Id               string `json:"id"`
-	ProductId        int64  `json:"productId"`
-	ProductName      string `json:"productName"`
-	MemberNickName   string `json:"memberNickName"`
-	MemberId         int64  `json:"memberId"`
-	Star             int32  `json:"star"`
-	Content          string `json:"content"`
-	Pics             string `json:"pics"`
-	MemberIcon       string `json:"memberIcon"`
-	ShowStatus       int32  `json:"showStatus"`
-	ProductAttribute string `json:"productAttribute"`
-	ReplayCount      int32  `json:"replayCount"`
-	MemberIp         string `json:"memberIp"`
-	CreateTime       string `json:"createTime"`
-	UpdateBy         string `json:"updateBy"`
-}
-
-type CommentListPage struct {
-	List  []CommentListData `json:"list"`
-	Total int64            `json:"total"`
-}
-
-type QueryCommentListResp struct {
-	Code    string          `json:"code"`
-	Message string          `json:"message"`
-	Data    CommentListPage `json:"data"`
-}
-
-type CommentReplayItemData struct {
-	Id             string `json:"id"`
-	CommentId      string `json:"commentId"`
-	Type           int    `json:"type"`
-	MemberNickName string `json:"memberNickName"`
-	MemberIcon     string `json:"memberIcon"`
-	Content        string `json:"content"`
-	CreateTime     string `json:"createTime"`
-}
-
-type CommentDetailData struct {
-	Id                string                  `json:"id"`
-	ProductId         int64                   `json:"productId"`
-	ProductName       string                  `json:"productName"`
-	MemberNickName   string                  `json:"memberNickName"`
-	MemberId         int64                   `json:"memberId"`
-	MemberIcon       string                  `json:"memberIcon"`
-	Star             int32                   `json:"star"`
-	Content          string                  `json:"content"`
-	Pics             string                  `json:"pics"`
-	ShowStatus       int32                   `json:"showStatus"`
-	ProductAttribute string                  `json:"productAttribute"`
-	ReplayCount      int32                   `json:"replayCount"`
-	MemberIp         string                  `json:"memberIp"`
-	CreateTime       string                  `json:"createTime"`
-	UpdateBy         string                  `json:"updateBy"`
-}
-
-type QueryCommentDetailReq struct {
-	Id string `form:"id"`
-}
-
-type QueryCommentDetailResp struct {
-	Code    string                   `json:"code"`
-	Message string                   `json:"message"`
-	Data    CommentDetailData         `json:"data"`
-	Replays []CommentReplayItemData   `json:"replays"`
-}
-

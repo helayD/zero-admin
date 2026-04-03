@@ -18,6 +18,7 @@ import (
 	orderpay "github.com/feihua/zero-admin/api/front/internal/handler/order/pay"
 	productbrand "github.com/feihua/zero-admin/api/front/internal/handler/product/brand"
 	productcategory "github.com/feihua/zero-admin/api/front/internal/handler/product/category"
+	productcomment "github.com/feihua/zero-admin/api/front/internal/handler/product/comment"
 	productproduct "github.com/feihua/zero-admin/api/front/internal/handler/product/product"
 	"github.com/feihua/zero-admin/api/front/internal/svc"
 
@@ -396,6 +397,39 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			},
 		},
 		rest.WithPrefix("/api/product"),
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodPost,
+				Path:    "/add",
+				Handler: productcomment.AddCommentHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/queryCommentDetail",
+				Handler: productcomment.QueryCommentDetailHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/queryCommentList",
+				Handler: productcomment.QueryCommentListHandler(serverCtx),
+			},
+		},
+		rest.WithPrefix("/api/product/comment"),
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodPost,
+				Path:    "/submitAppeal",
+				Handler: productcomment.SubmitCommentAppealHandler(serverCtx),
+			},
+		},
+		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/product/comment"),
 	)
 
 	server.AddRoutes(

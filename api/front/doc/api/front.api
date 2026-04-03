@@ -13,6 +13,7 @@ import "order/pay.api"
 import "product/product.api"
 import "product/product_brand.api"
 import "product/product_category.api"
+import "product/product_comment.api"
 
 info (
 	title:  "zero-front"

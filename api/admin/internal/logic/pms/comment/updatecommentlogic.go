@@ -11,12 +11,11 @@ import (
 	"github.com/feihua/zero-admin/api/admin/internal/types"
 	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
 	"github.com/zeromicro/go-zero/core/logc"
-	"google.golang.org/grpc/status"
-
 	"github.com/zeromicro/go-zero/core/logx"
+	"google.golang.org/grpc/status"
 )
 
-// UpdateCommentLogic 审核/屏蔽/恢复评价
+// UpdateCommentLogic 审核/屏蔽评价（兼容旧批量入口）
 /*
 Author: LiuFeiHua
 Date: 2026/04/02
@@ -35,57 +34,38 @@ func NewUpdateCommentLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Upd
 	}
 }
 
-// UpdateComment 审核/屏蔽/恢复评价
+// UpdateComment 审核/屏蔽评价（兼容旧 UI 批量操作）
 func (l *UpdateCommentLogic) UpdateComment(req *types.UpdateCommentReq) (*types.BaseResp, error) {
-	if req.Id == "" {
+	if req.Id == "" && req.Ids == "" {
 		return nil, errors.New("评价ID不能为空")
 	}
+	if req.ShowStatus != 0 && req.ShowStatus != 1 {
+		return nil, errors.New("评价状态非法")
+	}
 
+	userID, err := common.GetUserId(l.ctx)
+	if err != nil {
+		return nil, err
+	}
 	userName, err := common.GetUserName(l.ctx)
 	if err != nil {
 		return nil, err
 	}
-
 	currentScope, err := common.CurrentGovernanceScope(l.ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// 先查询评价详情，获取 productId 和现有字段（带 scope 校验）
-	detail, err := l.svcCtx.CommentService.QueryCommentDetail(l.ctx, &pmsclient.QueryCommentDetailReq{
-		Id:         req.Id,
-		PlatformId: currentScope.PlatformID,
-		TenantId:   currentScope.TenantID,
-		MerchantId: currentScope.MerchantID,
-	})
-	if err != nil {
-		logc.Errorf(l.ctx, "查询评价详情失败,ID:%s,异常:%s", req.Id, err.Error())
-		s, _ := status.FromError(err)
-		return nil, errorx.NewDefaultError(s.Message())
-	}
-
 	_, err = l.svcCtx.CommentService.UpdateComment(l.ctx, &pmsclient.UpdateCommentReq{
-		Id:               req.Id,
-		ProductId:        detail.ProductId,
-		MemberNickName:   detail.MemberNickName,
-		ProductName:      detail.ProductName,
-		Star:             detail.Star,
-		MemberIp:         detail.MemberIp,
-		ShowStatus:       req.ShowStatus,
-		ProductAttribute: detail.ProductAttribute,
-		CollectCount:     detail.CollectCount,
-		ReadCount:        detail.ReadCount,
-		Content:          detail.Content,
-		Pics:             detail.Pics,
-		MemberIcon:       detail.MemberIcon,
-		ReplayCount:      detail.ReplayCount,
-		UpdateBy:         userName,
-		// Review Fix H-NEW-2: 注入治理 scope 防止越权
+		Id:         req.Id,
+		Ids:        req.Ids,
+		ShowStatus: req.ShowStatus,
+		AuditorId:  userID,
+		UpdateBy:   userName,
 		PlatformId: currentScope.PlatformID,
 		TenantId:   currentScope.TenantID,
 		MerchantId: currentScope.MerchantID,
 	})
-
 	if err != nil {
 		logc.Errorf(l.ctx, "更新商品评价状态失败,参数:%+v,异常:%s", req, err.Error())
 		s, _ := status.FromError(err)

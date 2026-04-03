@@ -1,67 +1,122 @@
-// 商品评价数据模型（Story 8-2）
+export interface BaseResp {
+  code: string;
+  message: string;
+}
 
-export interface CommentListItem {
-  id: string; // 评价ID
-  productId: number; // 商品ID
-  memberNickName: string; // 评价者昵称
-  memberId: number; // 会员ID
-  memberIcon: string; // 评价者头像
-  star: number; // 评分 0-5
-  content: string; // 评价内容
-  pics: string; // 图片地址，逗号分隔
-  productAttribute: string; // 购买商品属性
-  showStatus: number; // 审核状态：0=屏蔽，1=通过
-  replayCount: number; // 回复数量
-  memberIp: string; // 评价IP
-  createTime: string; // 评价时间
-  updateBy?: string; // 处理人
+export interface CommentAuditLogItem {
+  id: number;
+  commentId: string;
+  action: string;
+  fromStatus: number;
+  toStatus: number;
+  operatorId: number;
+  operatorName: string;
+  remark: string;
+  createdAt: string;
 }
 
 export interface CommentReplayItem {
-  id: string; // 回复ID
-  commentId: string; // 关联评价ID（MongoDB ObjectID）
-  type: number; // 评论人员类型：0->会员；1->管理员
-  memberNickName: string; // 评论人员昵称
-  memberIcon: string; // 评论人员头像
-  content: string; // 内容
-  createTime: string; // 回复时间
+  id: string;
+  commentId: string;
+  type: number;
+  memberNickName: string;
+  memberIcon: string;
+  content: string;
+  createTime: string;
+}
+
+export interface CommentListItem {
+  id: string;
+  productId: number;
+  productName: string;
+  memberNickName: string;
+  memberId: number;
+  star: number;
+  content: string;
+  pics: string;
+  memberIcon: string;
+  showStatus: number;
+  auditStatus: number;
+  hidden: number;
+  auditRemark: string;
+  auditorId: number;
+  auditorName: string;
+  auditedAt: string;
+  appealStatus: number;
+  appealReason: string;
+  appealReply: string;
+  appealedAt: string;
+  appealHandledAt: string;
+  productAttribute: string;
+  replayCount: number;
+  memberIp: string;
+  createTime: string;
 }
 
 export interface CommentDetailData extends CommentListItem {
-  replays?: CommentReplayItem[];
+  collectCount: number;
+  readCount: number;
 }
 
-export interface CommentListData {
-  list: CommentListItem[];
-  pagination: {
-    total: number;
-    pageSize: number;
-    current: number;
-  };
+export interface CommentDetailResponse {
+  code: string;
+  message: string;
+  data: CommentDetailData;
+  replays?: CommentReplayItem[];
+  auditLogs?: CommentAuditLogItem[];
+}
+
+export interface QueryCommentListResp {
+  code: string;
+  message: string;
+  current: number;
+  data: CommentListItem[];
+  pageSize: number;
+  success: boolean;
+  total: number;
+}
+
+export interface QueryCommentAuditLogResp {
+  code: string;
+  message: string;
+  current: number;
+  data: CommentAuditLogItem[];
+  pageSize: number;
+  success: boolean;
+  total: number;
 }
 
 export interface CommentListParams {
-  productId?: number; // 商品ID
-  showStatus?: number; // 审核状态：0=屏蔽，1=通过
-  startTime?: string; // 开始时间
-  endTime?: string; // 结束时间
+  productId?: number;
+  productName?: string;
+  memberName?: string;
+  showStatus?: number;
+  auditStatus?: number;
+  hidden?: number;
+  startTime?: string;
+  endTime?: string;
   pageSize?: number;
   current?: number;
 }
 
 export interface CommentDetailParams {
-  id: string; // 评价ID
+  id: string;
+}
+
+export interface AuditCommentParams {
+  id: string;
+  auditStatus: number;
+  auditRemark?: string;
+}
+
+export interface HandleCommentAppealParams {
+  id: string;
+  appealStatus: number;
+  appealReply: string;
 }
 
 export interface UpdateCommentParams {
-  id: string; // 评价ID
-  showStatus: number; // 审核状态：0=屏蔽，1=通过
-  updateBy: string; // 处理人
-}
-
-export interface CommentDetailResponse {
-  code: number;
-  message: string;
-  data: CommentDetailData;
-  replays?: CommentReplayItem[];
+  id?: string;
+  ids?: string;
+  showStatus: number;
 }

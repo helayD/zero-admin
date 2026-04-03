@@ -3,6 +3,23 @@
 
 package types
 
+type AddCommentReq struct {
+	ProductId        int64  `json:"productId"`
+	MemberNickName   string `json:"memberNickName"`
+	ProductName      string `json:"productName"`
+	Star             int32  `json:"star"`
+	ProductAttribute string `json:"productAttribute"`
+	Content          string `json:"content"`
+	Pics             string `json:"pics"`
+	MemberIcon       string `json:"memberIcon"`
+	OrderId          int64  `json:"orderId"`
+}
+
+type AddCommentResp struct {
+	Code    int64  `json:"code"`
+	Message string `json:"message"`
+}
+
 type AddCouponReq struct {
 	CouponId int64 `json:"couponId"`
 }
@@ -384,6 +401,32 @@ type CollectionReq struct {
 type CollectionResp struct {
 	Code    int64  `json:"code"`
 	Message string `json:"message"`
+}
+
+type CommentListItem struct {
+	Id               string `json:"id"`
+	ProductId        int64  `json:"productId"`
+	MemberId         int64  `json:"memberId"`
+	MemberNickName   string `json:"memberNickName"`
+	MemberIcon       string `json:"memberIcon"`
+	Star             int32  `json:"star"`
+	Content          string `json:"content"`
+	Pics             string `json:"pics"`
+	ProductAttribute string `json:"productAttribute"`
+	ShowStatus       int32  `json:"showStatus"`
+	ReplayCount      int32  `json:"replayCount"`
+	MemberIp         string `json:"memberIp"`
+	CreateTime       string `json:"createTime"`
+}
+
+type CommentReplayItem struct {
+	Id             string `json:"id"`
+	CommentId      string `json:"commentId"`
+	Type           int32  `json:"type"`
+	MemberNickName string `json:"memberNickName"`
+	MemberIcon     string `json:"memberIcon"`
+	Content        string `json:"content"`
+	CreateTime     string `json:"createTime"`
 }
 
 type ConfirmReceiveOrderReq struct {
@@ -958,6 +1001,41 @@ type QueryBrandDetailResp struct {
 	Data    BrandDetailData `json:"data"`
 }
 
+type QueryCommentDetailReq struct {
+	Id        string `form:"id"`
+	ProductId int64  `form:"productId,optional"`
+}
+
+type QueryCommentDetailResp struct {
+	Code    int64               `json:"code"`
+	Message string              `json:"message"`
+	Data    CommentListItem     `json:"data"`
+	Replays []CommentReplayItem `json:"replays"`
+}
+
+type QueryCommentListReq struct {
+	ProductId int64 `form:"productId"`
+	PageNum   int32 `form:"pageNum,default=1"`
+	PageSize  int32 `form:"pageSize,default=10"`
+}
+
+type QueryCommentListResp struct {
+	Code    int64             `json:"code"`
+	Message string            `json:"message"`
+	Data    []CommentListItem `json:"data"`
+	Total   int64             `json:"total"`
+}
+
+type SubmitCommentAppealReq struct {
+	Id           string `json:"id"`
+	AppealReason string `json:"appealReason"`
+}
+
+type SubmitCommentAppealResp struct {
+	Code    int64  `json:"code"`
+	Message string `json:"message"`
+}
+
 type QueryLogisticsReq struct {
 	OrderId int64 `form:"orderId"`
 }
@@ -1222,82 +1300,4 @@ type UpdateOrderStatusResp struct {
 
 type UpdatePasswordReq struct {
 	Password string `json:"password"` //密码
-}
-
-// ==================== 商品评价类型 (Story 8.2) ====================
-
-// AddCommentReq 提交商品评价请求
-type AddCommentReq struct {
-	ProductId        int64  `json:"productId"`        // 商品ID (SKU粒度)
-	MemberNickName   string `json:"memberNickName"`   // 会员昵称
-	ProductName      string `json:"productName"`      // 商品名称
-	Star             int    `json:"star"`             // 评分 0-5
-	ProductAttribute string `json:"productAttribute"` // 商品属性快照
-	Content          string `json:"content"`          // 评价内容
-	Pics             string `json:"pics"`             // 图片URLs，逗号分隔
-	MemberIcon       string `json:"memberIcon"`       // 会员头像
-	OrderId          int64  `json:"orderId"`          // 订单ID
-}
-
-// AddCommentResp 提交商品评价响应
-type AddCommentResp struct {
-	Code    int64  `json:"code"`
-	Message string `json:"message"`
-}
-
-// QueryCommentListReq 查询商品评价列表请求
-type QueryCommentListReq struct {
-	ProductId int64 `form:"productId"` // 商品ID
-	PageNum   int   `form:"pageNum,default=1"`
-	PageSize  int   `form:"pageSize,default=10"`
-}
-
-// CommentListItem 评价列表项
-type CommentListItem struct {
-	Id               string `json:"id"`
-	ProductId        int64  `json:"productId"`
-	MemberId         int64  `json:"memberId"`
-	MemberNickName   string `json:"memberNickName"`
-	MemberIcon       string `json:"memberIcon"`
-	Star             int    `json:"star"`
-	Content          string `json:"content"`
-	Pics             string `json:"pics"`
-	ProductAttribute string `json:"productAttribute"`
-	ShowStatus       int    `json:"showStatus"`
-	ReplayCount      int    `json:"replayCount"`
-	MemberIp         string `json:"memberIp"`
-	CreateTime       string `json:"createTime"`
-}
-
-// QueryCommentListResp 查询商品评价列表响应
-type QueryCommentListResp struct {
-	Code    int64             `json:"code"`
-	Message string            `json:"message"`
-	Data    []CommentListItem `json:"data"`
-	Total   int64             `json:"total"`
-}
-
-// QueryCommentDetailReq 查询商品评价详情请求
-type QueryCommentDetailReq struct {
-	Id        string `form:"id"`        // 评价ID
-	ProductId int64  `form:"productId"` // 商品ID（校验归属）
-}
-
-// CommentReplayItem 评价回复项
-type CommentReplayItem struct {
-	Id             string `json:"id"`
-	CommentId      string `json:"commentId"`
-	Type           int    `json:"type"` // 0=会员, 1=管理员
-	MemberNickName string `json:"memberNickName"`
-	MemberIcon     string `json:"memberIcon"`
-	Content        string `json:"content"`
-	CreateTime     string `json:"createTime"`
-}
-
-// QueryCommentDetailResp 查询商品评价详情响应
-type QueryCommentDetailResp struct {
-	Code    int64               `json:"code"`
-	Message string              `json:"message"`
-	Data    CommentListItem     `json:"data"`
-	Replays []CommentReplayItem `json:"replays"`
 }

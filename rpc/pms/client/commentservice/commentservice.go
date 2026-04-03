@@ -49,6 +49,7 @@ type (
 	AddProductVertifyRecordReq                    = pmsclient.AddProductVertifyRecordReq
 	AddProductVertifyRecordResp                   = pmsclient.AddProductVertifyRecordResp
 	BrandData                                     = pmsclient.BrandData
+	CommentAuditLogData                           = pmsclient.CommentAuditLogData
 	CommentListData                               = pmsclient.CommentListData
 	CommentReplayListData                         = pmsclient.CommentReplayListData
 	DeleteCommentReplayReq                        = pmsclient.DeleteCommentReplayReq
@@ -85,6 +86,8 @@ type (
 	DeleteProductSpuResp                          = pmsclient.DeleteProductSpuResp
 	FeightTemplateListData                        = pmsclient.FeightTemplateListData
 	GovernanceScope                               = pmsclient.GovernanceScope
+	HandleCommentAppealReq                        = pmsclient.HandleCommentAppealReq
+	HandleCommentAppealResp                       = pmsclient.HandleCommentAppealResp
 	MemberPriceList                               = pmsclient.MemberPriceList
 	MemberPriceListData                           = pmsclient.MemberPriceListData
 	ProductAttributeDataList                      = pmsclient.ProductAttributeDataList
@@ -112,6 +115,8 @@ type (
 	ProductSpuResp                                = pmsclient.ProductSpuResp
 	ProductVertifyRecordListData                  = pmsclient.ProductVertifyRecordListData
 	QueryBrandListByIdsReq                        = pmsclient.QueryBrandListByIdsReq
+	QueryCommentAuditLogReq                       = pmsclient.QueryCommentAuditLogReq
+	QueryCommentAuditLogResp                      = pmsclient.QueryCommentAuditLogResp
 	QueryCommentDetailReq                         = pmsclient.QueryCommentDetailReq
 	QueryCommentDetailResp                        = pmsclient.QueryCommentDetailResp
 	QueryCommentListReq                           = pmsclient.QueryCommentListReq
@@ -184,8 +189,12 @@ type (
 	QueryProductVertifyRecordDetailResp           = pmsclient.QueryProductVertifyRecordDetailResp
 	QueryProductVertifyRecordListReq              = pmsclient.QueryProductVertifyRecordListReq
 	QueryProductVertifyRecordListResp             = pmsclient.QueryProductVertifyRecordListResp
+	RestoreCommentReq                             = pmsclient.RestoreCommentReq
+	RestoreCommentResp                            = pmsclient.RestoreCommentResp
 	SkuStockData                                  = pmsclient.SkuStockData
 	SkuStockList                                  = pmsclient.SkuStockList
+	SubmitCommentAppealReq                        = pmsclient.SubmitCommentAppealReq
+	SubmitCommentAppealResp                       = pmsclient.SubmitCommentAppealResp
 	UpdateCommentReplayReq                        = pmsclient.UpdateCommentReplayReq
 	UpdateCommentReplayResp                       = pmsclient.UpdateCommentReplayResp
 	UpdateCommentReq                              = pmsclient.UpdateCommentReq
@@ -240,10 +249,18 @@ type (
 		DeleteComment(ctx context.Context, in *DeleteCommentReq, opts ...grpc.CallOption) (*DeleteCommentResp, error)
 		// 更新商品评价
 		UpdateComment(ctx context.Context, in *UpdateCommentReq, opts ...grpc.CallOption) (*UpdateCommentResp, error)
+		// 恢复已屏蔽评价
+		RestoreComment(ctx context.Context, in *RestoreCommentReq, opts ...grpc.CallOption) (*RestoreCommentResp, error)
 		// 查询商品评价详情
 		QueryCommentDetail(ctx context.Context, in *QueryCommentDetailReq, opts ...grpc.CallOption) (*QueryCommentDetailResp, error)
 		// 查询商品评价列表
 		QueryCommentList(ctx context.Context, in *QueryCommentListReq, opts ...grpc.CallOption) (*QueryCommentListResp, error)
+		// 查询评价审核日志
+		QueryCommentAuditLog(ctx context.Context, in *QueryCommentAuditLogReq, opts ...grpc.CallOption) (*QueryCommentAuditLogResp, error)
+		// 提交评价申诉
+		SubmitCommentAppeal(ctx context.Context, in *SubmitCommentAppealReq, opts ...grpc.CallOption) (*SubmitCommentAppealResp, error)
+		// 处理评价申诉
+		HandleCommentAppeal(ctx context.Context, in *HandleCommentAppealReq, opts ...grpc.CallOption) (*HandleCommentAppealResp, error)
 	}
 
 	defaultCommentService struct {
@@ -275,6 +292,12 @@ func (m *defaultCommentService) UpdateComment(ctx context.Context, in *UpdateCom
 	return client.UpdateComment(ctx, in, opts...)
 }
 
+// 恢复已屏蔽评价
+func (m *defaultCommentService) RestoreComment(ctx context.Context, in *RestoreCommentReq, opts ...grpc.CallOption) (*RestoreCommentResp, error) {
+	client := pmsclient.NewCommentServiceClient(m.cli.Conn())
+	return client.RestoreComment(ctx, in, opts...)
+}
+
 // 查询商品评价详情
 func (m *defaultCommentService) QueryCommentDetail(ctx context.Context, in *QueryCommentDetailReq, opts ...grpc.CallOption) (*QueryCommentDetailResp, error) {
 	client := pmsclient.NewCommentServiceClient(m.cli.Conn())
@@ -285,4 +308,22 @@ func (m *defaultCommentService) QueryCommentDetail(ctx context.Context, in *Quer
 func (m *defaultCommentService) QueryCommentList(ctx context.Context, in *QueryCommentListReq, opts ...grpc.CallOption) (*QueryCommentListResp, error) {
 	client := pmsclient.NewCommentServiceClient(m.cli.Conn())
 	return client.QueryCommentList(ctx, in, opts...)
+}
+
+// 查询评价审核日志
+func (m *defaultCommentService) QueryCommentAuditLog(ctx context.Context, in *QueryCommentAuditLogReq, opts ...grpc.CallOption) (*QueryCommentAuditLogResp, error) {
+	client := pmsclient.NewCommentServiceClient(m.cli.Conn())
+	return client.QueryCommentAuditLog(ctx, in, opts...)
+}
+
+// 提交评价申诉
+func (m *defaultCommentService) SubmitCommentAppeal(ctx context.Context, in *SubmitCommentAppealReq, opts ...grpc.CallOption) (*SubmitCommentAppealResp, error) {
+	client := pmsclient.NewCommentServiceClient(m.cli.Conn())
+	return client.SubmitCommentAppeal(ctx, in, opts...)
+}
+
+// 处理评价申诉
+func (m *defaultCommentService) HandleCommentAppeal(ctx context.Context, in *HandleCommentAppealReq, opts ...grpc.CallOption) (*HandleCommentAppealResp, error) {
+	client := pmsclient.NewCommentServiceClient(m.cli.Conn())
+	return client.HandleCommentAppeal(ctx, in, opts...)
 }

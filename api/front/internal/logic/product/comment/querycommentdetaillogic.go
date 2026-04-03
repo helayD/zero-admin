@@ -54,6 +54,10 @@ func (l *QueryCommentDetailLogic) QueryCommentDetail(req *types.QueryCommentDeta
 		return nil, errorx.NewDefaultError(s.Message())
 	}
 
+	if detail.AuditStatus != 1 || detail.Hidden == 1 {
+		return nil, errorx.NewDefaultError("评价不存在或已下架")
+	}
+
 	// Review Fix R-2: productId 归属校验（AC-2: 不显示不属于当前商品的评价记录）
 	if req.ProductId > 0 && detail.ProductId != req.ProductId {
 		return nil, errors.New("无权访问该评价")
@@ -76,7 +80,7 @@ func (l *QueryCommentDetailLogic) QueryCommentDetail(req *types.QueryCommentDeta
 			replays = append(replays, types.CommentReplayItem{
 				Id:             item.Id,
 				CommentId:      item.CommentId,
-				Type:           int(item.Type),
+				Type:           item.Type,
 				MemberNickName: item.MemberNickName,
 				MemberIcon:     item.MemberIcon,
 				Content:        item.Content,
@@ -94,12 +98,12 @@ func (l *QueryCommentDetailLogic) QueryCommentDetail(req *types.QueryCommentDeta
 			MemberId:         detail.MemberId,
 			MemberNickName:   detail.MemberNickName,
 			MemberIcon:       detail.MemberIcon,
-			Star:             int(detail.Star),
+			Star:             detail.Star,
 			Content:          detail.Content,
 			Pics:             detail.Pics,
 			ProductAttribute: detail.ProductAttribute,
-			ShowStatus:       int(detail.ShowStatus),
-			ReplayCount:      int(detail.ReplayCount),
+			ShowStatus:       detail.ShowStatus,
+			ReplayCount:      detail.ReplayCount,
 			MemberIp:         detail.MemberIp,
 			CreateTime:       detail.CreateTime,
 		},

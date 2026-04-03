@@ -1960,11 +1960,15 @@ var ProductCollectService_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
-	CommentService_AddComment_FullMethodName         = "/pmsclient.CommentService/AddComment"
-	CommentService_DeleteComment_FullMethodName      = "/pmsclient.CommentService/DeleteComment"
-	CommentService_UpdateComment_FullMethodName      = "/pmsclient.CommentService/UpdateComment"
-	CommentService_QueryCommentDetail_FullMethodName = "/pmsclient.CommentService/QueryCommentDetail"
-	CommentService_QueryCommentList_FullMethodName   = "/pmsclient.CommentService/QueryCommentList"
+	CommentService_AddComment_FullMethodName           = "/pmsclient.CommentService/AddComment"
+	CommentService_DeleteComment_FullMethodName        = "/pmsclient.CommentService/DeleteComment"
+	CommentService_UpdateComment_FullMethodName        = "/pmsclient.CommentService/UpdateComment"
+	CommentService_RestoreComment_FullMethodName       = "/pmsclient.CommentService/RestoreComment"
+	CommentService_QueryCommentDetail_FullMethodName   = "/pmsclient.CommentService/QueryCommentDetail"
+	CommentService_QueryCommentList_FullMethodName     = "/pmsclient.CommentService/QueryCommentList"
+	CommentService_QueryCommentAuditLog_FullMethodName = "/pmsclient.CommentService/QueryCommentAuditLog"
+	CommentService_SubmitCommentAppeal_FullMethodName  = "/pmsclient.CommentService/SubmitCommentAppeal"
+	CommentService_HandleCommentAppeal_FullMethodName  = "/pmsclient.CommentService/HandleCommentAppeal"
 )
 
 // CommentServiceClient is the client API for CommentService service.
@@ -1977,10 +1981,18 @@ type CommentServiceClient interface {
 	DeleteComment(ctx context.Context, in *DeleteCommentReq, opts ...grpc.CallOption) (*DeleteCommentResp, error)
 	// 更新商品评价
 	UpdateComment(ctx context.Context, in *UpdateCommentReq, opts ...grpc.CallOption) (*UpdateCommentResp, error)
+	// 恢复已屏蔽评价
+	RestoreComment(ctx context.Context, in *RestoreCommentReq, opts ...grpc.CallOption) (*RestoreCommentResp, error)
 	// 查询商品评价详情
 	QueryCommentDetail(ctx context.Context, in *QueryCommentDetailReq, opts ...grpc.CallOption) (*QueryCommentDetailResp, error)
 	// 查询商品评价列表
 	QueryCommentList(ctx context.Context, in *QueryCommentListReq, opts ...grpc.CallOption) (*QueryCommentListResp, error)
+	// 查询评价审核日志
+	QueryCommentAuditLog(ctx context.Context, in *QueryCommentAuditLogReq, opts ...grpc.CallOption) (*QueryCommentAuditLogResp, error)
+	// 提交评价申诉
+	SubmitCommentAppeal(ctx context.Context, in *SubmitCommentAppealReq, opts ...grpc.CallOption) (*SubmitCommentAppealResp, error)
+	// 处理评价申诉
+	HandleCommentAppeal(ctx context.Context, in *HandleCommentAppealReq, opts ...grpc.CallOption) (*HandleCommentAppealResp, error)
 }
 
 type commentServiceClient struct {
@@ -2018,6 +2030,15 @@ func (c *commentServiceClient) UpdateComment(ctx context.Context, in *UpdateComm
 	return out, nil
 }
 
+func (c *commentServiceClient) RestoreComment(ctx context.Context, in *RestoreCommentReq, opts ...grpc.CallOption) (*RestoreCommentResp, error) {
+	out := new(RestoreCommentResp)
+	err := c.cc.Invoke(ctx, CommentService_RestoreComment_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *commentServiceClient) QueryCommentDetail(ctx context.Context, in *QueryCommentDetailReq, opts ...grpc.CallOption) (*QueryCommentDetailResp, error) {
 	out := new(QueryCommentDetailResp)
 	err := c.cc.Invoke(ctx, CommentService_QueryCommentDetail_FullMethodName, in, out, opts...)
@@ -2036,6 +2057,33 @@ func (c *commentServiceClient) QueryCommentList(ctx context.Context, in *QueryCo
 	return out, nil
 }
 
+func (c *commentServiceClient) QueryCommentAuditLog(ctx context.Context, in *QueryCommentAuditLogReq, opts ...grpc.CallOption) (*QueryCommentAuditLogResp, error) {
+	out := new(QueryCommentAuditLogResp)
+	err := c.cc.Invoke(ctx, CommentService_QueryCommentAuditLog_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *commentServiceClient) SubmitCommentAppeal(ctx context.Context, in *SubmitCommentAppealReq, opts ...grpc.CallOption) (*SubmitCommentAppealResp, error) {
+	out := new(SubmitCommentAppealResp)
+	err := c.cc.Invoke(ctx, CommentService_SubmitCommentAppeal_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *commentServiceClient) HandleCommentAppeal(ctx context.Context, in *HandleCommentAppealReq, opts ...grpc.CallOption) (*HandleCommentAppealResp, error) {
+	out := new(HandleCommentAppealResp)
+	err := c.cc.Invoke(ctx, CommentService_HandleCommentAppeal_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CommentServiceServer is the server API for CommentService service.
 // All implementations must embed UnimplementedCommentServiceServer
 // for forward compatibility
@@ -2046,10 +2094,18 @@ type CommentServiceServer interface {
 	DeleteComment(context.Context, *DeleteCommentReq) (*DeleteCommentResp, error)
 	// 更新商品评价
 	UpdateComment(context.Context, *UpdateCommentReq) (*UpdateCommentResp, error)
+	// 恢复已屏蔽评价
+	RestoreComment(context.Context, *RestoreCommentReq) (*RestoreCommentResp, error)
 	// 查询商品评价详情
 	QueryCommentDetail(context.Context, *QueryCommentDetailReq) (*QueryCommentDetailResp, error)
 	// 查询商品评价列表
 	QueryCommentList(context.Context, *QueryCommentListReq) (*QueryCommentListResp, error)
+	// 查询评价审核日志
+	QueryCommentAuditLog(context.Context, *QueryCommentAuditLogReq) (*QueryCommentAuditLogResp, error)
+	// 提交评价申诉
+	SubmitCommentAppeal(context.Context, *SubmitCommentAppealReq) (*SubmitCommentAppealResp, error)
+	// 处理评价申诉
+	HandleCommentAppeal(context.Context, *HandleCommentAppealReq) (*HandleCommentAppealResp, error)
 	mustEmbedUnimplementedCommentServiceServer()
 }
 
@@ -2066,11 +2122,23 @@ func (UnimplementedCommentServiceServer) DeleteComment(context.Context, *DeleteC
 func (UnimplementedCommentServiceServer) UpdateComment(context.Context, *UpdateCommentReq) (*UpdateCommentResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateComment not implemented")
 }
+func (UnimplementedCommentServiceServer) RestoreComment(context.Context, *RestoreCommentReq) (*RestoreCommentResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RestoreComment not implemented")
+}
 func (UnimplementedCommentServiceServer) QueryCommentDetail(context.Context, *QueryCommentDetailReq) (*QueryCommentDetailResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QueryCommentDetail not implemented")
 }
 func (UnimplementedCommentServiceServer) QueryCommentList(context.Context, *QueryCommentListReq) (*QueryCommentListResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QueryCommentList not implemented")
+}
+func (UnimplementedCommentServiceServer) QueryCommentAuditLog(context.Context, *QueryCommentAuditLogReq) (*QueryCommentAuditLogResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QueryCommentAuditLog not implemented")
+}
+func (UnimplementedCommentServiceServer) SubmitCommentAppeal(context.Context, *SubmitCommentAppealReq) (*SubmitCommentAppealResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SubmitCommentAppeal not implemented")
+}
+func (UnimplementedCommentServiceServer) HandleCommentAppeal(context.Context, *HandleCommentAppealReq) (*HandleCommentAppealResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method HandleCommentAppeal not implemented")
 }
 func (UnimplementedCommentServiceServer) mustEmbedUnimplementedCommentServiceServer() {}
 
@@ -2139,6 +2207,24 @@ func _CommentService_UpdateComment_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CommentService_RestoreComment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RestoreCommentReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CommentServiceServer).RestoreComment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CommentService_RestoreComment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CommentServiceServer).RestoreComment(ctx, req.(*RestoreCommentReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _CommentService_QueryCommentDetail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(QueryCommentDetailReq)
 	if err := dec(in); err != nil {
@@ -2175,6 +2261,60 @@ func _CommentService_QueryCommentList_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CommentService_QueryCommentAuditLog_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryCommentAuditLogReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CommentServiceServer).QueryCommentAuditLog(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CommentService_QueryCommentAuditLog_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CommentServiceServer).QueryCommentAuditLog(ctx, req.(*QueryCommentAuditLogReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CommentService_SubmitCommentAppeal_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SubmitCommentAppealReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CommentServiceServer).SubmitCommentAppeal(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CommentService_SubmitCommentAppeal_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CommentServiceServer).SubmitCommentAppeal(ctx, req.(*SubmitCommentAppealReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CommentService_HandleCommentAppeal_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HandleCommentAppealReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CommentServiceServer).HandleCommentAppeal(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CommentService_HandleCommentAppeal_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CommentServiceServer).HandleCommentAppeal(ctx, req.(*HandleCommentAppealReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // CommentService_ServiceDesc is the grpc.ServiceDesc for CommentService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -2195,12 +2335,28 @@ var CommentService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _CommentService_UpdateComment_Handler,
 		},
 		{
+			MethodName: "RestoreComment",
+			Handler:    _CommentService_RestoreComment_Handler,
+		},
+		{
 			MethodName: "QueryCommentDetail",
 			Handler:    _CommentService_QueryCommentDetail_Handler,
 		},
 		{
 			MethodName: "QueryCommentList",
 			Handler:    _CommentService_QueryCommentList_Handler,
+		},
+		{
+			MethodName: "QueryCommentAuditLog",
+			Handler:    _CommentService_QueryCommentAuditLog_Handler,
+		},
+		{
+			MethodName: "SubmitCommentAppeal",
+			Handler:    _CommentService_SubmitCommentAppeal_Handler,
+		},
+		{
+			MethodName: "HandleCommentAppeal",
+			Handler:    _CommentService_HandleCommentAppeal_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

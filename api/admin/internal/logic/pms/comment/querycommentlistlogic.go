@@ -9,9 +9,8 @@ import (
 	"github.com/feihua/zero-admin/api/admin/internal/types"
 	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
 	"github.com/zeromicro/go-zero/core/logc"
-	"google.golang.org/grpc/status"
-
 	"github.com/zeromicro/go-zero/core/logx"
+	"google.golang.org/grpc/status"
 )
 
 // QueryCommentListLogic 查询评价列表
@@ -40,31 +39,30 @@ func (l *QueryCommentListLogic) QueryCommentList(req *types.QueryCommentListReq)
 		return nil, err
 	}
 
-	// showStatus=-1 查全部；传了则使用该值
-	showStatus := int32(-1)
-	if req.ShowStatus >= 0 {
-		showStatus = req.ShowStatus
-	}
-
 	result, err := l.svcCtx.CommentService.QueryCommentList(l.ctx, &pmsclient.QueryCommentListReq{
-		ProductId:  req.ProductId,
-		PlatformId: currentScope.PlatformID,
-		TenantId:   currentScope.TenantID,
-		MerchantId: currentScope.MerchantID,
-		ShowStatus: showStatus,
-		PageNum:    int64(req.Current),
-		PageSize:   int64(req.PageSize),
+		ProductId:   req.ProductId,
+		PlatformId:  currentScope.PlatformID,
+		TenantId:    currentScope.TenantID,
+		MerchantId:  currentScope.MerchantID,
+		ShowStatus:  req.ShowStatus,
+		AuditStatus: req.AuditStatus,
+		Hidden:      req.Hidden,
+		StartTime:   req.StartTime,
+		EndTime:     req.EndTime,
+		ProductName: req.ProductName,
+		MemberName:  req.MemberName,
+		PageNum:     int64(req.Current),
+		PageSize:    int64(req.PageSize),
 	})
-
 	if err != nil {
 		logc.Errorf(l.ctx, "查询评价列表失败,参数:%+v,异常:%s", req, err.Error())
 		s, _ := status.FromError(err)
 		return nil, errorx.NewDefaultError(s.Message())
 	}
 
-	var list []types.CommentListData
+	list := make([]*types.CommentListData, 0, len(result.List))
 	for _, item := range result.List {
-		list = append(list, types.CommentListData{
+		list = append(list, &types.CommentListData{
 			Id:               item.Id,
 			ProductId:        item.ProductId,
 			ProductName:      item.ProductName,
@@ -75,6 +73,17 @@ func (l *QueryCommentListLogic) QueryCommentList(req *types.QueryCommentListReq)
 			Pics:             item.Pics,
 			MemberIcon:       item.MemberIcon,
 			ShowStatus:       item.ShowStatus,
+			AuditStatus:      item.AuditStatus,
+			Hidden:           item.Hidden,
+			AuditRemark:      item.AuditRemark,
+			AuditorId:        item.AuditorId,
+			AuditorName:      item.AuditorName,
+			AuditedAt:        item.AuditedAt,
+			AppealStatus:     item.AppealStatus,
+			AppealReason:     item.AppealReason,
+			AppealReply:      item.AppealReply,
+			AppealedAt:       item.AppealedAt,
+			AppealHandledAt:  item.AppealHandledAt,
 			ProductAttribute: item.ProductAttribute,
 			ReplayCount:      item.ReplayCount,
 			MemberIp:         item.MemberIp,
@@ -83,18 +92,12 @@ func (l *QueryCommentListLogic) QueryCommentList(req *types.QueryCommentListReq)
 	}
 
 	return &types.QueryCommentListResp{
-		Code:    "000000",
-		Message: "查询成功",
-		Data: types.CommentListPage{
-			List:  list,
-			Total: result.Total,
-		},
+		Code:     "000000",
+		Message:  "查询成功",
+		Current:  req.Current,
+		Data:     list,
+		PageSize: req.PageSize,
+		Success:  true,
+		Total:    result.Total,
 	}, nil
 }
-
-// TODO(M-1): Admin 评价列表时间范围过滤
-// 当前 FindPage 未支持 createTime 范围查询，待 Story 9-x 统一评价管理增强时实现：
-// 1. 修改 rpc/pms/gen/model/product_comment_model.go FindPage 签名添加 startTime/endTime 参数
-// 2. 修改 pms.proto QueryCommentListReq 添加 start_time / end_time 字段
-// 3. Admin API types.QueryCommentListReq 添加 BeginTime / EndTime 字段
-// 4. Admin logic 将时间参数透传至 RPC

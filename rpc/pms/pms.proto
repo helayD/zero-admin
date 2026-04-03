@@ -769,11 +769,28 @@ message UpdateCommentReq {
   int64 merchant_id = 19; //商户ID
   // Review Fix H-NEW-1: 支持批量操作
   string ids = 20; //批量操作时多个ID，逗号分隔
+  int32 audit_status = 21; //审核状态：0-待审核，1-审核通过，2-审核拒绝，3-已屏蔽
+  string audit_remark = 22; //审核备注/拒绝原因
+  int32 hidden = 23; //是否屏蔽：0-显示，1-屏蔽
+  int64 auditor_id = 24; //审核人ID
 }
 
 message UpdateCommentResp {
   string pong = 1;
   int64 affected_count = 2; //影响的记录数（批量操作时>1）
+}
+
+message RestoreCommentReq {
+  string id = 1; //评论ID（MongoDB ObjectID）
+  int64 platform_id = 2; //平台ID
+  int64 tenant_id = 3; //租户ID
+  int64 merchant_id = 4; //商户ID
+  int64 auditor_id = 5; //审核人ID
+  string operator_name = 6; //审核人名称
+}
+
+message RestoreCommentResp {
+  string pong = 1;
 }
 
 
@@ -805,6 +822,17 @@ message QueryCommentDetailResp {
   int64 platform_id = 17; // 平台ID
   int64 tenant_id = 18; // 租户ID
   int64 merchant_id = 19; // 商户ID
+  int32 audit_status = 20; //审核状态
+  string audit_remark = 21; //审核备注
+  int64 auditor_id = 22; //审核人ID
+  string auditor_name = 23; //审核人名称
+  string audited_at = 24; //审核时间
+  int32 hidden = 25; //是否屏蔽
+  int32 appeal_status = 26; //申诉状态
+  string appeal_reason = 27; //申诉原因
+  string appeal_reply = 28; //申诉回复
+  string appealed_at = 29; //申诉时间
+  string appeal_handled_at = 30; //申诉处理时间
 }
 
 // 分页查询商品评价列表
@@ -816,6 +844,12 @@ message QueryCommentListReq {
   int64 tenant_id = 5; //租户ID
   int64 merchant_id = 6; //商户ID
   int32 show_status = 7; //筛选审核状态（可选，默认查已通过）
+  int32 audit_status = 8; //审核状态筛选（-1=全部）
+  int32 hidden = 9; //屏蔽状态筛选（-1=全部）
+  string start_time = 10; //开始时间
+  string end_time = 11; //结束时间
+  string product_name = 12; //商品名称
+  string member_name = 13; //会员昵称
 }
 
 message CommentListData {
@@ -835,11 +869,77 @@ message CommentListData {
   string member_icon = 14; //评论用户头像
   int32 replay_count = 15; //回复数量
   int64 member_id = 16; //会员ID
+  int32 audit_status = 17; //审核状态
+  int32 hidden = 18; //是否屏蔽
+  string audit_remark = 19; //审核备注
+  int64 auditor_id = 20; //审核人ID
+  string auditor_name = 21; //审核人名称
+  string audited_at = 22; //审核时间
+  int32 appeal_status = 23; //申诉状态
+  string appeal_reason = 24; //申诉原因
+  string appeal_reply = 25; //申诉回复
+  string appealed_at = 26; //申诉时间
+  string appeal_handled_at = 27; //申诉处理时间
 }
 
 message QueryCommentListResp {
   int64 total = 1;
   repeated  CommentListData list = 2;
+}
+
+message QueryCommentAuditLogReq {
+  string comment_id = 1; //评论ID（MongoDB ObjectID）
+  int64 page_num = 2;
+  int64 page_size = 3;
+  int64 platform_id = 4; //平台ID
+  int64 tenant_id = 5; //租户ID
+  int64 merchant_id = 6; //商户ID
+}
+
+message CommentAuditLogData {
+  int64 id = 1;
+  string comment_id = 2;
+  string action = 3; //approve/reject/hide/restore/appeal_submit/appeal_handle
+  int32 from_status = 4; //变更前审核状态
+  int32 to_status = 5; //变更后审核状态
+  int64 operator_id = 6; //操作人ID
+  string operator_name = 7; //操作人名称
+  string remark = 8; //备注
+  string created_at = 9; //创建时间
+}
+
+message QueryCommentAuditLogResp {
+  int64 total = 1;
+  repeated CommentAuditLogData list = 2;
+}
+
+message SubmitCommentAppealReq {
+  string id = 1; //评论ID（MongoDB ObjectID）
+  int64 member_id = 2; //申诉会员ID
+  string operator_name = 3; //申诉人昵称
+  string appeal_reason = 4; //申诉原因
+  int64 platform_id = 5; //平台ID
+  int64 tenant_id = 6; //租户ID
+  int64 merchant_id = 7; //商户ID
+}
+
+message SubmitCommentAppealResp {
+  string pong = 1;
+}
+
+message HandleCommentAppealReq {
+  string id = 1; //评论ID（MongoDB ObjectID）
+  int32 appeal_status = 2; //处理结果：2-申诉通过，3-申诉驳回
+  string appeal_reply = 3; //处理回复
+  int64 operator_id = 4; //处理人ID
+  string operator_name = 5; //处理人名称
+  int64 platform_id = 6; //平台ID
+  int64 tenant_id = 7; //租户ID
+  int64 merchant_id = 8; //商户ID
+}
+
+message HandleCommentAppealResp {
+  string pong = 1;
 }
 
 // 商品评价
@@ -850,11 +950,18 @@ service CommentService {
   rpc DeleteComment(DeleteCommentReq) returns (DeleteCommentResp){}
   // 更新商品评价
   rpc UpdateComment(UpdateCommentReq) returns (UpdateCommentResp ){}
+  // 恢复已屏蔽评价
+  rpc RestoreComment(RestoreCommentReq) returns (RestoreCommentResp){}
   // 查询商品评价详情
   rpc QueryCommentDetail(QueryCommentDetailReq) returns (QueryCommentDetailResp){}
   // 查询商品评价列表
   rpc QueryCommentList(QueryCommentListReq) returns (QueryCommentListResp){}
-
+  // 查询评价审核日志
+  rpc QueryCommentAuditLog(QueryCommentAuditLogReq) returns (QueryCommentAuditLogResp){}
+  // 提交评价申诉
+  rpc SubmitCommentAppeal(SubmitCommentAppealReq) returns (SubmitCommentAppealResp){}
+  // 处理评价申诉
+  rpc HandleCommentAppeal(HandleCommentAppealReq) returns (HandleCommentAppealResp){}
 
 }
 // 添加产品评价回复

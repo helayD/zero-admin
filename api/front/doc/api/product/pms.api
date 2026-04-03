@@ -1,6 +1,7 @@
 import "./product.api"
 import "./product_brand.api"
 import "./product_category.api"
+import "./product_comment.api"
 
 info (
 	title:       "商品管理 API"

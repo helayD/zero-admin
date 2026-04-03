@@ -63,23 +63,17 @@ func (l *QueryPreferredAreaListLogic) QueryPreferredAreaList(req *types.QueryPre
 	var list []*types.QueryPreferredAreaListData
 
 	for _, item := range result.List {
-		effectiveStatus := "未发布"
-		if item.ShowStatus == 1 {
-			effectiveStatus = "已发布"
-		}
-
 		list = append(list, &types.QueryPreferredAreaListData{
-			Id:              item.Id,         // 主键ID
-			Name:            item.Name,       // 专区名称
-			SubTitle:        item.SubTitle,   // 子标题
-			Pic:             item.Pic,        // 展示图片
-			Sort:            item.Sort,       // 排序
-			ShowStatus:      item.ShowStatus, // 显示状态：0->不显示；1->显示
-			CreateBy:        item.CreateBy,   // 创建者
-			CreateTime:      item.CreateTime, // 创建时间
-			UpdateBy:        item.UpdateBy,   // 更新者
-			UpdateTime:      item.UpdateTime, // 更新时间
-			EffectiveStatus: effectiveStatus,
+			Id:         item.Id,         // 主键ID
+			Name:       item.Name,       // 专区名称
+			SubTitle:   item.SubTitle,   // 子标题
+			Pic:        item.Pic,        // 展示图片
+			Sort:       item.Sort,       // 排序
+			ShowStatus: item.ShowStatus, // 显示状态：0->不显示；1->显示
+			CreateBy:   item.CreateBy,   // 创建者
+			CreateTime: item.CreateTime, // 创建时间
+			UpdateBy:   item.UpdateBy,   // 更新者
+			UpdateTime: item.UpdateTime, // 更新时间
 		})
 	}
 

@@ -15,6 +15,7 @@ import (
 	omsorder_return "github.com/feihua/zero-admin/api/admin/internal/handler/oms/order_return"
 	omsorder_setting "github.com/feihua/zero-admin/api/admin/internal/handler/oms/order_setting"
 	omsreturn_reason "github.com/feihua/zero-admin/api/admin/internal/handler/oms/return_reason"
+	pmscomment "github.com/feihua/zero-admin/api/admin/internal/handler/pms/comment"
 	pmsproduct_attribute "github.com/feihua/zero-admin/api/admin/internal/handler/pms/product_attribute"
 	pmsproduct_attribute_group "github.com/feihua/zero-admin/api/admin/internal/handler/pms/product_attribute_group"
 	pmsproduct_brand "github.com/feihua/zero-admin/api/admin/internal/handler/pms/product_brand"
@@ -409,6 +410,51 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		),
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
 		rest.WithPrefix("/api/oms/returnReason"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.CheckUrl},
+			[]rest.Route{
+				{
+					Method:  http.MethodPost,
+					Path:    "/:id/audit",
+					Handler: pmscomment.AuditCommentHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/:id/restore",
+					Handler: pmscomment.RestoreCommentHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/:id/appeal",
+					Handler: pmscomment.HandleCommentAppealHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/audit-log",
+					Handler: pmscomment.QueryCommentAuditLogHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryCommentDetail",
+					Handler: pmscomment.QueryCommentDetailHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryCommentList",
+					Handler: pmscomment.QueryCommentListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/updateComment",
+					Handler: pmscomment.UpdateCommentHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/pms/comment"),
 	)
 
 	server.AddRoutes(
@@ -1317,13 +1363,18 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Route{
 				{
 					Method:  http.MethodGet,
-					Path:    "/queryAuditCenterDetail",
-					Handler: syslog.QueryAuditCenterDetailHandler(serverCtx),
+					Path:    "/deleteLoginLog",
+					Handler: syslog.DeleteLoginLogHandler(serverCtx),
 				},
 				{
 					Method:  http.MethodGet,
-					Path:    "/queryAuditCenterList",
-					Handler: syslog.QueryAuditCenterListHandler(serverCtx),
+					Path:    "/queryLoginLogDetail",
+					Handler: syslog.QueryLoginLogDetailHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryLoginLogList",
+					Handler: syslog.QueryLoginLogListHandler(serverCtx),
 				},
 			}...,
 		),
@@ -1362,18 +1413,13 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Route{
 				{
 					Method:  http.MethodGet,
-					Path:    "/deleteLoginLog",
-					Handler: syslog.DeleteLoginLogHandler(serverCtx),
+					Path:    "/queryAuditCenterDetail",
+					Handler: syslog.QueryAuditCenterDetailHandler(serverCtx),
 				},
 				{
 					Method:  http.MethodGet,
-					Path:    "/queryLoginLogDetail",
-					Handler: syslog.QueryLoginLogDetailHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodGet,
-					Path:    "/queryLoginLogList",
-					Handler: syslog.QueryLoginLogListHandler(serverCtx),
+					Path:    "/queryAuditCenterList",
+					Handler: syslog.QueryAuditCenterListHandler(serverCtx),
 				},
 			}...,
 		),
