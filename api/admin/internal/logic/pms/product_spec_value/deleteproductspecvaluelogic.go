@@ -2,6 +2,7 @@ package product_spec_value
 
 import (
 	"context"
+	"github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
 	"github.com/feihua/zero-admin/api/admin/internal/types"
@@ -33,8 +34,23 @@ func NewDeleteProductSpecValueLogic(ctx context.Context, svcCtx *svc.ServiceCont
 
 // DeleteProductSpecValue 删除商品规格值
 func (l *DeleteProductSpecValueLogic) DeleteProductSpecValue(req *types.DeleteProductSpecValueReq) (resp *types.BaseResp, err error) {
+	userId, err := common.GetUserId(l.ctx)
+	if err != nil {
+		return nil, err
+	}
+	writeScope, err := common.ResolveWriteGovernanceScope(l.ctx, common.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
 	_, err = l.svcCtx.ProductSpecValueService.DeleteProductSpecValue(l.ctx, &pmsclient.DeleteProductSpecValueReq{
-		Ids: req.Ids,
+		Ids:      req.Ids,
+		UpdateBy: userId,
+		Scope:    common.PMSGovernanceScope(writeScope),
 	})
 
 	if err != nil {

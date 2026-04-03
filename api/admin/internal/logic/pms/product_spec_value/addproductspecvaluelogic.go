@@ -38,12 +38,22 @@ func (l *AddProductSpecValueLogic) AddProductSpecValue(req *types.AddProductSpec
 	if err != nil {
 		return nil, err
 	}
+	writeScope, err := common.ResolveWriteGovernanceScope(l.ctx, common.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
 	_, err = l.svcCtx.ProductSpecValueService.AddProductSpecValue(l.ctx, &pmsclient.AddProductSpecValueReq{
 		SpecId:   req.SpecId, // 规格ID
 		Value:    req.Value,  // 规格值
 		Sort:     req.Sort,   // 排序
 		Status:   req.Status, // 状态：0->禁用；1->启用
 		CreateBy: userId,     // 创建人ID
+		Scope:    common.PMSGovernanceScope(writeScope),
 	})
 
 	if err != nil {

@@ -206,7 +206,7 @@ const ProductCategoryList: React.FC = () => {
     {
       title: '是否显示在导航栏',
       dataIndex: 'navStatus',
-      renderFormItem: (text, row, index) => {
+      renderFormItem: (_, row) => {
         return (
           <Select
             value={row.value}
@@ -247,7 +247,7 @@ const ProductCategoryList: React.FC = () => {
     {
       title: '是否启用',
       dataIndex: 'isEnabled',
-      renderFormItem: (text, row, index) => {
+      renderFormItem: (_, row) => {
         return (
           <Select
             value={row.value}
@@ -379,6 +379,7 @@ const ProductCategoryList: React.FC = () => {
           }
         }}
         addVisible={addVisible}
+        scope={scope}
       />
 
       <UpdateModal
@@ -401,6 +402,7 @@ const ProductCategoryList: React.FC = () => {
         }}
         updateVisible={updateVisible}
         currentData={currentRow || {}}
+        scope={scope}
       />
 
       <Drawer

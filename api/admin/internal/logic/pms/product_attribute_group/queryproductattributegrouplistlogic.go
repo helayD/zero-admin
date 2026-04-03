@@ -2,6 +2,7 @@ package product_attribute_group
 
 import (
 	"context"
+	"github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
 	"github.com/feihua/zero-admin/api/admin/internal/types"
@@ -33,12 +34,22 @@ func NewQueryProductAttributeGroupListLogic(ctx context.Context, svcCtx *svc.Ser
 
 // QueryProductAttributeGroupList 查询商品属性分组列表
 func (l *QueryProductAttributeGroupListLogic) QueryProductAttributeGroupList(req *types.QueryProductAttributeGroupListReq) (resp *types.QueryProductAttributeGroupListResp, err error) {
+	queryScope, err := common.ResolveQueryGovernanceScope(l.ctx, common.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
 	result, err := l.svcCtx.ProductAttributeGroupService.QueryProductAttributeGroupList(l.ctx, &pmsclient.QueryProductAttributeGroupListReq{
 		PageNum:    req.Current,
 		PageSize:   req.PageSize,
 		CategoryId: req.CategoryId, // 分类ID
 		Name:       req.Name,       // 分组名称
 		Status:     req.Status,     // 状态：0->禁用；1->启用
+		Scope:      common.PMSGovernanceScope(queryScope),
 	})
 
 	if err != nil {
@@ -60,7 +71,11 @@ func (l *QueryProductAttributeGroupListLogic) QueryProductAttributeGroupList(req
 			CreateTime: detail.CreateTime, // 创建时间
 			UpdateBy:   detail.UpdateBy,   // 更新人ID
 			UpdateTime: detail.UpdateTime, // 更新时间
-
+			IsDeleted:  detail.IsDeleted,  // 是否删除
+			ScopeType:  detail.ScopeType,
+			PlatformId: detail.PlatformId,
+			TenantId:   detail.TenantId,
+			MerchantId: detail.MerchantId,
 		})
 	}
 

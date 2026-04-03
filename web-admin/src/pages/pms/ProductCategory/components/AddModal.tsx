@@ -3,11 +3,14 @@ import { Form, Input, InputNumber, message, Modal, Radio, Select } from 'antd';
 import type { ProductCategoryListItem} from '../data.d';
 import { queryProductCategoryList } from '../service';
 import UploadFileComponents from "@/components/common/UploadFileComponents";
+import type { GovernanceScopeValue } from '@/pages/system/components/governance';
+import { toGovernancePayload } from '@/pages/system/components/governance';
 
 export interface AddModalProps {
   onCancel: () => void;
   onSubmit: (values: ProductCategoryListItem) => void;
   addVisible: boolean;
+  scope: GovernanceScopeValue;
 }
 
 const FormItem = Form.Item;
@@ -24,13 +27,14 @@ const AddModal: React.FC<AddModalProps> = (props) => {
     onSubmit,
     onCancel,
     addVisible,
+    scope,
   } = props;
 
   useEffect(() => {
     if (form && !addVisible) {
       form.resetFields();
     }
-    queryProductCategoryList({parentId: 0}).then((res) => {
+    queryProductCategoryList({parentId: 0, ...toGovernancePayload(scope)}).then((res) => {
       if (res.code === '000000') {
         const map = res.data.map((item: { id: any; name: any; }) => ({
           value: item.id,
@@ -42,12 +46,11 @@ const AddModal: React.FC<AddModalProps> = (props) => {
         })
         setParentIdMap(map);
       } else {
-        message.error(res.msg);
+        message.error(res.message || '加载上级分类失败');
       }
     });
 
-
-  }, [props.addVisible]);
+  }, [addVisible, form, scope]);
 
 
   const handleSubmit = () => {

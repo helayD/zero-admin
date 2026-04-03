@@ -1,5 +1,36 @@
 package product_attribute
-import ("context"; "github.com/feihua/zero-admin/api/admin/internal/common"; "github.com/feihua/zero-admin/api/admin/internal/common/errorx"; "github.com/feihua/zero-admin/api/admin/internal/svc"; "github.com/feihua/zero-admin/api/admin/internal/types"; "github.com/feihua/zero-admin/rpc/pms/pmsclient"; "github.com/zeromicro/go-zero/core/logc"; "github.com/zeromicro/go-zero/core/logx"; "google.golang.org/grpc/status")
-type QueryProductAttributeDetailLogic struct { logx.Logger; ctx context.Context; svcCtx *svc.ServiceContext }
-func NewQueryProductAttributeDetailLogic(ctx context.Context, svcCtx *svc.ServiceContext) *QueryProductAttributeDetailLogic { return &QueryProductAttributeDetailLogic{Logger:logx.WithContext(ctx),ctx:ctx,svcCtx:svcCtx} }
-func (l *QueryProductAttributeDetailLogic) QueryProductAttributeDetail(req *types.QueryProductAttributeDetailReq) (resp *types.QueryProductAttributeDetailResp, err error) { queryScope, err := common.ResolveQueryGovernanceScope(l.ctx, common.RequestedGovernanceScope{ScopeType:req.ScopeType, PlatformID:req.PlatformId, TenantID:req.TenantId, MerchantID:req.MerchantId}); if err != nil { return nil, errorx.NewDefaultError(err.Error()) }; detail, err := l.svcCtx.ProductAttributeService.QueryProductAttributeDetail(l.ctx, &pmsclient.QueryProductAttributeDetailReq{Id:req.Id,Scope:common.PMSGovernanceScope(queryScope)}); if err != nil { logc.Errorf(l.ctx, "查询商品属性详情失败,参数：%+v,响应：%s", req, err.Error()); s,_ := status.FromError(err); return nil, errorx.NewDefaultError(s.Message()) }; return &types.QueryProductAttributeDetailResp{Code:"000000",Message:"查询商品属性详情成功",Data:types.QueryProductAttributeDetailData{Id:detail.Id,GroupId:detail.GroupId,Name:detail.Name,InputType:detail.InputType,ValueType:detail.ValueType,InputList:detail.InputList,Unit:detail.Unit,IsRequired:detail.IsRequired,IsSearchable:detail.IsSearchable,IsShow:detail.IsShow,Sort:detail.Sort,Status:detail.Status,CreateBy:detail.CreateBy,CreateTime:detail.CreateTime,UpdateBy:detail.UpdateBy,UpdateTime:detail.UpdateTime,ScopeType:detail.ScopeType,PlatformId:detail.PlatformId,TenantId:detail.TenantId,MerchantId:detail.MerchantId}}, nil }
+
+import (
+	"context"
+	"github.com/feihua/zero-admin/api/admin/internal/common"
+	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
+	"github.com/feihua/zero-admin/api/admin/internal/svc"
+	"github.com/feihua/zero-admin/api/admin/internal/types"
+	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
+	"github.com/zeromicro/go-zero/core/logc"
+	"github.com/zeromicro/go-zero/core/logx"
+	"google.golang.org/grpc/status"
+)
+
+type QueryProductAttributeDetailLogic struct {
+	logx.Logger
+	ctx    context.Context
+	svcCtx *svc.ServiceContext
+}
+
+func NewQueryProductAttributeDetailLogic(ctx context.Context, svcCtx *svc.ServiceContext) *QueryProductAttributeDetailLogic {
+	return &QueryProductAttributeDetailLogic{Logger: logx.WithContext(ctx), ctx: ctx, svcCtx: svcCtx}
+}
+func (l *QueryProductAttributeDetailLogic) QueryProductAttributeDetail(req *types.QueryProductAttributeDetailReq) (resp *types.QueryProductAttributeDetailResp, err error) {
+	queryScope, err := common.ResolveQueryGovernanceScope(l.ctx, common.RequestedGovernanceScope{ScopeType: req.ScopeType, PlatformID: req.PlatformId, TenantID: req.TenantId, MerchantID: req.MerchantId})
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
+	detail, err := l.svcCtx.ProductAttributeService.QueryProductAttributeDetail(l.ctx, &pmsclient.QueryProductAttributeDetailReq{Id: req.Id, Scope: common.PMSGovernanceScope(queryScope)})
+	if err != nil {
+		logc.Errorf(l.ctx, "查询商品属性详情失败,参数：%+v,响应：%s", req, err.Error())
+		s, _ := status.FromError(err)
+		return nil, errorx.NewDefaultError(s.Message())
+	}
+	return &types.QueryProductAttributeDetailResp{Code: "000000", Message: "查询商品属性详情成功", Data: types.QueryProductAttributeDetailData{Id: detail.Id, GroupId: detail.GroupId, Name: detail.Name, InputType: detail.InputType, ValueType: detail.ValueType, InputList: detail.InputList, Unit: detail.Unit, IsRequired: detail.IsRequired, IsSearchable: detail.IsSearchable, IsShow: detail.IsShow, Sort: detail.Sort, Status: detail.Status, CreateBy: detail.CreateBy, CreateTime: detail.CreateTime, UpdateBy: detail.UpdateBy, UpdateTime: detail.UpdateTime, ScopeType: detail.ScopeType, PlatformId: detail.PlatformId, TenantId: detail.TenantId, MerchantId: detail.MerchantId}}, nil
+}

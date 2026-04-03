@@ -76,7 +76,7 @@ export async function queryProductCategoryDetail(id: number, scope?: ScopePayloa
 }
 
 // 分页查询产品分类列表
-export async function queryProductCategoryList(params: ProductCategoryListParams) {
+export async function queryProductCategoryList(params: ProductCategoryListParams & ScopePayload) {
 
   return request('/api/pms/category/queryProductCategoryList', {
     method: 'GET',
