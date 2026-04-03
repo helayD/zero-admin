@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/feihua/zero-admin/rpc/oms/gen/model"
-	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/rpc/oms/internal/svc"
 	omsclient "github.com/feihua/zero-admin/rpc/oms/omsclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -32,7 +31,7 @@ func NewReplayCompensationChainLogic(ctx context.Context, svcCtx *svc.ServiceCon
 // 重新发布 oms.order.cancelled.v1 事件，触发完整 MQ 消费链路
 func (l *ReplayCompensationChainLogic) ReplayCompensationChain(in *omsclient.ReplayCompensationChainReq) (*omsclient.ReplayCompensationChainResp, error) {
 	// 1. 主体范围校验
-	if in.PlatformId == 0 || in.TenantId == 0 {
+	if !hasRequiredChainScope(in.PlatformId) {
 		return &omsclient.ReplayCompensationChainResp{Code: 400, Msg: "主体范围参数不完整"}, nil
 	}
 
@@ -84,8 +83,8 @@ func (l *ReplayCompensationChainLogic) ReplayCompensationChain(in *omsclient.Rep
 			Updates(map[string]interface{}{
 				"consistency_stage":    4,
 				"consistency_result":   1,
-				"retry_count":         0,
-				"last_error":          "",
+				"retry_count":          0,
+				"last_error":           "",
 				"last_compensation_at": time.Now(),
 				"manual_required":      0,
 			}).Error; err != nil {
@@ -100,18 +99,13 @@ func (l *ReplayCompensationChainLogic) ReplayCompensationChain(in *omsclient.Rep
 
 	// 7. 重新发布补偿事件
 	traceID := fmt.Sprintf("order-comp-%d-replay-%d", in.OrderId, time.Now().UnixMilli())
-	current := pkgscope.GovernanceScope{
-		PlatformID: in.PlatformId,
-		TenantID:   in.TenantId,
-		MerchantID: in.MerchantId,
-		ScopeType:  "tenant",
-	}
+	current := buildOrderGovernanceScope(&order)
 
 	sendOrderEvent(l.ctx, l.svcCtx, "order.cancel.queue", "order.cancelled.key",
 		"oms.order.cancelled.v1", "manual_replay", in.OrderId, current, in.OperatorId,
 		map[string]interface{}{
-			"orderNo":       order.OrderNo,
-			"replayReason":  in.ReplayReason,
+			"orderNo":      order.OrderNo,
+			"replayReason": in.ReplayReason,
 		})
 
 	logc.Infof(l.ctx, "ReplayCompensationChain 回放链路, orderId=%d, replayReason=%s, traceId=%s",

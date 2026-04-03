@@ -27,7 +27,7 @@ func NewQueryChainActionsLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 
 // QueryChainActions 查询可用干预动作
 func (l *QueryChainActionsLogic) QueryChainActions(in *omsclient.QueryChainActionsReq) (*omsclient.QueryChainActionsResp, error) {
-	if in.PlatformId == 0 || in.TenantId == 0 {
+	if !hasRequiredChainScope(in.PlatformId) {
 		return &omsclient.QueryChainActionsResp{Code: 400, Msg: "主体范围参数不完整"}, nil
 	}
 
@@ -64,8 +64,8 @@ func (l *QueryChainActionsLogic) QueryChainActions(in *omsclient.QueryChainActio
 	}
 
 	return &omsclient.QueryChainActionsResp{
-		Code:              0,
-		Msg:               "查询成功",
+		Code:             0,
+		Msg:              "查询成功",
 		AvailableActions: actions,
 	}, nil
 }

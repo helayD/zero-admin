@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/feihua/zero-admin/rpc/oms/gen/model"
-	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/rpc/oms/internal/svc"
 	omsclient "github.com/feihua/zero-admin/rpc/oms/omsclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -32,7 +31,7 @@ func NewRetryCompensationChainLogic(ctx context.Context, svcCtx *svc.ServiceCont
 // 幂等性由消费者的 Redis idempotentKey 保证
 func (l *RetryCompensationChainLogic) RetryCompensationChain(in *omsclient.RetryCompensationChainReq) (*omsclient.RetryCompensationChainResp, error) {
 	// 1. 主体范围校验
-	if in.PlatformId == 0 || in.TenantId == 0 {
+	if !hasRequiredChainScope(in.PlatformId) {
 		return &omsclient.RetryCompensationChainResp{Code: 400, Msg: "主体范围参数不完整"}, nil
 	}
 
@@ -70,10 +69,10 @@ func (l *RetryCompensationChainLogic) RetryCompensationChain(in *omsclient.Retry
 	result := l.svcCtx.DB.WithContext(l.ctx).Model(&model.OmsOrderMain{}).
 		Where("id = ?", in.OrderId).
 		Updates(map[string]interface{}{
-			"consistency_stage":      4,
-			"consistency_result":     1,
-			"last_compensation_at":   time.Now(),
-			"retry_count":            newRetryCount,
+			"consistency_stage":    4,
+			"consistency_result":   1,
+			"last_compensation_at": time.Now(),
+			"retry_count":          newRetryCount,
 		})
 	if result.Error != nil {
 		logc.Errorf(l.ctx, "RetryCompensationChain 更新链路状态失败, orderId=%d, err=%s", in.OrderId, result.Error.Error())
@@ -81,12 +80,7 @@ func (l *RetryCompensationChainLogic) RetryCompensationChain(in *omsclient.Retry
 	}
 
 	// 7. 重新发布补偿事件（触发完整 MQ 消费链路）
-	current := pkgscope.GovernanceScope{
-		PlatformID: in.PlatformId,
-		TenantID:   in.TenantId,
-		MerchantID: in.MerchantId,
-		ScopeType:  "tenant",
-	}
+	current := buildOrderGovernanceScope(&order)
 
 	sendOrderEvent(l.ctx, l.svcCtx, "order.cancel.queue", "order.cancelled.key",
 		"oms.order.cancelled.v1", "manual_retry", in.OrderId, current, in.OperatorId,
