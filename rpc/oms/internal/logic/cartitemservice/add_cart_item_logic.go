@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/feihua/zero-admin/pkg/operatefunnel"
 	"github.com/feihua/zero-admin/rpc/oms/gen/model"
 	"github.com/feihua/zero-admin/rpc/oms/gen/query"
 	"github.com/feihua/zero-admin/rpc/oms/internal/svc"
@@ -47,6 +48,8 @@ func (l *AddCartItemLogic) AddCartItem(in *omsclient.AddCartItemReq) (*omsclient
 		timeoutDays = 30 // 默认30天，防止配置缺失时购物车立即过期
 	}
 	expireTime := now.AddDate(0, 0, timeoutDays)
+	activityType := operatefunnel.NormalizeActivityType(in.ActivityType)
+	activityID := in.ActivityId
 
 	newItem := &model.OmsCartItem{
 		MemberID:          in.MemberId,
@@ -79,11 +82,20 @@ func (l *AddCartItemLogic) AddCartItem(in *omsclient.AddCartItemReq) (*omsclient
 		(member_id, product_id, product_sku_id, quantity, price, selected,
 		 product_name, product_sub_title, product_pic, product_sku_code, product_sn,
 		 product_brand, product_category_id, product_attr, member_nickname, source,
+		 activity_type, activity_id,
 		 delete_status, expire_time, create_time, update_time)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)
 		ON DUPLICATE KEY UPDATE
 		quantity = quantity + VALUES(quantity),
 		selected = VALUES(selected),
+		activity_type = CASE
+			WHEN VALUES(activity_type) <> 'none' THEN VALUES(activity_type)
+			ELSE activity_type
+		END,
+		activity_id = CASE
+			WHEN VALUES(activity_type) <> 'none' THEN VALUES(activity_id)
+			ELSE activity_id
+		END,
 		update_time = VALUES(update_time)`,
 		newItem.MemberID, newItem.ProductID, newItem.ProductSkuID, newItem.Quantity,
 		newItem.Price, newItem.Selected,
@@ -91,6 +103,7 @@ func (l *AddCartItemLogic) AddCartItem(in *omsclient.AddCartItemReq) (*omsclient
 		newItem.ProductSkuCode, newItem.ProductSn,
 		newItem.ProductBrand, newItem.ProductCategoryID, newItem.ProductAttr,
 		newItem.MemberNickname, newItem.Source,
+		activityType, activityID,
 		newItem.ExpireTime, newItem.CreateTime, now,
 	).Error
 	if err != nil {

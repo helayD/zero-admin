@@ -448,7 +448,7 @@ type CouponRecordServiceClient interface {
 	QueryCouponRecordList(ctx context.Context, in *QueryCouponRecordListReq, opts ...grpc.CallOption) (*QueryCouponRecordListResp, error)
 	// 获取会员优惠券
 	QueryMemberCouponList(ctx context.Context, in *QueryMemberCouponListReq, opts ...grpc.CallOption) (*QueryMemberCouponListResp, error)
-	// 查询可领取的优惠券列表
+	// 获取可领取优惠券
 	QueryAvailableCoupons(ctx context.Context, in *QueryAvailableCouponsReq, opts ...grpc.CallOption) (*QueryAvailableCouponsResp, error)
 }
 
@@ -539,7 +539,7 @@ type CouponRecordServiceServer interface {
 	QueryCouponRecordList(context.Context, *QueryCouponRecordListReq) (*QueryCouponRecordListResp, error)
 	// 获取会员优惠券
 	QueryMemberCouponList(context.Context, *QueryMemberCouponListReq) (*QueryMemberCouponListResp, error)
-	// 查询可领取的优惠券列表
+	// 获取可领取优惠券
 	QueryAvailableCoupons(context.Context, *QueryAvailableCouponsReq) (*QueryAvailableCouponsResp, error)
 	mustEmbedUnimplementedCouponRecordServiceServer()
 }
@@ -1564,6 +1564,208 @@ var HomeAdvertiseService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "QueryHomeAdvertiseList",
 			Handler:    _HomeAdvertiseService_QueryHomeAdvertiseList_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "rpc/sms/sms.proto",
+}
+
+const (
+	OperateDashboardService_RecordOperateFunnelEvent_FullMethodName    = "/smsclient.OperateDashboardService/RecordOperateFunnelEvent"
+	OperateDashboardService_QueryOperateTrafficFunnel_FullMethodName   = "/smsclient.OperateDashboardService/QueryOperateTrafficFunnel"
+	OperateDashboardService_QueryOperateCouponRedeem_FullMethodName    = "/smsclient.OperateDashboardService/QueryOperateCouponRedeem"
+	OperateDashboardService_QueryOperateActivityOptions_FullMethodName = "/smsclient.OperateDashboardService/QueryOperateActivityOptions"
+)
+
+// OperateDashboardServiceClient is the client API for OperateDashboardService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type OperateDashboardServiceClient interface {
+	RecordOperateFunnelEvent(ctx context.Context, in *RecordOperateFunnelEventReq, opts ...grpc.CallOption) (*RecordOperateFunnelEventResp, error)
+	QueryOperateTrafficFunnel(ctx context.Context, in *QueryOperateTrafficFunnelReq, opts ...grpc.CallOption) (*QueryOperateTrafficFunnelResp, error)
+	QueryOperateCouponRedeem(ctx context.Context, in *QueryOperateCouponRedeemReq, opts ...grpc.CallOption) (*QueryOperateCouponRedeemResp, error)
+	QueryOperateActivityOptions(ctx context.Context, in *QueryOperateActivityOptionsReq, opts ...grpc.CallOption) (*QueryOperateActivityOptionsResp, error)
+}
+
+type operateDashboardServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewOperateDashboardServiceClient(cc grpc.ClientConnInterface) OperateDashboardServiceClient {
+	return &operateDashboardServiceClient{cc}
+}
+
+func (c *operateDashboardServiceClient) RecordOperateFunnelEvent(ctx context.Context, in *RecordOperateFunnelEventReq, opts ...grpc.CallOption) (*RecordOperateFunnelEventResp, error) {
+	out := new(RecordOperateFunnelEventResp)
+	err := c.cc.Invoke(ctx, OperateDashboardService_RecordOperateFunnelEvent_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *operateDashboardServiceClient) QueryOperateTrafficFunnel(ctx context.Context, in *QueryOperateTrafficFunnelReq, opts ...grpc.CallOption) (*QueryOperateTrafficFunnelResp, error) {
+	out := new(QueryOperateTrafficFunnelResp)
+	err := c.cc.Invoke(ctx, OperateDashboardService_QueryOperateTrafficFunnel_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *operateDashboardServiceClient) QueryOperateCouponRedeem(ctx context.Context, in *QueryOperateCouponRedeemReq, opts ...grpc.CallOption) (*QueryOperateCouponRedeemResp, error) {
+	out := new(QueryOperateCouponRedeemResp)
+	err := c.cc.Invoke(ctx, OperateDashboardService_QueryOperateCouponRedeem_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *operateDashboardServiceClient) QueryOperateActivityOptions(ctx context.Context, in *QueryOperateActivityOptionsReq, opts ...grpc.CallOption) (*QueryOperateActivityOptionsResp, error) {
+	out := new(QueryOperateActivityOptionsResp)
+	err := c.cc.Invoke(ctx, OperateDashboardService_QueryOperateActivityOptions_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// OperateDashboardServiceServer is the server API for OperateDashboardService service.
+// All implementations must embed UnimplementedOperateDashboardServiceServer
+// for forward compatibility
+type OperateDashboardServiceServer interface {
+	RecordOperateFunnelEvent(context.Context, *RecordOperateFunnelEventReq) (*RecordOperateFunnelEventResp, error)
+	QueryOperateTrafficFunnel(context.Context, *QueryOperateTrafficFunnelReq) (*QueryOperateTrafficFunnelResp, error)
+	QueryOperateCouponRedeem(context.Context, *QueryOperateCouponRedeemReq) (*QueryOperateCouponRedeemResp, error)
+	QueryOperateActivityOptions(context.Context, *QueryOperateActivityOptionsReq) (*QueryOperateActivityOptionsResp, error)
+	mustEmbedUnimplementedOperateDashboardServiceServer()
+}
+
+// UnimplementedOperateDashboardServiceServer must be embedded to have forward compatible implementations.
+type UnimplementedOperateDashboardServiceServer struct {
+}
+
+func (UnimplementedOperateDashboardServiceServer) RecordOperateFunnelEvent(context.Context, *RecordOperateFunnelEventReq) (*RecordOperateFunnelEventResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RecordOperateFunnelEvent not implemented")
+}
+func (UnimplementedOperateDashboardServiceServer) QueryOperateTrafficFunnel(context.Context, *QueryOperateTrafficFunnelReq) (*QueryOperateTrafficFunnelResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QueryOperateTrafficFunnel not implemented")
+}
+func (UnimplementedOperateDashboardServiceServer) QueryOperateCouponRedeem(context.Context, *QueryOperateCouponRedeemReq) (*QueryOperateCouponRedeemResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QueryOperateCouponRedeem not implemented")
+}
+func (UnimplementedOperateDashboardServiceServer) QueryOperateActivityOptions(context.Context, *QueryOperateActivityOptionsReq) (*QueryOperateActivityOptionsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QueryOperateActivityOptions not implemented")
+}
+func (UnimplementedOperateDashboardServiceServer) mustEmbedUnimplementedOperateDashboardServiceServer() {
+}
+
+// UnsafeOperateDashboardServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to OperateDashboardServiceServer will
+// result in compilation errors.
+type UnsafeOperateDashboardServiceServer interface {
+	mustEmbedUnimplementedOperateDashboardServiceServer()
+}
+
+func RegisterOperateDashboardServiceServer(s grpc.ServiceRegistrar, srv OperateDashboardServiceServer) {
+	s.RegisterService(&OperateDashboardService_ServiceDesc, srv)
+}
+
+func _OperateDashboardService_RecordOperateFunnelEvent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecordOperateFunnelEventReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OperateDashboardServiceServer).RecordOperateFunnelEvent(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OperateDashboardService_RecordOperateFunnelEvent_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OperateDashboardServiceServer).RecordOperateFunnelEvent(ctx, req.(*RecordOperateFunnelEventReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OperateDashboardService_QueryOperateTrafficFunnel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryOperateTrafficFunnelReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OperateDashboardServiceServer).QueryOperateTrafficFunnel(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OperateDashboardService_QueryOperateTrafficFunnel_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OperateDashboardServiceServer).QueryOperateTrafficFunnel(ctx, req.(*QueryOperateTrafficFunnelReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OperateDashboardService_QueryOperateCouponRedeem_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryOperateCouponRedeemReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OperateDashboardServiceServer).QueryOperateCouponRedeem(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OperateDashboardService_QueryOperateCouponRedeem_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OperateDashboardServiceServer).QueryOperateCouponRedeem(ctx, req.(*QueryOperateCouponRedeemReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OperateDashboardService_QueryOperateActivityOptions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryOperateActivityOptionsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OperateDashboardServiceServer).QueryOperateActivityOptions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OperateDashboardService_QueryOperateActivityOptions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OperateDashboardServiceServer).QueryOperateActivityOptions(ctx, req.(*QueryOperateActivityOptionsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// OperateDashboardService_ServiceDesc is the grpc.ServiceDesc for OperateDashboardService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var OperateDashboardService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "smsclient.OperateDashboardService",
+	HandlerType: (*OperateDashboardServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "RecordOperateFunnelEvent",
+			Handler:    _OperateDashboardService_RecordOperateFunnelEvent_Handler,
+		},
+		{
+			MethodName: "QueryOperateTrafficFunnel",
+			Handler:    _OperateDashboardService_QueryOperateTrafficFunnel_Handler,
+		},
+		{
+			MethodName: "QueryOperateCouponRedeem",
+			Handler:    _OperateDashboardService_QueryOperateCouponRedeem_Handler,
+		},
+		{
+			MethodName: "QueryOperateActivityOptions",
+			Handler:    _OperateDashboardService_QueryOperateActivityOptions_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

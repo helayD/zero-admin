@@ -59,6 +59,8 @@ type (
 	EscalateChainReq                  = omsclient.EscalateChainReq
 	EscalateChainResp                 = omsclient.EscalateChainResp
 	GovernanceScope                   = omsclient.GovernanceScope
+	OperateCartBucketPoint            = omsclient.OperateCartBucketPoint
+	OperateOrderBucketPoint           = omsclient.OperateOrderBucketPoint
 	OrderDeliveryListData             = omsclient.OrderDeliveryListData
 	OrderItemData                     = omsclient.OrderItemData
 	OrderListData                     = omsclient.OrderListData
@@ -92,6 +94,10 @@ type (
 	QueryDefaultSettingReq            = omsclient.QueryDefaultSettingReq
 	QueryManualRequiredOrdersReq      = omsclient.QueryManualRequiredOrdersReq
 	QueryManualRequiredOrdersResp     = omsclient.QueryManualRequiredOrdersResp
+	QueryOperateCartFunnelReq         = omsclient.QueryOperateCartFunnelReq
+	QueryOperateCartFunnelResp        = omsclient.QueryOperateCartFunnelResp
+	QueryOperateOrderFunnelReq        = omsclient.QueryOperateOrderFunnelReq
+	QueryOperateOrderFunnelResp       = omsclient.QueryOperateOrderFunnelResp
 	QueryOrderDeliveryDetailReq       = omsclient.QueryOrderDeliveryDetailReq
 	QueryOrderDeliveryDetailResp      = omsclient.QueryOrderDeliveryDetailResp
 	QueryOrderDeliveryListReq         = omsclient.QueryOrderDeliveryListReq
@@ -166,6 +172,8 @@ type (
 		QueryCartItemDetail(ctx context.Context, in *QueryCartItemDetailReq, opts ...grpc.CallOption) (*CartItemData, error)
 		// 查询购物车列
 		QueryCartItemList(ctx context.Context, in *QueryCartItemListReq, opts ...grpc.CallOption) (*QueryCartItemListResp, error)
+		// 查询经营漏斗加购聚合
+		QueryOperateCartFunnel(ctx context.Context, in *QueryOperateCartFunnelReq, opts ...grpc.CallOption) (*QueryOperateCartFunnelResp, error)
 	}
 
 	defaultCartItemService struct {
@@ -213,4 +221,10 @@ func (m *defaultCartItemService) QueryCartItemDetail(ctx context.Context, in *Qu
 func (m *defaultCartItemService) QueryCartItemList(ctx context.Context, in *QueryCartItemListReq, opts ...grpc.CallOption) (*QueryCartItemListResp, error) {
 	client := omsclient.NewCartItemServiceClient(m.cli.Conn())
 	return client.QueryCartItemList(ctx, in, opts...)
+}
+
+// 查询经营漏斗加购聚合
+func (m *defaultCartItemService) QueryOperateCartFunnel(ctx context.Context, in *QueryOperateCartFunnelReq, opts ...grpc.CallOption) (*QueryOperateCartFunnelResp, error) {
+	client := omsclient.NewCartItemServiceClient(m.cli.Conn())
+	return client.QueryOperateCartFunnel(ctx, in, opts...)
 }

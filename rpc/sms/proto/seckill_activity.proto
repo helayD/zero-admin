@@ -99,6 +99,8 @@ message SeckillActivityListData {
   string create_time = 9; //创建时间
   int64 update_by = 10; //更新人ID
   string update_time = 11; //更新时间
+  int64 product_count = 12; //关联已上架秒杀商品数量
+  int64 session_count = 13; //关联场次数量
 
 }
 

@@ -40,6 +40,7 @@ import (
 	"github.com/feihua/zero-admin/rpc/sms/client/seckillproductservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/seckillreservationservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/seckillsessionservice"
+	"github.com/feihua/zero-admin/rpc/sms/client/operatedashboardservice"
 	"github.com/feihua/zero-admin/rpc/sys/client/merchantservice"
 	"github.com/feihua/zero-admin/rpc/sys/client/noticeservice"
 	"github.com/feihua/zero-admin/rpc/sys/client/tenantservice"
@@ -147,6 +148,7 @@ type ServiceContext struct {
 	OrderDeliveryService     orderdeliveryservice.OrderDeliveryService
 	// 营销相关
 	CouponRecordService       couponrecordservice.CouponRecordService
+	OperateDashboardService   operatedashboardservice.OperateDashboardService
 	CouponScopeService        couponscopeservice.CouponScopeService
 	CouponService             couponservice.CouponService
 	CouponTypeService         coupontypeservice.CouponTypeService
@@ -238,6 +240,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		OrderDeliveryService:     orderdeliveryservice.NewOrderDeliveryService(omsClient),
 
 		CouponRecordService:       couponrecordservice.NewCouponRecordService(smsClient),
+		OperateDashboardService:   operatedashboardservice.NewOperateDashboardService(smsClient),
 		CouponScopeService:        couponscopeservice.NewCouponScopeService(smsClient),
 		CouponService:             couponservice.NewCouponService(smsClient),
 		CouponTypeService:         coupontypeservice.NewCouponTypeService(smsClient),

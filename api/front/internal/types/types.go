@@ -48,18 +48,20 @@ type AddressResp struct {
 }
 
 type AdvertiseList struct {
-	Id         int64  `json:"id"`         //编号
-	Name       string `json:"name"`       //名称
-	Type       int32  `json:"type"`       //轮播位置：0->PC首页轮播；1->app首页轮播
-	Pic        string `json:"pic"`        //图片地址
-	StartTime  string `json:"startTime"`  //开始时间
-	EndTime    string `json:"endTime"`    //结束时间
-	Status     int32  `json:"status"`     //上下线状态：0->下线；1->上线
-	ClickCount int32  `json:"clickCount"` //点击数
-	OrderCount int32  `json:"orderCount"` //下单数
-	Url        string `json:"url"`        //链接地址
-	Remark     string `json:"remark"`     //备注
-	Sort       int32  `json:"sort"`       //排序
+	Id           int64  `json:"id"`           //编号
+	Name         string `json:"name"`         //名称
+	Type         int32  `json:"type"`         //轮播位置：0->PC首页轮播；1->app首页轮播
+	Pic          string `json:"pic"`          //图片地址
+	StartTime    string `json:"startTime"`    //开始时间
+	EndTime      string `json:"endTime"`      //结束时间
+	Status       int32  `json:"status"`       //上下线状态：0->下线；1->上线
+	ClickCount   int32  `json:"clickCount"`   //点击数
+	OrderCount   int32  `json:"orderCount"`   //下单数
+	Url          string `json:"url"`          //链接地址
+	ActivityType string `json:"activityType"` //活动类型
+	ActivityId   int64  `json:"activityId"`   //活动ID
+	Remark       string `json:"remark"`       //备注
+	Sort         int32  `json:"sort"`         //排序
 }
 
 type ApplyAfterSalesReq struct {
@@ -569,6 +571,16 @@ type HomeResp struct {
 	Code    int64  `json:"code"`
 	Message string `json:"message"`
 	Data    Data   `json:"data"`
+}
+
+type RecordHomeAdvertiseClickReq struct {
+	AdvertiseId int64  `json:"advertiseId"`      //首页广告ID
+	TraceId     string `json:"traceId,optional"` //幂等追踪ID
+}
+
+type RecordHomeAdvertiseClickResp struct {
+	Code    int64  `json:"code"`
+	Message string `json:"message"`
 }
 
 type IndexBrandData struct {
