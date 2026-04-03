@@ -120,3 +120,11 @@ const updateMemberDataUrl = "$baseUrl/api/member/updateMember";
 const orderPayUrl = "$baseUrl/api/order/orderPay";
 // 支付状态查询（Flutter 使用 query 参数：?orderId=xxx）
 const orderPayQueryUrl = "$baseUrl/api/order/orderPayQueryStatus";
+
+// ==================== 商品评价相关（Story 8-2 Review Fix R-3）====================
+// 提交商品评价（注意：路由注册为 /comment/add，而非 /comment/addComment）
+const addCommentUrl = "$baseUrl/api/product/comment/add";
+// 查询商品评价列表
+const queryCommentListUrl = "$baseUrl/api/product/comment/queryCommentList";
+// 查询商品评价详情
+const queryCommentDetailUrl = "$baseUrl/api/product/comment/queryCommentDetail";

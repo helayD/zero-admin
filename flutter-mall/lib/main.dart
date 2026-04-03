@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mall/provider/cart_model.dart';
 import 'package:flutter_mall/provider/counter.dart';
+import 'package:flutter_mall/provider/comment_provider.dart';
 import 'package:flutter_mall/utils/shared_preferences_util.dart';
 import 'package:flutter_mall/welcome.dart';
 import 'package:provider/provider.dart';
@@ -37,6 +38,9 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => Counter()),
         // 提供一个CartModel实例
         ChangeNotifierProvider(create: (_) => CartModel()),
+        // 提供一个CommentProvider实例（Story 8-2 Review Fix R-4）
+        ChangeNotifierProvider(create: (_) => CommentProvider()),
+        ChangeNotifierProvider(create: (_) => CommentUploadProvider()),
       ],
       child: MaterialApp(
         // 设置全局的navigatorKey，以便在应用的任何地方进行导航
