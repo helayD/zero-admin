@@ -4,13 +4,17 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/feihua/zero-admin/api/front/internal/logic/common"
 	"github.com/feihua/zero-admin/api/front/internal/svc"
 	"github.com/feihua/zero-admin/api/front/internal/types"
 	"github.com/feihua/zero-admin/pkg/errorx"
+	"github.com/feihua/zero-admin/pkg/operatefunnel"
+	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/rpc/oms/omsclient"
 	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
+	"github.com/feihua/zero-admin/rpc/sms/smsclient"
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
 	"google.golang.org/grpc/status"
@@ -22,7 +26,7 @@ const (
 	ErrCodeCartStockInsufficient = "OMS_CART_STOCK_INSUFFICIENT"
 	ErrCodeCartProductNotFound   = "OMS_CART_PRODUCT_NOT_FOUND"
 	ErrCodeCartSystemError       = "OMS_CART_SYSTEM_ERROR"
-	ErrMsgStockInsufficientTpl  = "库存不足，当前仅剩 %d 件"
+	ErrMsgStockInsufficientTpl   = "库存不足，当前仅剩 %d 件"
 )
 
 type AddCartItemLogic struct {
@@ -147,11 +151,38 @@ func (l *AddCartItemLogic) AddCartItem(req *types.CartItemReq) (resp *types.Cart
 		ProductAttr:       req.ProductAttr,
 		MemberNickname:    req.MemberNickname,
 		Source:            req.Source,
+		ActivityType:      req.ActivityType,
+		ActivityId:        req.ActivityId,
 	})
 
 	if err != nil {
 		logc.Errorf(l.ctx, "添加购物车失败, productId=%d, skuId=%d, err=%s", req.ProductId, req.ProductSkuId, err.Error())
 		return nil, errorx.NewDefaultError(ErrCodeCartSystemError)
+	}
+
+	productScope, scopeErr := pkgscope.NormalizeGovernanceScope(
+		productData.ScopeType,
+		productData.PlatformId,
+		productData.TenantId,
+		productData.MerchantId,
+	)
+	if scopeErr != nil {
+		logc.Errorf(l.ctx, "解析加购埋点作用域失败, productId=%d, scope=%s/%d/%d/%d, err=%s",
+			req.ProductId, productData.ScopeType, productData.PlatformId, productData.TenantId, productData.MerchantId, scopeErr.Error())
+	} else {
+		if _, recordErr := l.svcCtx.OperateDashboardService.RecordOperateFunnelEvent(l.ctx, &smsclient.RecordOperateFunnelEventReq{
+			Scope:        common.SMSGovernanceScope(productScope),
+			EventType:    operatefunnel.EventAddCart,
+			Channel:      operatefunnel.CartChannelFromSource(req.Source),
+			ActivityType: req.ActivityType,
+			ActivityId:   req.ActivityId,
+			MemberId:     memberId,
+			ProductId:    req.ProductId,
+			TraceId:      fmt.Sprintf("cart:add:%d:%d:%d:%d", memberId, req.ProductId, req.ProductSkuId, time.Now().UnixNano()),
+			ExtraJson:    fmt.Sprintf(`{"skuId":%d,"quantity":%d}`, req.ProductSkuId, req.Quantity),
+		}); recordErr != nil {
+			logc.Errorf(l.ctx, "记录加购漏斗事件失败, productId=%d, skuId=%d, err=%s", req.ProductId, req.ProductSkuId, recordErr.Error())
+		}
 	}
 
 	return &types.CartItemResp{
@@ -173,5 +204,5 @@ func isPMSError(err error) bool {
 	code := s.Code()
 	return code == 14 || // Unavailable
 		code == 13 || // Internal
-		code == 4    // DeadlineExceeded
+		code == 4 // DeadlineExceeded
 }

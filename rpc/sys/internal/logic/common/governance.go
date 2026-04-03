@@ -444,16 +444,7 @@ func UpsertUserScopeBinding(ctx context.Context, tx *gorm.DB, userID, deptID int
 }
 
 func ScopeFilterSQL(alias string, current scope.GovernanceScope) (string, []interface{}) {
-	prefix := alias
-	if prefix != "" {
-		prefix += "."
-	}
-
-	return fmt.Sprintf("%splatform_id = ? AND %stenant_id = ? AND %smerchant_id = ?", prefix, prefix, prefix), []interface{}{
-		current.PlatformID,
-		current.TenantID,
-		current.MerchantID,
-	}
+	return scope.ScopeFilterSQL(alias, current)
 }
 
 func EnsureScopeMatch(current scope.GovernanceScope, platformID, tenantID, merchantID int64, message string) error {

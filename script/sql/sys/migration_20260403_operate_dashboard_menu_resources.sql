@@ -6,7 +6,7 @@ SET menu_name = '经营漏斗看板',
     menu_sort = 8,
     menu_status = 1,
     is_deleted = 1,
-    is_visible = 0,
+    is_visible = 1,
     remark = 'Story 8-4 经营漏斗看板接口资源',
     vue_path = 'operateDashboard',
     vue_component = 'sms/operate_dashboard/index',
@@ -55,7 +55,7 @@ SELECT
     NOW(),
     1,
     1,
-    0,
+    1,
     'Story 8-4 经营漏斗看板接口资源',
     'operateDashboard',
     'sms/operate_dashboard/index',
@@ -69,3 +69,10 @@ WHERE NOT EXISTS (
     WHERE id = 313
        OR background_url = '/api/sms/operateDashboard/queryOperateFunnelDashboard'
 );
+
+INSERT INTO sys_menu_template_item (template_id, menu_id)
+VALUES
+    (1, 313),
+    (2, 313)
+ON DUPLICATE KEY UPDATE
+    menu_id = VALUES(menu_id);

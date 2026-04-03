@@ -14,8 +14,8 @@ type trafficBucketRow struct {
 }
 
 type couponRedeemBucketRow struct {
-	BucketStart   string `gorm:"column:bucket_start"`
-	CouponRedeem  int64  `gorm:"column:coupon_redeem"`
+	BucketStart  string `gorm:"column:bucket_start"`
+	CouponRedeem int64  `gorm:"column:coupon_redeem"`
 }
 
 type activityOptionRow struct {
@@ -41,6 +41,6 @@ func nullTimeString(value sql.NullTime) string {
 	return operatefunnel.FormatDateTime(value.Time)
 }
 
-func scopeArgs(scope pkgscope.GovernanceScope) []interface{} {
-	return []interface{}{scope.PlatformID, scope.TenantID, scope.MerchantID}
+func scopeClause(alias string, scope pkgscope.GovernanceScope) (string, []interface{}) {
+	return pkgscope.ScopeFilterSQL(alias, scope)
 }

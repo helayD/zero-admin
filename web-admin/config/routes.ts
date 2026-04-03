@@ -341,6 +341,12 @@
         component: './sms/HomeAdvertise',
       },
       {
+        name: '经营漏斗',
+        icon: 'table',
+        path: '/sms/operateDashboard/list',
+        component: './sms/OperateDashboard',
+      },
+      {
         name: '优惠券',
         icon: 'table',
         path: '/sms/Coupon/list',

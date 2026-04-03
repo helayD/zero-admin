@@ -2,6 +2,7 @@ package home
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -38,12 +39,14 @@ func NewIndexLogic(ctx context.Context, svcCtx *svc.ServiceContext) *IndexLogic 
 
 func (l *IndexLogic) Index(req *types.HomeReq) (resp *types.HomeResp, err error) {
 	currentScope := frontcommon.ResolveEffectiveGovernanceScope(l.ctx)
+	advertiseList := queryAdvertiseList(l, currentScope)
+	recordHomeAdvertiseExposure(l, currentScope, advertiseList, req.AdvertiseType)
 
 	return &types.HomeResp{
 		Code:    0,
 		Message: "操作成功",
 		Data: types.Data{
-			AdvertiseList:      queryAdvertiseList(l, currentScope),
+			AdvertiseList:      advertiseList,
 			BrandList:          queryBrandList(l, req, currentScope),
 			HomeFlashPromotion: queryHomeFlashPromotion(l, req),
 			NewProductList:     queryNewProductList(l, req, currentScope),
@@ -92,6 +95,30 @@ func querySubjectList(l *IndexLogic, req *types.HomeReq, currentScope pkgscope.G
 		})
 	}
 	return list
+}
+
+func recordHomeAdvertiseExposure(l *IndexLogic, scope pkgscope.GovernanceScope, list []types.AdvertiseList, advertiseType string) {
+	channel := operatefunnel.NormalizeChannel(advertiseType)
+	if channel == operatefunnel.ChannelUnknown {
+		channel = operatefunnel.ChannelApp
+	}
+
+	memberID := tryGetOptionalMemberID(l.ctx)
+	for _, item := range list {
+		_, err := l.svcCtx.OperateDashboardService.RecordOperateFunnelEvent(l.ctx, &smsclient.RecordOperateFunnelEventReq{
+			Scope:        frontcommon.SMSGovernanceScope(scope),
+			EventType:    operatefunnel.EventExposure,
+			Channel:      channel,
+			ActivityType: operatefunnel.ActivityHomeAdvertise,
+			ActivityId:   item.Id,
+			MemberId:     memberID,
+			TraceId:      fmt.Sprintf("home:exposure:%s:%d:%d", channel, item.Id, time.Now().UnixNano()),
+			ExtraJson:    fmt.Sprintf(`{"advertiseId":%d,"advertiseName":%q}`, item.Id, item.Name),
+		})
+		if err != nil {
+			l.Errorf("recordHomeAdvertiseExposure failed: advertiseId=%d channel=%s err=%v", item.Id, channel, err)
+		}
+	}
 }
 
 // 优选专区

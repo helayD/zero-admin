@@ -26,7 +26,7 @@ func newOperateCouponRedeemDryRunLogic(t *testing.T) *QueryOperateCouponRedeemLo
 	return NewQueryOperateCouponRedeemLogic(context.Background(), &svc.ServiceContext{DB: db})
 }
 
-func TestBaseCouponRedeemQueryUsesCouponFallbackActivityFilter(t *testing.T) {
+func TestOperateFunnelBaseCouponRedeemQueryUsesCouponFallbackActivityFilter(t *testing.T) {
 	logic := newOperateCouponRedeemDryRunLogic(t)
 	startTime := time.Date(2026, 4, 3, 11, 0, 0, 0, operatefunnel.Location())
 	endTime := startTime.Add(2 * time.Hour)
@@ -67,7 +67,7 @@ func TestBaseCouponRedeemQueryUsesCouponFallbackActivityFilter(t *testing.T) {
 	}
 }
 
-func TestCouponTrackingStateUsesCouponFallbackActivityFilter(t *testing.T) {
+func TestOperateFunnelCouponTrackingStateUsesCouponFallbackActivityFilter(t *testing.T) {
 	logic := newOperateCouponRedeemDryRunLogic(t)
 	scope, err := pkgscope.NormalizeGovernanceScope(pkgscope.SubjectTypeMerchant, 1, 10, 88)
 	if err != nil {

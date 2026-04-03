@@ -113,15 +113,15 @@ func (l *QueryOperateCouponRedeemLogic) queryCouponTrackingState(scope pkgscope.
 }
 
 func (l *QueryOperateCouponRedeemLogic) couponRedeemScopedQuery(scope pkgscope.GovernanceScope) *gorm.DB {
+	orderScopeSQL, orderScopeArgs := scopeClause("o", scope)
+	couponScopeSQL, couponScopeArgs := scopeClause("c", scope)
+	args := append(orderScopeArgs, couponScopeArgs...)
 	return l.svcCtx.DB.WithContext(l.ctx).
 		Table("sms_coupon_record cr").
 		Joins("LEFT JOIN oms_order_main o ON o.id = cr.order_id AND o.is_deleted = 0").
 		Joins("LEFT JOIN sms_coupon c ON c.id = cr.coupon_id AND c.is_deleted = 0").
 		Where("cr.status = 1 AND cr.use_time IS NOT NULL").
-		Where("(o.id IS NOT NULL AND o.platform_id = ? AND o.tenant_id = ? AND o.merchant_id = ?) OR (o.id IS NULL AND c.platform_id = ? AND c.tenant_id = ? AND c.merchant_id = ?)",
-			scope.PlatformID, scope.TenantID, scope.MerchantID,
-			scope.PlatformID, scope.TenantID, scope.MerchantID,
-		)
+		Where("(o.id IS NOT NULL AND "+orderScopeSQL+") OR (o.id IS NULL AND "+couponScopeSQL+")", args...)
 }
 
 func applyCouponRedeemFilters(query *gorm.DB, in *smsclient.QueryOperateCouponRedeemReq) *gorm.DB {

@@ -3,12 +3,15 @@ package cartitemservicelogic
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/feihua/zero-admin/pkg/operatefunnel"
+	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	logiccommon "github.com/feihua/zero-admin/rpc/oms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/oms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/oms/omsclient"
 	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
 )
 
 type QueryOperateCartFunnelLogic struct {
@@ -45,29 +48,11 @@ func (l *QueryOperateCartFunnelLogic) QueryOperateCartFunnel(in *omsclient.Query
 	windows := operatefunnel.BuildBucketWindows(startTime, endTime, bucket)
 
 	rows := make([]operateCartBucketRow, 0)
-	query := l.svcCtx.DB.WithContext(l.ctx).
-		Table("oms_cart_item c").
-		Select(operateCartBucketExpr("c.create_time", bucket)+" AS bucket_start, COUNT(*) AS add_cart").
-		Joins("JOIN pms_product_spu spu ON spu.id = c.product_id").
-		Where("c.delete_status = 0").
-		Where("c.create_time >= ? AND c.create_time < ?", startTime, endTime).
-		Where("spu.platform_id = ? AND spu.tenant_id = ? AND spu.merchant_id = ?", scope.PlatformID, scope.TenantID, scope.MerchantID)
-
-	if channel, ok := operatefunnel.OptionalChannel(in.Channel); ok {
-		query = query.Where(operateCartChannelCaseSQL()+" = ?", channel)
-	}
+	query := l.buildOperateCartBucketQuery(scope, in, startTime, endTime, bucket)
 
 	activityRequested := false
 	if activityType, ok := operatefunnel.OptionalActivityType(in.ActivityType); ok {
 		activityRequested = activityType != operatefunnel.ActivityNone
-		if activityType == operatefunnel.ActivityNone {
-			query = query.Where("COALESCE(NULLIF(c.activity_type, ''), 'none') = 'none'")
-		} else {
-			query = query.Where("c.activity_type = ?", activityType)
-			if in.ActivityId > 0 {
-				query = query.Where("c.activity_id = ?", in.ActivityId)
-			}
-		}
 	}
 
 	if err = query.Group("bucket_start").Order("bucket_start ASC").Scan(&rows).Error; err != nil {
@@ -117,6 +102,39 @@ func (l *QueryOperateCartFunnelLogic) QueryOperateCartFunnel(in *omsclient.Query
 		TrackingStartedAt: trackingAt,
 		PartialMetrics:    partialMetrics,
 	}, nil
+}
+
+func (l *QueryOperateCartFunnelLogic) buildOperateCartBucketQuery(
+	scope pkgscope.GovernanceScope,
+	in *omsclient.QueryOperateCartFunnelReq,
+	startTime, endTime time.Time,
+	bucket string,
+) *gorm.DB {
+	scopeSQL, scopeArgs := pkgscope.ScopeFilterSQL("spu", scope)
+	query := l.svcCtx.DB.WithContext(l.ctx).
+		Table("oms_cart_item c").
+		Select(operateCartBucketExpr("c.create_time", bucket)+" AS bucket_start, COUNT(*) AS add_cart").
+		Joins("JOIN pms_product_spu spu ON spu.id = c.product_id").
+		Where("c.delete_status = 0").
+		Where("c.create_time >= ? AND c.create_time < ?", startTime, endTime).
+		Where(scopeSQL, scopeArgs...)
+
+	if channel, ok := operatefunnel.OptionalChannel(in.Channel); ok {
+		query = query.Where(operateCartChannelCaseSQL()+" = ?", channel)
+	}
+
+	if activityType, ok := operatefunnel.OptionalActivityType(in.ActivityType); ok {
+		if activityType == operatefunnel.ActivityNone {
+			query = query.Where("COALESCE(NULLIF(c.activity_type, ''), 'none') = 'none'")
+		} else {
+			query = query.Where("c.activity_type = ?", activityType)
+			if in.ActivityId > 0 {
+				query = query.Where("c.activity_id = ?", in.ActivityId)
+			}
+		}
+	}
+
+	return query
 }
 
 func (l *QueryOperateCartFunnelLogic) queryCartActivityTrackingStart() (timeValue sql.NullTime, ok bool, err error) {

@@ -13,10 +13,22 @@ func ScopeFilterSQL(alias string, current GovernanceScope) (string, []interface{
 		prefix += "."
 	}
 
-	return fmt.Sprintf("%splatform_id = ? AND %stenant_id = ? AND %smerchant_id = ?", prefix, prefix, prefix), []interface{}{
-		current.PlatformID,
-		current.TenantID,
-		current.MerchantID,
+	switch current.ScopeType {
+	case SubjectTypePlatform:
+		return fmt.Sprintf("%splatform_id = ?", prefix), []interface{}{
+			current.PlatformID,
+		}
+	case SubjectTypeTenant:
+		return fmt.Sprintf("%splatform_id = ? AND %stenant_id = ?", prefix, prefix), []interface{}{
+			current.PlatformID,
+			current.TenantID,
+		}
+	default:
+		return fmt.Sprintf("%splatform_id = ? AND %stenant_id = ? AND %smerchant_id = ?", prefix, prefix, prefix), []interface{}{
+			current.PlatformID,
+			current.TenantID,
+			current.MerchantID,
+		}
 	}
 }
 

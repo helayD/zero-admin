@@ -11,6 +11,7 @@ import (
 	"github.com/feihua/zero-admin/rpc/oms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/oms/omsclient"
 	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
 )
 
 type QueryOperateOrderFunnelLogic struct {
@@ -159,13 +160,28 @@ func (l *QueryOperateOrderFunnelLogic) queryOrderBuckets(
 	bucket string,
 ) ([]operateOrderBucketRow, error) {
 	rows := make([]operateOrderBucketRow, 0)
+	query := l.buildOperateOrderBucketQuery(timeColumn, scope, in, startTime, endTime, bucket)
+
+	err := query.Group("bucket_start").Order("bucket_start ASC").Scan(&rows).Error
+	return rows, err
+}
+
+func (l *QueryOperateOrderFunnelLogic) buildOperateOrderBucketQuery(
+	timeColumn string,
+	scope pkgscope.GovernanceScope,
+	in *omsclient.QueryOperateOrderFunnelReq,
+	startTime,
+	endTime time.Time,
+	bucket string,
+) *gorm.DB {
+	scopeSQL, scopeArgs := pkgscope.ScopeFilterSQL("o", scope)
 	query := l.svcCtx.DB.WithContext(l.ctx).
 		Table("oms_order_main o").
 		Select(operateOrderBucketExpr("o."+timeColumn, bucket)+" AS bucket_start, COUNT(*) AS "+operateOrderMetricAlias(timeColumn)).
 		Where("o.is_deleted = 0").
 		Where("o."+timeColumn+" IS NOT NULL").
 		Where("o."+timeColumn+" >= ? AND o."+timeColumn+" < ?", startTime, endTime).
-		Where("o.platform_id = ? AND o.tenant_id = ? AND o.merchant_id = ?", scope.PlatformID, scope.TenantID, scope.MerchantID)
+		Where(scopeSQL, scopeArgs...)
 
 	if timeColumn == "pay_time" {
 		query = query.Where("o.order_status = 2")
@@ -186,8 +202,7 @@ func (l *QueryOperateOrderFunnelLogic) queryOrderBuckets(
 		}
 	}
 
-	err := query.Group("bucket_start").Order("bucket_start ASC").Scan(&rows).Error
-	return rows, err
+	return query
 }
 
 func (l *QueryOperateOrderFunnelLogic) queryOrderTrackingStart(column string) (sql.NullTime, bool, error) {

@@ -197,6 +197,8 @@ type CarItemtPromotionListData struct {
 	ProductAttr       string  `json:"productAttr"`       //商品销售属性JSON
 	MemberNickname    string  `json:"memberNickname"`    //会员昵称
 	Source            int32   `json:"source"`            //来源 1-PC 2-H5 3-小程序 4-APP
+	ActivityType      string  `json:"activityType"`      //活动类型
+	ActivityId        int64   `json:"activityId"`        //活动ID
 	DeleteStatus      int32   `json:"deleteStatus"`      //删除状态 0-正常 1-删除
 	ExpireTime        string  `json:"expireTime"`        //过期时间
 	CreateTime        string  `json:"createTime"`        //创建时间
@@ -237,22 +239,24 @@ type CartItemProductAttributeList struct {
 }
 
 type CartItemReq struct {
-	Id                int64   `json:"id,optional"`        //主键ID
-	ProductId         int64   `json:"productId"`          //商品ID
-	ProductSkuId      int64   `json:"productSkuId"`       //商品SKU ID
-	Quantity          int32   `json:"quantity"`           //购买数量
-	Price             float32 `json:"price"`              //添加到购物车时的价格
-	Selected          int32   `json:"selected,default=1"` //是否选中 0-未选中 1-选中
-	ProductName       string  `json:"productName"`        //商品名称
-	ProductSubTitle   string  `json:"productSubTitle"`    //商品副标题
-	ProductPic        string  `json:"productPic"`         //商品主图URL
-	ProductSkuCode    string  `json:"productSkuCode"`     //商品SKU编码
-	ProductSn         string  `json:"productSn"`          //商品货号
-	ProductBrand      string  `json:"productBrand"`       //商品品牌
-	ProductCategoryId int64   `json:"productCategoryId"`  //商品分类ID
-	ProductAttr       string  `json:"productAttr"`        //商品销售属性JSON
-	MemberNickname    string  `json:"memberNickname"`     //会员昵称
-	Source            int32   `json:"source,default=4"`   //来源 1-PC 2-H5 3-小程序 4-APP
+	Id                int64   `json:"id,optional"`           //主键ID
+	ProductId         int64   `json:"productId"`             //商品ID
+	ProductSkuId      int64   `json:"productSkuId"`          //商品SKU ID
+	Quantity          int32   `json:"quantity"`              //购买数量
+	Price             float32 `json:"price"`                 //添加到购物车时的价格
+	Selected          int32   `json:"selected,default=1"`    //是否选中 0-未选中 1-选中
+	ProductName       string  `json:"productName"`           //商品名称
+	ProductSubTitle   string  `json:"productSubTitle"`       //商品副标题
+	ProductPic        string  `json:"productPic"`            //商品主图URL
+	ProductSkuCode    string  `json:"productSkuCode"`        //商品SKU编码
+	ProductSn         string  `json:"productSn"`             //商品货号
+	ProductBrand      string  `json:"productBrand"`          //商品品牌
+	ProductCategoryId int64   `json:"productCategoryId"`     //商品分类ID
+	ProductAttr       string  `json:"productAttr"`           //商品销售属性JSON
+	MemberNickname    string  `json:"memberNickname"`        //会员昵称
+	Source            int32   `json:"source,default=4"`      //来源 1-PC 2-H5 3-小程序 4-APP
+	ActivityType      string  `json:"activityType,optional"` //活动类型
+	ActivityId        int64   `json:"activityId,optional"`   //活动ID
 }
 
 type CartItemResp struct {
@@ -303,6 +307,8 @@ type CartListData struct {
 	ProductAttr       string  `json:"productAttr"`       //商品销售属性JSON
 	MemberNickname    string  `json:"memberNickname"`    //会员昵称
 	Source            int32   `json:"source"`            //来源 1-PC 2-H5 3-小程序 4-APP
+	ActivityType      string  `json:"activityType"`      //活动类型
+	ActivityId        int64   `json:"activityId"`        //活动ID
 	ExpireTime        string  `json:"expireTime"`        //过期时间
 	CreateTime        string  `json:"createTime"`        //创建时间
 	UpdateTime        string  `json:"updateTime"`        //更新时间
@@ -441,22 +447,22 @@ type ConfirmReceiveOrderResp struct {
 }
 
 type CouponData struct {
-	Id            int64   `json:"id"`            //优惠券ID
-	TypeId        int64   `json:"typeId"`        //优惠券类型ID
-	Name          string  `json:"name"`          //优惠券名称
-	Code          string  `json:"code"`          //优惠券码
-	Amount        float32 `json:"amount"`        //优惠金额/折扣率
-	MinAmount     float32 `json:"minAmount"`     //最低使用金额
-	StartTime     string  `json:"startTime"`     //生效时间
-	EndTime       string  `json:"endTime"`       //失效时间
-	PerLimit      int32   `json:"perLimit"`      //每人限领数量
-	Status        int32   `json:"status"`        //状态：0-未开始，1-进行中，2-已结束，3-已取消
-	Description   string  `json:"description"`   //使用说明
-	ScopeType     int32   `json:"scopeType"`     //范围类型：0-全场，1-分类，2-商品
-	ReceiveStatus int32   `json:"receiveStatus"` //领取状态：0-可领取，1-已领取，2-已领完，3-未开始，4-已过期
-	TotalCount    int32   `json:"totalCount"`    //发放总量
-	ReceivedCount int32   `json:"receivedCount"` //已领取数量
-	DisableReason string  `json:"disableReason"` //不可用原因
+	Id            int64   `json:"id"`                     //优惠券ID
+	TypeId        int64   `json:"typeId"`                 //优惠券类型ID
+	Name          string  `json:"name"`                   //优惠券名称
+	Code          string  `json:"code"`                   //优惠券码
+	Amount        float32 `json:"amount"`                 //优惠金额/折扣率
+	MinAmount     float32 `json:"minAmount"`              //最低使用金额
+	StartTime     string  `json:"startTime"`              //生效时间
+	EndTime       string  `json:"endTime"`                //失效时间
+	PerLimit      int32   `json:"perLimit"`               //每人限领数量
+	Status        int32   `json:"status"`                 //状态：0-未开始，1-进行中，2-已结束，3-已取消
+	Description   string  `json:"description"`            //使用说明
+	ScopeType     int32   `json:"scopeType"`              //范围类型：0-全场，1-分类，2-商品
+	ReceiveStatus int32   `json:"receiveStatus"`          //领取状态：0-可领取，1-已领取，2-已领完，3-未开始，4-已过期
+	TotalCount    int32   `json:"totalCount"`             //发放总量
+	ReceivedCount int32   `json:"receivedCount"`          //已领取数量
+	DisableReason string  `json:"disableReason,optional"` //不可用原因
 }
 
 type CouponListByCartData struct {

@@ -12,6 +12,7 @@ import (
 	"github.com/feihua/zero-admin/rpc/sms/smsclient"
 
 	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
 )
 
 type QueryOperateTrafficFunnelLogic struct {
@@ -42,28 +43,7 @@ func (l *QueryOperateTrafficFunnelLogic) QueryOperateTrafficFunnel(in *smsclient
 	windows := operatefunnel.BuildBucketWindows(startTime, endTime, bucket)
 
 	rows := make([]trafficBucketRow, 0)
-	query := l.svcCtx.DB.WithContext(l.ctx).
-		Table("sms_operate_funnel_event e").
-		Select(operateBucketExpr("e.stat_time", bucket) + " AS bucket_start, " +
-			"SUM(CASE WHEN e.event_type = 'exposure' THEN 1 ELSE 0 END) AS exposure, " +
-			"SUM(CASE WHEN e.event_type = 'click' THEN 1 ELSE 0 END) AS click").
-		Where("e.event_type IN ('exposure', 'click')").
-		Where("e.stat_time >= ? AND e.stat_time < ?", startTime, endTime).
-		Where("e.platform_id = ? AND e.tenant_id = ? AND e.merchant_id = ?", scopeArgs(scope)...)
-
-	if channel, ok := operatefunnel.OptionalChannel(in.Channel); ok {
-		query = query.Where("e.channel = ?", channel)
-	}
-	if activityType, ok := operatefunnel.OptionalActivityType(in.ActivityType); ok {
-		if activityType == operatefunnel.ActivityNone {
-			query = query.Where("COALESCE(NULLIF(e.activity_type, ''), 'none') = 'none'")
-		} else {
-			query = query.Where("e.activity_type = ?", activityType)
-			if in.ActivityId > 0 {
-				query = query.Where("e.activity_id = ?", in.ActivityId)
-			}
-		}
-	}
+	query := l.buildOperateTrafficBucketQuery(scope, in, startTime, endTime, bucket)
 
 	if err = query.Group("bucket_start").Order("bucket_start ASC").Scan(&rows).Error; err != nil {
 		return nil, err
@@ -107,13 +87,47 @@ func (l *QueryOperateTrafficFunnelLogic) QueryOperateTrafficFunnel(in *smsclient
 	}, nil
 }
 
+func (l *QueryOperateTrafficFunnelLogic) buildOperateTrafficBucketQuery(
+	scope pkgscope.GovernanceScope,
+	in *smsclient.QueryOperateTrafficFunnelReq,
+	startTime, endTime time.Time,
+	bucket string,
+) *gorm.DB {
+	scopeSQL, scopeArgs := scopeClause("e", scope)
+	query := l.svcCtx.DB.WithContext(l.ctx).
+		Table("sms_operate_funnel_event e").
+		Select(operateBucketExpr("e.stat_time", bucket)+" AS bucket_start, "+
+			"SUM(CASE WHEN e.event_type = 'exposure' THEN 1 ELSE 0 END) AS exposure, "+
+			"SUM(CASE WHEN e.event_type = 'click' THEN 1 ELSE 0 END) AS click").
+		Where("e.event_type IN ('exposure', 'click')").
+		Where("e.stat_time >= ? AND e.stat_time < ?", startTime, endTime).
+		Where(scopeSQL, scopeArgs...)
+
+	if channel, ok := operatefunnel.OptionalChannel(in.Channel); ok {
+		query = query.Where("e.channel = ?", channel)
+	}
+	if activityType, ok := operatefunnel.OptionalActivityType(in.ActivityType); ok {
+		if activityType == operatefunnel.ActivityNone {
+			query = query.Where("COALESCE(NULLIF(e.activity_type, ''), 'none') = 'none'")
+		} else {
+			query = query.Where("e.activity_type = ?", activityType)
+			if in.ActivityId > 0 {
+				query = query.Where("e.activity_id = ?", in.ActivityId)
+			}
+		}
+	}
+
+	return query
+}
+
 func (l *QueryOperateTrafficFunnelLogic) queryTrafficTrackingState(scope pkgscope.GovernanceScope, startTime time.Time, in *smsclient.QueryOperateTrafficFunnelReq) (sql.NullTime, []string, error) {
 	var trackingStart sql.NullTime
+	scopeSQL, scopeArgs := scopeClause("e", scope)
 	query := l.svcCtx.DB.WithContext(l.ctx).
 		Table("sms_operate_funnel_event e").
 		Select("MIN(e.stat_time)").
 		Where("e.event_type IN ('exposure', 'click')").
-		Where("e.platform_id = ? AND e.tenant_id = ? AND e.merchant_id = ?", scopeArgs(scope)...)
+		Where(scopeSQL, scopeArgs...)
 
 	if channel, ok := operatefunnel.OptionalChannel(in.Channel); ok {
 		query = query.Where("e.channel = ?", channel)
@@ -133,10 +147,13 @@ func (l *QueryOperateTrafficFunnelLogic) queryTrafficTrackingState(scope pkgscop
 		return sql.NullTime{}, nil, err
 	}
 
+	return trackingStart, buildTrafficPartialMetrics(trackingStart, startTime), nil
+}
+
+func buildTrafficPartialMetrics(trackingStart sql.NullTime, startTime time.Time) []string {
 	partialMetrics := make([]string, 0, 2)
 	if trackingStart.Valid && startTime.Before(trackingStart.Time) {
 		partialMetrics = append(partialMetrics, operatefunnel.EventExposure, operatefunnel.EventClick)
 	}
-
-	return trackingStart, partialMetrics, nil
+	return partialMetrics
 }

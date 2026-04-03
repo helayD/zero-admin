@@ -28,23 +28,23 @@ import (
 
 // OrderErrorCode 订单错误码（Story 5-3 Task 3）
 const (
-	ErrCodeOrderNoAddress                  = "OMS_ORDER_NO_ADDRESS"
-	ErrCodeOrderAddressInvalid             = "OMS_ORDER_ADDRESS_INVALID"
+	ErrCodeOrderNoAddress                 = "OMS_ORDER_NO_ADDRESS"
+	ErrCodeOrderAddressInvalid            = "OMS_ORDER_ADDRESS_INVALID"
 	ErrCodeOrderCouponUnavailable         = "OMS_ORDER_COUPON_UNAVAILABLE"
 	ErrCodeOrderIntegrationExceed         = "OMS_ORDER_INTEGRATION_EXCEED"
-	ErrCodeOrderIntegrationCouponConflict  = "OMS_ORDER_INTEGRATION_COUPON_CONFLICT"
-	ErrCodeOrderPayTypeInvalid             = "OMS_ORDER_PAY_TYPE_INVALID"
-	ErrCodeOrderStatusInvalid              = "OMS_ORDER_STATUS_INVALID" // 订单状态不允许支付
-	ErrCodeOrderPayFailed                  = "OMS_ORDER_PAY_FAILED"     // 支付发起失败
+	ErrCodeOrderIntegrationCouponConflict = "OMS_ORDER_INTEGRATION_COUPON_CONFLICT"
+	ErrCodeOrderPayTypeInvalid            = "OMS_ORDER_PAY_TYPE_INVALID"
+	ErrCodeOrderStatusInvalid             = "OMS_ORDER_STATUS_INVALID" // 订单状态不允许支付
+	ErrCodeOrderPayFailed                 = "OMS_ORDER_PAY_FAILED"     // 支付发起失败
 	ErrCodeOrderStockInsufficient         = "OMS_ORDER_STOCK_INSUFFICIENT"
 	ErrCodeOrderSystemError               = "OMS_ORDER_SYSTEM_ERROR"
 )
 
 // Story 5.4 新增错误码
 const (
-	ErrCodeOrderDuplicatedRequest      = "OMS_ORDER_DUPLICATED_REQUEST"      // 重复提交
-	ErrCodeOrderCompensationFailed    = "OMS_ORDER_COMPENSATION_FAILED"      // Saga 补偿失败，需人工介入
-	ErrCodeOrderStockLocked           = "OMS_ORDER_STOCK_LOCKED"             // 库存已被其他订单锁定
+	ErrCodeOrderDuplicatedRequest  = "OMS_ORDER_DUPLICATED_REQUEST"  // 重复提交
+	ErrCodeOrderCompensationFailed = "OMS_ORDER_COMPENSATION_FAILED" // Saga 补偿失败，需人工介入
+	ErrCodeOrderStockLocked        = "OMS_ORDER_STOCK_LOCKED"        // 库存已被其他订单锁定
 )
 
 // Saga 链路总超时（60s），防止客户端断开后资源泄漏
@@ -194,7 +194,7 @@ func (l *GenerateOrderLogic) GenerateOrder(req *types.GenerateOrderReq) (*types.
 			SkuPrice:        float32(item.Price), // int64 → float32
 			SkuQuantity:     int32(item.Quantity),
 			SpecData:        item.ProductAttr,
-			SkuTotalAmount:  float32(skuTotalAmt), // int64 → float32
+			SkuTotalAmount:  float32(skuTotalAmt),  // int64 → float32
 			PromotionAmount: float32(itemPromoAmt), // int64 → float32
 		}
 		orderItemList = append(orderItemList, orderItem)
@@ -424,8 +424,8 @@ func (l *GenerateOrderLogic) GenerateOrder(req *types.GenerateOrderReq) (*types.
 	orderInfo := &omsclient.AddOrderReq{
 		OrderNo:         orderNo,
 		UserId:          memberId,
-		OrderStatus:     1, // 1-待支付
-		TotalAmount:     float32(totalAmount),       // 分→元（float32）
+		OrderStatus:     1,                    // 1-待支付
+		TotalAmount:     float32(totalAmount), // 分→元（float32）
 		PromotionAmount: float32(promotionAmountTotal),
 		CouponAmount:    float32(couponAmountTotalFen),
 		PointsAmount:    float32(integrationAmountTotal),
@@ -473,6 +473,7 @@ func (l *GenerateOrderLogic) GenerateOrder(req *types.GenerateOrderReq) (*types.
 			CouponIds: []int64{req.CouponId},
 			MemberId:  memberId,
 			OrderId:   orderId,
+			Status:    1,
 		})
 		if err != nil {
 			logc.Errorf(l.ctx, "[Saga-STEP4] 优惠券核销失败, orderId=%d, couponId=%d, err=%s", orderId, req.CouponId, err.Error())

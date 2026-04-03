@@ -3,6 +3,7 @@ package operate_dashboard
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
@@ -151,5 +152,126 @@ func TestQueryOperateFunnelDashboardMergesRPCResponses(t *testing.T) {
 	}
 	if len(resp.Data.ActivityOptions) != 1 || resp.Data.ActivityOptions[0].ActivityId != 501 {
 		t.Fatalf("unexpected activity options: %+v", resp.Data.ActivityOptions)
+	}
+}
+
+func TestQueryOperateFunnelDashboardPassesResolvedGovernanceScope(t *testing.T) {
+	testCases := []struct {
+		name           string
+		scopeType      string
+		platformID     json.Number
+		tenantID       json.Number
+		merchantID     json.Number
+		expectedScope  string
+		expectedTenant int64
+		expectedSeller int64
+	}{
+		{
+			name:           "platform",
+			scopeType:      "platform",
+			platformID:     json.Number("1"),
+			tenantID:       json.Number("0"),
+			merchantID:     json.Number("0"),
+			expectedScope:  "platform",
+			expectedTenant: 0,
+			expectedSeller: 0,
+		},
+		{
+			name:           "tenant",
+			scopeType:      "tenant",
+			platformID:     json.Number("1"),
+			tenantID:       json.Number("10"),
+			merchantID:     json.Number("0"),
+			expectedScope:  "tenant",
+			expectedTenant: 10,
+			expectedSeller: 0,
+		},
+		{
+			name:           "merchant",
+			scopeType:      "merchant",
+			platformID:     json.Number("1"),
+			tenantID:       json.Number("10"),
+			merchantID:     json.Number("88"),
+			expectedScope:  "merchant",
+			expectedTenant: 10,
+			expectedSeller: 88,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			ctx := context.Background()
+			ctx = context.WithValue(ctx, "scopeType", testCase.scopeType)
+			ctx = context.WithValue(ctx, "platformId", testCase.platformID)
+			ctx = context.WithValue(ctx, "tenantId", testCase.tenantID)
+			ctx = context.WithValue(ctx, "merchantId", testCase.merchantID)
+
+			assertScope := func(scopeType string, tenantID, merchantID int64) {
+				t.Helper()
+				if scopeType != testCase.expectedScope || tenantID != testCase.expectedTenant || merchantID != testCase.expectedSeller {
+					t.Fatalf("expected scope %s/%d/%d, got %s/%d/%d",
+						testCase.expectedScope, testCase.expectedTenant, testCase.expectedSeller,
+						scopeType, tenantID, merchantID,
+					)
+				}
+			}
+
+			logic := NewQueryOperateFunnelDashboardLogic(ctx, &svc.ServiceContext{
+				OperateDashboardService: &mockOperateDashboardService{
+					queryTrafficFunnelFn: func(_ context.Context, in *smsclient.QueryOperateTrafficFunnelReq, _ ...grpc.CallOption) (*smsclient.QueryOperateTrafficFunnelResp, error) {
+						assertScope(in.Scope.ScopeType, in.Scope.TenantId, in.Scope.MerchantId)
+						return &smsclient.QueryOperateTrafficFunnelResp{}, nil
+					},
+					queryCouponRedeemFn: func(_ context.Context, in *smsclient.QueryOperateCouponRedeemReq, _ ...grpc.CallOption) (*smsclient.QueryOperateCouponRedeemResp, error) {
+						assertScope(in.Scope.ScopeType, in.Scope.TenantId, in.Scope.MerchantId)
+						return &smsclient.QueryOperateCouponRedeemResp{}, nil
+					},
+					queryActivityOptionsFn: func(_ context.Context, in *smsclient.QueryOperateActivityOptionsReq, _ ...grpc.CallOption) (*smsclient.QueryOperateActivityOptionsResp, error) {
+						assertScope(in.Scope.ScopeType, in.Scope.TenantId, in.Scope.MerchantId)
+						return &smsclient.QueryOperateActivityOptionsResp{}, nil
+					},
+				},
+				CartItemService: &mockCartItemService{
+					queryOperateCartFunnelFn: func(_ context.Context, in *omsclient.QueryOperateCartFunnelReq, _ ...grpc.CallOption) (*omsclient.QueryOperateCartFunnelResp, error) {
+						assertScope(in.Scope.ScopeType, in.Scope.TenantId, in.Scope.MerchantId)
+						return &omsclient.QueryOperateCartFunnelResp{}, nil
+					},
+				},
+				OrderService: &mockOrderService{
+					queryOperateOrderFunnelFn: func(_ context.Context, in *omsclient.QueryOperateOrderFunnelReq, _ ...grpc.CallOption) (*omsclient.QueryOperateOrderFunnelResp, error) {
+						assertScope(in.Scope.ScopeType, in.Scope.TenantId, in.Scope.MerchantId)
+						return &omsclient.QueryOperateOrderFunnelResp{}, nil
+					},
+				},
+			})
+
+			if _, err := logic.QueryOperateFunnelDashboard(&types.QueryOperateFunnelDashboardReq{
+				StartTime: "2026-04-03 00:00:00",
+				EndTime:   "2026-04-04 00:00:00",
+			}); err != nil {
+				t.Fatalf("QueryOperateFunnelDashboard returned error: %v", err)
+			}
+		})
+	}
+}
+
+func TestQueryOperateFunnelDashboardRejectsScopeEscalation(t *testing.T) {
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, "scopeType", "tenant")
+	ctx = context.WithValue(ctx, "platformId", json.Number("1"))
+	ctx = context.WithValue(ctx, "tenantId", json.Number("10"))
+	ctx = context.WithValue(ctx, "merchantId", json.Number("0"))
+
+	logic := NewQueryOperateFunnelDashboardLogic(ctx, &svc.ServiceContext{})
+	_, err := logic.QueryOperateFunnelDashboard(&types.QueryOperateFunnelDashboardReq{
+		ScopeType: "platform",
+		StartTime: "2026-04-03 00:00:00",
+		EndTime:   "2026-04-04 00:00:00",
+	})
+	if err == nil {
+		t.Fatalf("expected scope escalation error, got nil")
+	}
+	if !strings.Contains(err.Error(), "当前主体不允许切换查询范围") {
+		t.Fatalf("expected scope escalation message, got %v", err)
 	}
 }
