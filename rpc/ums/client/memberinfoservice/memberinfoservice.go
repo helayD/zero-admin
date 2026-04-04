@@ -112,10 +112,13 @@ type (
 	QueryMemberGrowthLogDetailResp             = umsclient.QueryMemberGrowthLogDetailResp
 	QueryMemberGrowthLogListReq                = umsclient.QueryMemberGrowthLogListReq
 	QueryMemberGrowthLogListResp               = umsclient.QueryMemberGrowthLogListResp
+	QueryMemberBriefByIdsReq                   = umsclient.QueryMemberBriefByIdsReq
+	QueryMemberBriefByIdsResp                  = umsclient.QueryMemberBriefByIdsResp
 	QueryMemberInfoDetailReq                   = umsclient.QueryMemberInfoDetailReq
 	QueryMemberInfoDetailResp                  = umsclient.QueryMemberInfoDetailResp
 	QueryMemberInfoListReq                     = umsclient.QueryMemberInfoListReq
 	QueryMemberInfoListResp                    = umsclient.QueryMemberInfoListResp
+	MemberBriefData                            = umsclient.MemberBriefData
 	QueryMemberLevelDetailReq                  = umsclient.QueryMemberLevelDetailReq
 	QueryMemberLevelDetailResp                 = umsclient.QueryMemberLevelDetailResp
 	QueryMemberLevelListReq                    = umsclient.QueryMemberLevelListReq
@@ -220,6 +223,8 @@ type (
 		QueryMemberInfoDetail(ctx context.Context, in *QueryMemberInfoDetailReq, opts ...grpc.CallOption) (*QueryMemberInfoDetailResp, error)
 		// 查询会员信息列表
 		QueryMemberInfoList(ctx context.Context, in *QueryMemberInfoListReq, opts ...grpc.CallOption) (*QueryMemberInfoListResp, error)
+		// 批量查询会员简要信息
+		QueryMemberBriefByIds(ctx context.Context, in *QueryMemberBriefByIdsReq, opts ...grpc.CallOption) (*QueryMemberBriefByIdsResp, error)
 		// 会员登录
 		Login(ctx context.Context, in *LoginReq, opts ...grpc.CallOption) (*LoginResp, error)
 		// 更新会员积分
@@ -273,6 +278,12 @@ func (m *defaultMemberInfoService) QueryMemberInfoDetail(ctx context.Context, in
 func (m *defaultMemberInfoService) QueryMemberInfoList(ctx context.Context, in *QueryMemberInfoListReq, opts ...grpc.CallOption) (*QueryMemberInfoListResp, error) {
 	client := umsclient.NewMemberInfoServiceClient(m.cli.Conn())
 	return client.QueryMemberInfoList(ctx, in, opts...)
+}
+
+// 批量查询会员简要信息
+func (m *defaultMemberInfoService) QueryMemberBriefByIds(ctx context.Context, in *QueryMemberBriefByIdsReq, opts ...grpc.CallOption) (*QueryMemberBriefByIdsResp, error) {
+	client := umsclient.NewMemberInfoServiceClient(m.cli.Conn())
+	return client.QueryMemberBriefByIds(ctx, in, opts...)
 }
 
 // 会员登录

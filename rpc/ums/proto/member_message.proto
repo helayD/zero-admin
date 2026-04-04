@@ -1,0 +1,116 @@
+syntax = "proto3";
+
+package main;
+
+option go_package = "./proto";
+
+message AddMemberMessageReq {
+  int64 member_id = 1;
+  int32 message_type = 2;
+  string title = 3;
+  string content = 4;
+  string image_url = 5;
+  string link_type = 6;
+  string link_id = 7;
+  int64 related_order_id = 8;
+  int64 platform_id = 9;
+  int64 tenant_id = 10;
+  int64 merchant_id = 11;
+}
+
+message AddMemberMessageResp {
+  int64 code = 1;
+  string msg = 2;
+  int64 message_id = 3;
+}
+
+message QueryMemberMessageListReq {
+  int64 member_id = 1;
+  int32 message_type = 2;
+  optional int32 status = 3;
+  int32 page_num = 4;
+  int32 page_size = 5;
+}
+
+message MemberMessageData {
+  int64 id = 1;
+  int64 member_id = 2;
+  int32 message_type = 3;
+  string title = 4;
+  string content = 5;
+  string image_url = 6;
+  string link_type = 7;
+  string link_id = 8;
+  int64 related_order_id = 9;
+  int32 status = 10;
+  string read_time = 11;
+  string create_time = 12;
+}
+
+message QueryMemberMessageListResp {
+  int64 total = 1;
+  int32 page_num = 2;
+  int32 page_size = 3;
+  repeated MemberMessageData list = 4;
+}
+
+message QueryMemberMessageDetailReq {
+  int64 id = 1;
+  int64 member_id = 2;
+}
+
+message QueryMemberMessageDetailResp {
+  int64 code = 1;
+  string msg = 2;
+  MemberMessageData data = 3;
+}
+
+message MarkMessageAsReadReq {
+  int64 id = 1;
+  int64 member_id = 2;
+}
+
+message MarkMessageAsReadResp {
+  int64 code = 1;
+  string msg = 2;
+}
+
+message MarkAllMessagesAsReadReq {
+  int64 member_id = 1;
+}
+
+message MarkAllMessagesAsReadResp {
+  int64 code = 1;
+  string msg = 2;
+  int64 updated_count = 3;
+}
+
+message DeleteMemberMessageReq {
+  int64 id = 1;
+  int64 member_id = 2;
+}
+
+message DeleteMemberMessageResp {
+  int64 code = 1;
+  string msg = 2;
+}
+
+message QueryUnreadCountReq {
+  int64 member_id = 1;
+}
+
+message QueryUnreadCountResp {
+  int64 code = 1;
+  string msg = 2;
+  int64 unread_count = 3;
+}
+
+service MemberMessageService {
+  rpc AddMemberMessage(AddMemberMessageReq) returns (AddMemberMessageResp){}
+  rpc QueryMemberMessageList(QueryMemberMessageListReq) returns (QueryMemberMessageListResp){}
+  rpc QueryMemberMessageDetail(QueryMemberMessageDetailReq) returns (QueryMemberMessageDetailResp){}
+  rpc MarkMessageAsRead(MarkMessageAsReadReq) returns (MarkMessageAsReadResp){}
+  rpc MarkAllMessagesAsRead(MarkAllMessagesAsReadReq) returns (MarkAllMessagesAsReadResp){}
+  rpc DeleteMemberMessage(DeleteMemberMessageReq) returns (DeleteMemberMessageResp){}
+  rpc QueryUnreadCount(QueryUnreadCountReq) returns (QueryUnreadCountResp){}
+}

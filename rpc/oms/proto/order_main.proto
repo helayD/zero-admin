@@ -227,6 +227,76 @@ message QueryOperateOrderFunnelResp {
   repeated string partial_metrics = 5; //部分可用指标
 }
 
+message RepeatPurchaseOverview {
+  int64 paid_buyer_count = 1; //支付买家数
+  int64 repeat_buyer_count = 2; //复购买家数
+  double repeat_rate = 3; //复购率
+  int64 repeat_order_count = 4; //复购订单数
+  double repeat_gmv = 5; //复购GMV
+  double avg_days_to_repeat = 6; //平均复购天数
+}
+
+message RepeatPurchaseTrendPoint {
+  string bucket_label = 1; //时间桶标签
+  string bucket_start = 2; //时间桶开始(闭区间)
+  string bucket_end = 3; //时间桶结束(开区间)
+  int64 paid_buyer_count = 4; //支付买家数
+  int64 repeat_buyer_count = 5; //复购买家数
+  double repeat_rate = 6; //复购率
+  int64 repeat_order_count = 7; //复购订单数
+  double repeat_gmv = 8; //复购GMV
+  double avg_days_to_repeat = 9; //平均复购天数
+}
+
+message RepeatPurchaseDetailRow {
+  int64 member_id = 1; //会员ID
+  string first_valid_pay_time = 2; //首次有效支付时间
+  string latest_repeat_pay_time = 3; //最近复购支付时间
+  int64 repeat_order_count = 4; //复购订单数
+  double repeat_gmv = 5; //复购GMV
+  string latest_channel = 6; //最近渠道
+  string latest_activity_type = 7; //最近活动类型
+  int64 latest_activity_id = 8; //最近活动ID
+  int64 platform_id = 9; //平台ID
+  int64 tenant_id = 10; //租户ID
+  int64 merchant_id = 11; //商户ID
+}
+
+message QueryRepeatPurchaseAnalysisReq {
+  GovernanceScope scope = 1; //治理范围(platform/tenant/merchant)
+  string start_time = 2; //开始时间，按 Asia/Shanghai 解析
+  string end_time = 3; //结束时间，按 Asia/Shanghai 解析
+  string channel = 4; //统一渠道(app/pc/h5/mini_program/unknown)
+  string activity_type = 5; //活动类型(home_advertise/coupon/seckill_activity/none)
+  int64 activity_id = 6; //活动ID
+  string bucket = 7; //时间桶(day/hour)
+}
+
+message QueryRepeatPurchaseAnalysisResp {
+  RepeatPurchaseOverview overview = 1; //复购总览
+  repeated RepeatPurchaseTrendPoint trends = 2; //复购趋势
+  string tracking_started_at = 3; //埋点可信起点
+  repeated string partial_metrics = 4; //部分可用指标
+}
+
+message QueryRepeatPurchaseDetailListReq {
+  GovernanceScope scope = 1; //治理范围(platform/tenant/merchant)
+  string start_time = 2; //开始时间，按 Asia/Shanghai 解析
+  string end_time = 3; //结束时间，按 Asia/Shanghai 解析
+  string channel = 4; //统一渠道(app/pc/h5/mini_program/unknown)
+  string activity_type = 5; //活动类型(home_advertise/coupon/seckill_activity/none)
+  int64 activity_id = 6; //活动ID
+  int32 page_num = 7; //第几页
+  int32 page_size = 8; //每页的数量
+}
+
+message QueryRepeatPurchaseDetailListResp {
+  int64 total = 1; //总量
+  repeated RepeatPurchaseDetailRow list = 2; //复购明细
+  string tracking_started_at = 3; //埋点可信起点
+  repeated string partial_metrics = 4; //部分可用指标
+}
+
 enum ChainType {
   CHAIN_TYPE_UNKNOWN = 0;
   CHAIN_TYPE_COMPENSATION = 1;
@@ -465,6 +535,10 @@ service OrderService {
   rpc QueryOrderList(QueryOrderListReq) returns (QueryOrderListResp){}
   // 查询经营漏斗订单聚合
   rpc QueryOperateOrderFunnel(QueryOperateOrderFunnelReq) returns (QueryOperateOrderFunnelResp){}
+  // 查询复购分析总览与趋势
+  rpc QueryRepeatPurchaseAnalysis(QueryRepeatPurchaseAnalysisReq) returns (QueryRepeatPurchaseAnalysisResp){}
+  // 查询复购分析详情
+  rpc QueryRepeatPurchaseDetailList(QueryRepeatPurchaseDetailListReq) returns (QueryRepeatPurchaseDetailListResp){}
   // 查询链路监控列表
   rpc QueryCompensationChainList(QueryCompensationChainListReq) returns (QueryCompensationChainListResp){}
   // 查询可用干预动作

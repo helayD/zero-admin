@@ -919,26 +919,28 @@ var OrderDeliveryService_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
-	OrderService_AddOrder_FullMethodName                   = "/omsclient.OrderService/AddOrder"
-	OrderService_DeleteOrder_FullMethodName                = "/omsclient.OrderService/DeleteOrder"
-	OrderService_UpdateOrder_FullMethodName                = "/omsclient.OrderService/UpdateOrder"
-	OrderService_UpdateOrderStatus_FullMethodName          = "/omsclient.OrderService/UpdateOrderStatus"
-	OrderService_QueryOrderDetail_FullMethodName           = "/omsclient.OrderService/QueryOrderDetail"
-	OrderService_QueryOrderList_FullMethodName             = "/omsclient.OrderService/QueryOrderList"
-	OrderService_QueryOperateOrderFunnel_FullMethodName    = "/omsclient.OrderService/QueryOperateOrderFunnel"
-	OrderService_QueryCompensationChainList_FullMethodName = "/omsclient.OrderService/QueryCompensationChainList"
-	OrderService_QueryChainActions_FullMethodName          = "/omsclient.OrderService/QueryChainActions"
-	OrderService_RetryCompensationChain_FullMethodName     = "/omsclient.OrderService/RetryCompensationChain"
-	OrderService_ReplayCompensationChain_FullMethodName    = "/omsclient.OrderService/ReplayCompensationChain"
-	OrderService_PauseCompensationChain_FullMethodName     = "/omsclient.OrderService/PauseCompensationChain"
-	OrderService_EscalateChain_FullMethodName              = "/omsclient.OrderService/EscalateChain"
-	OrderService_Delivery_FullMethodName                   = "/omsclient.OrderService/Delivery"
-	OrderService_CloseOrder_FullMethodName                 = "/omsclient.OrderService/CloseOrder"
-	OrderService_CancelOrder_FullMethodName                = "/omsclient.OrderService/CancelOrder"
-	OrderService_ConfirmOrder_FullMethodName               = "/omsclient.OrderService/ConfirmOrder"
-	OrderService_QueryTimeOutOrderList_FullMethodName      = "/omsclient.OrderService/QueryTimeOutOrderList"
-	OrderService_UpdateOrderConsistency_FullMethodName     = "/omsclient.OrderService/UpdateOrderConsistency"
-	OrderService_QueryManualRequiredOrders_FullMethodName  = "/omsclient.OrderService/QueryManualRequiredOrders"
+	OrderService_AddOrder_FullMethodName                      = "/omsclient.OrderService/AddOrder"
+	OrderService_DeleteOrder_FullMethodName                   = "/omsclient.OrderService/DeleteOrder"
+	OrderService_UpdateOrder_FullMethodName                   = "/omsclient.OrderService/UpdateOrder"
+	OrderService_UpdateOrderStatus_FullMethodName             = "/omsclient.OrderService/UpdateOrderStatus"
+	OrderService_QueryOrderDetail_FullMethodName              = "/omsclient.OrderService/QueryOrderDetail"
+	OrderService_QueryOrderList_FullMethodName                = "/omsclient.OrderService/QueryOrderList"
+	OrderService_QueryOperateOrderFunnel_FullMethodName       = "/omsclient.OrderService/QueryOperateOrderFunnel"
+	OrderService_QueryRepeatPurchaseAnalysis_FullMethodName   = "/omsclient.OrderService/QueryRepeatPurchaseAnalysis"
+	OrderService_QueryRepeatPurchaseDetailList_FullMethodName = "/omsclient.OrderService/QueryRepeatPurchaseDetailList"
+	OrderService_QueryCompensationChainList_FullMethodName    = "/omsclient.OrderService/QueryCompensationChainList"
+	OrderService_QueryChainActions_FullMethodName             = "/omsclient.OrderService/QueryChainActions"
+	OrderService_RetryCompensationChain_FullMethodName        = "/omsclient.OrderService/RetryCompensationChain"
+	OrderService_ReplayCompensationChain_FullMethodName       = "/omsclient.OrderService/ReplayCompensationChain"
+	OrderService_PauseCompensationChain_FullMethodName        = "/omsclient.OrderService/PauseCompensationChain"
+	OrderService_EscalateChain_FullMethodName                 = "/omsclient.OrderService/EscalateChain"
+	OrderService_Delivery_FullMethodName                      = "/omsclient.OrderService/Delivery"
+	OrderService_CloseOrder_FullMethodName                    = "/omsclient.OrderService/CloseOrder"
+	OrderService_CancelOrder_FullMethodName                   = "/omsclient.OrderService/CancelOrder"
+	OrderService_ConfirmOrder_FullMethodName                  = "/omsclient.OrderService/ConfirmOrder"
+	OrderService_QueryTimeOutOrderList_FullMethodName         = "/omsclient.OrderService/QueryTimeOutOrderList"
+	OrderService_UpdateOrderConsistency_FullMethodName        = "/omsclient.OrderService/UpdateOrderConsistency"
+	OrderService_QueryManualRequiredOrders_FullMethodName     = "/omsclient.OrderService/QueryManualRequiredOrders"
 )
 
 // OrderServiceClient is the client API for OrderService service.
@@ -959,6 +961,10 @@ type OrderServiceClient interface {
 	QueryOrderList(ctx context.Context, in *QueryOrderListReq, opts ...grpc.CallOption) (*QueryOrderListResp, error)
 	// 查询经营漏斗订单聚合
 	QueryOperateOrderFunnel(ctx context.Context, in *QueryOperateOrderFunnelReq, opts ...grpc.CallOption) (*QueryOperateOrderFunnelResp, error)
+	// 查询复购分析总览与趋势
+	QueryRepeatPurchaseAnalysis(ctx context.Context, in *QueryRepeatPurchaseAnalysisReq, opts ...grpc.CallOption) (*QueryRepeatPurchaseAnalysisResp, error)
+	// 查询复购分析详情
+	QueryRepeatPurchaseDetailList(ctx context.Context, in *QueryRepeatPurchaseDetailListReq, opts ...grpc.CallOption) (*QueryRepeatPurchaseDetailListResp, error)
 	// 查询链路监控列表
 	QueryCompensationChainList(ctx context.Context, in *QueryCompensationChainListReq, opts ...grpc.CallOption) (*QueryCompensationChainListResp, error)
 	// 查询可用干预动作
@@ -1052,6 +1058,24 @@ func (c *orderServiceClient) QueryOrderList(ctx context.Context, in *QueryOrderL
 func (c *orderServiceClient) QueryOperateOrderFunnel(ctx context.Context, in *QueryOperateOrderFunnelReq, opts ...grpc.CallOption) (*QueryOperateOrderFunnelResp, error) {
 	out := new(QueryOperateOrderFunnelResp)
 	err := c.cc.Invoke(ctx, OrderService_QueryOperateOrderFunnel_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *orderServiceClient) QueryRepeatPurchaseAnalysis(ctx context.Context, in *QueryRepeatPurchaseAnalysisReq, opts ...grpc.CallOption) (*QueryRepeatPurchaseAnalysisResp, error) {
+	out := new(QueryRepeatPurchaseAnalysisResp)
+	err := c.cc.Invoke(ctx, OrderService_QueryRepeatPurchaseAnalysis_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *orderServiceClient) QueryRepeatPurchaseDetailList(ctx context.Context, in *QueryRepeatPurchaseDetailListReq, opts ...grpc.CallOption) (*QueryRepeatPurchaseDetailListResp, error) {
+	out := new(QueryRepeatPurchaseDetailListResp)
+	err := c.cc.Invoke(ctx, OrderService_QueryRepeatPurchaseDetailList_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1193,6 +1217,10 @@ type OrderServiceServer interface {
 	QueryOrderList(context.Context, *QueryOrderListReq) (*QueryOrderListResp, error)
 	// 查询经营漏斗订单聚合
 	QueryOperateOrderFunnel(context.Context, *QueryOperateOrderFunnelReq) (*QueryOperateOrderFunnelResp, error)
+	// 查询复购分析总览与趋势
+	QueryRepeatPurchaseAnalysis(context.Context, *QueryRepeatPurchaseAnalysisReq) (*QueryRepeatPurchaseAnalysisResp, error)
+	// 查询复购分析详情
+	QueryRepeatPurchaseDetailList(context.Context, *QueryRepeatPurchaseDetailListReq) (*QueryRepeatPurchaseDetailListResp, error)
 	// 查询链路监控列表
 	QueryCompensationChainList(context.Context, *QueryCompensationChainListReq) (*QueryCompensationChainListResp, error)
 	// 查询可用干预动作
@@ -1246,6 +1274,12 @@ func (UnimplementedOrderServiceServer) QueryOrderList(context.Context, *QueryOrd
 }
 func (UnimplementedOrderServiceServer) QueryOperateOrderFunnel(context.Context, *QueryOperateOrderFunnelReq) (*QueryOperateOrderFunnelResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QueryOperateOrderFunnel not implemented")
+}
+func (UnimplementedOrderServiceServer) QueryRepeatPurchaseAnalysis(context.Context, *QueryRepeatPurchaseAnalysisReq) (*QueryRepeatPurchaseAnalysisResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QueryRepeatPurchaseAnalysis not implemented")
+}
+func (UnimplementedOrderServiceServer) QueryRepeatPurchaseDetailList(context.Context, *QueryRepeatPurchaseDetailListReq) (*QueryRepeatPurchaseDetailListResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QueryRepeatPurchaseDetailList not implemented")
 }
 func (UnimplementedOrderServiceServer) QueryCompensationChainList(context.Context, *QueryCompensationChainListReq) (*QueryCompensationChainListResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QueryCompensationChainList not implemented")
@@ -1421,6 +1455,42 @@ func _OrderService_QueryOperateOrderFunnel_Handler(srv interface{}, ctx context.
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(OrderServiceServer).QueryOperateOrderFunnel(ctx, req.(*QueryOperateOrderFunnelReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OrderService_QueryRepeatPurchaseAnalysis_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryRepeatPurchaseAnalysisReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrderServiceServer).QueryRepeatPurchaseAnalysis(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrderService_QueryRepeatPurchaseAnalysis_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrderServiceServer).QueryRepeatPurchaseAnalysis(ctx, req.(*QueryRepeatPurchaseAnalysisReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OrderService_QueryRepeatPurchaseDetailList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryRepeatPurchaseDetailListReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrderServiceServer).QueryRepeatPurchaseDetailList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrderService_QueryRepeatPurchaseDetailList_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrderServiceServer).QueryRepeatPurchaseDetailList(ctx, req.(*QueryRepeatPurchaseDetailListReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1693,6 +1763,14 @@ var OrderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "QueryOperateOrderFunnel",
 			Handler:    _OrderService_QueryOperateOrderFunnel_Handler,
+		},
+		{
+			MethodName: "QueryRepeatPurchaseAnalysis",
+			Handler:    _OrderService_QueryRepeatPurchaseAnalysis_Handler,
+		},
+		{
+			MethodName: "QueryRepeatPurchaseDetailList",
+			Handler:    _OrderService_QueryRepeatPurchaseDetailList_Handler,
 		},
 		{
 			MethodName: "QueryCompensationChainList",

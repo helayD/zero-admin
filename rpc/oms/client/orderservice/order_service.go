@@ -98,6 +98,10 @@ type (
 	QueryOperateCartFunnelResp        = omsclient.QueryOperateCartFunnelResp
 	QueryOperateOrderFunnelReq        = omsclient.QueryOperateOrderFunnelReq
 	QueryOperateOrderFunnelResp       = omsclient.QueryOperateOrderFunnelResp
+	QueryRepeatPurchaseAnalysisReq    = omsclient.QueryRepeatPurchaseAnalysisReq
+	QueryRepeatPurchaseAnalysisResp   = omsclient.QueryRepeatPurchaseAnalysisResp
+	QueryRepeatPurchaseDetailListReq  = omsclient.QueryRepeatPurchaseDetailListReq
+	QueryRepeatPurchaseDetailListResp = omsclient.QueryRepeatPurchaseDetailListResp
 	QueryOrderDeliveryDetailReq       = omsclient.QueryOrderDeliveryDetailReq
 	QueryOrderDeliveryDetailResp      = omsclient.QueryOrderDeliveryDetailResp
 	QueryOrderDeliveryListReq         = omsclient.QueryOrderDeliveryListReq
@@ -106,6 +110,9 @@ type (
 	QueryOrderDetailResp              = omsclient.QueryOrderDetailResp
 	QueryOrderListReq                 = omsclient.QueryOrderListReq
 	QueryOrderListResp                = omsclient.QueryOrderListResp
+	RepeatPurchaseDetailRow           = omsclient.RepeatPurchaseDetailRow
+	RepeatPurchaseOverview            = omsclient.RepeatPurchaseOverview
+	RepeatPurchaseTrendPoint          = omsclient.RepeatPurchaseTrendPoint
 	QueryOrderOperationLogDetailReq   = omsclient.QueryOrderOperationLogDetailReq
 	QueryOrderOperationLogListReq     = omsclient.QueryOrderOperationLogListReq
 	QueryOrderOperationLogListResp    = omsclient.QueryOrderOperationLogListResp
@@ -174,6 +181,8 @@ type (
 		QueryOrderList(ctx context.Context, in *QueryOrderListReq, opts ...grpc.CallOption) (*QueryOrderListResp, error)
 		// 查询经营漏斗订单聚合
 		QueryOperateOrderFunnel(ctx context.Context, in *QueryOperateOrderFunnelReq, opts ...grpc.CallOption) (*QueryOperateOrderFunnelResp, error)
+		QueryRepeatPurchaseAnalysis(ctx context.Context, in *QueryRepeatPurchaseAnalysisReq, opts ...grpc.CallOption) (*QueryRepeatPurchaseAnalysisResp, error)
+		QueryRepeatPurchaseDetailList(ctx context.Context, in *QueryRepeatPurchaseDetailListReq, opts ...grpc.CallOption) (*QueryRepeatPurchaseDetailListResp, error)
 		// 查询链路监控列表
 		QueryCompensationChainList(ctx context.Context, in *QueryCompensationChainListReq, opts ...grpc.CallOption) (*QueryCompensationChainListResp, error)
 		// 查询可用干预动作
@@ -253,6 +262,16 @@ func (m *defaultOrderService) QueryOrderList(ctx context.Context, in *QueryOrder
 func (m *defaultOrderService) QueryOperateOrderFunnel(ctx context.Context, in *QueryOperateOrderFunnelReq, opts ...grpc.CallOption) (*QueryOperateOrderFunnelResp, error) {
 	client := omsclient.NewOrderServiceClient(m.cli.Conn())
 	return client.QueryOperateOrderFunnel(ctx, in, opts...)
+}
+
+func (m *defaultOrderService) QueryRepeatPurchaseAnalysis(ctx context.Context, in *QueryRepeatPurchaseAnalysisReq, opts ...grpc.CallOption) (*QueryRepeatPurchaseAnalysisResp, error) {
+	client := omsclient.NewOrderServiceClient(m.cli.Conn())
+	return client.QueryRepeatPurchaseAnalysis(ctx, in, opts...)
+}
+
+func (m *defaultOrderService) QueryRepeatPurchaseDetailList(ctx context.Context, in *QueryRepeatPurchaseDetailListReq, opts ...grpc.CallOption) (*QueryRepeatPurchaseDetailListResp, error) {
+	client := omsclient.NewOrderServiceClient(m.cli.Conn())
+	return client.QueryRepeatPurchaseDetailList(ctx, in, opts...)
 }
 
 // 查询链路监控列表

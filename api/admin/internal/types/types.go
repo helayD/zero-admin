@@ -2160,6 +2160,91 @@ type QueryOperateFunnelDashboardResp struct {
 	Success bool                            `json:"success"`
 }
 
+type QueryRepeatPurchaseAnalysisReq struct {
+	ScopeType    string `form:"scopeType,optional"`
+	PlatformId   int64  `form:"platformId,optional"`
+	TenantId     int64  `form:"tenantId,optional"`
+	MerchantId   int64  `form:"merchantId,optional"`
+	StartTime    string `form:"startTime,optional"`
+	EndTime      string `form:"endTime,optional"`
+	Channel      string `form:"channel,optional"`
+	ActivityType string `form:"activityType,optional"`
+	ActivityId   int64  `form:"activityId,optional"`
+	Bucket       string `form:"bucket,optional"`
+	PageNum      int32  `form:"pageNum,optional"`
+	PageSize     int32  `form:"pageSize,optional"`
+}
+
+type ExportRepeatPurchaseAnalysisReq struct {
+	ScopeType    string `form:"scopeType,optional"`
+	PlatformId   int64  `form:"platformId,optional"`
+	TenantId     int64  `form:"tenantId,optional"`
+	MerchantId   int64  `form:"merchantId,optional"`
+	StartTime    string `form:"startTime,optional"`
+	EndTime      string `form:"endTime,optional"`
+	Channel      string `form:"channel,optional"`
+	ActivityType string `form:"activityType,optional"`
+	ActivityId   int64  `form:"activityId,optional"`
+	Bucket       string `form:"bucket,optional"`
+}
+
+type RepeatPurchaseOverview struct {
+	PaidBuyerCount   int64   `json:"paidBuyerCount"`
+	RepeatBuyerCount int64   `json:"repeatBuyerCount"`
+	RepeatRate       float64 `json:"repeatRate"`
+	RepeatOrderCount int64   `json:"repeatOrderCount"`
+	RepeatGmv        float64 `json:"repeatGmv"`
+	AvgDaysToRepeat  float64 `json:"avgDaysToRepeat"`
+}
+
+type RepeatPurchaseTrendPoint struct {
+	BucketLabel      string  `json:"bucketLabel"`
+	BucketStart      string  `json:"bucketStart"`
+	BucketEnd        string  `json:"bucketEnd"`
+	PaidBuyerCount   int64   `json:"paidBuyerCount"`
+	RepeatBuyerCount int64   `json:"repeatBuyerCount"`
+	RepeatRate       float64 `json:"repeatRate"`
+	RepeatOrderCount int64   `json:"repeatOrderCount"`
+	RepeatGmv        float64 `json:"repeatGmv"`
+	AvgDaysToRepeat  float64 `json:"avgDaysToRepeat"`
+}
+
+type RepeatPurchaseDetailItem struct {
+	MemberId            int64   `json:"memberId"`
+	NicknameMasked      string  `json:"nicknameMasked"`
+	MobileMasked        string  `json:"mobileMasked"`
+	FirstValidPayTime   string  `json:"firstValidPayTime"`
+	LatestRepeatPayTime string  `json:"latestRepeatPayTime"`
+	RepeatOrderCount    int64   `json:"repeatOrderCount"`
+	RepeatGmv           float64 `json:"repeatGmv"`
+	LatestChannel       string  `json:"latestChannel"`
+	LatestActivityType  string  `json:"latestActivityType"`
+	LatestActivityId    int64   `json:"latestActivityId"`
+	PlatformId          int64   `json:"platformId"`
+	TenantId            int64   `json:"tenantId"`
+	MerchantId          int64   `json:"merchantId"`
+}
+
+type QueryRepeatPurchaseAnalysisData struct {
+	Overview          RepeatPurchaseOverview        `json:"overview"`
+	Trends            []RepeatPurchaseTrendPoint    `json:"trends"`
+	Details           []RepeatPurchaseDetailItem    `json:"details"`
+	Total             int64                         `json:"total"`
+	PageNum           int32                         `json:"pageNum"`
+	PageSize          int32                         `json:"pageSize"`
+	ActivityOptions   []OperateFunnelActivityOption `json:"activityOptions"`
+	TrackingStartedAt string                        `json:"trackingStartedAt"`
+	PartialMetrics    []string                      `json:"partialMetrics"`
+	Bucket            string                        `json:"bucket"`
+}
+
+type QueryRepeatPurchaseAnalysisResp struct {
+	Code    string                          `json:"code"`
+	Message string                          `json:"message"`
+	Data    QueryRepeatPurchaseAnalysisData `json:"data"`
+	Success bool                            `json:"success"`
+}
+
 type QueryHomeBrandDetailData struct {
 	Id                  int64  `json:"id"`                  //
 	Name                string `json:"name"`                //品牌名称

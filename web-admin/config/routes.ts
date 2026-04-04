@@ -341,7 +341,7 @@
         component: './sms/HomeAdvertise',
       },
       {
-        name: '经营漏斗',
+        name: '运营数据看板',
         icon: 'table',
         path: '/sms/operateDashboard/list',
         component: './sms/OperateDashboard',

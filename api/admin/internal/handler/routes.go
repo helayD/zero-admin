@@ -1018,6 +1018,16 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Path:    "/queryOperateFunnelDashboard",
 					Handler: smsoperate_dashboard.QueryOperateFunnelDashboardHandler(serverCtx),
 				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryRepeatPurchaseAnalysis",
+					Handler: smsoperate_dashboard.QueryRepeatPurchaseAnalysisHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/exportRepeatPurchaseAnalysis",
+					Handler: smsoperate_dashboard.ExportRepeatPurchaseAnalysisHandler(serverCtx),
+				},
 			}...,
 		),
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),

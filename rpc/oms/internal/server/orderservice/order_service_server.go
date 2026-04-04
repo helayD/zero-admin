@@ -7,7 +7,7 @@ package server
 import (
 	"context"
 
-	"github.com/feihua/zero-admin/rpc/oms/internal/logic/orderservice"
+	orderservicelogic "github.com/feihua/zero-admin/rpc/oms/internal/logic/orderservice"
 	"github.com/feihua/zero-admin/rpc/oms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/oms/omsclient"
 )
@@ -63,6 +63,18 @@ func (s *OrderServiceServer) QueryOrderList(ctx context.Context, in *omsclient.Q
 func (s *OrderServiceServer) QueryOperateOrderFunnel(ctx context.Context, in *omsclient.QueryOperateOrderFunnelReq) (*omsclient.QueryOperateOrderFunnelResp, error) {
 	l := orderservicelogic.NewQueryOperateOrderFunnelLogic(ctx, s.svcCtx)
 	return l.QueryOperateOrderFunnel(in)
+}
+
+// 查询复购分析总览与趋势
+func (s *OrderServiceServer) QueryRepeatPurchaseAnalysis(ctx context.Context, in *omsclient.QueryRepeatPurchaseAnalysisReq) (*omsclient.QueryRepeatPurchaseAnalysisResp, error) {
+	l := orderservicelogic.NewQueryRepeatPurchaseAnalysisLogic(ctx, s.svcCtx)
+	return l.QueryRepeatPurchaseAnalysis(in)
+}
+
+// 查询复购分析详情
+func (s *OrderServiceServer) QueryRepeatPurchaseDetailList(ctx context.Context, in *omsclient.QueryRepeatPurchaseDetailListReq) (*omsclient.QueryRepeatPurchaseDetailListResp, error) {
+	l := orderservicelogic.NewQueryRepeatPurchaseDetailListLogic(ctx, s.svcCtx)
+	return l.QueryRepeatPurchaseDetailList(in)
 }
 
 // 查询链路监控列表
