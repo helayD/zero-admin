@@ -46,7 +46,7 @@ func (l *CreateTenantLogic) CreateTenant(req *types.CreateTenantReq) (resp *type
 		ContactName:       strings.TrimSpace(req.ContactName),
 		ContactMobile:     strings.TrimSpace(req.ContactMobile),
 		ContactEmail:      strings.TrimSpace(req.ContactEmail),
-		AvailableChannels: trimStringSlice(req.AvailableChannels),
+		AvailableChannels: normalizeChannelSlice(req.AvailableChannels),
 		DataRetentionDays: req.DataRetentionDays,
 		FeatureFlags:      trimStringSlice(req.FeatureFlags),
 		AdminUserName:     strings.TrimSpace(req.AdminUserName),

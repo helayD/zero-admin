@@ -3,6 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net/http"
+	"os"
+
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/config"
 	"github.com/feihua/zero-admin/api/admin/internal/handler"
@@ -11,8 +14,6 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/rest"
 	"github.com/zeromicro/go-zero/rest/httpx"
-	"net/http"
-	"os"
 )
 
 var configFile = flag.String("f", "api/admin/etc/admin-api.yaml", "the config file")
@@ -39,6 +40,7 @@ func main() {
 	server.Use(ctx.AddLog)
 
 	handler.RegisterHandlers(server, ctx)
+	handler.RegisterExtraHandlers(server, ctx)
 
 	// 自定义错误
 	httpx.SetErrorHandler(func(err error) (int, interface{}) {

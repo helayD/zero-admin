@@ -178,6 +178,9 @@ func TestCreateApproveAndEnableMerchantFlow(t *testing.T) {
 	if merchant.ReviewStatus != merchantmodel.MerchantReviewApproved || merchant.BusinessStatus != merchantmodel.MerchantBusinessEnabled {
 		t.Fatalf("unexpected merchant status: %+v", merchant)
 	}
+	if !strings.Contains(merchant.AvailableChannels, "mini_program") {
+		t.Fatalf("unexpected available channels: %s", merchant.AvailableChannels)
+	}
 
 	var binding logiccommon.UserScopeBinding
 	if err := svcCtx.DB.Table("sys_user_scope").Where("user_id = ? AND merchant_id = ?", 41, createResp.MerchantId).Take(&binding).Error; err != nil {

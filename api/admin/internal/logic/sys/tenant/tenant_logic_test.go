@@ -76,7 +76,7 @@ func TestCreateTenantLogicPassesOperatorContext(t *testing.T) {
 				if in.CreateBy != "platform-admin" || in.OperatorId != 77 {
 					t.Fatalf("unexpected operator info: %+v", in)
 				}
-				if len(in.AvailableChannels) != 2 || in.AvailableChannels[0] != "app" {
+				if len(in.AvailableChannels) != 2 || in.AvailableChannels[0] != "app" || in.AvailableChannels[1] != "mini_program" {
 					t.Fatalf("unexpected channels: %+v", in.AvailableChannels)
 				}
 				return &rpctenant.CreateTenantResp{
@@ -114,7 +114,7 @@ func TestQueryTenantListLogicMapsRpcResponse(t *testing.T) {
 	svcCtx := &svc.ServiceContext{
 		TenantService: &fakeTenantService{
 			queryListFn: func(_ context.Context, in *rpctenant.QueryTenantListReq, _ ...grpc.CallOption) (*rpctenant.QueryTenantListResp, error) {
-				if in.Status != 1 || in.Channel != "app" || in.PageNum != 2 {
+				if in.Status != 1 || in.Channel != "mini_program" || in.PageNum != 2 {
 					t.Fatalf("unexpected query params: %+v", in)
 				}
 				return &rpctenant.QueryTenantListResp{
@@ -143,7 +143,7 @@ func TestQueryTenantListLogicMapsRpcResponse(t *testing.T) {
 		Current:  2,
 		PageSize: 20,
 		Status:   1,
-		Channel:  "app",
+		Channel:  "mini-program",
 	})
 	if err != nil {
 		t.Fatalf("query tenant list failed: %v", err)

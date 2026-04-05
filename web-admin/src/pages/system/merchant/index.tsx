@@ -22,6 +22,11 @@ import React, { useRef, useState } from 'react';
 import { PageContainer } from '@ant-design/pro-layout';
 import type { ActionType, ProColumns } from '@ant-design/pro-table';
 import ProTable from '@ant-design/pro-table';
+import {
+  formatSystemChannelLabel,
+  SYSTEM_CHANNEL_OPTIONS,
+  SYSTEM_CHANNEL_VALUE_ENUM,
+} from '../shared/channel';
 import ActionReasonModal from './components/ActionReasonModal';
 import CreateMerchantDrawer from './components/CreateMerchantDrawer';
 import type {
@@ -44,13 +49,6 @@ import {
 } from './service';
 
 type MerchantActionKind = MerchantReviewAction | MerchantStatusAction;
-
-const channelOptions = [
-  { label: 'App', value: 'app' },
-  { label: '小程序', value: 'mini-program' },
-  { label: 'H5', value: 'h5' },
-  { label: '门店 POS', value: 'pos' },
-];
 
 const capabilityOptions = [
   { label: 'OMS 订单履约', value: 'oms' },
@@ -287,12 +285,7 @@ const MerchantPage: React.FC = () => {
       dataIndex: 'channel',
       hideInTable: true,
       valueType: 'select',
-      valueEnum: {
-        app: { text: 'App' },
-        'mini-program': { text: '小程序' },
-        h5: { text: 'H5' },
-        pos: { text: '门店 POS' },
-      },
+      valueEnum: SYSTEM_CHANNEL_VALUE_ENUM,
     },
     {
       title: '能力包筛选',
@@ -314,7 +307,7 @@ const MerchantPage: React.FC = () => {
       render: (_, record) => (
         <Space wrap>
           {(record.availableChannels || []).map((channel) => (
-            <Tag key={channel}>{channel}</Tag>
+            <Tag key={channel}>{formatSystemChannelLabel(channel)}</Tag>
           ))}
         </Space>
       ),
@@ -474,7 +467,7 @@ const MerchantPage: React.FC = () => {
       <CreateMerchantDrawer
         visible={createVisible}
         onVisibleChange={setCreateVisible}
-        channelOptions={channelOptions}
+        channelOptions={SYSTEM_CHANNEL_OPTIONS}
         capabilityOptions={capabilityOptions}
         onSuccess={(result) => {
           setLastCreated(result);

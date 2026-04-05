@@ -20,13 +20,16 @@ const (
 	ChannelPC          = "pc"
 	ChannelH5          = "h5"
 	ChannelMiniProgram = "mini_program"
+	ChannelPOS         = "pos"
 	ChannelUnknown     = "unknown"
 )
 
+const channelMiniProgramAlias = "mini-program"
+
 const (
-	ActivityNone           = "none"
-	ActivityHomeAdvertise  = "home_advertise"
-	ActivityCoupon         = "coupon"
+	ActivityNone            = "none"
+	ActivityHomeAdvertise   = "home_advertise"
+	ActivityCoupon          = "coupon"
 	ActivitySeckillActivity = "seckill_activity"
 )
 
@@ -148,9 +151,12 @@ func IterateBuckets(start, end time.Time, bucket string, fn func(bucketStart, bu
 }
 
 func NormalizeChannel(channel string) string {
-	switch strings.TrimSpace(channel) {
-	case ChannelApp, ChannelPC, ChannelH5, ChannelMiniProgram:
-		return strings.TrimSpace(channel)
+	trimmed := strings.TrimSpace(channel)
+	switch trimmed {
+	case ChannelApp, ChannelPC, ChannelH5, ChannelMiniProgram, ChannelPOS, ChannelUnknown:
+		return trimmed
+	case channelMiniProgramAlias:
+		return ChannelMiniProgram
 	default:
 		return ChannelUnknown
 	}

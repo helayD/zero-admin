@@ -48,7 +48,7 @@ func (l *CreateMerchantLogic) CreateMerchant(req *types.CreateMerchantReq) (resp
 		ContactName:        strings.TrimSpace(req.ContactName),
 		ContactMobile:      strings.TrimSpace(req.ContactMobile),
 		ContactEmail:       strings.TrimSpace(req.ContactEmail),
-		AvailableChannels:  trimStringSlice(req.AvailableChannels),
+		AvailableChannels:  normalizeChannelSlice(req.AvailableChannels),
 		CapabilityFlags:    trimStringSlice(req.CapabilityFlags),
 		VisibleScopeHint:   strings.TrimSpace(req.VisibleScopeHint),
 		PrimaryAdminUserId: req.PrimaryAdminUserId,
@@ -65,9 +65,9 @@ func (l *CreateMerchantLogic) CreateMerchant(req *types.CreateMerchantReq) (resp
 		Code:    "000000",
 		Message: "创建商户成功",
 		Data: types.CreateMerchantData{
-			MerchantId:    result.MerchantId,
-			MerchantCode:  result.MerchantCode,
-			ReviewStatus:  result.ReviewStatus,
+			MerchantId:     result.MerchantId,
+			MerchantCode:   result.MerchantCode,
+			ReviewStatus:   result.ReviewStatus,
 			BusinessStatus: result.BusinessStatus,
 		},
 	}, nil

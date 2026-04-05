@@ -21,6 +21,11 @@ import React, { useRef, useState } from 'react';
 import { PageContainer } from '@ant-design/pro-layout';
 import type { ActionType, ProColumns } from '@ant-design/pro-table';
 import ProTable from '@ant-design/pro-table';
+import {
+  formatSystemChannelLabel,
+  SYSTEM_CHANNEL_OPTIONS,
+  SYSTEM_CHANNEL_VALUE_ENUM,
+} from '../shared/channel';
 import CreateTenantDrawer from './components/CreateTenantDrawer';
 import type {
   CreateTenantResult,
@@ -37,13 +42,6 @@ import {
 } from './service';
 
 const { confirm } = Modal;
-
-const channelOptions = [
-  { label: 'App', value: 'app' },
-  { label: '小程序', value: 'mini-program' },
-  { label: 'H5', value: 'h5' },
-  { label: '门店 POS', value: 'pos' },
-];
 
 const featureOptions = [
   { label: 'OMS 订单履约', value: 'oms' },
@@ -184,7 +182,7 @@ const TenantPage: React.FC = () => {
       render: (_, record) => (
         <Space wrap>
           {(record.availableChannels || []).map((channel) => (
-            <Tag key={channel}>{channel}</Tag>
+            <Tag key={channel}>{formatSystemChannelLabel(channel)}</Tag>
           ))}
         </Space>
       ),
@@ -194,12 +192,7 @@ const TenantPage: React.FC = () => {
       dataIndex: 'channel',
       hideInTable: true,
       valueType: 'select',
-      valueEnum: {
-        app: { text: 'App' },
-        'mini-program': { text: '小程序' },
-        h5: { text: 'H5' },
-        pos: { text: '门店 POS' },
-      },
+      valueEnum: SYSTEM_CHANNEL_VALUE_ENUM,
     },
     {
       title: '生命周期',
@@ -327,7 +320,7 @@ const TenantPage: React.FC = () => {
       <CreateTenantDrawer
         visible={createVisible}
         onVisibleChange={setCreateVisible}
-        channelOptions={channelOptions}
+        channelOptions={SYSTEM_CHANNEL_OPTIONS}
         featureOptions={featureOptions}
         onSuccess={(result) => {
           setLastCreated(result);

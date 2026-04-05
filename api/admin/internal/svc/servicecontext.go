@@ -36,11 +36,12 @@ import (
 	"github.com/feihua/zero-admin/rpc/sms/client/couponrecordservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/couponscopeservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/coupontypeservice"
+	"github.com/feihua/zero-admin/rpc/sms/client/operatedashboardservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/seckillactivityservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/seckillproductservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/seckillreservationservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/seckillsessionservice"
-	"github.com/feihua/zero-admin/rpc/sms/client/operatedashboardservice"
+	"github.com/feihua/zero-admin/rpc/sys/client/channelintegrationtemplateservice"
 	"github.com/feihua/zero-admin/rpc/sys/client/merchantservice"
 	"github.com/feihua/zero-admin/rpc/sys/client/noticeservice"
 	"github.com/feihua/zero-admin/rpc/sys/client/tenantservice"
@@ -105,20 +106,21 @@ type ServiceContext struct {
 	MemberTaskRelationService            membertaskrelationservice.MemberTaskRelationService
 	MemberSignLogService                 membersignlogservice.MemberSignLogService
 	// 系统相关
-	DeptService         deptservice.DeptService
-	DictTypeService     dicttypeservice.DictTypeService
-	DictItemService     dictitemservice.DictItemService
-	PostService         postservice.PostService
-	NoticeService       noticeservice.NoticeService
-	TenantService       tenantservice.TenantService
-	MerchantService     merchantservice.MerchantService
-	AuditCenterService  auditcenterservice.AuditCenterService
-	LoginLogService     loginlogservice.LoginLogService
-	Operatelogservice   operatelogservice.OperateLogService
-	MenuService         menuservice.MenuService
-	MenuTemplateService menutemplateservice.MenuTemplateService
-	RoleService         roleservice.RoleService
-	UserService         userservice.UserService
+	DeptService                       deptservice.DeptService
+	DictTypeService                   dicttypeservice.DictTypeService
+	DictItemService                   dictitemservice.DictItemService
+	PostService                       postservice.PostService
+	NoticeService                     noticeservice.NoticeService
+	TenantService                     tenantservice.TenantService
+	MerchantService                   merchantservice.MerchantService
+	AuditCenterService                auditcenterservice.AuditCenterService
+	LoginLogService                   loginlogservice.LoginLogService
+	Operatelogservice                 operatelogservice.OperateLogService
+	MenuService                       menuservice.MenuService
+	MenuTemplateService               menutemplateservice.MenuTemplateService
+	ChannelIntegrationTemplateService channelintegrationtemplateservice.ChannelIntegrationTemplateService
+	RoleService                       roleservice.RoleService
+	UserService                       userservice.UserService
 	// 商品相关
 	ProductBrandService                     productbrandservice.ProductBrandService
 	CommentReplayService                    commentreplayservice.CommentReplayService
@@ -195,22 +197,23 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		MemberTaskRelationService:            membertaskrelationservice.NewMemberTaskRelationService(umsClient),
 		MemberSignLogService:                 membersignlogservice.NewMemberSignLogService(umsClient),
 
-		DeptService:         deptservice.NewDeptService(sysClient),
-		DictTypeService:     dicttypeservice.NewDictTypeService(sysClient),
-		DictItemService:     dictitemservice.NewDictItemService(sysClient),
-		PostService:         postservice.NewPostService(sysClient),
-		NoticeService:       noticeservice.NewNoticeService(sysClient),
-		TenantService:       tenantservice.NewTenantService(sysClient),
-		MerchantService:     merchantservice.NewMerchantService(sysClient),
-		AuditCenterService:  auditcenterservice.NewAuditCenterService(sysClient),
-		LoginLogService:     loginlogservice.NewLoginLogService(sysClient),
-		Operatelogservice:   operateLogService,
-		MenuService:         menuservice.NewMenuService(sysClient),
-		MenuTemplateService: menutemplateservice.NewMenuTemplateService(sysClient),
-		RoleService:         roleservice.NewRoleService(sysClient),
-		UserService:         userservice.NewUserService(sysClient),
-		CheckUrl:            middleware.NewCheckUrlMiddleware(newRedis, c.Auth.ExcludeUrl).Handle,
-		AddLog:              middleware.NewAddLogMiddleware(operateLogService).Handle,
+		DeptService:                       deptservice.NewDeptService(sysClient),
+		DictTypeService:                   dicttypeservice.NewDictTypeService(sysClient),
+		DictItemService:                   dictitemservice.NewDictItemService(sysClient),
+		PostService:                       postservice.NewPostService(sysClient),
+		NoticeService:                     noticeservice.NewNoticeService(sysClient),
+		TenantService:                     tenantservice.NewTenantService(sysClient),
+		MerchantService:                   merchantservice.NewMerchantService(sysClient),
+		AuditCenterService:                auditcenterservice.NewAuditCenterService(sysClient),
+		LoginLogService:                   loginlogservice.NewLoginLogService(sysClient),
+		Operatelogservice:                 operateLogService,
+		MenuService:                       menuservice.NewMenuService(sysClient),
+		MenuTemplateService:               menutemplateservice.NewMenuTemplateService(sysClient),
+		ChannelIntegrationTemplateService: channelintegrationtemplateservice.NewChannelIntegrationTemplateService(sysClient),
+		RoleService:                       roleservice.NewRoleService(sysClient),
+		UserService:                       userservice.NewUserService(sysClient),
+		CheckUrl:                          middleware.NewCheckUrlMiddleware(newRedis, c.Auth.ExcludeUrl).Handle,
+		AddLog:                            middleware.NewAddLogMiddleware(operateLogService).Handle,
 
 		ProductBrandService:                     productbrandservice.NewProductBrandService(pmsClient),
 		CommentReplayService:                    commentreplayservice.NewCommentReplayService(pmsClient),

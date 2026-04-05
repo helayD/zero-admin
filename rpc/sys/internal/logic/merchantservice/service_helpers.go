@@ -20,9 +20,9 @@ import (
 )
 
 const (
-	defaultPlatformID           int64  = 1
-	defaultMerchantScopeHint           = "启用后会同步影响商户后台访问、能力包、菜单模板继承与作用域生效状态。"
-	merchantPermissionCacheKey         = "zero:mall:token"
+	defaultPlatformID          int64 = 1
+	defaultMerchantScopeHint         = "启用后会同步影响商户后台访问、能力包、菜单模板继承与作用域生效状态。"
+	merchantPermissionCacheKey       = "zero:mall:token"
 )
 
 const merchantSelectColumns = `
@@ -128,7 +128,7 @@ func normalizeCreateMerchantReq(in *sysclient.CreateMerchantReq) (*createMerchan
 		ContactName:        strings.TrimSpace(in.ContactName),
 		ContactMobile:      strings.TrimSpace(in.ContactMobile),
 		ContactEmail:       strings.TrimSpace(in.ContactEmail),
-		AvailableChannels:  normalizeStringList(in.AvailableChannels),
+		AvailableChannels:  normalizeChannelList(in.AvailableChannels),
 		CapabilityFlags:    normalizeStringList(in.CapabilityFlags),
 		VisibleScopeHint:   strings.TrimSpace(in.VisibleScopeHint),
 		PrimaryAdminUserID: in.PrimaryAdminUserId,
@@ -231,7 +231,7 @@ func mapMerchantRowToProto(row merchantQueryRow) *sysclient.MerchantData {
 		ContactName:        row.ContactName,
 		ContactMobile:      row.ContactMobile,
 		ContactEmail:       row.ContactEmail,
-		AvailableChannels:  decodeStringList(row.AvailableChannels),
+		AvailableChannels:  decodeChannelList(row.AvailableChannels),
 		CapabilityFlags:    decodeStringList(row.CapabilityFlags),
 		ReviewStatus:       row.ReviewStatus,
 		ReviewReason:       row.ReviewReason,
@@ -276,7 +276,7 @@ func applyMerchantFilters(db *gorm.DB, in *sysclient.QueryMerchantListReq) *gorm
 	if in.BusinessStatus >= 0 {
 		db = db.Where("m.business_status = ?", in.BusinessStatus)
 	}
-	if channel := strings.TrimSpace(in.Channel); channel != "" {
+	if channel := normalizeChannelFilterValue(in.Channel); channel != "" {
 		db = db.Where("m.available_channels LIKE ?", "%\""+channel+"\"%")
 	}
 	if capabilityFlag := strings.TrimSpace(in.CapabilityFlag); capabilityFlag != "" {

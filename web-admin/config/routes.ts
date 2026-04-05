@@ -106,6 +106,12 @@
         path: '/system/merchant/list',
         component: './system/merchant',
       },
+      {
+        name: '模板治理',
+        icon: 'table',
+        path: '/system/channel-integration-template/list',
+        component: './system/channel_integration_template',
+      },
       // {
       //   name: '参数管理',
       //   icon: 'table',
