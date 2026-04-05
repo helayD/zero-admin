@@ -7,7 +7,7 @@ package server
 import (
 	"context"
 
-	"github.com/feihua/zero-admin/rpc/ums/internal/logic/memberinfoservice"
+	memberinfoservicelogic "github.com/feihua/zero-admin/rpc/ums/internal/logic/memberinfoservice"
 	"github.com/feihua/zero-admin/rpc/ums/internal/svc"
 	"github.com/feihua/zero-admin/rpc/ums/umsclient"
 )
@@ -57,6 +57,12 @@ func (s *MemberInfoServiceServer) QueryMemberInfoDetail(ctx context.Context, in 
 func (s *MemberInfoServiceServer) QueryMemberInfoList(ctx context.Context, in *umsclient.QueryMemberInfoListReq) (*umsclient.QueryMemberInfoListResp, error) {
 	l := memberinfoservicelogic.NewQueryMemberInfoListLogic(ctx, s.svcCtx)
 	return l.QueryMemberInfoList(in)
+}
+
+// 批量查询会员简要信息
+func (s *MemberInfoServiceServer) QueryMemberBriefByIds(ctx context.Context, in *umsclient.QueryMemberBriefByIdsReq) (*umsclient.QueryMemberBriefByIdsResp, error) {
+	l := memberinfoservicelogic.NewQueryMemberBriefByIdsLogic(ctx, s.svcCtx)
+	return l.QueryMemberBriefByIds(in)
 }
 
 // 会员登录

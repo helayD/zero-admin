@@ -22,6 +22,8 @@ message AddCartItemReq {
   int64 product_category_id = 14; //商品分类ID
   string product_attr = 15; //商品销售属性JSON
   string member_nickname = 16; //会员昵称
+  string activity_type = 17; //活动类型(home_advertise/coupon/seckill_activity/none)
+  int64 activity_id = 18; //活动ID
 
 }
 
@@ -54,6 +56,8 @@ message UpdateCartItemReq {
   string product_attr = 15; //商品销售属性JSON
   string member_nickname = 16; //会员昵称
   int32 source = 17; //来源 1-PC 2-H5 3-小程序 4-APP
+  string activity_type = 18; //活动类型(home_advertise/coupon/seckill_activity/none)
+  int64 activity_id = 19; //活动ID
 
 }
 
@@ -92,7 +96,33 @@ message CartItemData {
   string expire_time = 19; //过期时间
   string create_time = 20; //创建时间
   string update_time = 21; //更新时间
+  string activity_type = 22; //活动类型(home_advertise/coupon/seckill_activity/none)
+  int64 activity_id = 23; //活动ID
 
+}
+
+message OperateCartBucketPoint {
+  string bucket_label = 1; //时间桶标签
+  string bucket_start = 2; //时间桶开始(闭区间)
+  string bucket_end = 3; //时间桶结束(开区间)
+  int64 add_cart = 4; //加购数
+}
+
+message QueryOperateCartFunnelReq {
+  GovernanceScope scope = 1; //治理范围(platform/tenant/merchant)
+  string start_time = 2; //开始时间，按 Asia/Shanghai 解析
+  string end_time = 3; //结束时间，按 Asia/Shanghai 解析
+  string channel = 4; //统一渠道(app/pc/h5/mini_program/unknown)
+  string activity_type = 5; //活动类型(home_advertise/coupon/seckill_activity/none)
+  int64 activity_id = 6; //活动ID
+  string bucket = 7; //时间桶(day/hour)
+}
+
+message QueryOperateCartFunnelResp {
+  repeated OperateCartBucketPoint buckets = 1;
+  int64 total_add_cart = 2; //加购总量
+  string tracking_started_at = 3; //埋点可信起点
+  repeated string partial_metrics = 4; //部分可用指标
 }
 
 // 分页查询购物车列
@@ -118,6 +148,8 @@ service CartItemService {
   rpc QueryCartItemDetail(QueryCartItemDetailReq) returns (CartItemData){}
   // 查询购物车列
   rpc QueryCartItemList(QueryCartItemListReq) returns (QueryCartItemListResp){}
+  // 查询经营漏斗加购聚合
+  rpc QueryOperateCartFunnel(QueryOperateCartFunnelReq) returns (QueryOperateCartFunnelResp){}
 
 
 }

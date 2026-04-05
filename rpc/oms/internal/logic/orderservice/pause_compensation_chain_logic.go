@@ -27,7 +27,7 @@ func NewPauseCompensationChainLogic(ctx context.Context, svcCtx *svc.ServiceCont
 
 // PauseCompensationChain 暂停补偿链路
 func (l *PauseCompensationChainLogic) PauseCompensationChain(in *omsclient.PauseCompensationChainReq) (*omsclient.PauseCompensationChainResp, error) {
-	if in.PlatformId == 0 || in.TenantId == 0 {
+	if !hasRequiredChainScope(in.PlatformId) {
 		return &omsclient.PauseCompensationChainResp{Code: 400, Msg: "主体范围参数不完整"}, nil
 	}
 	if len(in.PauseReason) == 0 {
@@ -54,7 +54,7 @@ func (l *PauseCompensationChainLogic) PauseCompensationChain(in *omsclient.Pause
 	result := l.svcCtx.DB.WithContext(l.ctx).Model(&model.OmsOrderMain{}).
 		Where("id = ?", in.OrderId).
 		Updates(map[string]interface{}{
-			"paused":             1,
+			"paused":            1,
 			"paused_at":         time.Now(),
 			"pause_reason":      in.PauseReason,
 			"pause_operator_id": in.OperatorId,

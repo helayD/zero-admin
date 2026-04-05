@@ -24,10 +24,25 @@ func TestScopeFilterSQLWithAlias(t *testing.T) {
 	}
 
 	sql, args := ScopeFilterSQL("spu", current)
-	if sql != "spu.platform_id = ? AND spu.tenant_id = ? AND spu.merchant_id = ?" {
+	if sql != "spu.platform_id = ? AND spu.tenant_id = ?" {
 		t.Fatalf("unexpected sql: %s", sql)
 	}
-	if len(args) != 3 || args[0] != int64(1) || args[1] != int64(88) || args[2] != int64(0) {
+	if len(args) != 2 || args[0] != int64(1) || args[1] != int64(88) {
+		t.Fatalf("unexpected args: %#v", args)
+	}
+}
+
+func TestScopeFilterSQLPlatformScopeOnlyBindsPlatformID(t *testing.T) {
+	current, err := NormalizeGovernanceScope(SubjectTypePlatform, 1, 0, 0)
+	if err != nil {
+		t.Fatalf("NormalizeGovernanceScope returned error: %v", err)
+	}
+
+	sql, args := ScopeFilterSQL("o", current)
+	if sql != "o.platform_id = ?" {
+		t.Fatalf("unexpected sql: %s", sql)
+	}
+	if len(args) != 1 || args[0] != int64(1) {
 		t.Fatalf("unexpected args: %#v", args)
 	}
 }

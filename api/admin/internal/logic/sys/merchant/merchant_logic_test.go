@@ -75,6 +75,9 @@ func TestCreateMerchantLogicPassesOperatorContext(t *testing.T) {
 				if in.TenantId != 11 || len(in.CapabilityFlags) != 2 {
 					t.Fatalf("unexpected merchant payload: %+v", in)
 				}
+				if len(in.AvailableChannels) != 2 || in.AvailableChannels[0] != "app" || in.AvailableChannels[1] != "mini_program" {
+					t.Fatalf("unexpected channels: %+v", in.AvailableChannels)
+				}
 				return &rpcmerchant.CreateMerchantResp{
 					MerchantId:     101,
 					MerchantCode:   "MER202603210001",
@@ -87,12 +90,12 @@ func TestCreateMerchantLogicPassesOperatorContext(t *testing.T) {
 
 	logic := NewCreateMerchantLogic(merchantTestContext(), svcCtx)
 	resp, err := logic.CreateMerchant(&types.CreateMerchantReq{
-		TenantId:         11,
-		MerchantName:     "  华东旗舰店  ",
-		ContactName:      "李四",
-		ContactMobile:    "13800138001",
+		TenantId:          11,
+		MerchantName:      "  华东旗舰店  ",
+		ContactName:       "李四",
+		ContactMobile:     "13800138001",
 		AvailableChannels: []string{" app ", "mini-program"},
-		CapabilityFlags:  []string{"oms", " crm "},
+		CapabilityFlags:   []string{"oms", " crm "},
 	})
 	if err != nil {
 		t.Fatalf("create merchant logic failed: %v", err)

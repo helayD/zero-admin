@@ -3,7 +3,6 @@ syntax = "proto3";
 package umsclient;
 
 option go_package = "./umsclient";
-
 // 添加会员收货地址
 message AddMemberAddressReq {
   int64 id = 1; //主键ID
@@ -134,8 +133,6 @@ service MemberAddressService {
 
 
 }
-
-
 // 添加会员关注品牌
 message AddMemberBrandAttentionReq {
   string id = 1; //
@@ -215,8 +212,6 @@ service MemberBrandAttentionService {
 
 
 }
-
-
 // 添加积分消费设置
 message AddMemberConsumeSettingReq {
   int64 id = 1; //
@@ -339,8 +334,6 @@ service MemberConsumeSettingService {
 
 
 }
-
-
 // 添加会员成长值记录
 message AddMemberGrowthLogReq {
   int64 id = 1; //
@@ -414,8 +407,6 @@ service MemberGrowthLogService {
 
 
 }
-
-
 // 添加会员信息
 message RegisterReq {
   string nickname = 1; //昵称
@@ -543,6 +534,21 @@ message QueryMemberInfoListResp {
   repeated  MemberInfoListData list = 2;
 }
 
+message QueryMemberBriefByIdsReq {
+  repeated int64 member_ids = 1; //会员ID集合
+}
+
+message MemberBriefData {
+  int64 member_id = 1; //会员ID
+  string nickname_masked = 2; //脱敏昵称
+  string mobile_masked = 3; //脱敏手机号
+  int64 level_id = 4; //等级ID
+}
+
+message QueryMemberBriefByIdsResp {
+  repeated MemberBriefData list = 1;
+}
+
 message LoginReq {
   string      mobile = 1; //手机号码
   string      password = 2; //密码
@@ -582,6 +588,8 @@ service MemberInfoService {
   rpc QueryMemberInfoDetail(QueryMemberInfoDetailReq) returns (QueryMemberInfoDetailResp){}
   // 查询会员信息列表
   rpc QueryMemberInfoList(QueryMemberInfoListReq) returns (QueryMemberInfoListResp){}
+  // 批量查询会员简要信息
+  rpc QueryMemberBriefByIds(QueryMemberBriefByIdsReq) returns (QueryMemberBriefByIdsResp){}
 
   //会员登录
   rpc Login(LoginReq) returns(LoginResp);
@@ -592,8 +600,6 @@ service MemberInfoService {
   rpc UpdateFirstLoginStatus(UpdateFirstLoginStatusReq) returns(UpdateMemberInfoResp);
 
 }
-
-
 // 添加会员等级
 message AddMemberLevelReq {
   int64 id = 1; //主键ID
@@ -723,9 +729,6 @@ service MemberLevelService {
 
 
 }
-
-
-
 // 删除会员登录记录
 message DeleteMemberLoginLogReq {
   repeated int64 ids = 1;
@@ -772,8 +775,116 @@ service MemberLoginLogService {
 
 
 }
+message AddMemberMessageReq {
+  int64 member_id = 1;
+  int32 message_type = 2;
+  string title = 3;
+  string content = 4;
+  string image_url = 5;
+  string link_type = 6;
+  string link_id = 7;
+  int64 related_order_id = 8;
+  int64 platform_id = 9;
+  int64 tenant_id = 10;
+  int64 merchant_id = 11;
+}
 
+message AddMemberMessageResp {
+  int64 code = 1;
+  string msg = 2;
+  int64 message_id = 3;
+}
 
+message QueryMemberMessageListReq {
+  int64 member_id = 1;
+  int32 message_type = 2;
+  optional int32 status = 3;
+  int32 page_num = 4;
+  int32 page_size = 5;
+}
+
+message MemberMessageData {
+  int64 id = 1;
+  int64 member_id = 2;
+  int32 message_type = 3;
+  string title = 4;
+  string content = 5;
+  string image_url = 6;
+  string link_type = 7;
+  string link_id = 8;
+  int64 related_order_id = 9;
+  int32 status = 10;
+  string read_time = 11;
+  string create_time = 12;
+}
+
+message QueryMemberMessageListResp {
+  int64 total = 1;
+  int32 page_num = 2;
+  int32 page_size = 3;
+  repeated MemberMessageData list = 4;
+}
+
+message QueryMemberMessageDetailReq {
+  int64 id = 1;
+  int64 member_id = 2;
+}
+
+message QueryMemberMessageDetailResp {
+  int64 code = 1;
+  string msg = 2;
+  MemberMessageData data = 3;
+}
+
+message MarkMessageAsReadReq {
+  int64 id = 1;
+  int64 member_id = 2;
+}
+
+message MarkMessageAsReadResp {
+  int64 code = 1;
+  string msg = 2;
+}
+
+message MarkAllMessagesAsReadReq {
+  int64 member_id = 1;
+}
+
+message MarkAllMessagesAsReadResp {
+  int64 code = 1;
+  string msg = 2;
+  int64 updated_count = 3;
+}
+
+message DeleteMemberMessageReq {
+  int64 id = 1;
+  int64 member_id = 2;
+}
+
+message DeleteMemberMessageResp {
+  int64 code = 1;
+  string msg = 2;
+}
+
+message QueryUnreadCountReq {
+  int64 member_id = 1;
+}
+
+message QueryUnreadCountResp {
+  int64 code = 1;
+  string msg = 2;
+  int64 unread_count = 3;
+}
+
+service MemberMessageService {
+  rpc AddMemberMessage(AddMemberMessageReq) returns (AddMemberMessageResp){}
+  rpc QueryMemberMessageList(QueryMemberMessageListReq) returns (QueryMemberMessageListResp){}
+  rpc QueryMemberMessageDetail(QueryMemberMessageDetailReq) returns (QueryMemberMessageDetailResp){}
+  rpc MarkMessageAsRead(MarkMessageAsReadReq) returns (MarkMessageAsReadResp){}
+  rpc MarkAllMessagesAsRead(MarkAllMessagesAsReadReq) returns (MarkAllMessagesAsReadResp){}
+  rpc DeleteMemberMessage(DeleteMemberMessageReq) returns (DeleteMemberMessageResp){}
+  rpc QueryUnreadCount(QueryUnreadCountReq) returns (QueryUnreadCountResp){}
+}
 // 添加会员积分记录
 message AddMemberPointsLogReq {
   int64 id = 1; //
@@ -848,8 +959,6 @@ service MemberPointsLogService {
 
 
 }
-
-
 // 添加会员与产品分类关系表（用户喜欢的分类）
 message AddMemberProductCategoryRelationReq {
   string id = 1; //
@@ -887,8 +996,6 @@ service MemberProductCategoryRelationService {
   rpc QueryMemberProductCategoryRelationList(QueryMemberProductCategoryRelationListReq) returns (QueryMemberProductCategoryRelationListResp){}
 
 }
-
-
 // 添加用户收藏的商品
 message AddMemberProductCollectionReq {
   string id = 1; //
@@ -975,8 +1082,6 @@ service MemberProductCollectionService {
 
 
 }
-
-
 // 添加用户商品浏览历史记录
 message AddMemberReadHistoryReq {
   string id = 1; //
@@ -1063,8 +1168,6 @@ service MemberReadHistoryService {
 
 
 }
-
-
 // 添加会员积分成长规则
 message AddMemberRuleSettingReq {
   int64 id = 1; //
@@ -1178,8 +1281,6 @@ service MemberRuleSettingService {
 
 
 }
-
-
 // 添加会员签到记录
 message AddMemberSignLogReq {
   int64 id = 1; //
@@ -1243,8 +1344,6 @@ service MemberSignLogService {
 
 
 }
-
-
 // 添加会员统计信息
 message AddMemberStatisticsInfoReq {
   int64 id = 1; //
@@ -1337,8 +1436,6 @@ service MemberStatisticsInfoService {
   rpc QueryMemberStatisticsInfoList(QueryMemberStatisticsInfoListReq) returns (QueryMemberStatisticsInfoListResp){}
 
 }
-
-
 // 添加用户标签
 message AddMemberTagReq {
   int64 id = 1; //主键ID
@@ -1452,8 +1549,6 @@ service MemberTagService {
 
 
 }
-
-
 // 添加会员标签关联
 message AddMemberTagRelationReq {
   int64 id = 1; //主键ID
@@ -1510,8 +1605,6 @@ service MemberTagRelationService {
 
 
 }
-
-
 // 添加会员任务
 message AddMemberTaskReq {
   int64 id = 1; //主键ID
@@ -1657,8 +1750,6 @@ service MemberTaskService {
 
 
 }
-
-
 // 添加会员任务关联
 message AddMemberTaskRelationReq {
   int64 id = 1; //主键ID

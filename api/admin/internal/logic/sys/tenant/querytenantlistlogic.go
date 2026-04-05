@@ -34,7 +34,7 @@ func (l *QueryTenantListLogic) QueryTenantList(req *types.QueryTenantListReq) (r
 		TenantName: strings.TrimSpace(req.TenantName),
 		TenantCode: strings.TrimSpace(req.TenantCode),
 		Status:     req.Status,
-		Channel:    strings.TrimSpace(req.Channel),
+		Channel:    normalizeChannelFilterValue(req.Channel),
 		PageNum:    req.Current,
 		PageSize:   req.PageSize,
 	})

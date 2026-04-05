@@ -5,6 +5,7 @@ import (
 
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/types"
+	"github.com/feihua/zero-admin/pkg/operatefunnel"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
 	"google.golang.org/grpc/status"
 )
@@ -30,6 +31,41 @@ func trimStringSlice(values []string) []string {
 	}
 
 	return result
+}
+
+func normalizeChannelSlice(values []string) []string {
+	result := make([]string, 0, len(values))
+	seen := make(map[string]struct{}, len(values))
+	for _, value := range values {
+		trimmed := strings.TrimSpace(value)
+		if trimmed == "" {
+			continue
+		}
+		normalized := operatefunnel.NormalizeChannel(trimmed)
+		if normalized == operatefunnel.ChannelUnknown && trimmed != operatefunnel.ChannelUnknown {
+			continue
+		}
+		if _, ok := seen[normalized]; ok {
+			continue
+		}
+		seen[normalized] = struct{}{}
+		result = append(result, normalized)
+	}
+
+	return result
+}
+
+func normalizeChannelFilterValue(value string) string {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return ""
+	}
+	normalized := operatefunnel.NormalizeChannel(trimmed)
+	if normalized == operatefunnel.ChannelUnknown && trimmed != operatefunnel.ChannelUnknown {
+		return trimmed
+	}
+
+	return normalized
 }
 
 func mapMerchantData(item *sysclient.MerchantData) *types.MerchantData {

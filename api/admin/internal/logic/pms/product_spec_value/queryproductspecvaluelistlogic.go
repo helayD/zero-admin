@@ -2,6 +2,7 @@ package product_spec_value
 
 import (
 	"context"
+	"github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
 	"github.com/feihua/zero-admin/api/admin/internal/types"
@@ -33,11 +34,21 @@ func NewQueryProductSpecValueListLogic(ctx context.Context, svcCtx *svc.ServiceC
 
 // QueryProductSpecValueList 查询商品规格值列表
 func (l *QueryProductSpecValueListLogic) QueryProductSpecValueList(req *types.QueryProductSpecValueListReq) (resp *types.QueryProductSpecValueListResp, err error) {
+	queryScope, err := common.ResolveQueryGovernanceScope(l.ctx, common.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
 	result, err := l.svcCtx.ProductSpecValueService.QueryProductSpecValueList(l.ctx, &pmsclient.QueryProductSpecValueListReq{
 		PageNum:  req.Current,
 		PageSize: req.PageSize,
 		SpecId:   req.SpecId, // 规格ID
 		Status:   req.Status, // 状态：0->禁用；1->启用
+		Scope:    common.PMSGovernanceScope(queryScope),
 	})
 
 	if err != nil {
@@ -59,7 +70,10 @@ func (l *QueryProductSpecValueListLogic) QueryProductSpecValueList(req *types.Qu
 			CreateTime: detail.CreateTime, // 创建时间
 			UpdateBy:   detail.UpdateBy,   // 更新人ID
 			UpdateTime: detail.UpdateTime, // 更新时间
-
+			ScopeType:  detail.ScopeType,
+			PlatformId: detail.PlatformId,
+			TenantId:   detail.TenantId,
+			MerchantId: detail.MerchantId,
 		})
 	}
 

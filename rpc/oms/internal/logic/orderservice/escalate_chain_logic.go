@@ -26,7 +26,7 @@ func NewEscalateChainLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Esc
 
 // EscalateChain 升级链路为需人工介入
 func (l *EscalateChainLogic) EscalateChain(in *omsclient.EscalateChainReq) (*omsclient.EscalateChainResp, error) {
-	if in.PlatformId == 0 || in.TenantId == 0 {
+	if !hasRequiredChainScope(in.PlatformId) {
 		return &omsclient.EscalateChainResp{Code: 400, Msg: "主体范围参数不完整"}, nil
 	}
 	if len(in.EscalateReason) == 0 {
@@ -49,9 +49,9 @@ func (l *EscalateChainLogic) EscalateChain(in *omsclient.EscalateChainReq) (*oms
 	db := l.svcCtx.DB.WithContext(l.ctx).Model(&model.OmsOrderMain{}).
 		Where("id = ?", in.OrderId).
 		Updates(map[string]interface{}{
-			"consistency_stage":   9,
+			"consistency_stage":  9,
 			"consistency_result": 4,
-			"manual_required":   1,
+			"manual_required":    1,
 		})
 	if db.Error != nil {
 		logc.Errorf(l.ctx, "EscalateChain 升级链路失败, orderId=%d, err=%s", in.OrderId, db.Error.Error())
@@ -62,12 +62,12 @@ func (l *EscalateChainLogic) EscalateChain(in *omsclient.EscalateChainReq) (*oms
 		in.OrderId, in.OperatorId, in.EscalateReason)
 
 	return &omsclient.EscalateChainResp{
-		Code:          0,
-		Msg:           "链路已升级为需人工介入",
+		Code:           0,
+		Msg:            "链路已升级为需人工介入",
 		ManualRequired: true,
-		BeforeStage:  beforeStage,
-		BeforeResult: beforeResult,
-		AfterStage:   9,
-		AfterResult:  4,
+		BeforeStage:    beforeStage,
+		BeforeResult:   beforeResult,
+		AfterStage:     9,
+		AfterResult:    4,
 	}, nil
 }

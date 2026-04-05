@@ -59,7 +59,7 @@ func (s *CouponRecordServiceServer) QueryMemberCouponList(ctx context.Context, i
 	return l.QueryMemberCouponList(in)
 }
 
-// 查询可领取的优惠券列表
+// 获取可领取优惠券
 func (s *CouponRecordServiceServer) QueryAvailableCoupons(ctx context.Context, in *smsclient.QueryAvailableCouponsReq) (*smsclient.QueryAvailableCouponsResp, error) {
 	l := couponrecordservicelogic.NewQueryAvailableCouponsLogic(ctx, s.svcCtx)
 	return l.QueryAvailableCoupons(in)

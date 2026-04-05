@@ -19,6 +19,8 @@ create table oms_cart_item
     product_attr        json                                   not null comment '商品销售属性JSON',
     member_nickname     varchar(500)                           not null comment '会员昵称',
     source              tinyint      default 1                 not null comment '来源 1-PC 2-H5 3-小程序 4-APP',
+    activity_type       varchar(32)  default 'none'            not null comment '活动类型(home_advertise/coupon/seckill_activity/none)',
+    activity_id         bigint       default 0                 not null comment '活动ID',
     delete_status       tinyint      default 0                 not null comment '删除状态 0-正常 1-删除',
     expire_time         datetime                               not null comment '过期时间',
     create_time         datetime     default CURRENT_TIMESTAMP not null comment '创建时间',
@@ -43,6 +45,8 @@ create index idx_product_id
 create index idx_product_sku_id
     on oms_cart_item (product_sku_id);
 
+create index idx_activity_create_time
+    on oms_cart_item (activity_type, activity_id, create_time);
+
 create index idx_update_time
     on oms_cart_item (update_time);
-

@@ -61,6 +61,9 @@ type (
 	HandleExpirationCouponReq          = smsclient.HandleExpirationCouponReq
 	HandleExpirationCouponResp         = smsclient.HandleExpirationCouponResp
 	HomeAdvertiseListData              = smsclient.HomeAdvertiseListData
+	OperateCouponRedeemBucketPoint     = smsclient.OperateCouponRedeemBucketPoint
+	OperateFunnelActivityOption        = smsclient.OperateFunnelActivityOption
+	OperateTrafficBucketPoint          = smsclient.OperateTrafficBucketPoint
 	QueryAvailableCouponsReq           = smsclient.QueryAvailableCouponsReq
 	QueryAvailableCouponsResp          = smsclient.QueryAvailableCouponsResp
 	QueryCouponByCodeReq               = smsclient.QueryCouponByCodeReq
@@ -91,6 +94,12 @@ type (
 	QueryHomeAdvertiseListResp         = smsclient.QueryHomeAdvertiseListResp
 	QueryMemberCouponListReq           = smsclient.QueryMemberCouponListReq
 	QueryMemberCouponListResp          = smsclient.QueryMemberCouponListResp
+	QueryOperateActivityOptionsReq     = smsclient.QueryOperateActivityOptionsReq
+	QueryOperateActivityOptionsResp    = smsclient.QueryOperateActivityOptionsResp
+	QueryOperateCouponRedeemReq        = smsclient.QueryOperateCouponRedeemReq
+	QueryOperateCouponRedeemResp       = smsclient.QueryOperateCouponRedeemResp
+	QueryOperateTrafficFunnelReq       = smsclient.QueryOperateTrafficFunnelReq
+	QueryOperateTrafficFunnelResp      = smsclient.QueryOperateTrafficFunnelResp
 	QuerySeckillActivityDetailReq      = smsclient.QuerySeckillActivityDetailReq
 	QuerySeckillActivityDetailResp     = smsclient.QuerySeckillActivityDetailResp
 	QuerySeckillActivityListByDateReq  = smsclient.QuerySeckillActivityListByDateReq
@@ -111,6 +120,8 @@ type (
 	QuerySeckillSessionListByTimeResp  = smsclient.QuerySeckillSessionListByTimeResp
 	QuerySeckillSessionListReq         = smsclient.QuerySeckillSessionListReq
 	QuerySeckillSessionListResp        = smsclient.QuerySeckillSessionListResp
+	RecordOperateFunnelEventReq        = smsclient.RecordOperateFunnelEventReq
+	RecordOperateFunnelEventResp       = smsclient.RecordOperateFunnelEventResp
 	SeckillActivityListData            = smsclient.SeckillActivityListData
 	SeckillProductListData             = smsclient.SeckillProductListData
 	SeckillReservationListData         = smsclient.SeckillReservationListData
@@ -161,7 +172,7 @@ type (
 		QueryCouponRecordList(ctx context.Context, in *QueryCouponRecordListReq, opts ...grpc.CallOption) (*QueryCouponRecordListResp, error)
 		// 获取会员优惠券
 		QueryMemberCouponList(ctx context.Context, in *QueryMemberCouponListReq, opts ...grpc.CallOption) (*QueryMemberCouponListResp, error)
-		// 查询可领取的优惠券列表
+		// 获取可领取优惠券
 		QueryAvailableCoupons(ctx context.Context, in *QueryAvailableCouponsReq, opts ...grpc.CallOption) (*QueryAvailableCouponsResp, error)
 	}
 
@@ -212,7 +223,7 @@ func (m *defaultCouponRecordService) QueryMemberCouponList(ctx context.Context, 
 	return client.QueryMemberCouponList(ctx, in, opts...)
 }
 
-// 查询可领取的优惠券列表
+// 获取可领取优惠券
 func (m *defaultCouponRecordService) QueryAvailableCoupons(ctx context.Context, in *QueryAvailableCouponsReq, opts ...grpc.CallOption) (*QueryAvailableCouponsResp, error) {
 	client := smsclient.NewCouponRecordServiceClient(m.cli.Conn())
 	return client.QueryAvailableCoupons(ctx, in, opts...)

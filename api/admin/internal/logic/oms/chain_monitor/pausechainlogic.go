@@ -29,9 +29,14 @@ func NewPauseChainLogic(ctx context.Context, svcCtx *svc.ServiceContext) *PauseC
 }
 
 func (l *PauseChainLogic) PauseChain(req *types.PauseChainReq) (*types.PauseChainResp, error) {
-	current, err := admincommon.CurrentGovernanceScope(l.ctx)
+	writeScope, err := resolveChainWriteScope(l.ctx, admincommon.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
 	if err != nil {
-		return nil, errorx.NewDefaultError(err.Error())
+		return nil, err
 	}
 
 	operatorId, err := admincommon.GetUserId(l.ctx)
@@ -42,9 +47,9 @@ func (l *PauseChainLogic) PauseChain(req *types.PauseChainReq) (*types.PauseChai
 
 	result, err := l.svcCtx.OrderService.PauseCompensationChain(l.ctx, &omsclient.PauseCompensationChainReq{
 		OrderId:     req.OrderId,
-		PlatformId:  current.PlatformID,
-		TenantId:    current.TenantID,
-		MerchantId: current.MerchantID,
+		PlatformId:  writeScope.PlatformID,
+		TenantId:    writeScope.TenantID,
+		MerchantId:  writeScope.MerchantID,
 		OperatorId:  operatorId,
 		PauseReason: req.PauseReason,
 	})

@@ -2,14 +2,17 @@ package pay
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 
+	"github.com/feihua/zero-admin/api/front/internal/logic/common"
 	"github.com/feihua/zero-admin/api/front/internal/logic/order/order"
 	"github.com/feihua/zero-admin/api/front/internal/svc"
 	"github.com/feihua/zero-admin/rpc/oms/omsclient"
 	"github.com/smartwalle/alipay/v3"
+	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -167,7 +170,16 @@ func (l *PaymentOperationsUtils) AliPayNotify(writer http.ResponseWriter, reques
 			})
 		}
 
-		// Step 5: Saga 补偿链路（Epic 7 处理，本 Story 只标记，补偿在后续 Story 实施）
+		// Step 5: 发布订单支付成功消息事件（异步非阻塞，不影响支付回调主流程）
+		orderId := int64(0)
+		if paymentList != nil && len(paymentList.List) > 0 {
+			orderId = paymentList.List[0].OrderId
+		}
+		if orderId > 0 {
+			go l.publishPaySuccessEvent(outTradeNo, orderId)
+		}
+
+		// Step 6: Saga 补偿链路（Epic 7 处理，本 Story 只标记，补偿在后续 Story 实施）
 		// 库存扣减（Story 7-3a）：下单时已锁定，取消时释放
 		// 优惠券核销（Story 7-3a）：CancelOrderResp.CouponIds 已归还
 		// 积分扣减（Story 7-3a）：支付成功时 saga 确认
@@ -264,4 +276,38 @@ func (l *PaymentOperationsUtils) UpdatePaidStatus(outTradeNo string) {
 // formatAmount 将元转为分（字符串），微信支付接口要求金额单位为分
 func formatAmount(yuan float64) string {
 	return fmt.Sprintf("%d", int(yuan*100+0.5))
+}
+
+// publishPaySuccessEvent 发布订单支付成功消息事件（异步 goroutine，不阻塞支付回调主流程）
+// Story 8-1 Fix #1: 修复支付成功消息缺失
+func (l *PaymentOperationsUtils) publishPaySuccessEvent(outTradeNo string, orderId int64) {
+	// 从 JWT context 提取 scope 信息（platformId/tenantId/merchantId）
+	current := common.ResolveEffectiveGovernanceScope(l.ctx)
+
+	msgEvent := map[string]any{
+		"memberId":   0, // ActorID 在 Consumer 层从 EventPayload.ActorID 获取
+		"orderId":    orderId,
+		"orderNo":    outTradeNo,
+		"messageType": 2, // 支付消息
+		"title":      "支付成功",
+		"content":    fmt.Sprintf("您的订单（%s）已支付成功，感谢您的购买！", outTradeNo),
+		"linkType":   "order",
+		"linkId":     fmt.Sprintf("%d", orderId),
+		"platformId": current.PlatformID,
+		"tenantId":   current.TenantID,
+		"merchantId": current.MerchantID,
+	}
+
+	body, err := json.Marshal(msgEvent)
+	if err != nil {
+		logc.Errorf(l.ctx, "publishPaySuccessEvent 序列化失败 outTradeNo=%s err=%v", outTradeNo, err)
+		return
+	}
+
+	if err := l.svcCtx.RabbitMQ.SendMessage("order.event.exchange", "direct",
+		"order.pay.queue", "order.paid.key", body); err != nil {
+		logc.Errorf(l.ctx, "publishPaySuccessEvent 发送消息失败 outTradeNo=%s err=%v", outTradeNo, err)
+	} else {
+		logc.Infof(l.ctx, "publishPaySuccessEvent 发送支付成功消息 outTradeNo=%s orderId=%d", outTradeNo, orderId)
+	}
 }

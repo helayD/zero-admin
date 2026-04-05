@@ -40,7 +40,7 @@ func (l *QueryChainMonitorListLogic) QueryChainMonitorList(req *types.QueryChain
 	}
 
 	result, err := l.svcCtx.OrderService.QueryCompensationChainList(l.ctx, &omsclient.QueryCompensationChainListReq{
-		PageNum:            int32(req.Current),
+		PageNum:           int32(req.Current),
 		PageSize:          int32(req.PageSize),
 		ChainType:         req.ChainType,
 		ConsistencyStage:  req.ConsistencyStage,
@@ -60,36 +60,41 @@ func (l *QueryChainMonitorListLogic) QueryChainMonitorList(req *types.QueryChain
 	var chainData []*types.ChainMonitorItem
 	for _, item := range result.List {
 		chainData = append(chainData, &types.ChainMonitorItem{
-			TraceId:        item.TraceId,
-			PlatformId:     item.PlatformId,
-			TenantId:       item.TenantId,
-			MerchantId:     item.MerchantId,
-			ChainType:      item.ChainType,
-			ChainTypeText:  item.ChainTypeText,
-			EntityId:       item.EntityId,
-			EntityNo:       item.EntityNo,
-			EntityType:     item.EntityType,
-			Stage:          item.Stage,
-			StageText:      item.StageText,
-			Result:         item.Result,
-			ResultText:     item.ResultText,
-			RetryCount:     item.RetryCount,
-			LastError:      item.LastError,
-			LastExecuteAt:  item.LastExecuteAt,
-			CreatedAt:      item.CreatedAt,
-			ActorId:        item.ActorId,
-			Paused:         item.Paused,
-			PauseReason:    item.PauseReason,
+			TraceId:       item.TraceId,
+			OrderId:       item.EntityId,
+			OrderNo:       item.EntityNo,
+			PlatformId:    item.PlatformId,
+			TenantId:      item.TenantId,
+			MerchantId:    item.MerchantId,
+			ChainType:     item.ChainType,
+			ChainTypeText: item.ChainTypeText,
+			EntityId:      item.EntityId,
+			EntityNo:      item.EntityNo,
+			EntityType:    item.EntityType,
+			Stage:         item.Stage,
+			StageText:     item.StageText,
+			Result:        item.Result,
+			ResultText:    item.ResultText,
+			RetryCount:    item.RetryCount,
+			LastError:     item.LastError,
+			LastExecuteAt: item.LastExecuteAt,
+			CreatedAt:     item.CreatedAt,
+			ActorId:       item.ActorId,
+			Paused:        item.Paused,
+			PauseReason:   item.PauseReason,
 		})
 	}
 
 	return &types.QueryChainMonitorListResp{
 		Code:    "000000",
 		Message: "查询链路监控列表成功",
-		Data:    chainData,
-		Current: req.Current,
+		Data: types.QueryChainMonitorListData{
+			List:  chainData,
+			Total: result.Total,
+		},
+		Current:  req.Current,
 		PageSize: req.PageSize,
-		Total:   result.Total,
-		Success: true,
+		Total:    result.Total,
+		Success:  true,
 	}, nil
 }

@@ -29,9 +29,14 @@ func NewEscalateChainLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Esc
 }
 
 func (l *EscalateChainLogic) EscalateChain(req *types.EscalateChainReq) (*types.EscalateChainResp, error) {
-	current, err := admincommon.CurrentGovernanceScope(l.ctx)
+	writeScope, err := resolveChainWriteScope(l.ctx, admincommon.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
 	if err != nil {
-		return nil, errorx.NewDefaultError(err.Error())
+		return nil, err
 	}
 
 	operatorId, err := admincommon.GetUserId(l.ctx)
@@ -42,10 +47,10 @@ func (l *EscalateChainLogic) EscalateChain(req *types.EscalateChainReq) (*types.
 
 	result, err := l.svcCtx.OrderService.EscalateChain(l.ctx, &omsclient.EscalateChainReq{
 		OrderId:        req.OrderId,
-		PlatformId:    current.PlatformID,
-		TenantId:      current.TenantID,
-		MerchantId:    current.MerchantID,
-		OperatorId:    operatorId,
+		PlatformId:     writeScope.PlatformID,
+		TenantId:       writeScope.TenantID,
+		MerchantId:     writeScope.MerchantID,
+		OperatorId:     operatorId,
 		EscalateReason: req.EscalateReason,
 	})
 	if err != nil {

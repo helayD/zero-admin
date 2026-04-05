@@ -46,8 +46,16 @@ const cartAddUrl = "$baseUrl/api/order/addCart";
 const productListDataUrl = "$baseUrl/api/product/queryProductList?productCategoryId=";
 // 商品详情
 const productDetailDataUrl = "$baseUrl/api/product/queryProductDetail?productId=";
-// 通知消息
-const messageListDataUrl = "$baseUrl/api/member/message/list/";
+// 通知消息列表（全部）
+const messageListDataUrl = "$baseUrl/api/member/message/list";
+// 标记单条消息已读
+const messageReadUrl = "$baseUrl/api/member/message/read";
+// 标记全部已读
+const markAllReadUrl = "$baseUrl/api/member/message/readAll";
+// 查询未读消息数
+const unreadCountUrl = "$baseUrl/api/member/message/unreadCount";
+// 删除消息
+const messageDeleteUrl = "$baseUrl/api/member/message/delete";
 // 优惠券
 const couponDataUrl = "$baseUrl/api/member/coupon/queryCouponList?useStatus=";
 // 可领取优惠券列表
@@ -112,3 +120,11 @@ const updateMemberDataUrl = "$baseUrl/api/member/updateMember";
 const orderPayUrl = "$baseUrl/api/order/orderPay";
 // 支付状态查询（Flutter 使用 query 参数：?orderId=xxx）
 const orderPayQueryUrl = "$baseUrl/api/order/orderPayQueryStatus";
+
+// ==================== 商品评价相关（Story 8-2 Review Fix R-3）====================
+// 提交商品评价（注意：路由注册为 /comment/add，而非 /comment/addComment）
+const addCommentUrl = "$baseUrl/api/product/comment/add";
+// 查询商品评价列表
+const queryCommentListUrl = "$baseUrl/api/product/comment/queryCommentList";
+// 查询商品评价详情
+const queryCommentDetailUrl = "$baseUrl/api/product/comment/queryCommentDetail";

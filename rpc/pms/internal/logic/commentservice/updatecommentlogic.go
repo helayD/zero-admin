@@ -3,13 +3,11 @@ package commentservicelogic
 import (
 	"context"
 	"errors"
+	"strings"
 
-	"github.com/feihua/zero-admin/rpc/pms/gen/model"
 	"github.com/feihua/zero-admin/rpc/pms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
 	"github.com/zeromicro/go-zero/core/logc"
-	"go.mongodb.org/mongo-driver/v2/bson"
-
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -17,6 +15,7 @@ import (
 /*
 Author: LiuFeiHua
 Date: 2024/6/12 16:38
+Updated: 2026/04/02 - 支持审核/屏蔽批量处理与审计日志
 */
 type UpdateCommentLogic struct {
 	ctx    context.Context
@@ -32,30 +31,130 @@ func NewUpdateCommentLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Upd
 	}
 }
 
-// UpdateComment 更新商品评价
+// UpdateComment 更新商品评价（支持审核/屏蔽/批量兼容接口）
 func (l *UpdateCommentLogic) UpdateComment(in *pmsclient.UpdateCommentReq) (*pmsclient.UpdateCommentResp, error) {
-	objectID, _ := bson.ObjectIDFromHex(in.Id)
-	_, err := l.svcCtx.ProductCommentModel.Update(l.ctx, &model.ProductComment{
-		ID:               objectID,            //
-		ProductId:        in.ProductId,        // 商品id
-		MemberNickName:   in.MemberNickName,   // 评价者昵称
-		ProductName:      in.ProductName,      // 商品名称
-		Star:             in.Star,             // 评价星数：0->5
-		MemberIp:         in.MemberIp,         // 评价的ip
-		ShowStatus:       in.ShowStatus,       // 是否显示，0-不显示，1-显示
-		ProductAttribute: in.ProductAttribute, // 购买时的商品属性
-		CollectCount:     in.CollectCount,     // 点赞数
-		ReadCount:        in.ReadCount,        // 阅读数
-		Content:          in.Content,          // 内容
-		Pics:             in.Pics,             // 上传图片地址，以逗号隔开
-		MemberIcon:       in.MemberIcon,       // 评论用户头像
-		ReplayCount:      in.ReplayCount,      // 回复数量
-	})
-
-	if err != nil {
-		logc.Errorf(l.ctx, "更新商品评价失败,参数:%+v,异常:%s", in, err.Error())
-		return nil, errors.New("更新商品评价失败")
+	ids := collectCommentIDs(in.Id, in.Ids)
+	if len(ids) == 0 {
+		return nil, errors.New("评价ID不能为空")
 	}
 
-	return &pmsclient.UpdateCommentResp{}, nil
+	var affectedCount int64
+	var firstErr error
+	for _, id := range ids {
+		comment, err := loadScopedComment(l.ctx, l.svcCtx, id, in.PlatformId, in.TenantId, in.MerchantId)
+		if err != nil {
+			if len(ids) == 1 {
+				return nil, err
+			}
+			logc.Errorf(l.ctx, "批量处理评价前校验失败,ID:%s,异常:%s", id, err.Error())
+			if firstErr == nil {
+				firstErr = err
+			}
+			continue
+		}
+
+		auditSnapshot := buildCommentAuditSnapshot(comment)
+		fromStatus := comment.AuditStatus
+		toStatus := fromStatus
+		action := ""
+		remark := in.AuditRemark
+
+		switch {
+		case in.AuditStatus > 0:
+			hidden := in.Hidden
+			if in.AuditStatus == 1 {
+				hidden = 0
+			}
+			if in.AuditStatus == 3 {
+				hidden = 1
+			}
+			if err = l.svcCtx.ProductCommentModel.UpdateAuditStatus(l.ctx, id, in.AuditStatus, hidden, in.AuditRemark, in.AuditorId, in.UpdateBy); err != nil {
+				if len(ids) == 1 {
+					return nil, errors.New("更新商品评价失败")
+				}
+				logc.Errorf(l.ctx, "批量审核评价失败,ID:%s,异常:%s", id, err.Error())
+				if firstErr == nil {
+					firstErr = err
+				}
+				continue
+			}
+			toStatus = in.AuditStatus
+			action = auditActionByStatus(in.AuditStatus)
+		default:
+			if err = l.svcCtx.ProductCommentModel.UpdateStatus(l.ctx, id, in.ShowStatus, in.UpdateBy); err != nil {
+				if len(ids) == 1 {
+					return nil, errors.New("更新商品评价失败")
+				}
+				logc.Errorf(l.ctx, "批量更新评价状态失败,ID:%s,异常:%s", id, err.Error())
+				if firstErr == nil {
+					firstErr = err
+				}
+				continue
+			}
+			toStatus = legacyAuditStatusByShowStatus(in.ShowStatus)
+			action = legacyActionByShowStatus(in.ShowStatus)
+			remark = ""
+		}
+
+		if err = recordCommentAuditLogWithRollback(
+			l.ctx,
+			l.svcCtx,
+			comment,
+			action,
+			fromStatus,
+			toStatus,
+			in.AuditorId,
+			in.UpdateBy,
+			remark,
+			func() error {
+				return l.svcCtx.ProductCommentModel.RestoreAuditSnapshot(l.ctx, id, auditSnapshot)
+			},
+		); err != nil {
+			logc.Errorf(l.ctx, "记录评价审核日志失败,ID:%s,异常:%s", id, err.Error())
+			if len(ids) == 1 {
+				return nil, err
+			}
+			if firstErr == nil {
+				firstErr = err
+			}
+			continue
+		}
+
+		affectedCount++
+		updateCommentStatsAsync(l.svcCtx, comment.ProductId)
+	}
+
+	if affectedCount == 0 && firstErr != nil {
+		return nil, firstErr
+	}
+
+	return &pmsclient.UpdateCommentResp{
+		Pong:          "ok",
+		AffectedCount: affectedCount,
+	}, nil
+}
+
+func collectCommentIDs(id, ids string) []string {
+	if strings.TrimSpace(ids) == "" {
+		if strings.TrimSpace(id) == "" {
+			return nil
+		}
+		return []string{strings.TrimSpace(id)}
+	}
+
+	parts := strings.Split(ids, ",")
+	result := make([]string, 0, len(parts))
+	seen := make(map[string]struct{}, len(parts))
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(part)
+		if trimmed == "" {
+			continue
+		}
+		if _, ok := seen[trimmed]; ok {
+			continue
+		}
+		seen[trimmed] = struct{}{}
+		result = append(result, trimmed)
+	}
+	return result
 }

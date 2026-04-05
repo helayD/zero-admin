@@ -38,6 +38,15 @@ func (l *UpdateProductSpecLogic) UpdateProductSpec(req *types.UpdateProductSpecR
 	if err != nil {
 		return nil, err
 	}
+	writeScope, err := common.ResolveWriteGovernanceScope(l.ctx, common.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
 	_, err = l.svcCtx.ProductSpecService.UpdateProductSpec(l.ctx, &pmsclient.UpdateProductSpecReq{
 		Id:         req.Id,         //
 		CategoryId: req.CategoryId, // 分类ID
@@ -45,6 +54,7 @@ func (l *UpdateProductSpecLogic) UpdateProductSpec(req *types.UpdateProductSpecR
 		Sort:       req.Sort,       // 排序
 		Status:     req.Status,     // 状态：0->禁用；1->启用
 		UpdateBy:   userId,         // 更新人ID
+		Scope:      common.PMSGovernanceScope(writeScope),
 	})
 
 	if err != nil {

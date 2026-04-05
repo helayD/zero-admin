@@ -38,11 +38,20 @@ func (l *UpdateProductAttributeGroupStatusLogic) UpdateProductAttributeGroupStat
 	if err != nil {
 		return nil, err
 	}
+	writeScope, err := common.ResolveWriteGovernanceScope(l.ctx, common.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
 	_, err = l.svcCtx.ProductAttributeGroupService.UpdateProductAttributeGroupStatus(l.ctx, &pmsclient.UpdateProductAttributeGroupStatusReq{
 		Ids:      req.Ids,    // 主键id
 		Status:   req.Status, // 状态：0->禁用；1->启用
 		UpdateBy: userId,     // 更新人ID
-
+		Scope:    common.PMSGovernanceScope(writeScope),
 	})
 
 	if err != nil {

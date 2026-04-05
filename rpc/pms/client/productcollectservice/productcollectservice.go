@@ -49,6 +49,7 @@ type (
 	AddProductVertifyRecordReq                    = pmsclient.AddProductVertifyRecordReq
 	AddProductVertifyRecordResp                   = pmsclient.AddProductVertifyRecordResp
 	BrandData                                     = pmsclient.BrandData
+	CommentAuditLogData                           = pmsclient.CommentAuditLogData
 	CommentListData                               = pmsclient.CommentListData
 	CommentReplayListData                         = pmsclient.CommentReplayListData
 	DeleteCommentReplayReq                        = pmsclient.DeleteCommentReplayReq
@@ -85,6 +86,8 @@ type (
 	DeleteProductSpuResp                          = pmsclient.DeleteProductSpuResp
 	FeightTemplateListData                        = pmsclient.FeightTemplateListData
 	GovernanceScope                               = pmsclient.GovernanceScope
+	HandleCommentAppealReq                        = pmsclient.HandleCommentAppealReq
+	HandleCommentAppealResp                       = pmsclient.HandleCommentAppealResp
 	MemberPriceList                               = pmsclient.MemberPriceList
 	MemberPriceListData                           = pmsclient.MemberPriceListData
 	ProductAttributeDataList                      = pmsclient.ProductAttributeDataList
@@ -112,6 +115,8 @@ type (
 	ProductSpuResp                                = pmsclient.ProductSpuResp
 	ProductVertifyRecordListData                  = pmsclient.ProductVertifyRecordListData
 	QueryBrandListByIdsReq                        = pmsclient.QueryBrandListByIdsReq
+	QueryCommentAuditLogReq                       = pmsclient.QueryCommentAuditLogReq
+	QueryCommentAuditLogResp                      = pmsclient.QueryCommentAuditLogResp
 	QueryCommentDetailReq                         = pmsclient.QueryCommentDetailReq
 	QueryCommentDetailResp                        = pmsclient.QueryCommentDetailResp
 	QueryCommentListReq                           = pmsclient.QueryCommentListReq
@@ -184,8 +189,12 @@ type (
 	QueryProductVertifyRecordDetailResp           = pmsclient.QueryProductVertifyRecordDetailResp
 	QueryProductVertifyRecordListReq              = pmsclient.QueryProductVertifyRecordListReq
 	QueryProductVertifyRecordListResp             = pmsclient.QueryProductVertifyRecordListResp
+	RestoreCommentReq                             = pmsclient.RestoreCommentReq
+	RestoreCommentResp                            = pmsclient.RestoreCommentResp
 	SkuStockData                                  = pmsclient.SkuStockData
 	SkuStockList                                  = pmsclient.SkuStockList
+	SubmitCommentAppealReq                        = pmsclient.SubmitCommentAppealReq
+	SubmitCommentAppealResp                       = pmsclient.SubmitCommentAppealResp
 	UpdateCommentReplayReq                        = pmsclient.UpdateCommentReplayReq
 	UpdateCommentReplayResp                       = pmsclient.UpdateCommentReplayResp
 	UpdateCommentReq                              = pmsclient.UpdateCommentReq

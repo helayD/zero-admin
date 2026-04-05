@@ -2,7 +2,6 @@ package coupon
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
@@ -60,26 +59,26 @@ func (l *QueryCouponDetailLogic) QueryCouponDetail(req *types.QueryCouponDetailR
 	}
 
 	data := types.QueryCouponDetailData{
-		Id:            detail.Id,            // 优惠券ID
-		TypeId:        detail.TypeId,        // 优惠券类型ID
-		Name:          detail.Name,          // 优惠券名称
-		Code:          detail.Code,          // 优惠券码
-		Amount:        detail.Amount,        // 优惠金额/折扣率
-		MinAmount:     detail.MinAmount,     // 最低使用金额
-		StartTime:     detail.StartTime,     // 生效时间
-		EndTime:       detail.EndTime,       // 失效时间
-		TotalCount:    detail.TotalCount,    // 发放总量
-		ReceivedCount: detail.ReceivedCount, // 已领取数量
-		UsedCount:     detail.UsedCount,     // 已使用数量
-		PerLimit:      detail.PerLimit,      // 每人限领数量
-		Status:        detail.Status,        // 状态：0-未开始，1-进行中，2-已结束，3-已取消
-		IsEnabled:     detail.IsEnabled,     // 是否启用
-		Description:   detail.Description,   // 使用说明
-		CreateBy:      detail.CreateBy,      // 创建人ID
-		CreateTime:    detail.CreateTime,    // 创建时间
-		UpdateBy:      detail.UpdateBy,      // 更新人ID
-		UpdateTime:    detail.UpdateTime,    // 更新时间
-
+		Id:              detail.Id,            // 优惠券ID
+		TypeId:          detail.TypeId,        // 优惠券类型ID
+		Name:            detail.Name,          // 优惠券名称
+		Code:            detail.Code,          // 优惠券码
+		Amount:          detail.Amount,        // 优惠金额/折扣率
+		MinAmount:       detail.MinAmount,     // 最低使用金额
+		StartTime:       detail.StartTime,     // 生效时间
+		EndTime:         detail.EndTime,       // 失效时间
+		TotalCount:      detail.TotalCount,    // 发放总量
+		ReceivedCount:   detail.ReceivedCount, // 已领取数量
+		UsedCount:       detail.UsedCount,     // 已使用数量
+		PerLimit:        detail.PerLimit,      // 每人限领数量
+		Status:          detail.Status,        // 状态：0-未开始，1-进行中，2-已结束，3-已取消
+		IsEnabled:       detail.IsEnabled,     // 是否启用
+		Description:     detail.Description,   // 使用说明
+		CreateBy:        detail.CreateBy,      // 创建人ID
+		CreateTime:      detail.CreateTime,    // 创建时间
+		UpdateBy:        detail.UpdateBy,      // 更新人ID
+		UpdateTime:      detail.UpdateTime,    // 更新时间
+		EffectiveStatus: computeCouponEffectiveStatus(detail.Status, detail.EndTime, time.Now()),
 	}
 
 	scopeRes, _ := l.svcCtx.CouponScopeService.QueryCouponScopeList(l.ctx, &smsclient.QueryCouponScopeListReq{
@@ -120,27 +119,6 @@ func (l *QueryCouponDetailLogic) QueryCouponDetail(req *types.QueryCouponDetailR
 
 			data.CouponScopeData = couponScopeDataList
 		}
-
-		// 构建适用范围摘要
-		switch one.ScopeType {
-		case 0:
-			data.ScopeSummary = "全场通用"
-		case 1:
-			data.ScopeSummary = fmt.Sprintf("指定分类(%d)", scopeRes.Total)
-		case 2:
-			data.ScopeSummary = fmt.Sprintf("指定商品(%d)", scopeRes.Total)
-		default:
-			data.ScopeSummary = "未配置适用范围"
-		}
-	}
-
-	// 计算综合生效状态
-	now := time.Now()
-	data.EffectiveStatus = computeCouponEffectiveStatus(detail.Status, detail.EndTime, now)
-
-	// 影响链路
-	if detail.Status == 1 {
-		data.AffectedPaths = "购物车试算, 确认单试算"
 	}
 
 	return &types.QueryCouponDetailResp{

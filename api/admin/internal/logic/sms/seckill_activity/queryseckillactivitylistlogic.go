@@ -52,18 +52,9 @@ func (l *QuerySeckillActivityListLogic) QuerySeckillActivityList(req *types.Quer
 	}
 
 	var list []*types.QuerySeckillActivityListData
-
 	now := time.Now()
+
 	for _, detail := range result.List {
-		// 计算综合生效状态
-		effectiveStatus := computeSeckillEffectiveStatus(detail.Status, detail.IsEnabled, detail.EndTime, now)
-
-		// 影响链路：已上线秒杀活动
-		affectedPaths := ""
-		if detail.Status == 0 && detail.IsEnabled == 1 {
-			affectedPaths = "前台限时购展示, 购物车促销试算"
-		}
-
 		list = append(list, &types.QuerySeckillActivityListData{
 			Id:              detail.Id,           // 编号
 			Name:            detail.Name,         // 活动名称
@@ -78,8 +69,7 @@ func (l *QuerySeckillActivityListLogic) QuerySeckillActivityList(req *types.Quer
 			UpdateTime:      detail.UpdateTime,   // 更新时间
 			ProductCount:    detail.ProductCount, // 关联已上架秒杀商品数量
 			SessionCount:    detail.SessionCount, // 关联场次数量
-			EffectiveStatus: effectiveStatus,
-			AffectedPaths:   affectedPaths,
+			EffectiveStatus: computeSeckillEffectiveStatus(detail.Status, detail.IsEnabled, detail.EndTime, now),
 		})
 	}
 

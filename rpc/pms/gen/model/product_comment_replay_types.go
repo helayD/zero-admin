@@ -8,7 +8,7 @@ import (
 
 type ProductCommentReplay struct {
 	ID             bson.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
-	CommentId      int64         `bson:"commentId,omitempty" json:"commentId,omitempty"`           // 评论id
+	CommentId      string        `bson:"commentId,omitempty" json:"commentId,omitempty"`           // 评论ID（MongoDB ObjectID）
 	MemberNickName string        `bson:"memberNickName,omitempty" json:"memberNickName,omitempty"` // 评论人员昵称
 	MemberIcon     string        `bson:"memberIcon,omitempty" json:"memberIcon,omitempty"`         // 评论人员头像
 	Content        string        `bson:"content,omitempty" json:"content,omitempty"`               // 内容

@@ -100,7 +100,7 @@ func normalizeCreateTenantReq(in *sysclient.CreateTenantReq) (*createTenantInput
 		ContactName:       strings.TrimSpace(in.ContactName),
 		ContactMobile:     strings.TrimSpace(in.ContactMobile),
 		ContactEmail:      strings.TrimSpace(in.ContactEmail),
-		AvailableChannels: normalizeStringList(in.AvailableChannels),
+		AvailableChannels: normalizeChannelList(in.AvailableChannels),
 		DataRetentionDays: in.DataRetentionDays,
 		FeatureFlags:      normalizeStringList(in.FeatureFlags),
 		AdminUserName:     strings.TrimSpace(in.AdminUserName),
@@ -193,7 +193,7 @@ func mapTenantRowToProto(row tenantQueryRow) *sysclient.TenantData {
 		ContactName:           row.ContactName,
 		ContactMobile:         row.ContactMobile,
 		ContactEmail:          row.ContactEmail,
-		AvailableChannels:     decodeStringList(row.AvailableChannels),
+		AvailableChannels:     decodeChannelList(row.AvailableChannels),
 		DataRetentionDays:     row.DataRetentionDays,
 		FeatureFlags:          decodeStringList(row.FeatureFlags),
 		Status:                row.Status,
@@ -229,7 +229,7 @@ func applyTenantFilters(db *gorm.DB, in *sysclient.QueryTenantListReq) *gorm.DB 
 	if in.Status >= 0 {
 		db = db.Where("t.status = ?", in.Status)
 	}
-	if channel := strings.TrimSpace(in.Channel); channel != "" {
+	if channel := normalizeChannelFilterValue(in.Channel); channel != "" {
 		db = db.Where("t.available_channels LIKE ?", "%\""+channel+"\"%")
 	}
 

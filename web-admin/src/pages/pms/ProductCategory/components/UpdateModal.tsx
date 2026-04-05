@@ -3,12 +3,15 @@ import { Form, Input, InputNumber, message, Modal, Radio, Select } from 'antd';
 import type { ProductCategoryListItem} from '../data.d';
 import { queryProductCategoryList } from '../service';
 import UploadFileComponents from "@/components/common/UploadFileComponents";
+import type { GovernanceScopeValue } from '@/pages/system/components/governance';
+import { toGovernancePayload } from '@/pages/system/components/governance';
 
 export interface UpdateModalProps {
   onCancel: () => void;
   onSubmit: (values: ProductCategoryListItem) => void;
   updateVisible: boolean;
   currentData: Partial<ProductCategoryListItem>;
+  scope: GovernanceScopeValue;
 }
 
 const FormItem = Form.Item;
@@ -26,20 +29,21 @@ const UpdateModal: React.FC<UpdateModalProps> = (props) => {
     onCancel,
     updateVisible,
     currentData,
+    scope,
   } = props;
 
   useEffect(() => {
     if (form && !updateVisible) {
       form.resetFields();
     }
-  }, [props.updateVisible]);
+  }, [form, updateVisible]);
 
   useEffect(() => {
     if (currentData) {
       form.setFieldsValue({
         ...currentData,
       });
-      queryProductCategoryList({parentId: 0}).then((res) => {
+      queryProductCategoryList({parentId: 0, ...toGovernancePayload(scope)}).then((res) => {
         if (res.code === '000000') {
           const map = res.data.map((item: { id: any; name: any; }) => ({
             value: item.id,
@@ -51,11 +55,11 @@ const UpdateModal: React.FC<UpdateModalProps> = (props) => {
           })
           setParentIdMap(map);
         } else {
-          message.error(res.msg);
+          message.error(res.message || '加载上级分类失败');
         }
       });
     }
-  }, [props.currentData]);
+  }, [currentData, form, scope]);
 
 
   const handleSubmit = () => {
@@ -63,7 +67,7 @@ const UpdateModal: React.FC<UpdateModalProps> = (props) => {
     form.submit();
   };
 
-  const handleFinish = (values: { [key: string]: any }) => {
+  const handleFinish = (values: Record<string, unknown>) => {
     if (onSubmit) {
       onSubmit(values as ProductCategoryListItem);
     }

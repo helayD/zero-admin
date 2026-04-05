@@ -36,7 +36,7 @@ func (l *QueryMerchantListLogic) QueryMerchantList(req *types.QueryMerchantListR
 		MerchantCode:   strings.TrimSpace(req.MerchantCode),
 		ReviewStatus:   req.ReviewStatus,
 		BusinessStatus: req.BusinessStatus,
-		Channel:        strings.TrimSpace(req.Channel),
+		Channel:        normalizeChannelFilterValue(req.Channel),
 		CapabilityFlag: strings.TrimSpace(req.CapabilityFlag),
 		PageNum:        req.Current,
 		PageSize:       req.PageSize,

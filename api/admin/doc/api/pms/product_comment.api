@@ -1,0 +1,208 @@
+import "../base/base.api"
+
+info (
+	desc:   "商品评价"
+	author: "Codex"
+	email:  "noreply@example.com"
+)
+
+type (
+	UpdateCommentReq {
+		Id         string `json:"id,optional"`
+		Ids        string `json:"ids,optional"`
+		ShowStatus int32  `json:"showStatus"`
+		ScopeType  string `json:"scopeType,optional"`
+		PlatformId int64  `json:"platformId,optional"`
+		TenantId   int64  `json:"tenantId,optional"`
+		MerchantId int64  `json:"merchantId,optional"`
+	}
+	AuditCommentReq {
+		Id          string `path:"id"`
+		AuditStatus int32  `json:"auditStatus"`
+		AuditRemark string `json:"auditRemark,optional"`
+		ScopeType   string `json:"scopeType,optional"`
+		PlatformId  int64  `json:"platformId,optional"`
+		TenantId    int64  `json:"tenantId,optional"`
+		MerchantId  int64  `json:"merchantId,optional"`
+	}
+	RestoreCommentReq {
+		Id         string `path:"id"`
+		ScopeType  string `json:"scopeType,optional"`
+		PlatformId int64  `json:"platformId,optional"`
+		TenantId   int64  `json:"tenantId,optional"`
+		MerchantId int64  `json:"merchantId,optional"`
+	}
+	HandleCommentAppealReq {
+		Id           string `path:"id"`
+		AppealStatus int32  `json:"appealStatus"`
+		AppealReply  string `json:"appealReply"`
+		ScopeType    string `json:"scopeType,optional"`
+		PlatformId   int64  `json:"platformId,optional"`
+		TenantId     int64  `json:"tenantId,optional"`
+		MerchantId   int64  `json:"merchantId,optional"`
+	}
+	QueryCommentAuditLogReq {
+		Id         string `form:"id"`
+		Current    int32  `form:"current,default=1"`
+		PageSize   int32  `form:"pageSize,default=20"`
+		ScopeType  string `form:"scopeType,optional"`
+		PlatformId int64  `form:"platformId,optional"`
+		TenantId   int64  `form:"tenantId,optional"`
+		MerchantId int64  `form:"merchantId,optional"`
+	}
+	CommentAuditLogData {
+		Id           int64  `json:"id"`
+		CommentId    string `json:"commentId"`
+		Action       string `json:"action"`
+		FromStatus   int32  `json:"fromStatus"`
+		ToStatus     int32  `json:"toStatus"`
+		OperatorId   int64  `json:"operatorId"`
+		OperatorName string `json:"operatorName"`
+		Remark       string `json:"remark"`
+		CreatedAt    string `json:"createdAt"`
+	}
+	QueryCommentAuditLogResp {
+		Code     string                 `json:"code"`
+		Message  string                 `json:"message"`
+		Current  int32                  `json:"current,default=1"`
+		Data     []*CommentAuditLogData `json:"data"`
+		PageSize int32                  `json:"pageSize,default=20"`
+		Success  bool                   `json:"success"`
+		Total    int64                  `json:"total"`
+	}
+	QueryCommentListReq {
+		Current     int32  `form:"current,default=1"`
+		PageSize    int32  `form:"pageSize,default=20"`
+		ProductId   int64  `form:"productId,optional"`
+		ProductName string `form:"productName,optional"`
+		MemberName  string `form:"memberName,optional"`
+		ShowStatus  int32  `form:"showStatus,default=-1"`
+		AuditStatus int32  `form:"auditStatus,default=-1"`
+		Hidden      int32  `form:"hidden,default=-1"`
+		StartTime   string `form:"startTime,optional"`
+		EndTime     string `form:"endTime,optional"`
+		ScopeType   string `form:"scopeType,optional"`
+		PlatformId  int64  `form:"platformId,optional"`
+		TenantId    int64  `form:"tenantId,optional"`
+		MerchantId  int64  `form:"merchantId,optional"`
+	}
+	CommentListData {
+		Id               string `json:"id"`
+		ProductId        int64  `json:"productId"`
+		ProductName      string `json:"productName"`
+		MemberNickName   string `json:"memberNickName"`
+		MemberId         int64  `json:"memberId"`
+		Star             int32  `json:"star"`
+		Content          string `json:"content"`
+		Pics             string `json:"pics"`
+		MemberIcon       string `json:"memberIcon"`
+		ShowStatus       int32  `json:"showStatus"`
+		AuditStatus      int32  `json:"auditStatus"`
+		Hidden           int32  `json:"hidden"`
+		AuditRemark      string `json:"auditRemark"`
+		AuditorId        int64  `json:"auditorId"`
+		AuditorName      string `json:"auditorName"`
+		AuditedAt        string `json:"auditedAt"`
+		AppealStatus     int32  `json:"appealStatus"`
+		AppealReason     string `json:"appealReason"`
+		AppealReply      string `json:"appealReply"`
+		AppealedAt       string `json:"appealedAt"`
+		AppealHandledAt  string `json:"appealHandledAt"`
+		ProductAttribute string `json:"productAttribute"`
+		ReplayCount      int32  `json:"replayCount"`
+		MemberIp         string `json:"memberIp"`
+		CreateTime       string `json:"createTime"`
+	}
+	QueryCommentListResp {
+		Code     string             `json:"code"`
+		Message  string             `json:"message"`
+		Current  int32              `json:"current,default=1"`
+		Data     []*CommentListData `json:"data"`
+		PageSize int32              `json:"pageSize,default=20"`
+		Success  bool               `json:"success"`
+		Total    int64              `json:"total"`
+	}
+	CommentReplayItemData {
+		Id             string `json:"id"`
+		CommentId      string `json:"commentId"`
+		Type           int32  `json:"type"`
+		MemberNickName string `json:"memberNickName"`
+		MemberIcon     string `json:"memberIcon"`
+		Content        string `json:"content"`
+		CreateTime     string `json:"createTime"`
+	}
+	CommentDetailData {
+		Id               string `json:"id"`
+		ProductId        int64  `json:"productId"`
+		ProductName      string `json:"productName"`
+		MemberNickName   string `json:"memberNickName"`
+		MemberId         int64  `json:"memberId"`
+		MemberIcon       string `json:"memberIcon"`
+		Star             int32  `json:"star"`
+		Content          string `json:"content"`
+		Pics             string `json:"pics"`
+		ShowStatus       int32  `json:"showStatus"`
+		AuditStatus      int32  `json:"auditStatus"`
+		Hidden           int32  `json:"hidden"`
+		AuditRemark      string `json:"auditRemark"`
+		AuditorId        int64  `json:"auditorId"`
+		AuditorName      string `json:"auditorName"`
+		AuditedAt        string `json:"auditedAt"`
+		AppealStatus     int32  `json:"appealStatus"`
+		AppealReason     string `json:"appealReason"`
+		AppealReply      string `json:"appealReply"`
+		AppealedAt       string `json:"appealedAt"`
+		AppealHandledAt  string `json:"appealHandledAt"`
+		ProductAttribute string `json:"productAttribute"`
+		CollectCount     int32  `json:"collectCount"`
+		ReadCount        int32  `json:"readCount"`
+		ReplayCount      int32  `json:"replayCount"`
+		MemberIp         string `json:"memberIp"`
+		CreateTime       string `json:"createTime"`
+	}
+	QueryCommentDetailReq {
+		Id         string `form:"id"`
+		ScopeType  string `form:"scopeType,optional"`
+		PlatformId int64  `form:"platformId,optional"`
+		TenantId   int64  `form:"tenantId,optional"`
+		MerchantId int64  `form:"merchantId,optional"`
+	}
+	QueryCommentDetailResp {
+		Code      string                 `json:"code"`
+		Message   string                 `json:"message"`
+		Data      CommentDetailData      `json:"data"`
+		Replays   []*CommentReplayItemData `json:"replays"`
+		AuditLogs []*CommentAuditLogData `json:"auditLogs"`
+	}
+)
+
+@server (
+	jwt:        Auth
+	middleware: CheckUrl
+	group:      pms/comment
+	prefix:     /api/pms/comment
+	tags:       "商品评价管理"
+	authType:   apiKey
+)
+service admin-api {
+	@handler UpdateComment
+	post /updateComment (UpdateCommentReq) returns (BaseResp)
+
+	@handler AuditComment
+	post /:id/audit (AuditCommentReq) returns (BaseResp)
+
+	@handler RestoreComment
+	post /:id/restore (RestoreCommentReq) returns (BaseResp)
+
+	@handler HandleCommentAppeal
+	post /:id/appeal (HandleCommentAppealReq) returns (BaseResp)
+
+	@handler QueryCommentAuditLog
+	get /audit-log (QueryCommentAuditLogReq) returns (QueryCommentAuditLogResp)
+
+	@handler QueryCommentDetail
+	get /queryCommentDetail (QueryCommentDetailReq) returns (QueryCommentDetailResp)
+
+	@handler QueryCommentList
+	get /queryCommentList (QueryCommentListReq) returns (QueryCommentListResp)
+}

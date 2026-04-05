@@ -2,6 +2,7 @@ package product_attribute_group
 
 import (
 	"context"
+	"github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
 	"github.com/feihua/zero-admin/api/admin/internal/types"
@@ -33,9 +34,18 @@ func NewQueryProductAttributeGroupDetailLogic(ctx context.Context, svcCtx *svc.S
 
 // QueryProductAttributeGroupDetail 查询商品属性分组详情
 func (l *QueryProductAttributeGroupDetailLogic) QueryProductAttributeGroupDetail(req *types.QueryProductAttributeGroupDetailReq) (resp *types.QueryProductAttributeGroupDetailResp, err error) {
-
+	queryScope, err := common.ResolveQueryGovernanceScope(l.ctx, common.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
 	detail, err := l.svcCtx.ProductAttributeGroupService.QueryProductAttributeGroupDetail(l.ctx, &pmsclient.QueryProductAttributeGroupDetailReq{
-		Id: req.Id,
+		Id:    req.Id,
+		Scope: common.PMSGovernanceScope(queryScope),
 	})
 
 	if err != nil {
@@ -54,7 +64,11 @@ func (l *QueryProductAttributeGroupDetailLogic) QueryProductAttributeGroupDetail
 		CreateTime: detail.CreateTime, // 创建时间
 		UpdateBy:   detail.UpdateBy,   // 更新人ID
 		UpdateTime: detail.UpdateTime, // 更新时间
-
+		IsDeleted:  detail.IsDeleted,  // 是否删除
+		ScopeType:  detail.ScopeType,
+		PlatformId: detail.PlatformId,
+		TenantId:   detail.TenantId,
+		MerchantId: detail.MerchantId,
 	}
 	return &types.QueryProductAttributeGroupDetailResp{
 		Code:    "000000",

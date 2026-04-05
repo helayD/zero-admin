@@ -7,6 +7,7 @@ import (
 	memberaddressserviceServer "github.com/feihua/zero-admin/rpc/ums/internal/server/memberaddressservice"
 	memberbrandattentionserviceServer "github.com/feihua/zero-admin/rpc/ums/internal/server/memberbrandattentionservice"
 	memberconsumesettingserviceServer "github.com/feihua/zero-admin/rpc/ums/internal/server/memberconsumesettingservice"
+	membermessageserviceServer "github.com/feihua/zero-admin/rpc/ums/internal/server/membermessageservice"
 	membergrowthlogserviceServer "github.com/feihua/zero-admin/rpc/ums/internal/server/membergrowthlogservice"
 	memberinfoserviceServer "github.com/feihua/zero-admin/rpc/ums/internal/server/memberinfoservice"
 	memberlevelserviceServer "github.com/feihua/zero-admin/rpc/ums/internal/server/memberlevelservice"
@@ -64,6 +65,7 @@ func main() {
 		umsclient.RegisterMemberGrowthLogServiceServer(grpcServer, membergrowthlogserviceServer.NewMemberGrowthLogServiceServer(ctx))
 		umsclient.RegisterMemberPointsLogServiceServer(grpcServer, memberpointslogserviceServer.NewMemberPointsLogServiceServer(ctx))
 		umsclient.RegisterMemberConsumeSettingServiceServer(grpcServer, memberconsumesettingserviceServer.NewMemberConsumeSettingServiceServer(ctx))
+		umsclient.RegisterMemberMessageServiceServer(grpcServer, membermessageserviceServer.NewMemberMessageServiceServer(ctx))
 
 		if c.Mode == service.DevMode || c.Mode == service.TestMode {
 			reflection.Register(grpcServer)

@@ -6,184 +6,460 @@ package handler
 import (
 	"net/http"
 
-	"github.com/feihua/zero-admin/api/front/internal/handler/home"
-	"github.com/feihua/zero-admin/api/front/internal/handler/member/address"
-	"github.com/feihua/zero-admin/api/front/internal/handler/member/attention"
-	"github.com/feihua/zero-admin/api/front/internal/handler/member/collection"
-	"github.com/feihua/zero-admin/api/front/internal/handler/member/coupon"
-	"github.com/feihua/zero-admin/api/front/internal/handler/member/history"
-	"github.com/feihua/zero-admin/api/front/internal/handler/member/member"
-	"github.com/feihua/zero-admin/api/front/internal/handler/order/cart"
-	"github.com/feihua/zero-admin/api/front/internal/handler/order/order"
-	"github.com/feihua/zero-admin/api/front/internal/handler/order/pay"
-	"github.com/feihua/zero-admin/api/front/internal/handler/product/brand"
-	"github.com/feihua/zero-admin/api/front/internal/handler/product/category"
-	"github.com/feihua/zero-admin/api/front/internal/handler/product/product"
-	"github.com/feihua/zero-admin/api/front/internal/handler/product/search"
+	home "github.com/feihua/zero-admin/api/front/internal/handler/home"
+	memberaddress "github.com/feihua/zero-admin/api/front/internal/handler/member/address"
+	memberattention "github.com/feihua/zero-admin/api/front/internal/handler/member/attention"
+	membercollection "github.com/feihua/zero-admin/api/front/internal/handler/member/collection"
+	membercoupon "github.com/feihua/zero-admin/api/front/internal/handler/member/coupon"
+	memberhistory "github.com/feihua/zero-admin/api/front/internal/handler/member/history"
+	membermember "github.com/feihua/zero-admin/api/front/internal/handler/member/member"
+	ordercart "github.com/feihua/zero-admin/api/front/internal/handler/order/cart"
+	orderorder "github.com/feihua/zero-admin/api/front/internal/handler/order/order"
+	orderpay "github.com/feihua/zero-admin/api/front/internal/handler/order/pay"
+	productbrand "github.com/feihua/zero-admin/api/front/internal/handler/product/brand"
+	productcategory "github.com/feihua/zero-admin/api/front/internal/handler/product/category"
+	productcomment "github.com/feihua/zero-admin/api/front/internal/handler/product/comment"
+	productproduct "github.com/feihua/zero-admin/api/front/internal/handler/product/product"
 	"github.com/feihua/zero-admin/api/front/internal/svc"
 
 	"github.com/zeromicro/go-zero/rest"
 )
 
-// RegisterHandlers 注册全部路由
 func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
-
-	// ===== 公开路由（无需 JWT） =====
-
-	// 首页
 	server.AddRoutes(
 		[]rest.Route{
-			{Method: http.MethodGet, Path: "/api/home/index", Handler: home.IndexHandler(serverCtx)},
+			{
+				Method:  http.MethodGet,
+				Path:    "/index",
+				Handler: home.IndexHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/recordHomeAdvertiseClick",
+				Handler: home.RecordHomeAdvertiseClickHandler(serverCtx),
+			},
 		},
+		rest.WithPrefix("/api/home"),
 	)
 
-	// 会员登录/注册（无需 JWT）
 	server.AddRoutes(
 		[]rest.Route{
-			{Method: http.MethodPost, Path: "/api/member/login", Handler: member.LoginHandler(serverCtx)},
-			{Method: http.MethodPost, Path: "/api/member/register", Handler: member.RegisterHandler(serverCtx)},
-			{Method: http.MethodPost, Path: "/api/member/updatePassword", Handler: member.UpdatePasswordHandler(serverCtx)},
-			{Method: http.MethodPost, Path: "/api/member/updateMember", Handler: member.UpdateMemberHandler(serverCtx)},
-		},
-	)
-
-	// 商品（无需 JWT）
-	server.AddRoutes(
-		[]rest.Route{
-			{Method: http.MethodGet, Path: "/api/product/queryProductList", Handler: product.QueryProductListHandler(serverCtx)},
-			{Method: http.MethodGet, Path: "/api/product/queryProductDetail", Handler: product.QueryProductDetailHandler(serverCtx)},
-			{Method: http.MethodGet, Path: "/api/product/queryBrandList", Handler: brand.QueryBrandListHandler(serverCtx)},
-			{Method: http.MethodGet, Path: "/api/product/queryBrandDetail", Handler: brand.QueryBrandDetailHandler(serverCtx)},
-			{Method: http.MethodGet, Path: "/api/product/queryProductCateList", Handler: category.QueryProductCateListHandler(serverCtx)},
-		},
-	)
-
-	// 商品搜索（需 JWT — Story 7-2: Scope 隔离要求认证）
-	server.AddRoutes(
-		[]rest.Route{
-			{Method: http.MethodGet, Path: "/api/product/search", Handler: search.SearchHandler(serverCtx)},
+			{
+				Method:  http.MethodPost,
+				Path:    "/addAddress",
+				Handler: memberaddress.AddAddressHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/deleteAddress",
+				Handler: memberaddress.DeleteAddressHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/querAddressDetail",
+				Handler: memberaddress.QueryAddressDetailHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/queryAddressList",
+				Handler: memberaddress.QueryAddressListHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/updateAddress",
+				Handler: memberaddress.UpdateAddressHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/updateAddressStatus",
+				Handler: memberaddress.UpdateAddressStatusHandler(serverCtx),
+			},
 		},
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/member"),
 	)
 
-	// ===== 需 JWT 认证的路由 =====
-
-	// 会员信息（需 JWT）
 	server.AddRoutes(
 		[]rest.Route{
-			{Method: http.MethodGet, Path: "/api/member/info", Handler: member.InfoHandler(serverCtx)},
+			{
+				Method:  http.MethodPost,
+				Path:    "/addAttention",
+				Handler: memberattention.AddAttentionHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/clearAttention",
+				Handler: memberattention.ClearAttentionHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/deleteAttention",
+				Handler: memberattention.DeleteAttentionHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/queryAttentionList",
+				Handler: memberattention.QueryAttentionListHandler(serverCtx),
+			},
 		},
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/member"),
 	)
 
-	// 会员收货地址（需 JWT）
 	server.AddRoutes(
 		[]rest.Route{
-			{Method: http.MethodGet, Path: "/api/member/queryAddressList", Handler: address.QueryAddressListHandler(serverCtx)},
-			{Method: http.MethodGet, Path: "/api/member/querAddressDetail", Handler: address.QueryAddressDetailHandler(serverCtx)},
-			{Method: http.MethodPost, Path: "/api/member/addAddress", Handler: address.AddAddressHandler(serverCtx)},
-			{Method: http.MethodPost, Path: "/api/member/updateAddress", Handler: address.UpdateAddressHandler(serverCtx)},
-			{Method: http.MethodPost, Path: "/api/member/deleteAddress", Handler: address.DeleteAddressHandler(serverCtx)},
-			{Method: http.MethodPost, Path: "/api/member/updateAddressStatus", Handler: address.UpdateAddressStatusHandler(serverCtx)},
+			{
+				Method:  http.MethodPost,
+				Path:    "/addtCollection",
+				Handler: membercollection.AddCollectionHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/clearCollection",
+				Handler: membercollection.ClearCollectionHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/deleteCollection",
+				Handler: membercollection.DeleteCollectionHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/queryCollectionList",
+				Handler: membercollection.QueryCollectionListHandler(serverCtx),
+			},
 		},
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/member"),
 	)
 
-	// 会员收藏（需 JWT）
 	server.AddRoutes(
 		[]rest.Route{
-			{Method: http.MethodGet, Path: "/api/member/queryCollectionList", Handler: collection.QueryCollectionListHandler(serverCtx)},
-			{Method: http.MethodPost, Path: "/api/member/addCollection", Handler: collection.AddCollectionHandler(serverCtx)},
-			{Method: http.MethodPost, Path: "/api/member/deleteCollection", Handler: collection.DeleteCollectionHandler(serverCtx)},
-			{Method: http.MethodPost, Path: "/api/member/clearCollection", Handler: collection.ClearCollectionHandler(serverCtx)},
+			{
+				Method:  http.MethodPost,
+				Path:    "/addCoupon",
+				Handler: membercoupon.AddCouponHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/queryAvailableCoupons",
+				Handler: membercoupon.QueryAvailableCouponsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/queryCouponList",
+				Handler: membercoupon.QueryCouponListHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/queryCouponListByCart",
+				Handler: membercoupon.QueryCouponListByCartHandler(serverCtx),
+			},
 		},
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/member/coupon"),
 	)
 
-	// 会员足迹（需 JWT）
 	server.AddRoutes(
 		[]rest.Route{
-			{Method: http.MethodGet, Path: "/api/member/queryReadHistoryList", Handler: history.QueryReadHistoryListHandler(serverCtx)},
-			{Method: http.MethodPost, Path: "/api/member/addReadHistory", Handler: history.AddReadHistoryHandler(serverCtx)},
-			{Method: http.MethodPost, Path: "/api/member/deleteReadHistory", Handler: history.DeleteReadHistoryHandler(serverCtx)},
-			{Method: http.MethodPost, Path: "/api/member/clearReadHistory", Handler: history.ClearReadHistoryHandler(serverCtx)},
+			{
+				Method:  http.MethodPost,
+				Path:    "/addReadHistory",
+				Handler: memberhistory.AddReadHistoryHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/clearReadHistory",
+				Handler: memberhistory.ClearReadHistoryHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/deleteReadHistory",
+				Handler: memberhistory.DeleteReadHistoryHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/queryReadHistoryList",
+				Handler: memberhistory.QueryReadHistoryListHandler(serverCtx),
+			},
 		},
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/member"),
 	)
 
-	// 会员关注（需 JWT）
 	server.AddRoutes(
 		[]rest.Route{
-			{Method: http.MethodGet, Path: "/api/member/queryAttentionList", Handler: attention.QueryAttentionListHandler(serverCtx)},
-			{Method: http.MethodPost, Path: "/api/member/addAttention", Handler: attention.AddAttentionHandler(serverCtx)},
-			{Method: http.MethodPost, Path: "/api/member/deleteAttention", Handler: attention.DeleteAttentionHandler(serverCtx)},
-			{Method: http.MethodPost, Path: "/api/member/clearAttention", Handler: attention.ClearAttentionHandler(serverCtx)},
+			{
+				Method:  http.MethodPost,
+				Path:    "/login",
+				Handler: membermember.LoginHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/register",
+				Handler: membermember.RegisterHandler(serverCtx),
+			},
+		},
+		rest.WithPrefix("/api/member"),
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodGet,
+				Path:    "/info",
+				Handler: membermember.InfoHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/updateMember",
+				Handler: membermember.UpdateMemberHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/updatePassword",
+				Handler: membermember.UpdatePasswordHandler(serverCtx),
+			},
 		},
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/member"),
 	)
 
-	// 会员优惠券（需 JWT）
 	server.AddRoutes(
 		[]rest.Route{
-			{Method: http.MethodGet, Path: "/api/member/coupon/queryCouponList", Handler: coupon.QueryCouponListHandler(serverCtx)},
-			{Method: http.MethodGet, Path: "/api/member/coupon/queryAvailableCoupons", Handler: coupon.QueryAvailableCouponsHandler(serverCtx)},
-			{Method: http.MethodGet, Path: "/api/member/coupon/queryCouponListByCart", Handler: coupon.QueryCouponListByCartHandler(serverCtx)},
-			{Method: http.MethodPost, Path: "/api/member/coupon/addCoupon", Handler: coupon.AddCouponHandler(serverCtx)},
+			{
+				Method:  http.MethodPost,
+				Path:    "/addCart",
+				Handler: ordercart.AddCartItemHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/clear",
+				Handler: ordercart.ClearCarItemHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/deleteCartItem",
+				Handler: ordercart.DeleteCartItemHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/queryCarItemList",
+				Handler: ordercart.QueryCarItemListHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/queryCartItemDetail",
+				Handler: ordercart.QueryCartItemDetailHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/queryPromotionList",
+				Handler: ordercart.QueryPromotionListHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/queryPromotionList",
+				Handler: ordercart.QueryPromotionListHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/updateCartItemAttr",
+				Handler: ordercart.UpdateCartItemAttrHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/updateCartItemQuantity",
+				Handler: ordercart.UpdateCartItemQuantityHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/validateCartItems",
+				Handler: ordercart.ValidateCartItemsHandler(serverCtx),
+			},
 		},
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/order"),
 	)
 
-	// 购物车（需 JWT）
 	server.AddRoutes(
 		[]rest.Route{
-			{Method: http.MethodGet, Path: "/api/order/queryCarItemList", Handler: cart.QueryCarItemListHandler(serverCtx)},
-			{Method: http.MethodGet, Path: "/api/order/queryCartItemDetail", Handler: cart.QueryCartItemDetailHandler(serverCtx)},
-			{Method: http.MethodPost, Path: "/api/order/addCart", Handler: cart.AddCartItemHandler(serverCtx)},
-			{Method: http.MethodPost, Path: "/api/order/updateCartItemQuantity", Handler: cart.UpdateCartItemQuantityHandler(serverCtx)},
-			{Method: http.MethodPost, Path: "/api/order/updateCartItemAttr", Handler: cart.UpdateCartItemAttrHandler(serverCtx)},
-			{Method: http.MethodPost, Path: "/api/order/deleteCartItem", Handler: cart.DeleteCartItemHandler(serverCtx)},
-			{Method: http.MethodPost, Path: "/api/order/clear", Handler: cart.ClearCarItemHandler(serverCtx)},
-			{Method: http.MethodPost, Path: "/api/order/validateCartItems", Handler: cart.ValidateCartItemsHandler(serverCtx)},
-			{Method: http.MethodGet, Path: "/api/order/queryPromotionList", Handler: cart.QueryPromotionListHandler(serverCtx)},
+			{
+				Method:  http.MethodPost,
+				Path:    "/applyAfterSales",
+				Handler: orderorder.ApplyAfterSalesHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/cancelUserOrder",
+				Handler: orderorder.CancelUserOrderHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/confirmReceiveOrder",
+				Handler: orderorder.ConfirmReceiveOrderHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/deleteOrder",
+				Handler: orderorder.DeleteOrderHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/generateConfirmOrder",
+				Handler: orderorder.GenerateConfirmOrderHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/generateConfirmOrder",
+				Handler: orderorder.GenerateConfirmOrderHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/generateOrder",
+				Handler: orderorder.GenerateOrderHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/queryLogistics",
+				Handler: orderorder.QueryLogisticsHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/queryOrderDetail",
+				Handler: orderorder.QueryOrderDetailHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/queryOrderList",
+				Handler: orderorder.QueryOrderListHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/queryOrderStatusSnapshot",
+				Handler: orderorder.QueryOrderStatusSnapshotHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/queryReturnReasonList",
+				Handler: orderorder.QueryReturnReasonListHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/returnApply",
+				Handler: orderorder.ReturnApplyHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/updateOrderStatus",
+				Handler: orderorder.UpdateOrderStatusHandler(serverCtx),
+			},
 		},
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/order"),
 	)
 
-	// 订单（需 JWT）
 	server.AddRoutes(
 		[]rest.Route{
-			{Method: http.MethodGet, Path: "/api/order/queryOrderList", Handler: order.QueryOrderListHandler(serverCtx)},
-			{Method: http.MethodGet, Path: "/api/order/queryOrderDetail", Handler: order.QueryOrderDetailHandler(serverCtx)},
-			{Method: http.MethodGet, Path: "/api/order/generateConfirmOrder", Handler: order.GenerateConfirmOrderHandler(serverCtx)},
-			{Method: http.MethodPost, Path: "/api/order/generateOrder", Handler: order.GenerateOrderHandler(serverCtx)},
-			{Method: http.MethodGet, Path: "/api/order/cancelUserOrder", Handler: order.CancelUserOrderHandler(serverCtx)},
-			{Method: http.MethodGet, Path: "/api/order/confirmReceiveOrder", Handler: order.ConfirmReceiveOrderHandler(serverCtx)},
-			{Method: http.MethodGet, Path: "/api/order/deleteOrder", Handler: order.DeleteOrderHandler(serverCtx)},
-			{Method: http.MethodGet, Path: "/api/order/queryLogistics", Handler: order.QueryLogisticsHandler(serverCtx)},
-			{Method: http.MethodPost, Path: "/api/order/queryReturnReasonList", Handler: order.QueryReturnReasonListHandler(serverCtx)},
-			{Method: http.MethodPost, Path: "/api/order/applyAfterSales", Handler: order.ApplyAfterSalesHandler(serverCtx)},
-			{Method: http.MethodPost, Path: "/api/order/returnApply", Handler: order.ReturnApplyHandler(serverCtx)},
-			// Story 6-5 Task 8: 统一状态更新与快照查询
-			{Method: http.MethodPost, Path: "/api/order/updateOrderStatus", Handler: order.UpdateOrderStatusHandler(serverCtx)},
-			{Method: http.MethodPost, Path: "/api/order/queryOrderStatusSnapshot", Handler: order.QueryOrderStatusSnapshotHandler(serverCtx)},
+			{
+				Method:  http.MethodPost,
+				Path:    "/orderPay",
+				Handler: orderpay.OrderPayHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/orderPayQuery/:orderId",
+				Handler: orderpay.OrderPayQueryHandler(serverCtx),
+			},
 		},
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/order"),
 	)
 
-	// 支付（需 JWT）
 	server.AddRoutes(
 		[]rest.Route{
-			{Method: http.MethodPost, Path: "/api/order/orderPay", Handler: pay.OrderPayHandler(serverCtx)},
-			{Method: http.MethodGet, Path: "/api/order/orderPayQuery", Handler: pay.OrderPayQueryHandler(serverCtx)},
-			{Method: http.MethodGet, Path: "/api/order/orderPayQueryStatus", Handler: pay.OrderPayQueryStatusHandler(serverCtx)},
+			{
+				Method:  http.MethodPost,
+				Path:    "/notify",
+				Handler: orderpay.NotifyHandler(serverCtx),
+			},
+		},
+		rest.WithPrefix("/api/pay"),
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodGet,
+				Path:    "/queryBrandDetail",
+				Handler: productbrand.QueryBrandDetailHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/queryBrandList",
+				Handler: productbrand.QueryBrandListHandler(serverCtx),
+			},
+		},
+		rest.WithPrefix("/api/product"),
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodGet,
+				Path:    "/queryProductCateList",
+				Handler: productcategory.QueryProductCateListHandler(serverCtx),
+			},
+		},
+		rest.WithPrefix("/api/product"),
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodPost,
+				Path:    "/add",
+				Handler: productcomment.AddCommentHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/queryCommentDetail",
+				Handler: productcomment.QueryCommentDetailHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/queryCommentList",
+				Handler: productcomment.QueryCommentListHandler(serverCtx),
+			},
+		},
+		rest.WithPrefix("/api/product/comment"),
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodPost,
+				Path:    "/submitAppeal",
+				Handler: productcomment.SubmitCommentAppealHandler(serverCtx),
+			},
 		},
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/product/comment"),
 	)
 
-	// 支付回调（无需 JWT）
 	server.AddRoutes(
 		[]rest.Route{
-			{Method: http.MethodPost, Path: "/api/pay/notify", Handler: pay.NotifyHandler(serverCtx)},
+			{
+				Method:  http.MethodGet,
+				Path:    "/queryProductDetail",
+				Handler: productproduct.QueryProductDetailHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/queryProductList",
+				Handler: productproduct.QueryProductListHandler(serverCtx),
+			},
 		},
+		rest.WithPrefix("/api/product"),
 	)
 }

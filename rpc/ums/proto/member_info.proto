@@ -131,6 +131,21 @@ message QueryMemberInfoListResp {
   repeated  MemberInfoListData list = 2;
 }
 
+message QueryMemberBriefByIdsReq {
+  repeated int64 member_ids = 1; //会员ID集合
+}
+
+message MemberBriefData {
+  int64 member_id = 1; //会员ID
+  string nickname_masked = 2; //脱敏昵称
+  string mobile_masked = 3; //脱敏手机号
+  int64 level_id = 4; //等级ID
+}
+
+message QueryMemberBriefByIdsResp {
+  repeated MemberBriefData list = 1;
+}
+
 message LoginReq {
   string      mobile = 1; //手机号码
   string      password = 2; //密码
@@ -170,6 +185,8 @@ service MemberInfoService {
   rpc QueryMemberInfoDetail(QueryMemberInfoDetailReq) returns (QueryMemberInfoDetailResp){}
   // 查询会员信息列表
   rpc QueryMemberInfoList(QueryMemberInfoListReq) returns (QueryMemberInfoListResp){}
+  // 批量查询会员简要信息
+  rpc QueryMemberBriefByIds(QueryMemberBriefByIdsReq) returns (QueryMemberBriefByIdsResp){}
 
   //会员登录
   rpc Login(LoginReq) returns(LoginResp);

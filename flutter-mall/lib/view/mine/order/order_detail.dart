@@ -12,6 +12,7 @@ import '../../../model/order_item.dart'; // OrderItemList canonical
 import '../../../model/order_detail.dart';
 import 'order_logistics.dart';
 import 'apply_after_sales.dart';
+import '../ping_jia/ping_jia.dart';
 
 ///
 /// 订单详情页面
@@ -728,6 +729,10 @@ class _OrderDetailState extends State<OrderDetail> with SingleTickerProviderStat
             // Story 6-4 实现：申请售后（OMS order_status=4=已完成, 7=售后中）
             if (status == 4 || status == 7)
               _ActionButton(label: "申请售后", isPrimary: false, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ApplyAfterSales(orderId: widget.orderId)))),
+            if (status == 4) const SizedBox(width: 10),
+            // Story 8-2 实现：去评价（OMS order_status=4=已完成）
+            if (status == 4)
+              _ActionButton(label: "去评价", isPrimary: true, onTap: () => _navigateToComment()),
           ],
         ),
       ),
@@ -759,6 +764,35 @@ class _OrderDetailState extends State<OrderDetail> with SingleTickerProviderStat
     } catch (_) {
       return isoTime;
     }
+  }
+
+  // Story 8-2 Task 3.0: 跳转到评价页面（携带第一个商品信息）
+  void _navigateToComment() {
+    final d = orderDetailData;
+    if (d == null || d.orderItemData.isEmpty) return;
+
+    // 取第一个商品作为评价对象
+    final firstItem = d.orderItemData.first;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PinJia(
+          orderId: widget.orderId,
+          // Design Decision: 使用 skuId 作为 productId 参数值。
+          // 当前评价系统设计为 SKU 粒度——用户对同一商品的每个 SKU 可独立评价。
+          // OMS OrderItemData 未返回独立 productId 字段，故使用 skuId。
+          // 若未来需按 SPU 粒度评价（同一商品多 SKU 只可评价一次），需：
+          // 1. OMS 返回 productId；2. 后端按 memberId+productId+orderId 去重校验。
+          productId: firstItem.skuId,
+          productName: firstItem.skuName,
+          productPic: firstItem.skuPic,
+          // Review Fix H-6: 传递商品规格快照
+          productAttribute: firstItem.specData,
+          // Review Fix H-5: 传递收货人姓名作为默认昵称
+          memberNickName: d.memberReceiveAddress.receiverName,
+        ),
+      ),
+    );
   }
 }
 

@@ -1,0 +1,102 @@
+info (
+	desc:   "商品评价"
+	author: "Codex"
+	email:  "noreply@example.com"
+)
+
+type AddCommentReq {
+	ProductId        int64  `json:"productId"`
+	MemberNickName   string `json:"memberNickName"`
+	ProductName      string `json:"productName"`
+	Star             int32  `json:"star"`
+	ProductAttribute string `json:"productAttribute"`
+	Content          string `json:"content"`
+	Pics             string `json:"pics"`
+	MemberIcon       string `json:"memberIcon"`
+	OrderId          int64  `json:"orderId"`
+}
+
+type AddCommentResp {
+	Code    int64  `json:"code"`
+	Message string `json:"message"`
+}
+
+type QueryCommentListReq {
+	ProductId int64 `form:"productId"`
+	PageNum   int32 `form:"pageNum,default=1"`
+	PageSize  int32 `form:"pageSize,default=10"`
+}
+
+type CommentListItem {
+	Id               string `json:"id"`
+	ProductId        int64  `json:"productId"`
+	MemberId         int64  `json:"memberId"`
+	MemberNickName   string `json:"memberNickName"`
+	MemberIcon       string `json:"memberIcon"`
+	Star             int32  `json:"star"`
+	Content          string `json:"content"`
+	Pics             string `json:"pics"`
+	ProductAttribute string `json:"productAttribute"`
+	ShowStatus       int32  `json:"showStatus"`
+	ReplayCount      int32  `json:"replayCount"`
+	MemberIp         string `json:"memberIp"`
+	CreateTime       string `json:"createTime"`
+}
+
+type QueryCommentListResp {
+	Code    int64             `json:"code"`
+	Message string            `json:"message"`
+	Data    []CommentListItem `json:"data"`
+	Total   int64             `json:"total"`
+}
+
+type SubmitCommentAppealReq {
+	Id           string `json:"id"`
+	AppealReason string `json:"appealReason"`
+}
+
+type SubmitCommentAppealResp {
+	Code    int64  `json:"code"`
+	Message string `json:"message"`
+}
+
+type QueryCommentDetailReq {
+	Id        string `form:"id"`
+	ProductId int64  `form:"productId,optional"`
+}
+
+type CommentReplayItem {
+	Id             string `json:"id"`
+	CommentId      string `json:"commentId"`
+	Type           int32  `json:"type"`
+	MemberNickName string `json:"memberNickName"`
+	MemberIcon     string `json:"memberIcon"`
+	Content        string `json:"content"`
+	CreateTime     string `json:"createTime"`
+}
+
+type QueryCommentDetailResp {
+	Code    int64               `json:"code"`
+	Message string              `json:"message"`
+	Data    CommentListItem     `json:"data"`
+	Replays []CommentReplayItem `json:"replays"`
+}
+
+@server (
+	group:  product/comment
+	prefix: /api/product/comment
+	tags:   "商品评价管理"
+)
+service front-api {
+	@handler AddComment
+	post /add (AddCommentReq) returns (AddCommentResp)
+
+	@handler QueryCommentList
+	get /queryCommentList (QueryCommentListReq) returns (QueryCommentListResp)
+
+	@handler QueryCommentDetail
+	get /queryCommentDetail (QueryCommentDetailReq) returns (QueryCommentDetailResp)
+
+	@handler SubmitCommentAppeal
+	post /submitAppeal (SubmitCommentAppealReq) returns (SubmitCommentAppealResp)
+}

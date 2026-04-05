@@ -14,7 +14,7 @@ type (
 	// and implement the added methods in customProductCommentReplayModel.
 	ProductCommentReplayModel interface {
 		productCommentReplayModel
-		FindPage(ctx context.Context, commentId, pageNo, pageSize int64) ([]*ProductCommentReplay, error)
+		FindPage(ctx context.Context, commentId string, pageNo, pageSize int64) ([]*ProductCommentReplay, error)
 	}
 
 	customProductCommentReplayModel struct {
@@ -29,7 +29,7 @@ func NewProductCommentReplayModel(url, db, collection string) ProductCommentRepl
 		defaultProductCommentReplayModel: newDefaultProductCommentReplayModel(conn),
 	}
 }
-func (m *customProductCommentReplayModel) FindPage(ctx context.Context, commentId, pageNo, pageSize int64) ([]*ProductCommentReplay, error) {
+func (m *customProductCommentReplayModel) FindPage(ctx context.Context, commentId string, pageNo, pageSize int64) ([]*ProductCommentReplay, error) {
 
 	var data []*ProductCommentReplay
 	opts := options.Find().SetSkip((pageNo - 1) * pageSize).SetLimit(pageSize)

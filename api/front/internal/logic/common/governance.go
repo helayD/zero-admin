@@ -3,12 +3,34 @@ package common
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"strings"
 
 	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/rpc/cms/cmsclient"
 	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
 	"github.com/feihua/zero-admin/rpc/sms/smsclient"
 )
+
+func CurrentGovernanceScope(ctx context.Context) (pkgscope.GovernanceScope, error) {
+	scopeType, _ := ctx.Value("scopeType").(string)
+	if strings.TrimSpace(scopeType) == "" {
+		return pkgscope.GovernanceScope{}, errors.New("当前登录上下文缺少治理范围")
+	}
+
+	current, err := pkgscope.NormalizeGovernanceScope(
+		scopeType,
+		readContextInt64(ctx, "platformId"),
+		readContextInt64(ctx, "tenantId"),
+		readContextInt64(ctx, "merchantId"),
+	)
+	if err != nil {
+		return pkgscope.GovernanceScope{}, fmt.Errorf("当前登录上下文治理范围无效: %w", err)
+	}
+
+	return current, nil
+}
 
 func ResolveEffectiveGovernanceScope(ctx context.Context) pkgscope.GovernanceScope {
 	current, err := pkgscope.NormalizeGovernanceScope(

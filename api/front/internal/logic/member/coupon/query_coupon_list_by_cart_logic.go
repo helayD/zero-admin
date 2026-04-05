@@ -2,7 +2,6 @@ package coupon
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	frontcommon "github.com/feihua/zero-admin/api/front/internal/logic/common"
@@ -119,13 +118,10 @@ func QueryCouponList(svcCtx *svc.ServiceContext, ctx context.Context, cartPromot
 		usableNow := couponUsableNow(couponData.StartTime, couponData.EndTime)
 		minAmount := int64(couponData.MinAmount)
 		if subtotal >= minAmount && usableNow {
+			couponData.DisableReason = ""
 			enableList = append(enableList, couponData)
 		} else {
-			if !usableNow {
-				couponData.DisableReason = "优惠券不在有效期内"
-			} else if subtotal < minAmount {
-				couponData.DisableReason = fmt.Sprintf("订单金额未满 ¥%.2f", couponData.MinAmount)
-			}
+			couponData.DisableReason = buildCouponDisableReason(subtotal, minAmount, usableNow)
 			disableList = append(disableList, couponData)
 		}
 	}
@@ -203,6 +199,17 @@ func couponUsableNow(startTime, endTime string) bool {
 	}
 	now := time.Now()
 	return !now.Before(start) && !now.After(end)
+}
+
+func buildCouponDisableReason(subtotal, minAmount int64, usableNow bool) string {
+	switch {
+	case !usableNow:
+		return "优惠券未在有效期内"
+	case subtotal < minAmount:
+		return "未满足优惠券使用门槛"
+	default:
+		return ""
+	}
 }
 
 func toCouponData(item *smsclient.CouponListData, scopeType int32) types.CouponData {

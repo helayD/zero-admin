@@ -41,6 +41,8 @@ message AddOrderReq {
   int32 use_points = 13; //下单时使用的积分
   string remark = 14; //订单备注
   repeated OrderItemData order_item_data = 15; //订单商品
+  string activity_type = 16; //活动类型(home_advertise/coupon/seckill_activity/none)
+  int64 activity_id = 17; //活动ID
 }
 
 message AddOrderResp {
@@ -193,6 +195,242 @@ message OrderListData {
   repeated PromotionListData promotion_data = 26; //订单优惠信息
   repeated PaymentData payment_data = 27; //订单支付信息
   DeliveryData delivery_data = 28; //订单收货地址
+  string activity_type = 29; //活动类型(home_advertise/coupon/seckill_activity/none)
+  int64 activity_id = 30; //活动ID
+  int32 retry_count = 31; //补偿重试次数
+  int32 paused = 32; //是否暂停
+}
+
+message OperateOrderBucketPoint {
+  string bucket_label = 1; //时间桶标签
+  string bucket_start = 2; //时间桶开始(闭区间)
+  string bucket_end = 3; //时间桶结束(开区间)
+  int64 order_created = 4; //下单数
+  int64 pay_success = 5; //支付成功数
+}
+
+message QueryOperateOrderFunnelReq {
+  GovernanceScope scope = 1; //治理范围(platform/tenant/merchant)
+  string start_time = 2; //开始时间，按 Asia/Shanghai 解析
+  string end_time = 3; //结束时间，按 Asia/Shanghai 解析
+  string channel = 4; //统一渠道(app/pc/h5/mini_program/unknown)
+  string activity_type = 5; //活动类型(home_advertise/coupon/seckill_activity/none)
+  int64 activity_id = 6; //活动ID
+  string bucket = 7; //时间桶(day/hour)
+}
+
+message QueryOperateOrderFunnelResp {
+  repeated OperateOrderBucketPoint buckets = 1;
+  int64 total_order_created = 2; //下单总量
+  int64 total_pay_success = 3; //支付成功总量
+  string tracking_started_at = 4; //埋点可信起点
+  repeated string partial_metrics = 5; //部分可用指标
+}
+
+message RepeatPurchaseOverview {
+  int64 paid_buyer_count = 1; //支付买家数
+  int64 repeat_buyer_count = 2; //复购买家数
+  double repeat_rate = 3; //复购率
+  int64 repeat_order_count = 4; //复购订单数
+  double repeat_gmv = 5; //复购GMV
+  double avg_days_to_repeat = 6; //平均复购天数
+}
+
+message RepeatPurchaseTrendPoint {
+  string bucket_label = 1; //时间桶标签
+  string bucket_start = 2; //时间桶开始(闭区间)
+  string bucket_end = 3; //时间桶结束(开区间)
+  int64 paid_buyer_count = 4; //支付买家数
+  int64 repeat_buyer_count = 5; //复购买家数
+  double repeat_rate = 6; //复购率
+  int64 repeat_order_count = 7; //复购订单数
+  double repeat_gmv = 8; //复购GMV
+  double avg_days_to_repeat = 9; //平均复购天数
+}
+
+message RepeatPurchaseDetailRow {
+  int64 member_id = 1; //会员ID
+  string first_valid_pay_time = 2; //首次有效支付时间
+  string latest_repeat_pay_time = 3; //最近复购支付时间
+  int64 repeat_order_count = 4; //复购订单数
+  double repeat_gmv = 5; //复购GMV
+  string latest_channel = 6; //最近渠道
+  string latest_activity_type = 7; //最近活动类型
+  int64 latest_activity_id = 8; //最近活动ID
+  int64 platform_id = 9; //平台ID
+  int64 tenant_id = 10; //租户ID
+  int64 merchant_id = 11; //商户ID
+}
+
+message QueryRepeatPurchaseAnalysisReq {
+  GovernanceScope scope = 1; //治理范围(platform/tenant/merchant)
+  string start_time = 2; //开始时间，按 Asia/Shanghai 解析
+  string end_time = 3; //结束时间，按 Asia/Shanghai 解析
+  string channel = 4; //统一渠道(app/pc/h5/mini_program/unknown)
+  string activity_type = 5; //活动类型(home_advertise/coupon/seckill_activity/none)
+  int64 activity_id = 6; //活动ID
+  string bucket = 7; //时间桶(day/hour)
+}
+
+message QueryRepeatPurchaseAnalysisResp {
+  RepeatPurchaseOverview overview = 1; //复购总览
+  repeated RepeatPurchaseTrendPoint trends = 2; //复购趋势
+  string tracking_started_at = 3; //埋点可信起点
+  repeated string partial_metrics = 4; //部分可用指标
+}
+
+message QueryRepeatPurchaseDetailListReq {
+  GovernanceScope scope = 1; //治理范围(platform/tenant/merchant)
+  string start_time = 2; //开始时间，按 Asia/Shanghai 解析
+  string end_time = 3; //结束时间，按 Asia/Shanghai 解析
+  string channel = 4; //统一渠道(app/pc/h5/mini_program/unknown)
+  string activity_type = 5; //活动类型(home_advertise/coupon/seckill_activity/none)
+  int64 activity_id = 6; //活动ID
+  int32 page_num = 7; //第几页
+  int32 page_size = 8; //每页的数量
+}
+
+message QueryRepeatPurchaseDetailListResp {
+  int64 total = 1; //总量
+  repeated RepeatPurchaseDetailRow list = 2; //复购明细
+  string tracking_started_at = 3; //埋点可信起点
+  repeated string partial_metrics = 4; //部分可用指标
+}
+
+enum ChainType {
+  CHAIN_TYPE_UNKNOWN = 0;
+  CHAIN_TYPE_COMPENSATION = 1;
+}
+
+message ChainMonitorItem {
+  string trace_id = 1; //链路追踪ID
+  int64 platform_id = 2; //平台ID
+  int64 tenant_id = 3; //租户ID
+  int64 merchant_id = 4; //商户ID
+  int32 chain_type = 5; //链路类型
+  string chain_type_text = 6; //链路类型文本
+  int64 entity_id = 7; //业务对象ID
+  string entity_no = 8; //业务编号
+  int32 entity_type = 9; //业务对象类型
+  int32 stage = 10; //一致性阶段
+  string stage_text = 11; //阶段文本
+  int32 result = 12; //处理结果
+  string result_text = 13; //结果文本
+  int32 retry_count = 14; //重试次数
+  string last_error = 15; //最近错误
+  string last_execute_at = 16; //最近执行时间
+  string created_at = 17; //创建时间
+  int64 actor_id = 18; //触发操作人
+  int32 paused = 19; //是否暂停
+  string pause_reason = 20; //暂停原因
+}
+
+message QueryCompensationChainListReq {
+  int32 page_num = 1; //第几页
+  int32 page_size = 2; //每页的数量
+  int32 chain_type = 3; //链路类型
+  int32 consistency_stage = 4; //一致性阶段
+  int32 consistency_result = 5; //一致性结果
+  int32 manual_required = 6; //是否需人工介入：0-全部,1-是,2-否
+  string start_time = 7; //开始时间
+  string end_time = 8; //结束时间
+  string order_no = 9; //订单编号
+  GovernanceScope scope = 10; //治理范围(platform/tenant/merchant)
+}
+
+message QueryCompensationChainListResp {
+  int64 total = 1;
+  repeated ChainMonitorItem list = 2;
+}
+
+message QueryChainActionsReq {
+  int64 order_id = 1; //订单ID
+  int64 platform_id = 2; //平台ID
+  int64 tenant_id = 3; //租户ID
+  int64 merchant_id = 4; //商户ID
+}
+
+message QueryChainActionsResp {
+  int64 code = 1;
+  string msg = 2;
+  repeated string available_actions = 3;
+}
+
+message RetryCompensationChainReq {
+  int64 order_id = 1; //订单ID
+  string remark = 2; //备注
+  int64 operator_id = 3; //操作人ID
+  int64 platform_id = 4; //平台ID
+  int64 tenant_id = 5; //租户ID
+  int64 merchant_id = 6; //商户ID
+}
+
+message RetryCompensationChainResp {
+  int64 code = 1;
+  string msg = 2;
+  int64 new_retry_count = 3; //最新重试次数
+  string trace_id = 4; //追踪ID
+  int32 before_stage = 5; //操作前阶段
+  int32 before_result = 6; //操作前结果
+  int32 after_stage = 7; //操作后阶段
+  int32 after_result = 8; //操作后结果
+}
+
+message ReplayCompensationChainReq {
+  int64 order_id = 1; //订单ID
+  string replay_reason = 2; //回放原因
+  int64 operator_id = 3; //操作人ID
+  int64 platform_id = 4; //平台ID
+  int64 tenant_id = 5; //租户ID
+  int64 merchant_id = 6; //商户ID
+}
+
+message ReplayCompensationChainResp {
+  int64 code = 1;
+  string msg = 2;
+  string trace_id = 3; //追踪ID
+  int32 before_stage = 4; //操作前阶段
+  int32 before_result = 5; //操作前结果
+  int32 after_stage = 6; //操作后阶段
+  int32 after_result = 7; //操作后结果
+}
+
+message PauseCompensationChainReq {
+  int64 order_id = 1; //订单ID
+  string pause_reason = 2; //暂停原因
+  int64 operator_id = 3; //操作人ID
+  int64 platform_id = 4; //平台ID
+  int64 tenant_id = 5; //租户ID
+  int64 merchant_id = 6; //商户ID
+}
+
+message PauseCompensationChainResp {
+  int64 code = 1;
+  string msg = 2;
+  bool paused = 3; //是否已暂停
+  int32 before_stage = 4; //操作前阶段
+  int32 before_result = 5; //操作前结果
+  int32 after_stage = 6; //操作后阶段
+  int32 after_result = 7; //操作后结果
+}
+
+message EscalateChainReq {
+  int64 order_id = 1; //订单ID
+  string escalate_reason = 2; //升级原因
+  int64 operator_id = 3; //操作人ID
+  int64 platform_id = 4; //平台ID
+  int64 tenant_id = 5; //租户ID
+  int64 merchant_id = 6; //商户ID
+}
+
+message EscalateChainResp {
+  int64 code = 1;
+  string msg = 2;
+  bool manual_required = 3; //是否需人工介入
+  int32 before_stage = 4; //操作前阶段
+  int32 before_result = 5; //操作前结果
+  int32 after_stage = 6; //操作后阶段
+  int32 after_result = 7; //操作后结果
 }
 
 message QueryOrderListResp {
@@ -295,6 +533,24 @@ service OrderService {
   rpc QueryOrderDetail(QueryOrderDetailReq) returns (QueryOrderDetailResp){}
   // 查询订单列表
   rpc QueryOrderList(QueryOrderListReq) returns (QueryOrderListResp){}
+  // 查询经营漏斗订单聚合
+  rpc QueryOperateOrderFunnel(QueryOperateOrderFunnelReq) returns (QueryOperateOrderFunnelResp){}
+  // 查询复购分析总览与趋势
+  rpc QueryRepeatPurchaseAnalysis(QueryRepeatPurchaseAnalysisReq) returns (QueryRepeatPurchaseAnalysisResp){}
+  // 查询复购分析详情
+  rpc QueryRepeatPurchaseDetailList(QueryRepeatPurchaseDetailListReq) returns (QueryRepeatPurchaseDetailListResp){}
+  // 查询链路监控列表
+  rpc QueryCompensationChainList(QueryCompensationChainListReq) returns (QueryCompensationChainListResp){}
+  // 查询可用干预动作
+  rpc QueryChainActions(QueryChainActionsReq) returns (QueryChainActionsResp){}
+  // 重试补偿链路
+  rpc RetryCompensationChain(RetryCompensationChainReq) returns (RetryCompensationChainResp){}
+  // 回放补偿链路
+  rpc ReplayCompensationChain(ReplayCompensationChainReq) returns (ReplayCompensationChainResp){}
+  // 暂停补偿链路
+  rpc PauseCompensationChain(PauseCompensationChainReq) returns (PauseCompensationChainResp){}
+  // 升级为人工介入
+  rpc EscalateChain(EscalateChainReq) returns (EscalateChainResp){}
 
   //订单发货
   rpc Delivery(DeliveryReq) returns(DeliveryResp);

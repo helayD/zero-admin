@@ -2,6 +2,7 @@ package product_spec
 
 import (
 	"context"
+	"github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
 	"github.com/feihua/zero-admin/api/admin/internal/types"
@@ -33,9 +34,18 @@ func NewQueryProductSpecDetailLogic(ctx context.Context, svcCtx *svc.ServiceCont
 
 // QueryProductSpecDetail 查询商品规格详情
 func (l *QueryProductSpecDetailLogic) QueryProductSpecDetail(req *types.QueryProductSpecDetailReq) (resp *types.QueryProductSpecDetailResp, err error) {
-
+	queryScope, err := common.ResolveQueryGovernanceScope(l.ctx, common.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
+	if err != nil {
+		return nil, errorx.NewDefaultError(err.Error())
+	}
 	detail, err := l.svcCtx.ProductSpecService.QueryProductSpecDetail(l.ctx, &pmsclient.QueryProductSpecDetailReq{
-		Id: req.Id,
+		Id:    req.Id,
+		Scope: common.PMSGovernanceScope(queryScope),
 	})
 
 	if err != nil {
@@ -54,7 +64,10 @@ func (l *QueryProductSpecDetailLogic) QueryProductSpecDetail(req *types.QueryPro
 		CreateTime: detail.CreateTime, // 创建时间
 		UpdateBy:   detail.UpdateBy,   // 更新人ID
 		UpdateTime: detail.UpdateTime, // 更新时间
-
+		ScopeType:  detail.ScopeType,
+		PlatformId: detail.PlatformId,
+		TenantId:   detail.TenantId,
+		MerchantId: detail.MerchantId,
 	}
 	return &types.QueryProductSpecDetailResp{
 		Code:    "000000",

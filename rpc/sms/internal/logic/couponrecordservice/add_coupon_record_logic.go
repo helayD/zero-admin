@@ -2,6 +2,7 @@ package couponrecordservicelogic
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -128,6 +129,16 @@ func (l *AddCouponRecordLogic) AddCouponRecord(in *smsclient.AddCouponRecordReq)
 	if txErr != nil {
 		return nil, txErr
 	}
+
+	// 发布优惠券发放消息事件（异步非阻塞）
+	couponMsg := map[string]any{
+		"memberId":   in.MemberId,
+		"couponId":   in.CouponId,
+		"couponName": smsCoupon.Name,
+		"getType":    in.GetType,
+	}
+	body, _ := json.Marshal(couponMsg)
+	_ = l.svcCtx.RabbitMQ.SendMessage("coupon.event.exchange", "direct", "coupon.issued.queue", "coupon.issued.key", body)
 
 	return &smsclient.AddCouponRecordResp{}, nil
 }

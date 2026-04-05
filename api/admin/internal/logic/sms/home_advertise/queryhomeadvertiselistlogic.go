@@ -52,20 +52,9 @@ func (l *QueryHomeAdvertiseListLogic) QueryHomeAdvertiseList(req *types.QueryHom
 	}
 
 	var list []*types.QueryHomeAdvertiseListData
-
 	now := time.Now()
-	for _, detail := range result.List {
-		// 计算综合生效状态
-		effectiveStatus := "已下线"
-		if detail.Status == 1 {
-			t, err := time.ParseInLocation("2006-01-02 15:04:05", detail.EndTime, time.Local)
-			if err == nil && !t.After(now) {
-				effectiveStatus = "已过期"
-			} else {
-				effectiveStatus = "已上线"
-			}
-		}
 
+	for _, detail := range result.List {
 		list = append(list, &types.QueryHomeAdvertiseListData{
 			Id:              detail.Id,         // 编号
 			Name:            detail.Name,       // 名称
@@ -81,7 +70,7 @@ func (l *QueryHomeAdvertiseListLogic) QueryHomeAdvertiseList(req *types.QueryHom
 			Sort:            detail.Sort,       // 排序
 			CreateTime:      detail.CreateTime, // 创建时间
 			UpdateTime:      detail.UpdateTime, // 更新时间
-			EffectiveStatus: effectiveStatus,
+			EffectiveStatus: computeHomeAdvertiseEffectiveStatus(detail.Status, detail.StartTime, detail.EndTime, now),
 		})
 	}
 

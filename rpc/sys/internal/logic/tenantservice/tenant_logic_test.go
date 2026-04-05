@@ -75,7 +75,7 @@ func TestCreateTenantCreatesTenantAdminBindingAndAudit(t *testing.T) {
 	if tenant.Status != tenantmodel.TenantStatusPendingActivation {
 		t.Fatalf("unexpected tenant status: %d", tenant.Status)
 	}
-	if !strings.Contains(tenant.AvailableChannels, "mini-program") {
+	if !strings.Contains(tenant.AvailableChannels, "mini_program") {
 		t.Fatalf("channels not persisted: %s", tenant.AvailableChannels)
 	}
 

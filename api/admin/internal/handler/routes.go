@@ -11,13 +11,12 @@ import (
 	cmssubject_category "github.com/feihua/zero-admin/api/admin/internal/handler/cms/subject_category"
 	omschain_monitor "github.com/feihua/zero-admin/api/admin/internal/handler/oms/chain_monitor"
 	omscompany_address "github.com/feihua/zero-admin/api/admin/internal/handler/oms/company_address"
-	omscustomer_service_workstation "github.com/feihua/zero-admin/api/admin/internal/handler/oms/customer_service_workstation"
-	omsmerchant_workstation "github.com/feihua/zero-admin/api/admin/internal/handler/oms/merchant_workstation"
 	omsorder_delivery "github.com/feihua/zero-admin/api/admin/internal/handler/oms/order_delivery"
 	omsorder_main "github.com/feihua/zero-admin/api/admin/internal/handler/oms/order_main"
 	omsorder_return "github.com/feihua/zero-admin/api/admin/internal/handler/oms/order_return"
 	omsorder_setting "github.com/feihua/zero-admin/api/admin/internal/handler/oms/order_setting"
 	omsreturn_reason "github.com/feihua/zero-admin/api/admin/internal/handler/oms/return_reason"
+	pmscomment "github.com/feihua/zero-admin/api/admin/internal/handler/pms/comment"
 	pmsproduct_attribute "github.com/feihua/zero-admin/api/admin/internal/handler/pms/product_attribute"
 	pmsproduct_attribute_group "github.com/feihua/zero-admin/api/admin/internal/handler/pms/product_attribute_group"
 	pmsproduct_brand "github.com/feihua/zero-admin/api/admin/internal/handler/pms/product_brand"
@@ -35,6 +34,7 @@ import (
 	smshome_new_product "github.com/feihua/zero-admin/api/admin/internal/handler/sms/home_new_product"
 	smshome_recommend_product "github.com/feihua/zero-admin/api/admin/internal/handler/sms/home_recommend_product"
 	smshome_recommend_subject "github.com/feihua/zero-admin/api/admin/internal/handler/sms/home_recommend_subject"
+	smsoperate_dashboard "github.com/feihua/zero-admin/api/admin/internal/handler/sms/operate_dashboard"
 	smsseckill_activity "github.com/feihua/zero-admin/api/admin/internal/handler/sms/seckill_activity"
 	smsseckill_product "github.com/feihua/zero-admin/api/admin/internal/handler/sms/seckill_product"
 	smsseckill_reservation "github.com/feihua/zero-admin/api/admin/internal/handler/sms/seckill_reservation"
@@ -284,21 +284,6 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Handler: omsorder_main.QueryOrderMainListHandler(serverCtx),
 				},
 				{
-					Method:  http.MethodPost,
-					Path:    "/updateMoneyInfo",
-					Handler: omsorder_main.UpdateMoneyInfoHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodPost,
-					Path:    "/updateNote",
-					Handler: omsorder_main.UpdateNoteHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodPost,
-					Path:    "/updateOrderMain",
-					Handler: omsorder_main.UpdateOrderMainHandler(serverCtx),
-				},
-				{
 					Method:  http.MethodGet,
 					Path:    "/queryChainMonitorList",
 					Handler: omschain_monitor.QueryChainMonitorListHandler(serverCtx),
@@ -307,6 +292,16 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Method:  http.MethodGet,
 					Path:    "/exportChainMonitorList",
 					Handler: omschain_monitor.ExportChainMonitorListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryChainActions",
+					Handler: omschain_monitor.QueryChainActionsHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/pauseChain",
+					Handler: omschain_monitor.PauseChainHandler(serverCtx),
 				},
 				{
 					Method:  http.MethodPost,
@@ -320,18 +315,23 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				},
 				{
 					Method:  http.MethodPost,
-					Path:    "/pauseChain",
-					Handler: omschain_monitor.PauseChainHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodPost,
 					Path:    "/escalateChain",
 					Handler: omschain_monitor.EscalateChainHandler(serverCtx),
 				},
 				{
-					Method:  http.MethodGet,
-					Path:    "/queryChainActions",
-					Handler: omschain_monitor.QueryChainActionsHandler(serverCtx),
+					Method:  http.MethodPost,
+					Path:    "/updateMoneyInfo",
+					Handler: omsorder_main.UpdateMoneyInfoHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/updateNote",
+					Handler: omsorder_main.UpdateNoteHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/updateOrderMain",
+					Handler: omsorder_main.UpdateOrderMainHandler(serverCtx),
 				},
 			}...,
 		),
@@ -362,41 +362,6 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		),
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
 		rest.WithPrefix("/api/oms/orderReturn"),
-	)
-
-	server.AddRoutes(
-		rest.WithMiddlewares(
-			[]rest.Middleware{serverCtx.CheckUrl},
-			[]rest.Route{
-				{
-					Method:  http.MethodPost,
-					Path:    "/customerServiceOrderList",
-					Handler: omscustomer_service_workstation.CustomerServiceOrderListHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodPost,
-					Path:    "/companyAddress/list",
-					Handler: omscustomer_service_workstation.CompanyAddressListHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodPost,
-					Path:    "/orderOperationLog/list",
-					Handler: omscustomer_service_workstation.QueryOrderOperationLogListHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodPost,
-					Path:    "/merchantOrder/list",
-					Handler: omsmerchant_workstation.MerchantOrderListHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodPost,
-					Path:    "/merchantDelivery/confirm",
-					Handler: omsmerchant_workstation.ConfirmDeliveryHandler(serverCtx),
-				},
-			}...,
-		),
-		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
-		rest.WithPrefix("/api/oms"),
 	)
 
 	server.AddRoutes(
@@ -482,6 +447,51 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		),
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
 		rest.WithPrefix("/api/oms/returnReason"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.CheckUrl},
+			[]rest.Route{
+				{
+					Method:  http.MethodPost,
+					Path:    "/:id/audit",
+					Handler: pmscomment.AuditCommentHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/:id/restore",
+					Handler: pmscomment.RestoreCommentHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/:id/appeal",
+					Handler: pmscomment.HandleCommentAppealHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/audit-log",
+					Handler: pmscomment.QueryCommentAuditLogHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryCommentDetail",
+					Handler: pmscomment.QueryCommentDetailHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryCommentList",
+					Handler: pmscomment.QueryCommentListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/updateComment",
+					Handler: pmscomment.UpdateCommentHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/pms/comment"),
 	)
 
 	server.AddRoutes(
@@ -1004,6 +1014,31 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Middleware{serverCtx.CheckUrl},
 			[]rest.Route{
 				{
+					Method:  http.MethodGet,
+					Path:    "/queryOperateFunnelDashboard",
+					Handler: smsoperate_dashboard.QueryOperateFunnelDashboardHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryRepeatPurchaseAnalysis",
+					Handler: smsoperate_dashboard.QueryRepeatPurchaseAnalysisHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/exportRepeatPurchaseAnalysis",
+					Handler: smsoperate_dashboard.ExportRepeatPurchaseAnalysisHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/sms/operateDashboard"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.CheckUrl},
+			[]rest.Route{
+				{
 					Method:  http.MethodPost,
 					Path:    "/addHomeBrand",
 					Handler: smshome_brand.AddHomeBrandHandler(serverCtx),
@@ -1415,13 +1450,18 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Route{
 				{
 					Method:  http.MethodGet,
-					Path:    "/queryAuditCenterDetail",
-					Handler: syslog.QueryAuditCenterDetailHandler(serverCtx),
+					Path:    "/deleteOperateLog",
+					Handler: syslog.DeleteOperateLogHandler(serverCtx),
 				},
 				{
 					Method:  http.MethodGet,
-					Path:    "/queryAuditCenterList",
-					Handler: syslog.QueryAuditCenterListHandler(serverCtx),
+					Path:    "/queryOperateLogDetail",
+					Handler: syslog.QueryOperateLogDetailHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryOperateLogList",
+					Handler: syslog.QueryOperateLogListHandler(serverCtx),
 				},
 			}...,
 		),
@@ -1435,18 +1475,13 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Route{
 				{
 					Method:  http.MethodGet,
-					Path:    "/deleteOperateLog",
-					Handler: syslog.DeleteOperateLogHandler(serverCtx),
+					Path:    "/queryAuditCenterDetail",
+					Handler: syslog.QueryAuditCenterDetailHandler(serverCtx),
 				},
 				{
 					Method:  http.MethodGet,
-					Path:    "/queryOperateLogDetail",
-					Handler: syslog.QueryOperateLogDetailHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodGet,
-					Path:    "/queryOperateLogList",
-					Handler: syslog.QueryOperateLogListHandler(serverCtx),
+					Path:    "/queryAuditCenterList",
+					Handler: syslog.QueryAuditCenterListHandler(serverCtx),
 				},
 			}...,
 		),

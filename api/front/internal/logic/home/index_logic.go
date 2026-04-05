@@ -2,12 +2,14 @@ package home
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
 	frontcommon "github.com/feihua/zero-admin/api/front/internal/logic/common"
 	"github.com/feihua/zero-admin/api/front/internal/svc"
 	"github.com/feihua/zero-admin/api/front/internal/types"
+	"github.com/feihua/zero-admin/pkg/operatefunnel"
 	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/rpc/cms/cmsclient"
 	"github.com/feihua/zero-admin/rpc/pms/pmsclient"
@@ -37,12 +39,14 @@ func NewIndexLogic(ctx context.Context, svcCtx *svc.ServiceContext) *IndexLogic 
 
 func (l *IndexLogic) Index(req *types.HomeReq) (resp *types.HomeResp, err error) {
 	currentScope := frontcommon.ResolveEffectiveGovernanceScope(l.ctx)
+	advertiseList := queryAdvertiseList(l, currentScope)
+	recordHomeAdvertiseExposure(l, currentScope, advertiseList, req.AdvertiseType)
 
 	return &types.HomeResp{
 		Code:    0,
 		Message: "操作成功",
 		Data: types.Data{
-			AdvertiseList:      queryAdvertiseList(l, currentScope),
+			AdvertiseList:      advertiseList,
 			BrandList:          queryBrandList(l, req, currentScope),
 			HomeFlashPromotion: queryHomeFlashPromotion(l, req),
 			NewProductList:     queryNewProductList(l, req, currentScope),
@@ -91,6 +95,30 @@ func querySubjectList(l *IndexLogic, req *types.HomeReq, currentScope pkgscope.G
 		})
 	}
 	return list
+}
+
+func recordHomeAdvertiseExposure(l *IndexLogic, scope pkgscope.GovernanceScope, list []types.AdvertiseList, advertiseType string) {
+	channel := operatefunnel.NormalizeChannel(advertiseType)
+	if channel == operatefunnel.ChannelUnknown {
+		channel = operatefunnel.ChannelApp
+	}
+
+	memberID := tryGetOptionalMemberID(l.ctx)
+	for _, item := range list {
+		_, err := l.svcCtx.OperateDashboardService.RecordOperateFunnelEvent(l.ctx, &smsclient.RecordOperateFunnelEventReq{
+			Scope:        frontcommon.SMSGovernanceScope(scope),
+			EventType:    operatefunnel.EventExposure,
+			Channel:      channel,
+			ActivityType: operatefunnel.ActivityHomeAdvertise,
+			ActivityId:   item.Id,
+			MemberId:     memberID,
+			TraceId:      fmt.Sprintf("home:exposure:%s:%d:%d", channel, item.Id, time.Now().UnixNano()),
+			ExtraJson:    fmt.Sprintf(`{"advertiseId":%d,"advertiseName":%q}`, item.Id, item.Name),
+		})
+		if err != nil {
+			l.Errorf("recordHomeAdvertiseExposure failed: advertiseId=%d channel=%s err=%v", item.Id, channel, err)
+		}
+	}
 }
 
 // 优选专区
@@ -447,18 +475,20 @@ func queryAdvertiseList(l *IndexLogic, currentScope pkgscope.GovernanceScope) []
 			}
 		}
 		list = append(list, types.AdvertiseList{
-			Id:         detail.Id,         // 编号
-			Name:       detail.Name,       // 名称
-			Type:       detail.Type,       // 轮播位置：0->PC首页轮播；1->app首页轮播
-			Pic:        detail.Pic,        // 图片地址
-			StartTime:  detail.StartTime,  // 开始时间
-			EndTime:    detail.EndTime,    // 结束时间
-			Status:     detail.Status,     // 上下线状态：0->下线；1->上线
-			ClickCount: detail.ClickCount, // 点击数
-			OrderCount: detail.OrderCount, // 下单数
-			Url:        detail.Url,        // 链接地址
-			Remark:     detail.Remark,     // 备注
-			Sort:       detail.Sort,       // 排序
+			Id:           detail.Id,                           // 编号
+			Name:         detail.Name,                         // 名称
+			Type:         detail.Type,                         // 轮播位置：0->PC首页轮播；1->app首页轮播
+			Pic:          detail.Pic,                          // 图片地址
+			StartTime:    detail.StartTime,                    // 开始时间
+			EndTime:      detail.EndTime,                      // 结束时间
+			Status:       detail.Status,                       // 上下线状态：0->下线；1->上线
+			ClickCount:   detail.ClickCount,                   // 点击数
+			OrderCount:   detail.OrderCount,                   // 下单数
+			Url:          detail.Url,                          // 链接地址
+			ActivityType: operatefunnel.ActivityHomeAdvertise, // 活动类型
+			ActivityId:   detail.Id,                           // 活动ID
+			Remark:       detail.Remark,                       // 备注
+			Sort:         detail.Sort,                         // 排序
 
 		})
 	}

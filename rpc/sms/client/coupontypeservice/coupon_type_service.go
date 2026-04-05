@@ -61,6 +61,9 @@ type (
 	HandleExpirationCouponReq          = smsclient.HandleExpirationCouponReq
 	HandleExpirationCouponResp         = smsclient.HandleExpirationCouponResp
 	HomeAdvertiseListData              = smsclient.HomeAdvertiseListData
+	OperateCouponRedeemBucketPoint     = smsclient.OperateCouponRedeemBucketPoint
+	OperateFunnelActivityOption        = smsclient.OperateFunnelActivityOption
+	OperateTrafficBucketPoint          = smsclient.OperateTrafficBucketPoint
 	QueryAvailableCouponsReq           = smsclient.QueryAvailableCouponsReq
 	QueryAvailableCouponsResp          = smsclient.QueryAvailableCouponsResp
 	QueryCouponByCodeReq               = smsclient.QueryCouponByCodeReq
@@ -91,6 +94,12 @@ type (
 	QueryHomeAdvertiseListResp         = smsclient.QueryHomeAdvertiseListResp
 	QueryMemberCouponListReq           = smsclient.QueryMemberCouponListReq
 	QueryMemberCouponListResp          = smsclient.QueryMemberCouponListResp
+	QueryOperateActivityOptionsReq     = smsclient.QueryOperateActivityOptionsReq
+	QueryOperateActivityOptionsResp    = smsclient.QueryOperateActivityOptionsResp
+	QueryOperateCouponRedeemReq        = smsclient.QueryOperateCouponRedeemReq
+	QueryOperateCouponRedeemResp       = smsclient.QueryOperateCouponRedeemResp
+	QueryOperateTrafficFunnelReq       = smsclient.QueryOperateTrafficFunnelReq
+	QueryOperateTrafficFunnelResp      = smsclient.QueryOperateTrafficFunnelResp
 	QuerySeckillActivityDetailReq      = smsclient.QuerySeckillActivityDetailReq
 	QuerySeckillActivityDetailResp     = smsclient.QuerySeckillActivityDetailResp
 	QuerySeckillActivityListByDateReq  = smsclient.QuerySeckillActivityListByDateReq
@@ -111,6 +120,8 @@ type (
 	QuerySeckillSessionListByTimeResp  = smsclient.QuerySeckillSessionListByTimeResp
 	QuerySeckillSessionListReq         = smsclient.QuerySeckillSessionListReq
 	QuerySeckillSessionListResp        = smsclient.QuerySeckillSessionListResp
+	RecordOperateFunnelEventReq        = smsclient.RecordOperateFunnelEventReq
+	RecordOperateFunnelEventResp       = smsclient.RecordOperateFunnelEventResp
 	SeckillActivityListData            = smsclient.SeckillActivityListData
 	SeckillProductListData             = smsclient.SeckillProductListData
 	SeckillReservationListData         = smsclient.SeckillReservationListData

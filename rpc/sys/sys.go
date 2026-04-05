@@ -8,6 +8,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/feihua/zero-admin/rpc/sys/internal/config"
+	sysserver "github.com/feihua/zero-admin/rpc/sys/internal/server"
 	auditcenterserviceServer "github.com/feihua/zero-admin/rpc/sys/internal/server/auditcenterservice"
 	deptserviceServer "github.com/feihua/zero-admin/rpc/sys/internal/server/deptservice"
 	dictitemserviceServer "github.com/feihua/zero-admin/rpc/sys/internal/server/dictitemservice"
@@ -58,6 +59,7 @@ func main() {
 		sysclient.RegisterAuditCenterServiceServer(grpcServer, auditcenterserviceServer.NewAuditCenterServiceServer(ctx))
 		sysclient.RegisterLoginLogServiceServer(grpcServer, loginlogserviceServer.NewLoginLogServiceServer(ctx))
 		sysclient.RegisterOperateLogServiceServer(grpcServer, operatelogServer.NewOperateLogServiceServer(ctx))
+		sysserver.RegisterExtraServices(grpcServer, ctx)
 
 		if c.Mode == service.DevMode || c.Mode == service.TestMode {
 			reflection.Register(grpcServer)

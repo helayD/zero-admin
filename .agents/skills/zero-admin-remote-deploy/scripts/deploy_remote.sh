@@ -815,8 +815,8 @@ deploy_binary_service() {
   # ---- FIX 1: Sync missing RPC client entries from source YAML to target YAML ----
   sync_missing_rpc_clients "$service" "$config_source_abs" "$service_target_dir/$config_name"
 
-  # ---- FIX 2: Warn on port mismatch between API client endpoints and RPC server ListenOn ----
-  check_rpc_port_mismatch "$service" "$config_source_abs"
+  # ---- FIX 2: Warn on port mismatch between deployed API client config and RPC ListenOn ----
+  check_rpc_port_mismatch "$service" "$service_target_dir/$config_name"
 
   kill_if_running "$legacy_pattern"
   kill_if_running "$new_pattern"
@@ -845,7 +845,68 @@ deploy_binary_service() {
 # Extract ListenOn port from an RPC server config YAML
 get_rpc_server_port() {
   local rpc_config="$1"
-  grep -i "^ListenOn:" "$rpc_config" 2>/dev/null | awk '{print $2}' | cut -d: -f2
+  [[ -f "$rpc_config" ]] || return 0
+  grep -i "^ListenOn:" "$rpc_config" 2>/dev/null | awk '{print $2}' | cut -d: -f2 || true
+}
+
+extract_yaml_top_level_block() {
+  local key="$1"
+  local yaml_file="$2"
+
+  awk -v key="$key" '
+    $0 ~ "^" key ":" {
+      capture = 1
+    }
+    capture && $0 ~ /^[^[:space:]#][^:]*:/ && $0 !~ "^" key ":" {
+      exit
+    }
+    capture {
+      print
+    }
+  ' "$yaml_file" 2>/dev/null || true
+}
+
+rpc_client_endpoint_port() {
+  local client_name="$1"
+  local yaml_file="$2"
+  local block
+
+  block="$(extract_yaml_top_level_block "$client_name" "$yaml_file")"
+  [[ -z "$block" ]] && return 0
+
+  if ! printf '%s\n' "$block" | grep -q '^[[:space:]]*Endpoints:'; then
+    return 0
+  fi
+
+  printf '%s\n' "$block" | awk '
+    /^[[:space:]]*Endpoints:/ {
+      in_endpoints = 1
+      next
+    }
+    in_endpoints && /^[[:space:]]*-/ {
+      line = $0
+      sub(/.*:/, "", line)
+      gsub(/[^0-9].*$/, "", line)
+      if (line != "") {
+        print line
+        exit
+      }
+    }
+    in_endpoints && /^[^[:space:]-]/ {
+      exit
+    }
+  ' 2>/dev/null || true
+}
+
+rpc_client_uses_etcd() {
+  local client_name="$1"
+  local yaml_file="$2"
+  local block
+
+  block="$(extract_yaml_top_level_block "$client_name" "$yaml_file")"
+  [[ -z "$block" ]] && return 1
+
+  printf '%s\n' "$block" | grep -q '^[[:space:]]*Etcd:'
 }
 
 # Get the RPC client name (e.g. SearchRpc) from the api YAML given the server name (e.g. search-rpc)
@@ -860,6 +921,19 @@ rpc_client_name() {
     cms-rpc)     echo "CmsRpc" ;;
     search-rpc)  echo "SearchRpc" ;;
     *)           echo "" ;;
+  esac
+}
+
+rpc_server_config_path() {
+  local server="$1"
+
+  case "$server" in
+    sys-rpc|ums-rpc|pms-rpc|oms-rpc|sms-rpc|cms-rpc|search-rpc)
+      printf '%s/%s' "$remote_root" "$(service_config_source "$server")"
+      ;;
+    *)
+      printf '%s' ""
+      ;;
   esac
 }
 
@@ -937,14 +1011,14 @@ sync_missing_rpc_clients() {
   done
 }
 
-# FIX 2: For API gateways, check that RPC client endpoints in source YAML match
+# FIX 2: For API gateways, check that deployed RPC client endpoints match
 # the actual ListenOn ports of the corresponding RPC servers.
-# Warns on mismatch so operator can catch config errors before deploy.
+# Endpoints mode can be checked directly; Etcd mode is skipped on purpose.
 check_rpc_port_mismatch() {
   local service="$1"
-  local src_yaml="$2"
+  local deployed_yaml="$2"
 
-  if [[ ! -f "$src_yaml" ]]; then
+  if [[ ! -f "$deployed_yaml" ]]; then
     return 0
   fi
 
@@ -958,15 +1032,17 @@ check_rpc_port_mismatch() {
     client_name="$(rpc_client_name "$server_name")"
     [[ -z "$client_name" ]] && continue
 
-    # Get expected port from API client YAML
-    expected_port=$(grep -A3 "^${client_name}:" "$src_yaml" 2>/dev/null | grep "Endpoints:" -A2 | grep "127.0.0.1:" | head -1 | cut -d: -f3 | tr -d ' ')
-    [[ -z "$expected_port" ]] && continue
+    # Only Endpoints mode can be directly compared to ListenOn.
+    expected_port="$(rpc_client_endpoint_port "$client_name" "$deployed_yaml")"
+    if [[ -z "$expected_port" ]]; then
+      if rpc_client_uses_etcd "$client_name" "$deployed_yaml"; then
+        echo "  [INFO] ${service} ${client_name} uses Etcd discovery, skipping direct port mismatch check"
+      fi
+      continue
+    fi
 
     # Get actual ListenOn from RPC server config
-    server_yaml="$remote_root/rpc/${server_name#*-}/etc/${server_name}.yaml"
-    if [[ "$server_name" == "search-rpc" ]]; then
-      server_yaml="$remote_root/rpc/search/etc/search.yaml"
-    fi
+    server_yaml="$(rpc_server_config_path "$server_name")"
     actual_port=$(get_rpc_server_port "$server_yaml")
 
     if [[ -n "$actual_port" && "$actual_port" != "$expected_port" ]]; then

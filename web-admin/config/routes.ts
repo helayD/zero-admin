@@ -106,6 +106,12 @@
         path: '/system/merchant/list',
         component: './system/merchant',
       },
+      {
+        name: '模板治理',
+        icon: 'table',
+        path: '/system/channel-integration-template/list',
+        component: './system/channel_integration_template',
+      },
       // {
       //   name: '参数管理',
       //   icon: 'table',
@@ -339,6 +345,12 @@
         icon: 'table',
         path: '/sms/homeAdvertise/list',
         component: './sms/HomeAdvertise',
+      },
+      {
+        name: '运营数据看板',
+        icon: 'table',
+        path: '/sms/operateDashboard/list',
+        component: './sms/OperateDashboard',
       },
       {
         name: '优惠券',

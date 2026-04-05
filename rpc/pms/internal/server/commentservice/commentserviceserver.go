@@ -41,6 +41,12 @@ func (s *CommentServiceServer) UpdateComment(ctx context.Context, in *pmsclient.
 	return l.UpdateComment(in)
 }
 
+// 恢复已屏蔽评价
+func (s *CommentServiceServer) RestoreComment(ctx context.Context, in *pmsclient.RestoreCommentReq) (*pmsclient.RestoreCommentResp, error) {
+	l := commentservicelogic.NewRestoreCommentLogic(ctx, s.svcCtx)
+	return l.RestoreComment(in)
+}
+
 // 查询商品评价详情
 func (s *CommentServiceServer) QueryCommentDetail(ctx context.Context, in *pmsclient.QueryCommentDetailReq) (*pmsclient.QueryCommentDetailResp, error) {
 	l := commentservicelogic.NewQueryCommentDetailLogic(ctx, s.svcCtx)
@@ -51,4 +57,22 @@ func (s *CommentServiceServer) QueryCommentDetail(ctx context.Context, in *pmscl
 func (s *CommentServiceServer) QueryCommentList(ctx context.Context, in *pmsclient.QueryCommentListReq) (*pmsclient.QueryCommentListResp, error) {
 	l := commentservicelogic.NewQueryCommentListLogic(ctx, s.svcCtx)
 	return l.QueryCommentList(in)
+}
+
+// 查询评价审核日志
+func (s *CommentServiceServer) QueryCommentAuditLog(ctx context.Context, in *pmsclient.QueryCommentAuditLogReq) (*pmsclient.QueryCommentAuditLogResp, error) {
+	l := commentservicelogic.NewQueryCommentAuditLogLogic(ctx, s.svcCtx)
+	return l.QueryCommentAuditLog(in)
+}
+
+// 提交评价申诉
+func (s *CommentServiceServer) SubmitCommentAppeal(ctx context.Context, in *pmsclient.SubmitCommentAppealReq) (*pmsclient.SubmitCommentAppealResp, error) {
+	l := commentservicelogic.NewSubmitCommentAppealLogic(ctx, s.svcCtx)
+	return l.SubmitCommentAppeal(in)
+}
+
+// 处理评价申诉
+func (s *CommentServiceServer) HandleCommentAppeal(ctx context.Context, in *pmsclient.HandleCommentAppealReq) (*pmsclient.HandleCommentAppealResp, error) {
+	l := commentservicelogic.NewHandleCommentAppealLogic(ctx, s.svcCtx)
+	return l.HandleCommentAppeal(in)
 }

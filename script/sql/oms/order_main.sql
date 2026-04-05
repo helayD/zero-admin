@@ -22,6 +22,8 @@ create table oms_order_main
     receive_time         datetime                                 null comment '收货时间',
     comment_time         datetime                                 null comment '评价时间',
     source_type          tinyint        default 1                 not null comment '订单来源：1-APP,2-PC,3-小程序',
+    activity_type        varchar(32)    default 'none'            not null comment '活动类型(home_advertise/coupon/seckill_activity/none)',
+    activity_id          bigint         default 0                 not null comment '活动ID',
     express_order_number varchar(64)                              not null comment '快递单号',
     use_points           int            default 0                 not null comment '下单时使用的积分',
     receive_status       tinyint                                  not null comment '是否确认收货：0->否,1->是',
@@ -42,6 +44,12 @@ create index idx_user
 
 create index idx_scope_order_status
     on oms_order_main (platform_id, tenant_id, merchant_id, order_status, user_id, id);
+
+create index idx_activity_create_time
+    on oms_order_main (activity_type, activity_id, create_time);
+
+create index idx_activity_pay_time
+    on oms_order_main (activity_type, activity_id, pay_time);
 
 INSERT INTO oms_order_main (
     order_no, user_id, order_status, total_amount, promotion_amount, coupon_amount,

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/feihua/zero-admin/pkg/operatefunnel"
 	"github.com/feihua/zero-admin/rpc/oms/gen/model"
 	"github.com/feihua/zero-admin/rpc/oms/gen/query"
 	"github.com/feihua/zero-admin/rpc/oms/internal/logic/common"
@@ -53,6 +54,17 @@ func (l *AddOrderLogic) AddOrder(in *omsclient.AddOrderReq) (*omsclient.AddOrder
 	if err != nil {
 		logc.Errorf(l.ctx, "添加订单失败,参数:%+v,异常:%s", item, err.Error())
 		return nil, fmt.Errorf("添加订单失败")
+	}
+
+	if err = l.svcCtx.DB.WithContext(l.ctx).
+		Table("oms_order_main").
+		Where("id = ?", item.ID).
+		Updates(map[string]interface{}{
+			"activity_type": operatefunnel.NormalizeActivityType(in.ActivityType),
+			"activity_id":   in.ActivityId,
+		}).Error; err != nil {
+		logc.Errorf(l.ctx, "更新订单活动归因失败,orderId:%d,异常:%s", item.ID, err.Error())
+		return nil, fmt.Errorf("更新订单活动归因失败")
 	}
 
 	var orderItems []*model.OmsOrderItem

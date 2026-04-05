@@ -59,6 +59,8 @@ type (
 	EscalateChainReq                  = omsclient.EscalateChainReq
 	EscalateChainResp                 = omsclient.EscalateChainResp
 	GovernanceScope                   = omsclient.GovernanceScope
+	OperateCartBucketPoint            = omsclient.OperateCartBucketPoint
+	OperateOrderBucketPoint           = omsclient.OperateOrderBucketPoint
 	OrderDeliveryListData             = omsclient.OrderDeliveryListData
 	OrderItemData                     = omsclient.OrderItemData
 	OrderListData                     = omsclient.OrderListData
@@ -92,6 +94,14 @@ type (
 	QueryDefaultSettingReq            = omsclient.QueryDefaultSettingReq
 	QueryManualRequiredOrdersReq      = omsclient.QueryManualRequiredOrdersReq
 	QueryManualRequiredOrdersResp     = omsclient.QueryManualRequiredOrdersResp
+	QueryOperateCartFunnelReq         = omsclient.QueryOperateCartFunnelReq
+	QueryOperateCartFunnelResp        = omsclient.QueryOperateCartFunnelResp
+	QueryOperateOrderFunnelReq        = omsclient.QueryOperateOrderFunnelReq
+	QueryOperateOrderFunnelResp       = omsclient.QueryOperateOrderFunnelResp
+	QueryRepeatPurchaseAnalysisReq    = omsclient.QueryRepeatPurchaseAnalysisReq
+	QueryRepeatPurchaseAnalysisResp   = omsclient.QueryRepeatPurchaseAnalysisResp
+	QueryRepeatPurchaseDetailListReq  = omsclient.QueryRepeatPurchaseDetailListReq
+	QueryRepeatPurchaseDetailListResp = omsclient.QueryRepeatPurchaseDetailListResp
 	QueryOrderDeliveryDetailReq       = omsclient.QueryOrderDeliveryDetailReq
 	QueryOrderDeliveryDetailResp      = omsclient.QueryOrderDeliveryDetailResp
 	QueryOrderDeliveryListReq         = omsclient.QueryOrderDeliveryListReq
@@ -100,6 +110,9 @@ type (
 	QueryOrderDetailResp              = omsclient.QueryOrderDetailResp
 	QueryOrderListReq                 = omsclient.QueryOrderListReq
 	QueryOrderListResp                = omsclient.QueryOrderListResp
+	RepeatPurchaseDetailRow           = omsclient.RepeatPurchaseDetailRow
+	RepeatPurchaseOverview            = omsclient.RepeatPurchaseOverview
+	RepeatPurchaseTrendPoint          = omsclient.RepeatPurchaseTrendPoint
 	QueryOrderOperationLogDetailReq   = omsclient.QueryOrderOperationLogDetailReq
 	QueryOrderOperationLogListReq     = omsclient.QueryOrderOperationLogListReq
 	QueryOrderOperationLogListResp    = omsclient.QueryOrderOperationLogListResp
@@ -166,6 +179,22 @@ type (
 		QueryOrderDetail(ctx context.Context, in *QueryOrderDetailReq, opts ...grpc.CallOption) (*QueryOrderDetailResp, error)
 		// 查询订单列表
 		QueryOrderList(ctx context.Context, in *QueryOrderListReq, opts ...grpc.CallOption) (*QueryOrderListResp, error)
+		// 查询经营漏斗订单聚合
+		QueryOperateOrderFunnel(ctx context.Context, in *QueryOperateOrderFunnelReq, opts ...grpc.CallOption) (*QueryOperateOrderFunnelResp, error)
+		QueryRepeatPurchaseAnalysis(ctx context.Context, in *QueryRepeatPurchaseAnalysisReq, opts ...grpc.CallOption) (*QueryRepeatPurchaseAnalysisResp, error)
+		QueryRepeatPurchaseDetailList(ctx context.Context, in *QueryRepeatPurchaseDetailListReq, opts ...grpc.CallOption) (*QueryRepeatPurchaseDetailListResp, error)
+		// 查询链路监控列表
+		QueryCompensationChainList(ctx context.Context, in *QueryCompensationChainListReq, opts ...grpc.CallOption) (*QueryCompensationChainListResp, error)
+		// 查询可用干预动作
+		QueryChainActions(ctx context.Context, in *QueryChainActionsReq, opts ...grpc.CallOption) (*QueryChainActionsResp, error)
+		// 重试补偿链路
+		RetryCompensationChain(ctx context.Context, in *RetryCompensationChainReq, opts ...grpc.CallOption) (*RetryCompensationChainResp, error)
+		// 回放补偿链路
+		ReplayCompensationChain(ctx context.Context, in *ReplayCompensationChainReq, opts ...grpc.CallOption) (*ReplayCompensationChainResp, error)
+		// 暂停补偿链路
+		PauseCompensationChain(ctx context.Context, in *PauseCompensationChainReq, opts ...grpc.CallOption) (*PauseCompensationChainResp, error)
+		// 升级为人工介入
+		EscalateChain(ctx context.Context, in *EscalateChainReq, opts ...grpc.CallOption) (*EscalateChainResp, error)
 		// 订单发货
 		Delivery(ctx context.Context, in *DeliveryReq, opts ...grpc.CallOption) (*DeliveryResp, error)
 		// 关闭订单
@@ -180,18 +209,6 @@ type (
 		UpdateOrderConsistency(ctx context.Context, in *UpdateOrderConsistencyReq, opts ...grpc.CallOption) (*UpdateOrderConsistencyResp, error)
 		// 查询需要人工介入的补偿订单
 		QueryManualRequiredOrders(ctx context.Context, in *QueryManualRequiredOrdersReq, opts ...grpc.CallOption) (*QueryManualRequiredOrdersResp, error)
-		// 查询补偿链路列表（支持一致性筛选+时间范围）
-		QueryCompensationChainList(ctx context.Context, in *QueryCompensationChainListReq, opts ...grpc.CallOption) (*QueryCompensationChainListResp, error)
-		// 重试链路（7.6 新增）
-		RetryCompensationChain(ctx context.Context, in *RetryCompensationChainReq, opts ...grpc.CallOption) (*RetryCompensationChainResp, error)
-		// 回放链路（7.6 新增）
-		ReplayCompensationChain(ctx context.Context, in *ReplayCompensationChainReq, opts ...grpc.CallOption) (*ReplayCompensationChainResp, error)
-		// 暂停链路（7.6 新增）
-		PauseCompensationChain(ctx context.Context, in *PauseCompensationChainReq, opts ...grpc.CallOption) (*PauseCompensationChainResp, error)
-		// 升级链路（7.6 新增）
-		EscalateChain(ctx context.Context, in *EscalateChainReq, opts ...grpc.CallOption) (*EscalateChainResp, error)
-		// 查询可用干预动作（7.6 新增）
-		QueryChainActions(ctx context.Context, in *QueryChainActionsReq, opts ...grpc.CallOption) (*QueryChainActionsResp, error)
 	}
 
 	defaultOrderService struct {
@@ -241,6 +258,58 @@ func (m *defaultOrderService) QueryOrderList(ctx context.Context, in *QueryOrder
 	return client.QueryOrderList(ctx, in, opts...)
 }
 
+// 查询经营漏斗订单聚合
+func (m *defaultOrderService) QueryOperateOrderFunnel(ctx context.Context, in *QueryOperateOrderFunnelReq, opts ...grpc.CallOption) (*QueryOperateOrderFunnelResp, error) {
+	client := omsclient.NewOrderServiceClient(m.cli.Conn())
+	return client.QueryOperateOrderFunnel(ctx, in, opts...)
+}
+
+func (m *defaultOrderService) QueryRepeatPurchaseAnalysis(ctx context.Context, in *QueryRepeatPurchaseAnalysisReq, opts ...grpc.CallOption) (*QueryRepeatPurchaseAnalysisResp, error) {
+	client := omsclient.NewOrderServiceClient(m.cli.Conn())
+	return client.QueryRepeatPurchaseAnalysis(ctx, in, opts...)
+}
+
+func (m *defaultOrderService) QueryRepeatPurchaseDetailList(ctx context.Context, in *QueryRepeatPurchaseDetailListReq, opts ...grpc.CallOption) (*QueryRepeatPurchaseDetailListResp, error) {
+	client := omsclient.NewOrderServiceClient(m.cli.Conn())
+	return client.QueryRepeatPurchaseDetailList(ctx, in, opts...)
+}
+
+// 查询链路监控列表
+func (m *defaultOrderService) QueryCompensationChainList(ctx context.Context, in *QueryCompensationChainListReq, opts ...grpc.CallOption) (*QueryCompensationChainListResp, error) {
+	client := omsclient.NewOrderServiceClient(m.cli.Conn())
+	return client.QueryCompensationChainList(ctx, in, opts...)
+}
+
+// 查询可用干预动作
+func (m *defaultOrderService) QueryChainActions(ctx context.Context, in *QueryChainActionsReq, opts ...grpc.CallOption) (*QueryChainActionsResp, error) {
+	client := omsclient.NewOrderServiceClient(m.cli.Conn())
+	return client.QueryChainActions(ctx, in, opts...)
+}
+
+// 重试补偿链路
+func (m *defaultOrderService) RetryCompensationChain(ctx context.Context, in *RetryCompensationChainReq, opts ...grpc.CallOption) (*RetryCompensationChainResp, error) {
+	client := omsclient.NewOrderServiceClient(m.cli.Conn())
+	return client.RetryCompensationChain(ctx, in, opts...)
+}
+
+// 回放补偿链路
+func (m *defaultOrderService) ReplayCompensationChain(ctx context.Context, in *ReplayCompensationChainReq, opts ...grpc.CallOption) (*ReplayCompensationChainResp, error) {
+	client := omsclient.NewOrderServiceClient(m.cli.Conn())
+	return client.ReplayCompensationChain(ctx, in, opts...)
+}
+
+// 暂停补偿链路
+func (m *defaultOrderService) PauseCompensationChain(ctx context.Context, in *PauseCompensationChainReq, opts ...grpc.CallOption) (*PauseCompensationChainResp, error) {
+	client := omsclient.NewOrderServiceClient(m.cli.Conn())
+	return client.PauseCompensationChain(ctx, in, opts...)
+}
+
+// 升级为人工介入
+func (m *defaultOrderService) EscalateChain(ctx context.Context, in *EscalateChainReq, opts ...grpc.CallOption) (*EscalateChainResp, error) {
+	client := omsclient.NewOrderServiceClient(m.cli.Conn())
+	return client.EscalateChain(ctx, in, opts...)
+}
+
 // 订单发货
 func (m *defaultOrderService) Delivery(ctx context.Context, in *DeliveryReq, opts ...grpc.CallOption) (*DeliveryResp, error) {
 	client := omsclient.NewOrderServiceClient(m.cli.Conn())
@@ -281,40 +350,4 @@ func (m *defaultOrderService) UpdateOrderConsistency(ctx context.Context, in *Up
 func (m *defaultOrderService) QueryManualRequiredOrders(ctx context.Context, in *QueryManualRequiredOrdersReq, opts ...grpc.CallOption) (*QueryManualRequiredOrdersResp, error) {
 	client := omsclient.NewOrderServiceClient(m.cli.Conn())
 	return client.QueryManualRequiredOrders(ctx, in, opts...)
-}
-
-// 查询补偿链路列表（支持一致性筛选+时间范围）
-func (m *defaultOrderService) QueryCompensationChainList(ctx context.Context, in *QueryCompensationChainListReq, opts ...grpc.CallOption) (*QueryCompensationChainListResp, error) {
-	client := omsclient.NewOrderServiceClient(m.cli.Conn())
-	return client.QueryCompensationChainList(ctx, in, opts...)
-}
-
-// 重试链路（7.6 新增）
-func (m *defaultOrderService) RetryCompensationChain(ctx context.Context, in *RetryCompensationChainReq, opts ...grpc.CallOption) (*RetryCompensationChainResp, error) {
-	client := omsclient.NewOrderServiceClient(m.cli.Conn())
-	return client.RetryCompensationChain(ctx, in, opts...)
-}
-
-// 回放链路（7.6 新增）
-func (m *defaultOrderService) ReplayCompensationChain(ctx context.Context, in *ReplayCompensationChainReq, opts ...grpc.CallOption) (*ReplayCompensationChainResp, error) {
-	client := omsclient.NewOrderServiceClient(m.cli.Conn())
-	return client.ReplayCompensationChain(ctx, in, opts...)
-}
-
-// 暂停链路（7.6 新增）
-func (m *defaultOrderService) PauseCompensationChain(ctx context.Context, in *PauseCompensationChainReq, opts ...grpc.CallOption) (*PauseCompensationChainResp, error) {
-	client := omsclient.NewOrderServiceClient(m.cli.Conn())
-	return client.PauseCompensationChain(ctx, in, opts...)
-}
-
-// 升级链路（7.6 新增）
-func (m *defaultOrderService) EscalateChain(ctx context.Context, in *EscalateChainReq, opts ...grpc.CallOption) (*EscalateChainResp, error) {
-	client := omsclient.NewOrderServiceClient(m.cli.Conn())
-	return client.EscalateChain(ctx, in, opts...)
-}
-
-// 查询可用干预动作（7.6 新增）
-func (m *defaultOrderService) QueryChainActions(ctx context.Context, in *QueryChainActionsReq, opts ...grpc.CallOption) (*QueryChainActionsResp, error) {
-	client := omsclient.NewOrderServiceClient(m.cli.Conn())
-	return client.QueryChainActions(ctx, in, opts...)
 }

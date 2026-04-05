@@ -59,6 +59,8 @@ type (
 	EscalateChainReq                  = omsclient.EscalateChainReq
 	EscalateChainResp                 = omsclient.EscalateChainResp
 	GovernanceScope                   = omsclient.GovernanceScope
+	OperateCartBucketPoint            = omsclient.OperateCartBucketPoint
+	OperateOrderBucketPoint           = omsclient.OperateOrderBucketPoint
 	OrderDeliveryListData             = omsclient.OrderDeliveryListData
 	OrderItemData                     = omsclient.OrderItemData
 	OrderListData                     = omsclient.OrderListData
@@ -92,6 +94,10 @@ type (
 	QueryDefaultSettingReq            = omsclient.QueryDefaultSettingReq
 	QueryManualRequiredOrdersReq      = omsclient.QueryManualRequiredOrdersReq
 	QueryManualRequiredOrdersResp     = omsclient.QueryManualRequiredOrdersResp
+	QueryOperateCartFunnelReq         = omsclient.QueryOperateCartFunnelReq
+	QueryOperateCartFunnelResp        = omsclient.QueryOperateCartFunnelResp
+	QueryOperateOrderFunnelReq        = omsclient.QueryOperateOrderFunnelReq
+	QueryOperateOrderFunnelResp       = omsclient.QueryOperateOrderFunnelResp
 	QueryOrderDeliveryDetailReq       = omsclient.QueryOrderDeliveryDetailReq
 	QueryOrderDeliveryDetailResp      = omsclient.QueryOrderDeliveryDetailResp
 	QueryOrderDeliveryListReq         = omsclient.QueryOrderDeliveryListReq

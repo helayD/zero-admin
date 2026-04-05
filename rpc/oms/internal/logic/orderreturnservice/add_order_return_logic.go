@@ -2,16 +2,38 @@ package orderreturnservicelogic
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
-	"github.com/bytedance/sonic"
+	"time"
+
+	"github.com/feihua/zero-admin/pkg/audit"
+	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/rpc/oms/gen/model"
 	"github.com/feihua/zero-admin/rpc/oms/gen/query"
 	"github.com/feihua/zero-admin/rpc/oms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/oms/omsclient"
+	"github.com/google/uuid"
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
 	"gorm.io/gorm"
 )
+
+// ReturnEventPayload 售后申请事件 payload（复用 orderservice 的统一契约模式）
+type ReturnEventPayload struct {
+	EventID    string                 `json:"eventId"`
+	OccurredAt int64                  `json:"occurredAt"`
+	TraceID    string                 `json:"traceId"`
+	PlatformID int64                  `json:"platformId"`
+	TenantID   int64                  `json:"tenantId"`
+	MerchantID int64                  `json:"merchantId"`
+	ActorID    int64                  `json:"actorId"`
+	EntityID   int64                  `json:"entityId"`
+	Action     string                 `json:"action"`
+	Version    string                 `json:"version"`
+	ScopeType  string                 `json:"scopeType"`
+	Source     string                 `json:"source,omitempty"`
+	Data       map[string]interface{} `json:"data,omitempty"`
+}
 
 // AddOrderReturnLogic 添加退货/售后
 /*
@@ -100,9 +122,52 @@ func (l *AddOrderReturnLogic) AddOrderReturn(in *omsclient.OrderReturnReq) (*oms
 		}
 	}
 
-	message := map[string]any{"id": in.OrderId}
-	body, _ := sonic.Marshal(message)
-	err = l.svcCtx.RabbitMQ.SendMessage("order.event.exchange", "direct", "order.return.queue", "order.return.key", body)
+	// 发布售后申请消息事件（统一事件契约模式）
+	// Story 8-1 Fix #2: 改用 sendReturnEvent 确保 payload 包含 platformId/tenantId/merchantId
+	sendReturnEvent(l.ctx, l.svcCtx, in.OrderId, order)
 
 	return &omsclient.OrderReturnResp{}, nil
+}
+
+// sendReturnEvent 发布售后申请事件（统一事件契约模式）
+// Story 8-1 Fix #2: 修复 payload 缺少 platformId/tenantId/merchantId
+func sendReturnEvent(ctx context.Context, svcCtx *svc.ServiceContext, orderID int64, order *model.OmsOrderMain) {
+	eventID := uuid.New().String()
+	traceID := audit.NewTraceID("order.return", orderID)
+	occurredAt := time.Now().UnixMilli()
+
+	current := pkgscope.GovernanceScope{
+		PlatformID: order.PlatformID,
+		TenantID:   order.TenantID,
+		MerchantID: order.MerchantID,
+		ScopeType:  "tenant",
+	}
+
+	payload := ReturnEventPayload{
+		EventID:    eventID,
+		OccurredAt: occurredAt,
+		TraceID:    traceID,
+		PlatformID: current.PlatformID,
+		TenantID:   current.TenantID,
+		MerchantID: current.MerchantID,
+		ActorID:    order.UserID,
+		EntityID:   orderID,
+		Action:     "order.return",
+		Version:    "v1",
+		ScopeType:  current.ScopeType,
+		Data: map[string]interface{}{
+			"orderNo": order.OrderNo,
+		},
+	}
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		logc.Errorf(ctx, "序列化售后事件失败,orderId:%d,异常:%s", orderID, err.Error())
+		return
+	}
+
+	if err := svcCtx.RabbitMQ.SendMessage("order.event.exchange", "direct", "order.return.queue", "order.return.key", body); err != nil {
+		logc.Errorf(ctx, "发送售后异步消息失败,orderId:%d,scope:%+v,异常:%s", orderID, current, err.Error())
+	}
+	logc.Infof(ctx, "发送售后申请事件成功,eventId:%s,orderId:%d,traceId:%s", eventID, orderID, traceID)
 }

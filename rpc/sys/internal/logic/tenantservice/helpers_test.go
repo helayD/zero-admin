@@ -27,6 +27,17 @@ func TestNormalizeStringList(t *testing.T) {
 	}
 }
 
+func TestNormalizeChannelList(t *testing.T) {
+	result := normalizeChannelList([]string{" app ", "", "app", "mini-program", " mini_program ", "pos"})
+	if len(result) != 3 {
+		t.Fatalf("unexpected normalized length: %v", result)
+	}
+
+	if result[0] != "app" || result[1] != "mini_program" || result[2] != "pos" {
+		t.Fatalf("unexpected normalized channel values: %#v", result)
+	}
+}
+
 func TestActivationStatusByTenantStatus(t *testing.T) {
 	if got := activationStatusByTenantStatus(tenantmodel.TenantStatusPendingActivation); got != scope.ActivationStatusPending {
 		t.Fatalf("unexpected pending activation status: %s", got)

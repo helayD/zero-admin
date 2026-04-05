@@ -27,18 +27,18 @@ func writeChainInterventionLog(ctx context.Context, svcCtx *svc.ServiceContext, 
 
 	current, _ := admincommon.CurrentGovernanceScope(ctx)
 	_, _ = svcCtx.Operatelogservice.AddOperateLog(ctx, &sysclient.AddOperateLogReq{
-		Title:          "链路干预-" + action,
-		BusinessType:   chainInterventionBusinessType,
-		Method:         "/api/oms/order/" + action + "Chain",
-		RequestMethod:  "POST",
-		OperatorType:   1,
+		Title:         "链路干预-" + action,
+		BusinessType:  chainInterventionBusinessType,
+		Method:        "/api/oms/order/" + action + "Chain",
+		RequestMethod: "POST",
+		OperatorType:  1,
 		OperateUrl:    "/api/oms/order/" + action + "Chain",
 		Platform:      "admin",
 		Status:        0,
 		OperateTime:   time.Now().Format("2006-01-02 15:04:05"),
 		OperateName:   strconv.FormatInt(operatorId, 10),
 		DeptName:      strconv.FormatInt(current.TenantID, 10),
-		OperateParam: `{"orderId":` + strconv.FormatInt(orderId, 10) + `,"reason":"` + reason + `"}`,
+		OperateParam:  `{"orderId":` + strconv.FormatInt(orderId, 10) + `,"reason":"` + reason + `"}`,
 		JsonResult: `{"beforeStage":` + strconv.Itoa(int(beforeStage)) +
 			`,"beforeResult":` + strconv.Itoa(int(beforeResult)) +
 			`,"afterStage":` + strconv.Itoa(int(afterStage)) +
@@ -62,9 +62,14 @@ func NewRetryChainLogic(ctx context.Context, svcCtx *svc.ServiceContext) *RetryC
 }
 
 func (l *RetryChainLogic) RetryChain(req *types.RetryChainReq) (*types.RetryChainResp, error) {
-	current, err := admincommon.CurrentGovernanceScope(l.ctx)
+	writeScope, err := resolveChainWriteScope(l.ctx, admincommon.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
 	if err != nil {
-		return nil, errorx.NewDefaultError(err.Error())
+		return nil, err
 	}
 
 	operatorId, err := admincommon.GetUserId(l.ctx)
@@ -75,11 +80,11 @@ func (l *RetryChainLogic) RetryChain(req *types.RetryChainReq) (*types.RetryChai
 
 	result, err := l.svcCtx.OrderService.RetryCompensationChain(l.ctx, &omsclient.RetryCompensationChainReq{
 		OrderId:    req.OrderId,
-		PlatformId:  current.PlatformID,
-		TenantId:    current.TenantID,
-		MerchantId:  current.MerchantID,
-		OperatorId:  operatorId,
-		Remark:      req.Remark,
+		PlatformId: writeScope.PlatformID,
+		TenantId:   writeScope.TenantID,
+		MerchantId: writeScope.MerchantID,
+		OperatorId: operatorId,
+		Remark:     req.Remark,
 	})
 	if err != nil {
 		logc.Errorf(l.ctx, "重试链路失败, orderId=%d, err=%s", req.OrderId, err.Error())

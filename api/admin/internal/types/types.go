@@ -488,6 +488,26 @@ type AddUserReq struct {
 	RoleMode         string  `json:"roleMode,optional"`         //角色模式
 }
 
+type AuditCommentReq struct {
+	Id          string `path:"id"`
+	AuditStatus int32  `json:"auditStatus"`
+	AuditRemark string `json:"auditRemark,optional"`
+	ScopeType   string `json:"scopeType,optional"`
+	PlatformId  int64  `json:"platformId,optional"`
+	TenantId    int64  `json:"tenantId,optional"`
+	MerchantId  int64  `json:"merchantId,optional"`
+}
+
+type HandleCommentAppealReq struct {
+	Id           string `path:"id"`
+	AppealStatus int32  `json:"appealStatus"`
+	AppealReply  string `json:"appealReply"`
+	ScopeType    string `json:"scopeType,optional"`
+	PlatformId   int64  `json:"platformId,optional"`
+	TenantId     int64  `json:"tenantId,optional"`
+	MerchantId   int64  `json:"merchantId,optional"`
+}
+
 type AuditTimelineItem struct {
 	SourceType     string `json:"sourceType"`
 	SourceId       int64  `json:"sourceId"`
@@ -531,6 +551,86 @@ type CloseOrderReq struct {
 	PlatformId int64   `json:"platformId,optional"` //平台ID
 	TenantId   int64   `json:"tenantId,optional"`   //租户ID
 	MerchantId int64   `json:"merchantId,optional"` //商户ID
+}
+
+type CommentAuditLogData struct {
+	Id           int64  `json:"id"`
+	CommentId    string `json:"commentId"`
+	Action       string `json:"action"`
+	FromStatus   int32  `json:"fromStatus"`
+	ToStatus     int32  `json:"toStatus"`
+	OperatorId   int64  `json:"operatorId"`
+	OperatorName string `json:"operatorName"`
+	Remark       string `json:"remark"`
+	CreatedAt    string `json:"createdAt"`
+}
+
+type CommentDetailData struct {
+	Id               string `json:"id"`
+	ProductId        int64  `json:"productId"`
+	ProductName      string `json:"productName"`
+	MemberNickName   string `json:"memberNickName"`
+	MemberId         int64  `json:"memberId"`
+	MemberIcon       string `json:"memberIcon"`
+	Star             int32  `json:"star"`
+	Content          string `json:"content"`
+	Pics             string `json:"pics"`
+	ShowStatus       int32  `json:"showStatus"`
+	AuditStatus      int32  `json:"auditStatus"`
+	Hidden           int32  `json:"hidden"`
+	AuditRemark      string `json:"auditRemark"`
+	AuditorId        int64  `json:"auditorId"`
+	AuditorName      string `json:"auditorName"`
+	AuditedAt        string `json:"auditedAt"`
+	AppealStatus     int32  `json:"appealStatus"`
+	AppealReason     string `json:"appealReason"`
+	AppealReply      string `json:"appealReply"`
+	AppealedAt       string `json:"appealedAt"`
+	AppealHandledAt  string `json:"appealHandledAt"`
+	ProductAttribute string `json:"productAttribute"`
+	CollectCount     int32  `json:"collectCount"`
+	ReadCount        int32  `json:"readCount"`
+	ReplayCount      int32  `json:"replayCount"`
+	MemberIp         string `json:"memberIp"`
+	CreateTime       string `json:"createTime"`
+}
+
+type CommentListData struct {
+	Id               string `json:"id"`
+	ProductId        int64  `json:"productId"`
+	ProductName      string `json:"productName"`
+	MemberNickName   string `json:"memberNickName"`
+	MemberId         int64  `json:"memberId"`
+	Star             int32  `json:"star"`
+	Content          string `json:"content"`
+	Pics             string `json:"pics"`
+	MemberIcon       string `json:"memberIcon"`
+	ShowStatus       int32  `json:"showStatus"`
+	AuditStatus      int32  `json:"auditStatus"`
+	Hidden           int32  `json:"hidden"`
+	AuditRemark      string `json:"auditRemark"`
+	AuditorId        int64  `json:"auditorId"`
+	AuditorName      string `json:"auditorName"`
+	AuditedAt        string `json:"auditedAt"`
+	AppealStatus     int32  `json:"appealStatus"`
+	AppealReason     string `json:"appealReason"`
+	AppealReply      string `json:"appealReply"`
+	AppealedAt       string `json:"appealedAt"`
+	AppealHandledAt  string `json:"appealHandledAt"`
+	ProductAttribute string `json:"productAttribute"`
+	ReplayCount      int32  `json:"replayCount"`
+	MemberIp         string `json:"memberIp"`
+	CreateTime       string `json:"createTime"`
+}
+
+type CommentReplayItemData struct {
+	Id             string `json:"id"`
+	CommentId      string `json:"commentId"`
+	Type           int32  `json:"type"`
+	MemberNickName string `json:"memberNickName"`
+	MemberIcon     string `json:"memberIcon"`
+	Content        string `json:"content"`
+	CreateTime     string `json:"createTime"`
 }
 
 type CouponScopeData struct {
@@ -889,7 +989,6 @@ type ListHomeRecommendSubjectData struct {
 	UpdateBy        string `json:"updateBy"`        //更新者
 	UpdateTime      string `json:"updateTime"`      //更新时间
 	Sort            int32  `json:"sort"`            //排序
-	EffectiveStatus string `json:"effectiveStatus"` //综合生效状态
 }
 
 type ListHomeRecommendSubjectReq struct {
@@ -1330,6 +1429,69 @@ type QueryAuditCenterListResp struct {
 	Total    int64                       `json:"total"`
 }
 
+type QueryCommentAuditLogReq struct {
+	Id         string `form:"id"`
+	Current    int32  `form:"current,default=1"`
+	PageSize   int32  `form:"pageSize,default=20"`
+	ScopeType  string `form:"scopeType,optional"`
+	PlatformId int64  `form:"platformId,optional"`
+	TenantId   int64  `form:"tenantId,optional"`
+	MerchantId int64  `form:"merchantId,optional"`
+}
+
+type QueryCommentAuditLogResp struct {
+	Code     string                 `json:"code"`
+	Message  string                 `json:"message"`
+	Current  int32                  `json:"current,default=1"`
+	Data     []*CommentAuditLogData `json:"data"`
+	PageSize int32                  `json:"pageSize,default=20"`
+	Success  bool                   `json:"success"`
+	Total    int64                  `json:"total"`
+}
+
+type QueryCommentDetailReq struct {
+	Id         string `form:"id"`
+	ScopeType  string `form:"scopeType,optional"`
+	PlatformId int64  `form:"platformId,optional"`
+	TenantId   int64  `form:"tenantId,optional"`
+	MerchantId int64  `form:"merchantId,optional"`
+}
+
+type QueryCommentDetailResp struct {
+	Code      string                   `json:"code"`
+	Message   string                   `json:"message"`
+	Data      CommentDetailData        `json:"data"`
+	Replays   []*CommentReplayItemData `json:"replays"`
+	AuditLogs []*CommentAuditLogData   `json:"auditLogs"`
+}
+
+type QueryCommentListReq struct {
+	Current     int32  `form:"current,default=1"`
+	PageSize    int32  `form:"pageSize,default=20"`
+	ProductId   int64  `form:"productId,optional"`
+	ProductName string `form:"productName,optional"`
+	MemberName  string `form:"memberName,optional"`
+	ShowStatus  int32  `form:"showStatus,default=-1"`
+	AuditStatus int32  `form:"auditStatus,default=-1"`
+	Hidden      int32  `form:"hidden,default=-1"`
+	StartTime   string `form:"startTime,optional"`
+	EndTime     string `form:"endTime,optional"`
+	ScopeType   string `form:"scopeType,optional"`
+	PlatformId  int64  `form:"platformId,optional"`
+	TenantId    int64  `form:"tenantId,optional"`
+	MerchantId  int64  `form:"merchantId,optional"`
+}
+
+type QueryCommentListResp struct {
+	Code     string             `json:"code"`
+	Message  string             `json:"message"`
+	Current  int32              `json:"current,default=1"`
+	Data     []*CommentListData `json:"data"`
+	PageSize int32              `json:"pageSize,default=20"`
+	Success  bool               `json:"success"`
+	Total    int64              `json:"total"`
+}
+
 type QueryCompanyAddressDetailData struct {
 	Id            int64  `json:"id"`            //主键ID
 	AddressName   string `json:"addressName"`   //地址名称
@@ -1417,8 +1579,6 @@ type QueryCouponDetailData struct {
 	ScopeType       int32              `json:"scopeType"`       //范围类型：0-全场，1-分类，2-商品
 	CouponScopeData []*CouponScopeData `json:"couponScopeData"` //使用范围
 	EffectiveStatus string             `json:"effectiveStatus"` //综合生效状态
-	ScopeSummary    string             `json:"scopeSummary"`    //适用范围摘要
-	AffectedPaths   string             `json:"affectedPaths"`   //影响链路
 }
 
 type QueryCouponDetailReq struct {
@@ -1458,8 +1618,6 @@ type QueryCouponListData struct {
 	ScopeCount      int64   `json:"scopeCount"`      //关联scope数量
 	TypeName        string  `json:"typeName"`        //优惠券类型名称
 	EffectiveStatus string  `json:"effectiveStatus"` //综合生效状态
-	ScopeSummary    string  `json:"scopeSummary"`    //适用范围摘要
-	AffectedPaths   string  `json:"affectedPaths"`   //影响链路
 }
 
 type QueryCouponListReq struct {
@@ -1926,6 +2084,167 @@ type QueryHomeAdvertiseListResp struct {
 	Total    int64                         `json:"total"`
 }
 
+type QueryOperateFunnelDashboardReq struct {
+	ScopeType    string `form:"scopeType,optional"`    //查询主体范围(platform/tenant/merchant)
+	PlatformId   int64  `form:"platformId,optional"`   //平台ID
+	TenantId     int64  `form:"tenantId,optional"`     //租户ID
+	MerchantId   int64  `form:"merchantId,optional"`   //商户ID
+	StartTime    string `form:"startTime,optional"`    //开始时间，按 Asia/Shanghai 解析
+	EndTime      string `form:"endTime,optional"`      //结束时间，按 Asia/Shanghai 解析
+	Channel      string `form:"channel,optional"`      //统一渠道(app/pc/h5/mini_program/unknown)
+	ActivityType string `form:"activityType,optional"` //活动类型(home_advertise/coupon/seckill_activity/none)
+	ActivityId   int64  `form:"activityId,optional"`   //活动ID
+	Bucket       string `form:"bucket,optional"`       //时间桶(day/hour)
+}
+
+type OperateFunnelMetricCard struct {
+	Key       string  `json:"key"`       //指标标识
+	Label     string  `json:"label"`     //指标名称
+	Value     int64   `json:"value"`     //指标值
+	Rate      float64 `json:"rate"`      //上一阶段转化率
+	RateLabel string  `json:"rateLabel"` //转化率文案
+}
+
+type OperateFunnelOverview struct {
+	Exposure         int64                     `json:"exposure"`         //曝光数
+	Click            int64                     `json:"click"`            //点击数
+	AddCart          int64                     `json:"addCart"`          //加购数
+	OrderCreated     int64                     `json:"orderCreated"`     //下单数
+	PaySuccess       int64                     `json:"paySuccess"`       //支付数
+	CouponRedeem     int64                     `json:"couponRedeem"`     //优惠券核销数
+	ClickRate        float64                   `json:"clickRate"`        //点击率
+	AddCartRate      float64                   `json:"addCartRate"`      //加购率
+	OrderRate        float64                   `json:"orderRate"`        //下单率
+	PayRate          float64                   `json:"payRate"`          //支付率
+	CouponRedeemRate float64                   `json:"couponRedeemRate"` //核销率
+	Cards            []OperateFunnelMetricCard `json:"cards"`            //概览卡片
+}
+
+type OperateFunnelSeriesPoint struct {
+	BucketLabel      string  `json:"bucketLabel"`      //时间桶标签
+	BucketStart      string  `json:"bucketStart"`      //时间桶开始
+	BucketEnd        string  `json:"bucketEnd"`        //时间桶结束
+	Exposure         int64   `json:"exposure"`         //曝光数
+	Click            int64   `json:"click"`            //点击数
+	AddCart          int64   `json:"addCart"`          //加购数
+	OrderCreated     int64   `json:"orderCreated"`     //下单数
+	PaySuccess       int64   `json:"paySuccess"`       //支付数
+	CouponRedeem     int64   `json:"couponRedeem"`     //优惠券核销数
+	ClickRate        float64 `json:"clickRate"`        //点击率
+	AddCartRate      float64 `json:"addCartRate"`      //加购率
+	OrderRate        float64 `json:"orderRate"`        //下单率
+	PayRate          float64 `json:"payRate"`          //支付率
+	CouponRedeemRate float64 `json:"couponRedeemRate"` //核销率
+}
+
+type OperateFunnelActivityOption struct {
+	ActivityType  string `json:"activityType"`  //活动类型
+	ActivityId    int64  `json:"activityId"`    //活动ID
+	ActivityName  string `json:"activityName"`  //活动名称
+	ActivityLabel string `json:"activityLabel"` //活动展示名
+}
+
+type QueryOperateFunnelDashboardData struct {
+	Overview          OperateFunnelOverview         `json:"overview"`          //总览数据
+	Series            []OperateFunnelSeriesPoint    `json:"series"`            //时间序列
+	ActivityOptions   []OperateFunnelActivityOption `json:"activityOptions"`   //活动选项
+	TrackingStartedAt string                        `json:"trackingStartedAt"` //可信起点
+	PartialMetrics    []string                      `json:"partialMetrics"`    //部分可用指标
+	Bucket            string                        `json:"bucket"`            //实际时间桶
+}
+
+type QueryOperateFunnelDashboardResp struct {
+	Code    string                          `json:"code"`
+	Message string                          `json:"message"`
+	Data    QueryOperateFunnelDashboardData `json:"data"`
+	Success bool                            `json:"success"`
+}
+
+type QueryRepeatPurchaseAnalysisReq struct {
+	ScopeType    string `form:"scopeType,optional"`
+	PlatformId   int64  `form:"platformId,optional"`
+	TenantId     int64  `form:"tenantId,optional"`
+	MerchantId   int64  `form:"merchantId,optional"`
+	StartTime    string `form:"startTime,optional"`
+	EndTime      string `form:"endTime,optional"`
+	Channel      string `form:"channel,optional"`
+	ActivityType string `form:"activityType,optional"`
+	ActivityId   int64  `form:"activityId,optional"`
+	Bucket       string `form:"bucket,optional"`
+	PageNum      int32  `form:"pageNum,optional"`
+	PageSize     int32  `form:"pageSize,optional"`
+}
+
+type ExportRepeatPurchaseAnalysisReq struct {
+	ScopeType    string `form:"scopeType,optional"`
+	PlatformId   int64  `form:"platformId,optional"`
+	TenantId     int64  `form:"tenantId,optional"`
+	MerchantId   int64  `form:"merchantId,optional"`
+	StartTime    string `form:"startTime,optional"`
+	EndTime      string `form:"endTime,optional"`
+	Channel      string `form:"channel,optional"`
+	ActivityType string `form:"activityType,optional"`
+	ActivityId   int64  `form:"activityId,optional"`
+	Bucket       string `form:"bucket,optional"`
+}
+
+type RepeatPurchaseOverview struct {
+	PaidBuyerCount   int64   `json:"paidBuyerCount"`
+	RepeatBuyerCount int64   `json:"repeatBuyerCount"`
+	RepeatRate       float64 `json:"repeatRate"`
+	RepeatOrderCount int64   `json:"repeatOrderCount"`
+	RepeatGmv        float64 `json:"repeatGmv"`
+	AvgDaysToRepeat  float64 `json:"avgDaysToRepeat"`
+}
+
+type RepeatPurchaseTrendPoint struct {
+	BucketLabel      string  `json:"bucketLabel"`
+	BucketStart      string  `json:"bucketStart"`
+	BucketEnd        string  `json:"bucketEnd"`
+	PaidBuyerCount   int64   `json:"paidBuyerCount"`
+	RepeatBuyerCount int64   `json:"repeatBuyerCount"`
+	RepeatRate       float64 `json:"repeatRate"`
+	RepeatOrderCount int64   `json:"repeatOrderCount"`
+	RepeatGmv        float64 `json:"repeatGmv"`
+	AvgDaysToRepeat  float64 `json:"avgDaysToRepeat"`
+}
+
+type RepeatPurchaseDetailItem struct {
+	MemberId            int64   `json:"memberId"`
+	NicknameMasked      string  `json:"nicknameMasked"`
+	MobileMasked        string  `json:"mobileMasked"`
+	FirstValidPayTime   string  `json:"firstValidPayTime"`
+	LatestRepeatPayTime string  `json:"latestRepeatPayTime"`
+	RepeatOrderCount    int64   `json:"repeatOrderCount"`
+	RepeatGmv           float64 `json:"repeatGmv"`
+	LatestChannel       string  `json:"latestChannel"`
+	LatestActivityType  string  `json:"latestActivityType"`
+	LatestActivityId    int64   `json:"latestActivityId"`
+	PlatformId          int64   `json:"platformId"`
+	TenantId            int64   `json:"tenantId"`
+	MerchantId          int64   `json:"merchantId"`
+}
+
+type QueryRepeatPurchaseAnalysisData struct {
+	Overview          RepeatPurchaseOverview        `json:"overview"`
+	Trends            []RepeatPurchaseTrendPoint    `json:"trends"`
+	Details           []RepeatPurchaseDetailItem    `json:"details"`
+	Total             int64                         `json:"total"`
+	PageNum           int32                         `json:"pageNum"`
+	PageSize          int32                         `json:"pageSize"`
+	ActivityOptions   []OperateFunnelActivityOption `json:"activityOptions"`
+	TrackingStartedAt string                        `json:"trackingStartedAt"`
+	PartialMetrics    []string                      `json:"partialMetrics"`
+	Bucket            string                        `json:"bucket"`
+}
+
+type QueryRepeatPurchaseAnalysisResp struct {
+	Code    string                          `json:"code"`
+	Message string                          `json:"message"`
+	Data    QueryRepeatPurchaseAnalysisData `json:"data"`
+	Success bool                            `json:"success"`
+}
+
 type QueryHomeBrandDetailData struct {
 	Id                  int64  `json:"id"`                  //
 	Name                string `json:"name"`                //品牌名称
@@ -1942,7 +2261,6 @@ type QueryHomeBrandDetailData struct {
 	CreateTime          string `json:"createTime"`          //创建时间
 	UpdateBy            int64  `json:"updateBy"`            //更新人ID
 	UpdateTime          string `json:"updateTime"`          //更新时间
-	EffectiveStatus     string `json:"effectiveStatus"`     //综合生效状态
 }
 
 type QueryHomeBrandDetailReq struct {
@@ -1971,7 +2289,6 @@ type QueryHomeBrandListData struct {
 	CreateTime          string `json:"createTime"`          //创建时间
 	UpdateBy            int64  `json:"updateBy"`            //更新人ID
 	UpdateTime          string `json:"updateTime"`          //更新时间
-	EffectiveStatus     string `json:"effectiveStatus"`     //综合生效状态
 }
 
 type QueryHomeBrandListReq struct {
@@ -2992,41 +3309,29 @@ type QueryOperateLogListResp struct {
 }
 
 type QueryOrderData struct {
-	Id                    int64                    `json:"id"`                 //
-	OrderNo               string                   `json:"orderNo"`            //订单编号
-	UserId                int64                    `json:"userId"`             //用户ID
-	RequestTraceId        string                   `json:"requestTraceId"`     //当前详情请求链路追踪ID
-	OrderStatus           int32                    `json:"orderStatus"`        //订单状态：1-待支付,2-已支付,3-已发货,4-已完成,5-已取消,6-已退款,7-售后中
-	TotalAmount           float32                  `json:"totalAmount"`        //订单总金额
-	PromotionAmount       float32                  `json:"promotionAmount"`    //促销金额
-	CouponAmount          float32                  `json:"couponAmount"`       //优惠券金额
-	PointsAmount          float32                  `json:"pointsAmount"`       //积分金额
-	DiscountAmount        float32                  `json:"discountAmount"`     //优惠金额
-	FreightAmount         float32                  `json:"freightAmount"`      //运费金额
-	PayAmount             float32                  `json:"payAmount"`          //实付金额
-	PayType               int32                    `json:"payType"`            //支付方式：1-支付宝,2-微信,3-银联
-	PayTime               string                   `json:"payTime"`            //支付时间
-	DeliveryTime          string                   `json:"deliveryTime"`       //发货时间
-	ReceiveTime           string                   `json:"receiveTime"`        //收货时间
-	CommentTime           string                   `json:"commentTime"`        //评价时间
-	SourceType            int32                    `json:"sourceType"`         //订单来源：1-APP,2-PC,3-小程序
-	ExpressOrderNumber    string                   `json:"expressOrderNumber"` //快递单号
-	UsePoints             int32                    `json:"usePoints"`          //下单时使用的积分
-	ReceiveStatus         int32                    `json:"receiveStatus"`      //是否确认收货：0->否,1->是
-	Remark                string                   `json:"remark"`             //订单备注
-	CreateTime            string                   `json:"createTime"`         //提交时间
-	UpdateTime            string                   `json:"updateTime"`         //
-	ConsistencyStage      int32                    `json:"consistencyStage"`
-	ConsistencyStageText  string                   `json:"consistencyStageText"`
-	ConsistencyResult     int32                    `json:"consistencyResult"`
-	ConsistencyMessage    string                   `json:"consistencyMessage"`
-	LastConsistencyAt     string                   `json:"lastConsistencyAt"`
-	PendingActions        int32                    `json:"pendingActions"`
-	PendingActionsText    []string                 `json:"pendingActionsText"`
-	AftersaleStatus       int32                    `json:"aftersaleStatus"`
-	AftersaleStatusText   string                   `json:"aftersaleStatusText"`
-	ReturnId              int64                    `json:"returnId"`
-	ReturnNo              string                   `json:"returnNo"`
+	Id                    int64                    `json:"id"`                    //
+	OrderNo               string                   `json:"orderNo"`               //订单编号
+	UserId                int64                    `json:"userId"`                //用户ID
+	OrderStatus           int32                    `json:"orderStatus"`           //订单状态：1-待支付,2-已支付,3-已发货,4-已完成,5-已取消,6-已退款,7-售后中
+	TotalAmount           float32                  `json:"totalAmount"`           //订单总金额
+	PromotionAmount       float32                  `json:"promotionAmount"`       //促销金额
+	CouponAmount          float32                  `json:"couponAmount"`          //优惠券金额
+	PointsAmount          float32                  `json:"pointsAmount"`          //积分金额
+	DiscountAmount        float32                  `json:"discountAmount"`        //优惠金额
+	FreightAmount         float32                  `json:"freightAmount"`         //运费金额
+	PayAmount             float32                  `json:"payAmount"`             //实付金额
+	PayType               int32                    `json:"payType"`               //支付方式：1-支付宝,2-微信,3-银联
+	PayTime               string                   `json:"payTime"`               //支付时间
+	DeliveryTime          string                   `json:"deliveryTime"`          //发货时间
+	ReceiveTime           string                   `json:"receiveTime"`           //收货时间
+	CommentTime           string                   `json:"commentTime"`           //评价时间
+	SourceType            int32                    `json:"sourceType"`            //订单来源：1-APP,2-PC,3-小程序
+	ExpressOrderNumber    string                   `json:"expressOrderNumber"`    //快递单号
+	UsePoints             int32                    `json:"usePoints"`             //下单时使用的积分
+	ReceiveStatus         int32                    `json:"receiveStatus"`         //是否确认收货：0->否,1->是
+	Remark                string                   `json:"remark"`                //订单备注
+	CreateTime            string                   `json:"createTime"`            //提交时间
+	UpdateTime            string                   `json:"updateTime"`            //
 	OrderOperationLogData []*OrderOperationLogData `json:"orderOperationLogData"` // 操作历史数据
 	OrderItemData         []*OrderItemData         `json:"orderItemData"`         // 商品数据
 	OrderPromotionData    []*OrderPromotionData    `json:"orderPromotionData"`    // 订单优惠信息
@@ -3387,17 +3692,16 @@ type QueryPreferredAreaDetailResp struct {
 }
 
 type QueryPreferredAreaListData struct {
-	Id              int64  `json:"id"`              //主键ID
-	Name            string `json:"name"`            //专区名称
-	SubTitle        string `json:"subTitle"`        //子标题
-	Pic             string `json:"pic"`             //展示图片
-	Sort            int32  `json:"sort"`            //排序
-	ShowStatus      int32  `json:"showStatus"`      //显示状态：0->不显示；1->显示
-	CreateBy        string `json:"createBy"`        //创建者
-	CreateTime      string `json:"createTime"`      //创建时间
-	UpdateBy        string `json:"updateBy"`        //更新者
-	UpdateTime      string `json:"updateTime"`      //更新时间
-	EffectiveStatus string `json:"effectiveStatus"` //综合生效状态
+	Id         int64  `json:"id"`         //主键ID
+	Name       string `json:"name"`       //专区名称
+	SubTitle   string `json:"subTitle"`   //子标题
+	Pic        string `json:"pic"`        //展示图片
+	Sort       int32  `json:"sort"`       //排序
+	ShowStatus int32  `json:"showStatus"` //显示状态：0->不显示；1->显示
+	CreateBy   string `json:"createBy"`   //创建者
+	CreateTime string `json:"createTime"` //创建时间
+	UpdateBy   string `json:"updateBy"`   //更新者
+	UpdateTime string `json:"updateTime"` //更新时间
 }
 
 type QueryPreferredAreaListReq struct {
@@ -4276,7 +4580,6 @@ type QuerySeckillActivityListData struct {
 	ProductCount    int64  `json:"productCount"`    //关联已上架秒杀商品数量
 	SessionCount    int64  `json:"sessionCount"`    //关联场次数量
 	EffectiveStatus string `json:"effectiveStatus"` //综合生效状态
-	AffectedPaths   string `json:"affectedPaths"`   //影响链路
 }
 
 type QuerySeckillActivityListReq struct {
@@ -4588,7 +4891,6 @@ type QuerySubjectListData struct {
 	UpdateBy        string `json:"updateBy"`        //更新者
 	UpdateTime      string `json:"updateTime"`      //更新时间
 	Sort            int32  `json:"sort"`            // 排序
-	EffectiveStatus string `json:"effectiveStatus"` //综合生效状态
 }
 
 type QuerySubjectListReq struct {
@@ -4756,6 +5058,14 @@ type ReSetPasswordReq struct {
 	UserId int64 `json:"userId"`
 }
 
+type RestoreCommentReq struct {
+	Id         string `path:"id"`
+	ScopeType  string `json:"scopeType,optional"`
+	PlatformId int64  `json:"platformId,optional"`
+	TenantId   int64  `json:"tenantId,optional"`
+	MerchantId int64  `json:"merchantId,optional"`
+}
+
 type ReturnItemListData struct {
 	Id           int64   `json:"id"`           //主键ID
 	ReturnId     int64   `json:"returnId"`     //退货单ID（关联oms_order_return.id）
@@ -4822,6 +5132,16 @@ type TenantData struct {
 	CreatedAt             string   `json:"createdAt"`
 	UpdatedBy             string   `json:"updatedBy"`
 	UpdatedAt             string   `json:"updatedAt"`
+}
+
+type UpdateCommentReq struct {
+	Id         string `json:"id,optional"`
+	Ids        string `json:"ids,optional"`
+	ShowStatus int32  `json:"showStatus"`
+	ScopeType  string `json:"scopeType,optional"`
+	PlatformId int64  `json:"platformId,optional"`
+	TenantId   int64  `json:"tenantId,optional"`
+	MerchantId int64  `json:"merchantId,optional"`
 }
 
 type UpdateCompanyAddressReq struct {
@@ -5690,190 +6010,4 @@ type UserInfoResp struct {
 	Code    string       `json:"code"`
 	Message string       `json:"message"`
 	Data    UserInfoData `json:"data"`
-}
-
-// 客服与履约订单工作台 - 客服工作台订单列表请求
-type CustomerServiceOrderListReq struct {
-	ScopeType     string `form:"scopeType,optional"`
-	PlatformId    int64  `form:"platformId,optional"`
-	TenantId      int64  `form:"tenantId,optional"`
-	MerchantId    int64  `form:"merchantId,optional"`
-	OrderNo       string `form:"orderNo,optional"`
-	OrderStatus   int32  `form:"orderStatus,optional"`
-	ReturnStatus  int32  `form:"returnStatus,optional"`
-	ReceiverName  string `form:"receiverName,optional"`
-	ReceiverPhone string `form:"receiverPhone,optional"`
-	StartTime     string `form:"startTime,optional"`
-	EndTime       string `form:"endTime,optional"`
-	Current       int32  `form:"current,default=1"`
-	PageSize      int32  `form:"pageSize,default=20"`
-}
-
-// 客服工作台订单列表项（聚合：订单+物流+售后+收货信息）
-type CustomerServiceOrderItem struct {
-	Id               int64            `json:"id"`
-	OrderNo          string           `json:"orderNo"`
-	OrderStatus      int32            `json:"orderStatus"`
-	OrderStatusText  string           `json:"orderStatusText"`
-	PayStatus        int32            `json:"payStatus"`
-	PayStatusText    string           `json:"payStatusText"`
-	ReturnStatus     int32            `json:"returnStatus"`
-	ReturnStatusText string           `json:"returnStatusText"`
-	MemberId         int64            `json:"memberId"`
-	ReceiverName     string           `json:"receiverName"`
-	ReceiverPhone    string           `json:"receiverPhone"`
-	ReceiverAddress  string           `json:"receiverAddress"`
-	TotalAmount      float32          `json:"totalAmount"`
-	PayAmount        float32          `json:"payAmount"`
-	DeliveryCompany  string           `json:"deliveryCompany"`
-	DeliverySn       string           `json:"deliverySn"`
-	CreateTime       string           `json:"createTime"`
-	PayTime          string           `json:"payTime,optional"`
-	DeliveryTime     string           `json:"deliveryTime,optional"`
-	ReceiveTime      string           `json:"receiveTime,optional"`
-	OrderItemData    []*OrderItemData `json:"orderItemData"` // 订单商品明细
-}
-
-// 客服工作台订单列表响应
-type CustomerServiceOrderListResp struct {
-	Code     string                      `json:"code"`
-	Message  string                      `json:"message"`
-	Total    int64                       `json:"total"`
-	Current  int32                       `json:"current,default=1"`
-	PageSize int32                       `json:"pageSize,default=20"`
-	Data     []*CustomerServiceOrderItem `json:"data"`
-	Success  bool                        `json:"success"`
-}
-
-// 商户工作台订单列表请求（商户Id从JWT自动提取，无需前端传参）
-type MerchantOrderListReq struct {
-	ScopeType     string `form:"scopeType,optional"`
-	PlatformId    int64  `form:"platformId,optional"`
-	TenantId      int64  `form:"tenantId,optional"`
-	MerchantId    int64  `form:"merchantId,optional"`
-	OrderNo       string `form:"orderNo,optional"`
-	OrderStatus   int32  `form:"orderStatus,optional"`
-	ReturnStatus  int32  `form:"returnStatus,optional"`
-	ReceiverName  string `form:"receiverName,optional"`
-	ReceiverPhone string `form:"receiverPhone,optional"`
-	StartTime     string `form:"startTime,optional"`
-	EndTime       string `form:"endTime,optional"`
-	Current       int32  `form:"current,default=1"`
-	PageSize      int32  `form:"pageSize,default=20"`
-}
-
-// 商户工作台订单列表项（聚合：订单+物流+售后+收货信息）
-type MerchantOrderItem struct {
-	Id               int64            `json:"id"`
-	OrderNo          string           `json:"orderNo"`
-	OrderStatus      int32            `json:"orderStatus"`
-	OrderStatusText  string           `json:"orderStatusText"`
-	PayStatus        int32            `json:"payStatus"`
-	PayStatusText    string           `json:"payStatusText"`
-	ReturnStatus     int32            `json:"returnStatus"`
-	ReturnStatusText string           `json:"returnStatusText"`
-	MemberId         int64            `json:"memberId"`
-	MemberNickname   string           `json:"memberNickname"`
-	ReceiverName     string           `json:"receiverName"`
-	ReceiverPhone    string           `json:"receiverPhone"`
-	ReceiverAddress  string           `json:"receiverAddress"`
-	TotalAmount      float32          `json:"totalAmount"`
-	PayAmount        float32          `json:"payAmount"`
-	DeliveryCompany  string           `json:"deliveryCompany,optional"`
-	DeliverySn       string           `json:"deliverySn,optional"`
-	CreateTime       string           `json:"createTime"`
-	PayTime          string           `json:"payTime,optional"`
-	DeliveryTime     string           `json:"deliveryTime,optional"`
-	ReceiveTime      string           `json:"receiveTime,optional"`
-	MerchantNotes    string           `json:"merchantNotes,optional"`
-	OrderItemData    []*OrderItemData `json:"orderItemData"`
-}
-
-// 商户工作台订单列表响应
-type MerchantOrderListResp struct {
-	Code     string               `json:"code"`
-	Message  string               `json:"message"`
-	Total    int64                `json:"total"`
-	Current  int32                `json:"current,default=1"`
-	PageSize int32                `json:"pageSize,default=20"`
-	Success  bool                 `json:"success"`
-	Data     []*MerchantOrderItem `json:"data"`
-}
-
-// 公司退货地址列表请求
-type CompanyAddressListReq struct {
-	ScopeType   string `form:"scopeType,optional"`
-	PlatformId  int64  `form:"platformId,optional"`
-	TenantId    int64  `form:"tenantId,optional"`
-	MerchantId  int64  `form:"merchantId,optional"`
-	AddressName string `form:"addressName,optional"`
-	Name        string `form:"name,optional"`
-	Phone       string `form:"phone,optional"`
-	Current     int32  `form:"current,default=1"`
-	PageSize    int32  `form:"pageSize,default=20"`
-}
-
-// 公司退货地址项
-type CompanyAddressItem struct {
-	Id            int64  `json:"id"`
-	AddressName   string `json:"addressName"`
-	ReceiverName  string `json:"receiverName"`
-	Phone         string `json:"phone"`
-	Province      string `json:"province"`
-	City          string `json:"city"`
-	Region        string `json:"region"`
-	DetailAddress string `json:"detailAddress"`
-	FullAddress   string `json:"fullAddress"`
-	DefaultStatus int32  `json:"defaultStatus"`
-	SendStatus    int32  `json:"sendStatus"`
-	ReceiveStatus int32  `json:"receiveStatus"`
-	CreateTime    string `json:"createTime"`
-}
-
-// 公司退货地址列表响应
-type CompanyAddressListResp struct {
-	Code     string                `json:"code"`
-	Message  string                `json:"message"`
-	Total    int64                 `json:"total"`
-	Current  int32                 `json:"current,default=1"`
-	PageSize int32                 `json:"pageSize,default=20"`
-	Data     []*CompanyAddressItem `json:"data"`
-	Success  bool                  `json:"success"`
-}
-
-// 查询订单操作日志列表请求
-type QueryOrderOperationLogListReq struct {
-	OrderId    int64  `form:"orderId,optional"`
-	OrderNo    string `form:"orderNo,optional"`
-	ScopeType  string `form:"scopeType,optional"`
-	PlatformId int64  `form:"platformId,optional"`
-	TenantId   int64  `form:"tenantId,optional"`
-	MerchantId int64  `form:"merchantId,optional"`
-	Current    int32  `form:"current,default=1"`
-	PageSize   int32  `form:"pageSize,default=20"`
-}
-
-// 订单操作日志项
-type OrderOperationLogItem struct {
-	Id                int64  `json:"id"`
-	OrderId           int64  `json:"orderId"`
-	OrderNo           string `json:"orderNo"`
-	OperationType     int32  `json:"operationType"`
-	OperationTypeText string `json:"operationTypeText"`
-	OperatorId        int64  `json:"operatorId"`
-	OperatorType      int32  `json:"operatorType"`
-	OperatorTypeText  string `json:"operatorTypeText"`
-	OperatorNote      string `json:"operatorNote"`
-	CreateTime        string `json:"createTime"`
-}
-
-// 查询订单操作日志列表响应
-type QueryOrderOperationLogListResp struct {
-	Code     string                   `json:"code"`
-	Message  string                   `json:"message"`
-	Total    int64                    `json:"total"`
-	Current  int32                    `json:"current,default=1"`
-	PageSize int32                    `json:"pageSize,default=20"`
-	Data     []*OrderOperationLogItem `json:"data"`
-	Success  bool                     `json:"success"`
 }

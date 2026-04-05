@@ -29,9 +29,14 @@ func NewReplayChainLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Repla
 }
 
 func (l *ReplayChainLogic) ReplayChain(req *types.ReplayChainReq) (*types.ReplayChainResp, error) {
-	current, err := admincommon.CurrentGovernanceScope(l.ctx)
+	writeScope, err := resolveChainWriteScope(l.ctx, admincommon.RequestedGovernanceScope{
+		ScopeType:  req.ScopeType,
+		PlatformID: req.PlatformId,
+		TenantID:   req.TenantId,
+		MerchantID: req.MerchantId,
+	})
 	if err != nil {
-		return nil, errorx.NewDefaultError(err.Error())
+		return nil, err
 	}
 
 	operatorId, err := admincommon.GetUserId(l.ctx)
@@ -42,9 +47,9 @@ func (l *ReplayChainLogic) ReplayChain(req *types.ReplayChainReq) (*types.Replay
 
 	result, err := l.svcCtx.OrderService.ReplayCompensationChain(l.ctx, &omsclient.ReplayCompensationChainReq{
 		OrderId:      req.OrderId,
-		PlatformId:   current.PlatformID,
-		TenantId:     current.TenantID,
-		MerchantId:   current.MerchantID,
+		PlatformId:   writeScope.PlatformID,
+		TenantId:     writeScope.TenantID,
+		MerchantId:   writeScope.MerchantID,
 		OperatorId:   operatorId,
 		ReplayReason: req.ReplayReason,
 	})

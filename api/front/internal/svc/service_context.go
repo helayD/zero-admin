@@ -40,6 +40,7 @@ import (
 	"github.com/feihua/zero-admin/rpc/sms/client/couponservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/coupontypeservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/homeadvertiseservice"
+	"github.com/feihua/zero-admin/rpc/sms/client/operatedashboardservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/seckillactivityservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/seckillproductservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/seckillreservationservice"
@@ -51,6 +52,7 @@ import (
 	"github.com/feihua/zero-admin/rpc/sys/client/userservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/memberaddressservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/memberbrandattentionservice"
+	"github.com/feihua/zero-admin/rpc/ums/client/membermessageservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/memberconsumesettingservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/membergrowthlogservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/memberinfoservice"
@@ -92,6 +94,7 @@ type ServiceContext struct {
 	MemberTaskService                    membertaskservice.MemberTaskService
 	MemberTaskRelationService            membertaskrelationservice.MemberTaskRelationService
 	MemberBrandAttentionService          memberbrandattentionservice.MemberBrandAttentionService
+	MemberMessageService                 membermessageservice.MemberMessageService
 
 	// 系统相关
 	DeptService     deptservice.DeptService
@@ -133,6 +136,7 @@ type ServiceContext struct {
 	CouponService             couponservice.CouponService
 	CouponTypeService         coupontypeservice.CouponTypeService
 	HomeAdvertiseService      homeadvertiseservice.HomeAdvertiseService
+	OperateDashboardService   operatedashboardservice.OperateDashboardService
 	SeckillActivityService    seckillactivityservice.SeckillActivityService
 	SeckillProductService     seckillproductservice.SeckillProductService
 	SeckillReservationService seckillreservationservice.SeckillReservationService
@@ -196,6 +200,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		MemberTaskService:                    membertaskservice.NewMemberTaskService(umsClient),
 		MemberTaskRelationService:            membertaskrelationservice.NewMemberTaskRelationService(umsClient),
 		MemberBrandAttentionService:          memberbrandattentionservice.NewMemberBrandAttentionService(umsClient),
+		MemberMessageService:                 membermessageservice.NewMemberMessageService(umsClient),
 
 		DeptService:     deptservice.NewDeptService(sysClient),
 		LoginLogService: loginlogservice.NewLoginLogService(sysClient),
@@ -236,6 +241,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		CouponService:             couponservice.NewCouponService(smsClient),
 		CouponTypeService:         coupontypeservice.NewCouponTypeService(smsClient),
 		HomeAdvertiseService:      homeadvertiseservice.NewHomeAdvertiseService(smsClient),
+		OperateDashboardService:   operatedashboardservice.NewOperateDashboardService(smsClient),
 		SeckillActivityService:    seckillactivityservice.NewSeckillActivityService(smsClient),
 		SeckillProductService:     seckillproductservice.NewSeckillProductService(smsClient),
 		SeckillReservationService: seckillreservationservice.NewSeckillReservationService(smsClient),

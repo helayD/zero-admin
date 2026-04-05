@@ -11,6 +11,7 @@ import 'package:flutter_mall/view/mine/ping_jia/ping_jia.dart';
 import 'package:flutter_mall/view/mine/profile/profile_edit.dart';
 import 'package:flutter_mall/view/mine/setting/settings.dart';
 import 'package:flutter_mall/utils/http_util.dart';
+import 'package:flutter_mall/model/message_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../config/constant_param.dart';
@@ -34,6 +35,7 @@ class Mine extends StatefulWidget {
 class _MineState extends State<Mine> {
   bool _isLoggedIn = false;
   MemberInfoData? _memberInfoData;
+  int _unreadMessageCount = 0;
 
   @override
   void initState() {
@@ -52,7 +54,22 @@ class _MineState extends State<Mine> {
       });
     }
     if (loggedIn) {
-      await _queryMemberInfo();
+      await Future.wait([_queryMemberInfo(), _queryUnreadMessageCount()]);
+    }
+  }
+
+  // 查询未读消息数量（用于红点 Badge）
+  Future<void> _queryUnreadMessageCount() async {
+    try {
+      Response result = await HttpUtil.get(unreadCountUrl);
+      UnreadCountModel model = UnreadCountModel.fromJson(result.data);
+      if (mounted) {
+        setState(() {
+          _unreadMessageCount = model.unreadCount;
+        });
+      }
+    } catch (_) {
+      // 未读数查询失败不影响主流程，静默忽略
     }
   }
 
@@ -175,17 +192,28 @@ class _MineState extends State<Mine> {
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       InkWell(
-                        onTap: () {
-                          Navigator.of(context).push(
+                        onTap: () async {
+                          await Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (context) => const Message(),
                             ),
                           );
+                          // 返回后刷新未读数
+                          if (_isLoggedIn) {
+                            await _queryUnreadMessageCount();
+                          }
                         },
-                        child: Image.asset(
-                          "images/message.png",
-                          height: 30,
-                          width: 30,
+                        child: Badge(
+                          isLabelVisible: _unreadMessageCount > 0,
+                          label: Text(
+                            _unreadMessageCount > 99 ? '99+' : _unreadMessageCount.toString(),
+                            style: const TextStyle(fontSize: 9),
+                          ),
+                          child: Image.asset(
+                            "images/message.png",
+                            height: 30,
+                            width: 30,
+                          ),
                         ),
                       ),
                       const SizedBox(
