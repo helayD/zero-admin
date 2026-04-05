@@ -6,7 +6,7 @@ import 'package:flutter_mall/config/service_url.dart';
 ///
 /// 缓存图片组件
 ///
-/// 作者：刘飞华
+/// 作者：David
 /// 日期：2023/11/21 17:17
 ///
 class CachedImageWidget extends StatelessWidget {

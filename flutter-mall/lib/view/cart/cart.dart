@@ -4,9 +4,11 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_mall/config/service_url.dart';
+import 'package:flutter_mall/model/app_recent_context.dart';
 import 'package:flutter_mall/model/cart_promotion.dart';
 import 'package:flutter_mall/model/cart_validate.dart';
 import 'package:flutter_mall/provider/cart_model.dart';
+import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/utils/http_util.dart';
 import 'package:provider/provider.dart';
 
@@ -16,7 +18,7 @@ import '../mine/order/order_submit.dart';
 ///
 /// 购物车页面
 ///
-/// 作者：刘飞华
+/// 作者：David
 /// 日期：2023/11/21 17:17
 ///
 class Cart extends StatefulWidget {
@@ -28,20 +30,48 @@ class Cart extends StatefulWidget {
 
 class _CartState extends State<Cart> {
   bool _isSubmitting = false;
+  bool _cartLoadedSuccessfully = false;
+
+  AppRecentContext _buildCartRecoveryContext([String source = 'manual_open']) {
+    return AppRecentContext.create(
+      targetType: AppRecentTargetType.cart,
+      tabIndex: 2,
+      source: source,
+      requiresAuth: true,
+      fallbackType: AppRecentTargetType.home,
+      fallbackTabIndex: 0,
+    );
+  }
 
   @override
   void initState() {
     super.initState();
+    AppRecoveryStore.saveActiveIntentCandidate(_buildCartRecoveryContext());
     _queryBrandListData();
   }
 
+  @override
+  void dispose() {
+    AppRecoveryStore.clearActiveIntentCandidateIfMatches(
+      AppRecentTargetType.cart,
+      tabIndex: 2,
+    );
+    super.dispose();
+  }
+
   void _queryBrandListData() async {
-    Response result = await HttpUtil.get(cartDataUrl);
-    setState(() {
-      CartListModel cartListModel = CartListModel.fromJson(result.data);
-      context.read<CartModel>().setCartListData(cartListModel.data);
-    });
-    _queryPromotionData();
+    try {
+      Response result = await HttpUtil.get(cartDataUrl);
+      if (!mounted) return;
+      setState(() {
+        CartListModel cartListModel = CartListModel.fromJson(result.data);
+        context.read<CartModel>().setCartListData(cartListModel.data);
+        _cartLoadedSuccessfully = true;
+      });
+      _queryPromotionData();
+    } catch (e) {
+      _cartLoadedSuccessfully = false;
+    }
   }
 
   void _queryPromotionData() async {
@@ -51,6 +81,11 @@ class _CartState extends State<Cart> {
           CartPromotionListModel.fromJson(result.data);
       if (mounted) {
         context.read<CartModel>().setPromotionData(model.data);
+        if (_cartLoadedSuccessfully) {
+          await AppRecoveryStore.saveRecentContext(
+            _buildCartRecoveryContext(),
+          );
+        }
       }
     } catch (e) {
       debugPrint("获取促销信息失败: $e");

@@ -10,7 +10,7 @@ import '../../../model/attention_list.dart';
 ///
 /// 我的关注页面
 ///
-/// 作者：刘飞华
+/// 作者：David
 /// 日期：2023/11/21 17:17
 ///
 class FocusOn extends StatefulWidget {

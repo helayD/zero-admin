@@ -1,7 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_mall/model/app_recent_context.dart';
 import 'package:flutter_mall/config/service_url.dart';
 import 'package:flutter_mall/config/order_status.dart';
+import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/view/mine/order/order_detail.dart';
 import 'package:flutter_mall/utils/http_util.dart';
 import 'package:flutter_mall/widgets/cached_image_widget.dart';
@@ -14,11 +16,14 @@ import '../../../model/order_list_model.dart';
 ///
 /// Story 6-1 重构：接入真实 API、分页加载、刷新、State Shell
 ///
-/// 作者：刘飞华
+/// 作者：David
 /// 日期：2023/11/21 17:17
 ///
 class OrderList extends StatefulWidget {
-  const OrderList({super.key});
+  final int initialTab;
+  final String? intentSource;
+
+  const OrderList({super.key, this.initialTab = 0, this.intentSource});
 
   @override
   State<OrderList> createState() => _OrderListState();
@@ -33,12 +38,36 @@ class _OrderListState extends State<OrderList> {
   final Map<int, bool> _hasMoreCache = {};
   final Map<int, bool> _loadingCache = {};
 
-  int _currentTab = 0;
+  late int _currentTab;
+
+  AppRecentContext _buildOrderListRecoveryContext(int tab, [String? source]) {
+    return AppRecentContext.create(
+      targetType: AppRecentTargetType.orderList,
+      tabIndex: tab,
+      source: source ?? widget.intentSource ?? 'manual_open',
+      requiresAuth: true,
+      fallbackType: AppRecentTargetType.home,
+      fallbackTabIndex: 0,
+    );
+  }
 
   @override
   void initState() {
     super.initState();
-    _initTab(0);
+    _currentTab = widget.initialTab;
+    AppRecoveryStore.saveActiveIntentCandidate(
+      _buildOrderListRecoveryContext(_currentTab),
+    );
+    _initTab(_currentTab);
+  }
+
+  @override
+  void dispose() {
+    AppRecoveryStore.clearActiveIntentCandidateIfMatches(
+      AppRecentTargetType.orderList,
+      tabIndex: _currentTab,
+    );
+    super.dispose();
   }
 
   void _initTab(int tab) {
@@ -92,6 +121,9 @@ class _OrderListState extends State<OrderList> {
         _hasMoreCache[tab] = model.hasMore;
         _loadingCache[tab] = false;
       });
+      await AppRecoveryStore.saveRecentContext(
+        _buildOrderListRecoveryContext(tab),
+      );
     } catch (e) {
       setState(() {
         _loadingCache[tab] = false;
@@ -104,6 +136,9 @@ class _OrderListState extends State<OrderList> {
     setState(() {
       _currentTab = index;
     });
+    AppRecoveryStore.saveActiveIntentCandidate(
+      _buildOrderListRecoveryContext(index),
+    );
     _initTab(index);
   }
 
@@ -120,6 +155,7 @@ class _OrderListState extends State<OrderList> {
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: _orderStatus.length,
+      initialIndex: _currentTab,
       child: Scaffold(
         appBar: AppBar(
           title: const Text(' 我的订单 '),

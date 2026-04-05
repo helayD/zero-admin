@@ -17,7 +17,7 @@ import (
 
 // UpdateSubjectLogic 更新专题表
 /*
-Author: 刘飞华
+Author: David
 Date: 2025/02/04 15:04:17
 */
 type UpdateSubjectLogic struct {

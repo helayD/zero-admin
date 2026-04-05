@@ -8,7 +8,7 @@ import '../../../model/address_list.dart';
 ///
 /// 地址编辑页面（新增/编辑双模式）
 ///
-/// 作者：刘飞华
+/// 作者：David
 /// 日期：2023/11/21 17:17
 ///
 class AddressEdit extends StatefulWidget {

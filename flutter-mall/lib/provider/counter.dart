@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 ///
 /// provider demo
 ///
-/// 作者：刘飞华
+/// 作者：David
 /// 日期：2023/11/21 17:17
 ///
 class Counter with ChangeNotifier, DiagnosticableTreeMixin {

@@ -1,6 +1,6 @@
 # Story 9.1: App 启动恢复与最近有效上下文回流
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -251,11 +251,30 @@ Cascade
 
 ### Completion Notes List
 
-- 已按当前 backlog 顺序生成 Story 9.1
-- 已将恢复目标约束为当前 Flutter 仓库中已存在且可验证的页面，避免对不存在路由做空想实现
-- 已明确 401 / 登录恢复与 `MaterialPageRoute` / `pushNamed` 混用之间的断层，要求先落统一语义恢复对象
-- 已把冷启动、热启动、前后台切换与登录恢复统一收口到恢复壳层，而不是分散到各页面
+- 已新增 recent context 版本化模型、账号隔离字段与基于 SharedPreferences 的结构化恢复存储
+- 已将冷启动、登录恢复、401 恢复、前后台切换候选上下文统一接入恢复壳层与生命周期 Provider
+- 已补齐受保护页首次访问即 401 的当前目标恢复能力，优先使用 active recovery candidate，再回退 recent context
+- 已补充 recent context / app bootstrap / login restore 相关测试，并通过定向 `flutter test` 与 `flutter analyze`
 
 ### File List
 
 - _opcos/implementation-artifacts/9-1-app-启动恢复与最近有效上下文回流.md
+- flutter-mall/lib/layout/app_bootstrap.dart
+- flutter-mall/lib/layout/intent_recovery_shell.dart
+- flutter-mall/lib/model/app_recent_context.dart
+- flutter-mall/lib/provider/app_lifecycle_provider.dart
+- flutter-mall/lib/utils/app_recovery_router.dart
+- flutter-mall/lib/utils/app_recovery_store.dart
+- flutter-mall/lib/utils/http_util.dart
+- flutter-mall/lib/utils/shared_preferences_util.dart
+- flutter-mall/lib/view/cart/cart.dart
+- flutter-mall/lib/view/category/product/product_detail.dart
+- flutter-mall/lib/view/home/home_page.dart
+- flutter-mall/lib/view/mine/login/login.dart
+- flutter-mall/lib/view/mine/order/order_detail.dart
+- flutter-mall/lib/view/mine/order/order_list.dart
+- flutter-mall/lib/view/mine/setting/settings.dart
+- flutter-mall/lib/welcome.dart
+- flutter-mall/test/app_bootstrap_test.dart
+- flutter-mall/test/login_restore_test.dart
+- flutter-mall/test/recent_context_test.dart

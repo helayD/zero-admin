@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/config/constant_param.dart';
 import 'package:flutter_mall/view/mine/login/login.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -14,11 +15,12 @@ import '../config/nav_key.dart';
 ///
 /// http工具类
 ///
-/// 作者：刘飞华
+/// 作者：David
 /// 日期：2023/11/21 17:17
 ///
 class HttpUtil {
   static Dio? _dio;
+  static bool _isRedirectingToLogin = false;
 
   static Dio get dio {
     if (_dio == null) {
@@ -60,7 +62,7 @@ class HttpUtil {
           }
           return handler.next(response);
         },
-        onError: (DioException e, ErrorInterceptorHandler handler) {
+        onError: (DioException e, ErrorInterceptorHandler handler) async {
           if (kDebugMode) {
             print("\n\n========================错误数据===================");
             print("code=${e.response?.statusCode}");
@@ -69,14 +71,33 @@ class HttpUtil {
             print("==================================================\n\n\n");
           }
           if (e.response?.statusCode == 401) {
-            final navContext = NavKey.navKey.currentState!.context;
-            final currentRoute = ModalRoute.of(navContext)?.settings.name;
-            Navigator.of(navContext).push(
-              MaterialPageRoute(
-                builder: (context) => Login(redirectRoute: currentRoute),
-              ),
-            );
-            return;
+            if (_isRedirectingToLogin) {
+              return handler.next(e);
+            }
+            _isRedirectingToLogin = true;
+            try {
+              final navigatorState = NavKey.navKey.currentState;
+              if (navigatorState == null) {
+                return handler.next(e);
+              }
+              final recoveryIntent = AppRecoveryStore.peekActiveIntentCandidate() ?? AppRecoveryStore.getRecentContext();
+              if (recoveryIntent != null) {
+                await AppRecoveryStore.savePendingIntent(
+                  recoveryIntent.copyWith(
+                    source: 'login_restore',
+                    lastValidatedAt: DateTime.now(),
+                  ),
+                );
+              }
+              await navigatorState.push(
+                MaterialPageRoute(
+                  builder: (context) => Login(recoveryIntent: recoveryIntent),
+                ),
+              );
+            } finally {
+              _isRedirectingToLogin = false;
+            }
+            return handler.next(e);
           }
           return handler.next(e);
         },

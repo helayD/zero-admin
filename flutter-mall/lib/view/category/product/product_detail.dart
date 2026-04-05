@@ -3,6 +3,8 @@ import 'package:card_swiper/card_swiper.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter_mall/model/app_recent_context.dart';
+import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/config/service_url.dart';
 import 'package:flutter_mall/utils/http_util.dart';
 import 'package:flutter_mall/view/cart/cart.dart';
@@ -14,13 +16,14 @@ import '../../../model/product_detail.dart';
 ///
 /// 商品详情页面
 ///
-/// 作者：刘飞华
+/// 作者：David
 /// 日期：2023/11/21 17:17
 ///
 class ProductDetail extends StatefulWidget {
   final int productId;
+  final String? intentSource;
 
-  const ProductDetail({super.key, required this.productId});
+  const ProductDetail({super.key, required this.productId, this.intentSource});
 
   @override
   State<ProductDetail> createState() => _ProductDetailState();
@@ -85,6 +88,24 @@ class _ProductDetailState extends State<ProductDetail> {
           memberPriceList = [];
         }
       });
+      if (productDetailData.visibility.visible) {
+        await AppRecoveryStore.saveRecentContext(
+          AppRecentContext.create(
+            targetType: AppRecentTargetType.productDetail,
+            targetId: widget.productId,
+            source: widget.intentSource ?? 'manual_open',
+            requiresAuth: false,
+            fallbackType: AppRecentTargetType.home,
+            fallbackTabIndex: 0,
+          ),
+        );
+      } else {
+        final currentContext = AppRecoveryStore.getRecentContext();
+        if (currentContext?.targetType == AppRecentTargetType.productDetail &&
+            currentContext?.targetId == widget.productId) {
+          await AppRecoveryStore.clearRecentContext();
+        }
+      }
     } catch (_) {
       if (!mounted) {
         return;
@@ -112,6 +133,11 @@ class _ProductDetailState extends State<ProductDetail> {
           fallbackTarget: "home",
         );
       });
+      final currentContext = AppRecoveryStore.getRecentContext();
+      if (currentContext?.targetType == AppRecentTargetType.productDetail &&
+          currentContext?.targetId == widget.productId) {
+        await AppRecoveryStore.clearRecentContext();
+      }
     }
   }
 

@@ -16,7 +16,7 @@ import (
 
 // QueryPreferredAreaDetailLogic 查询优选专区详情
 /*
-Author: 刘飞华
+Author: David
 Date: 2025/02/04 14:56:41
 */
 type QueryPreferredAreaDetailLogic struct {

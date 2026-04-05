@@ -2,6 +2,7 @@ package member_level
 
 import (
 	"context"
+
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
 	"github.com/feihua/zero-admin/api/admin/internal/types"
@@ -14,7 +15,7 @@ import (
 
 // QueryMemberLevelDetailLogic 查询会员等级表详情
 /*
-Author: 刘飞华
+Author: David
 Date: 2025/02/05 10:34:53
 */
 type QueryMemberLevelDetailLogic struct {

@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/view/mine/profile/profile_edit.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-import '../../../config/constant_param.dart';
 
 ///
 /// 设置页面
 ///
-/// 作者：刘飞华
+/// 作者：David
 /// 日期：2023/11/21 17:17
 ///
 class Settings extends StatefulWidget {
@@ -50,6 +48,12 @@ class _SettingsState extends State<Settings> {
                             ),
                           );
                         }
+                        if (index == 4) {
+                          AppRecoveryStore.clearRecoveryState();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('缓存已清理')),
+                          );
+                        }
                       },
                       child: Container(
                       height: 51,
@@ -81,10 +85,8 @@ class _SettingsState extends State<Settings> {
                             child: Switch(
                               value: true,
                               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              onChanged: (value) {
-                                print("click the default");
-                              },
-                              activeColor: Colors.white,
+                              onChanged: (value) {},
+                              activeThumbColor: Colors.white,
                               activeTrackColor: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
                             ),
                           ),
@@ -96,8 +98,8 @@ class _SettingsState extends State<Settings> {
             ),
             InkWell(
               onTap: () async {
-                SharedPreferences prefs = await SharedPreferences.getInstance();
-                await prefs.remove(token);
+                await AppRecoveryStore.clearAuthToken();
+                await AppRecoveryStore.clearRecoveryState();
                 if (context.mounted) {
                   Navigator.of(context).pop();
                 }

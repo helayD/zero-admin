@@ -11,7 +11,7 @@ import 'package:flutter_mall/view/mine/order/order_detail.dart';
 ///
 /// Story 8-1 重构：实现真实 API 调用、分页、点击跳转
 ///
-/// 作者：刘飞华
+/// 作者：David
 /// 日期：2026/4/2
 ///
 class Message extends StatefulWidget {

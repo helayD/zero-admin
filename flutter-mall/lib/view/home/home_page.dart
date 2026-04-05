@@ -2,7 +2,9 @@ import 'package:card_swiper/card_swiper.dart';
 import 'package:dio/dio.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_mall/model/app_recent_context.dart';
 import 'package:flutter_mall/model/home_model.dart';
+import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/utils/http_util.dart';
 import 'package:flutter_mall/view/home/brand/brand_detail.dart';
 import 'package:flutter_mall/view/home/brand/brand_list.dart';
@@ -15,7 +17,7 @@ import '../category/product/product_detail.dart';
 ///
 /// 首页
 ///
-/// 作者：刘飞华
+/// 作者：David
 /// 日期：2023/11/21 17:17
 ///
 class HomePage extends StatefulWidget {
@@ -72,6 +74,16 @@ class _HomePageState extends State<HomePage> {
         hotProductList = homeModel.data.hotProductList;
         preferredAreaList = homeModel.data.preferredAreaList;
       });
+      await AppRecoveryStore.saveRecentContext(
+        AppRecentContext.create(
+          targetType: AppRecentTargetType.home,
+          tabIndex: 0,
+          source: 'manual_open',
+          requiresAuth: false,
+          fallbackType: AppRecentTargetType.home,
+          fallbackTabIndex: 0,
+        ),
+      );
     } catch (e) {
       // 首页数据加载失败时保持现有数据，不清空
     }

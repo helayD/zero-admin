@@ -7,7 +7,7 @@ import 'package:flutter_mall/view/mine/mine.dart';
 ///
 /// 底部导航页-切换页面
 ///
-/// 作者：刘飞华
+/// 作者：David
 /// 日期：2023/11/21 17:17
 ///
 final pages = [
@@ -20,7 +20,7 @@ final pages = [
 ///
 /// 底部导航-图标和文字定义
 ///
-/// 作者：刘飞华
+/// 作者：David
 /// 日期：2023/11/21 17:17
 ///
 List<BottomNavigationBarItem> items() {

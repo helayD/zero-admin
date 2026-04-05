@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mall/config/service_url.dart';
+import 'package:flutter_mall/model/app_recent_context.dart';
+import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/utils/http_util.dart';
 import 'package:flutter_mall/widgets/cached_image_widget.dart';
 import 'package:flutter_mall/widgets/empty_state_widget.dart';
@@ -19,7 +21,7 @@ import '../ping_jia/ping_jia.dart';
 ///
 /// Story 6-1 重构：接入真实 API、Order Timeline Panel、Price Breakdown Card、State Shell
 ///
-/// 作者：刘飞华
+/// 作者：David
 /// 日期：2023/11/21 17:17
 ///
 class OrderDetail extends StatefulWidget {
@@ -44,6 +46,17 @@ class _OrderDetailState extends State<OrderDetail> with SingleTickerProviderStat
   late AnimationController _skeletonController;
   late Animation<double> _skeletonAnimation;
 
+  AppRecentContext _buildOrderDetailRecoveryContext([String? source]) {
+    return AppRecentContext.create(
+      targetType: AppRecentTargetType.orderDetail,
+      targetId: widget.orderId,
+      source: source ?? widget.intentSource ?? 'manual_open',
+      requiresAuth: true,
+      fallbackType: AppRecentTargetType.orderList,
+      fallbackTabIndex: 1,
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -54,11 +67,18 @@ class _OrderDetailState extends State<OrderDetail> with SingleTickerProviderStat
     _skeletonAnimation = Tween<double>(begin: 0.3, end: 0.7).animate(
       CurvedAnimation(parent: _skeletonController, curve: Curves.easeInOut),
     );
+    AppRecoveryStore.saveActiveIntentCandidate(
+      _buildOrderDetailRecoveryContext(),
+    );
     _queryOrderDetail();
   }
 
   @override
   void dispose() {
+    AppRecoveryStore.clearActiveIntentCandidateIfMatches(
+      AppRecentTargetType.orderDetail,
+      targetId: widget.orderId,
+    );
     _skeletonController.dispose();
     super.dispose();
   }
@@ -256,11 +276,35 @@ class _OrderDetailState extends State<OrderDetail> with SingleTickerProviderStat
         _appendLocalTimelineNodes(model.data);
         _isLoading = false;
       });
+      if (model.data.id > 0) {
+        await AppRecoveryStore.saveRecentContext(
+          _buildOrderDetailRecoveryContext(),
+        );
+      } else {
+        final currentContext = AppRecoveryStore.getRecentContext();
+        if (currentContext?.targetType == AppRecentTargetType.orderDetail &&
+            currentContext?.targetId == widget.orderId) {
+          await AppRecoveryStore.clearRecentContext();
+        }
+        await AppRecoveryStore.clearActiveIntentCandidateIfMatches(
+          AppRecentTargetType.orderDetail,
+          targetId: widget.orderId,
+        );
+      }
     } catch (e) {
       debugPrint('[OrderDetail] _queryOrderDetail error: $e');
       setState(() {
         _isLoading = false;
       });
+      final currentContext = AppRecoveryStore.getRecentContext();
+      if (currentContext?.targetType == AppRecentTargetType.orderDetail &&
+          currentContext?.targetId == widget.orderId) {
+        await AppRecoveryStore.clearRecentContext();
+      }
+      await AppRecoveryStore.clearActiveIntentCandidateIfMatches(
+        AppRecentTargetType.orderDetail,
+        targetId: widget.orderId,
+      );
     }
   }
 
@@ -325,7 +369,7 @@ class _OrderDetailState extends State<OrderDetail> with SingleTickerProviderStat
           width: width,
           height: height,
           decoration: BoxDecoration(
-            color: Colors.grey[300]!.withOpacity(_skeletonAnimation.value),
+            color: Colors.grey[300]!.withValues(alpha: _skeletonAnimation.value),
             borderRadius: BorderRadius.circular(4),
           ),
         );

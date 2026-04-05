@@ -17,7 +17,7 @@ import (
 
 // AddSubjectCategoryLogic 添加专题分类表
 /*
-Author: 刘飞华
+Author: David
 Date: 2025/02/07 10:21:09
 */
 type AddSubjectCategoryLogic struct {

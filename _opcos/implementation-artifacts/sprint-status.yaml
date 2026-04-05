@@ -115,7 +115,7 @@ development_status:
   epic-8-retrospective: optional
 
   epic-9: in-progress
-  9-1-app-启动恢复与最近有效上下文回流: ready-for-dev
+  9-1-app-启动恢复与最近有效上下文回流: review
   9-2-移动端统一加载-空态-错误态与弱网壳层: backlog
   9-3-消息-活动与优惠券意图唤回链路: backlog
   9-4-场景化权限请求与拒绝后的替代路径: backlog

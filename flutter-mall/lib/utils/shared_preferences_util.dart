@@ -1,9 +1,11 @@
+import 'dart:convert';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 ///
 /// 本地缓存工具类
 ///
-/// 作者：刘飞华
+/// 作者：David
 /// 日期：2023/11/21 17:17
 ///
 class SharedPreferencesUtil {
@@ -43,6 +45,26 @@ class SharedPreferencesUtil {
 
   static bool? getBool(String key) {
     return _prefs.getBool(key);
+  }
+
+  static Future<void> saveJsonString(String key, Map<String, dynamic> value) async {
+    await _prefs.setString(key, jsonEncode(value));
+  }
+
+  static dynamic getJsonString(String key) {
+    final raw = _prefs.getString(key);
+    if (raw == null || raw.isEmpty) {
+      return null;
+    }
+    try {
+      return jsonDecode(raw);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static Future<void> remove(String key) async {
+    await _prefs.remove(key);
   }
 
   static Future<void> clear() async {

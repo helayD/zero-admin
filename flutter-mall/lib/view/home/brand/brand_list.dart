@@ -11,7 +11,7 @@ import '../../../model/brand_list.dart';
 ///
 /// 品牌列表页面
 ///
-/// 作者：刘飞华
+/// 作者：David
 /// 日期：2023/11/21 17:17
 ///
 class BrandList extends StatefulWidget {

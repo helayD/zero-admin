@@ -2,6 +2,7 @@ package member_level
 
 import (
 	"context"
+
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/common/res"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
@@ -15,7 +16,7 @@ import (
 
 // UpdateMemberLevelStatusLogic 更新会员等级表状态状态
 /*
-Author: 刘飞华
+Author: David
 Date: 2025/02/05 10:34:53
 */
 type UpdateMemberLevelStatusLogic struct {

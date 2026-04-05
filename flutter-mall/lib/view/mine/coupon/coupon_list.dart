@@ -9,7 +9,7 @@ import '../../../model/coupon_model.dart';
 ///
 /// 优惠券列表页面
 ///
-/// 作者：刘飞华
+/// 作者：David
 /// 日期：2023/11/21 17:17
 ///
 class CouponList extends StatefulWidget {

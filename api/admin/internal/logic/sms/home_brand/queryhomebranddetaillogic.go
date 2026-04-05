@@ -2,6 +2,7 @@ package home_brand
 
 import (
 	"context"
+
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
 	"github.com/feihua/zero-admin/api/admin/internal/types"
@@ -14,7 +15,7 @@ import (
 
 // QueryHomeBrandDetailLogic 查询首页推荐品牌表详情
 /*
-Author: 刘飞华
+Author: David
 Date: 2025/02/07 10:11:43
 */
 type QueryHomeBrandDetailLogic struct {

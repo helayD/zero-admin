@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mall/provider/cart_model.dart';
 import 'package:flutter_mall/provider/counter.dart';
 import 'package:flutter_mall/provider/comment_provider.dart';
+import 'package:flutter_mall/provider/app_lifecycle_provider.dart';
 import 'package:flutter_mall/utils/shared_preferences_util.dart';
 import 'package:flutter_mall/welcome.dart';
 import 'package:provider/provider.dart';
@@ -11,7 +12,7 @@ import 'config/nav_key.dart';
 ///
 /// 应用入口页面
 ///
-/// 作者：刘飞华
+/// 作者：David
 /// 日期：2023/11/21 17:17
 ///
 // 程序的入口点
@@ -38,6 +39,9 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => Counter()),
         // 提供一个CartModel实例
         ChangeNotifierProvider(create: (_) => CartModel()),
+        ChangeNotifierProvider(
+          create: (_) => AppLifecycleProvider()..startObserving(),
+        ),
         // 提供一个CommentProvider实例（Story 8-2 Review Fix R-4）
         ChangeNotifierProvider(create: (_) => CommentProvider()),
         ChangeNotifierProvider(create: (_) => CommentUploadProvider()),

@@ -1,23 +1,26 @@
 import 'package:dio/dio.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_mall/config/service_url.dart';
+import 'package:flutter_mall/model/app_recent_context.dart';
+import 'package:flutter_mall/utils/app_recovery_router.dart';
+import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/utils/http_util.dart';
-import 'package:flutter_mall/utils/shared_preferences_util.dart';
 import 'package:flutter_mall/view/mine/login/register.dart';
 
-import '../../../config/constant_param.dart';
 import '../../../model/login_model.dart';
 
 ///
 /// 登录页面
 ///
-/// 作者：刘飞华
+/// 作者：David
 /// 日期：2023/11/21 17:17
 ///
 class Login extends StatefulWidget {
   final String? redirectRoute;
+  final AppRecentContext? recoveryIntent;
 
-  const Login({super.key, this.redirectRoute});
+  const Login({super.key, this.redirectRoute, this.recoveryIntent});
 
   @override
   State<Login> createState() => _LoginState();
@@ -87,18 +90,19 @@ class _LoginState extends State<Login> {
       LoginModel loginModel = LoginModel.fromJson(result.data);
 
       if (loginModel.code == 0) {
-        //保存登录凭证token
-        SharedPreferencesUtil.saveString(
-            token, "${loginModel.data.tokenHead} ${loginModel.data.token}");
+        final authToken = "${loginModel.data.tokenHead} ${loginModel.data.token}";
+        await AppRecoveryStore.persistAuthToken(authToken);
 
         if (!mounted) return;
 
-        // 登录成功后恢复原始路由或简单 pop
-        if (widget.redirectRoute != null) {
-          Navigator.of(context).pushReplacementNamed(widget.redirectRoute!);
-        } else {
-          Navigator.of(context).pop(true);
-        }
+        final pendingIntent = await AppRecoveryStore.consumePendingIntent();
+        if (!mounted) return;
+        final restoreIntent = pendingIntent ?? widget.recoveryIntent;
+        await AppRecoveryRouter.restoreAfterLogin(
+          context,
+          recoveryIntent: restoreIntent,
+          redirectRoute: widget.redirectRoute,
+        );
       } else {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(

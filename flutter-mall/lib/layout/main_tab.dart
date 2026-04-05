@@ -6,19 +6,28 @@ import 'bottom_navigation_bar.dart';
 ///
 /// 底部导航
 ///
-/// 作者：刘飞华
+/// 作者：David
 /// 日期：2023/11/21 17:17
 ///
 // 参考https://blog.csdn.net/sinat_41144773/article/details/129906589实现
 class MainTab extends StatefulWidget {
-  const MainTab({super.key});
+  final int initialIndex;
+
+  const MainTab({super.key, this.initialIndex = 0});
 
   @override
   State<MainTab> createState() => _MainTabState();
 }
 
 class _MainTabState extends State<MainTab> {
-  int _bottomNavigationIndex = 0; //底部导航的索引
+  late int _bottomNavigationIndex; //底部导航的索引
+
+  @override
+  void initState() {
+    super.initState();
+    _bottomNavigationIndex = widget.initialIndex;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

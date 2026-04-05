@@ -12,7 +12,7 @@ import '../../category/product/product_detail.dart';
 ///
 /// 品牌详情页面
 ///
-/// 作者：刘飞华
+/// 作者：David
 /// 日期：2023/11/21 17:17
 ///
 class BrandDetail extends StatefulWidget {

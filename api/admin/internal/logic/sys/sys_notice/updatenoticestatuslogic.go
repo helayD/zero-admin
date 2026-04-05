@@ -15,7 +15,7 @@ import (
 
 // UpdateNoticeStatusLogic 更新通知公告表状态状态
 /*
-Author: 刘飞华
+Author: David
 Date: 2025/10/27 15:51:14
 */
 type UpdateNoticeStatusLogic struct {

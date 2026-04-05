@@ -17,7 +17,7 @@ import (
 
 // UpdateSubjectCategoryStatusLogic 更新专题分类表状态状态
 /*
-Author: 刘飞华
+Author: David
 Date: 2025/02/07 10:21:09
 */
 type UpdateSubjectCategoryStatusLogic struct {

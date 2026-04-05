@@ -7,7 +7,7 @@ import '../model/cart_validate.dart';
 ///
 /// 购物车的状态
 ///
-/// 作者：刘飞华
+/// 作者：David
 /// 日期：2023/11/21 17:17
 ///
 class CartModel with ChangeNotifier, DiagnosticableTreeMixin {

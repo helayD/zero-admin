@@ -18,7 +18,7 @@ import 'package:provider/provider.dart';
 /// - 入口1：从"我的订单" → 点击"去评价" → 评价提交页
 /// - 入口2：从商品详情页 → 查看评价列表（只读）
 ///
-/// 作者：刘飞华
+/// 作者：David
 /// 日期：2026/04/02
 ///
 class PinJia extends StatefulWidget {

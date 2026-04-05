@@ -16,7 +16,7 @@ import (
 
 // QueryNoticeDetailLogic 查询通知公告详情
 /*
-Author: 刘飞华
+Author: David
 Date: 2025/10/27 15:49:44
 */
 type QueryNoticeDetailLogic struct {

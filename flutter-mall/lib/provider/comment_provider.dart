@@ -7,7 +7,7 @@ import '../utils/http_util.dart';
 ///
 /// 商品评价状态管理（Story 8-2）
 ///
-/// 作者：刘飞华
+/// 作者：David
 /// 日期：2026/04/02
 ///
 class CommentProvider with ChangeNotifier, DiagnosticableTreeMixin {
@@ -187,7 +187,7 @@ class CommentProvider with ChangeNotifier, DiagnosticableTreeMixin {
 ///
 /// 商品评价提交状态管理（Story 8-2）
 ///
-/// 作者：刘飞华
+/// 作者：David
 /// 日期：2026/04/02
 ///
 class CommentUploadProvider with ChangeNotifier, DiagnosticableTreeMixin {

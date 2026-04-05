@@ -17,7 +17,7 @@ import (
 
 // QuerySubjectListLogic 查询专题表列表
 /*
-Author: 刘飞华
+Author: David
 Date: 2025/02/04 15:04:17
 */
 type QuerySubjectListLogic struct {

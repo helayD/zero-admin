@@ -16,7 +16,7 @@ import (
 
 // AddNoticeLogic 添加通知公告表
 /*
-Author: 刘飞华
+Author: David
 Date: 2025/10/27 15:51:14
 */
 type AddNoticeLogic struct {

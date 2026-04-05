@@ -17,7 +17,7 @@ import (
 
 // UpdatePreferredAreaStatusLogic 更新优选专区状态状态
 /*
-Author: 刘飞华
+Author: David
 Date: 2025/02/04 14:56:41
 */
 type UpdatePreferredAreaStatusLogic struct {

@@ -2,6 +2,7 @@ package subject
 
 import (
 	"context"
+
 	"github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/common/res"
@@ -16,7 +17,7 @@ import (
 
 // DeleteSubjectLogic 删除专题表
 /*
-Author: 刘飞华
+Author: David
 Date: 2025/02/04 15:04:17
 */
 type DeleteSubjectLogic struct {

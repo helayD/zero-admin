@@ -2,7 +2,7 @@ import "../base/base.api"
 
 info (
 	desc:   "首页推荐品牌表"
-	author: "刘飞华"
+	author: "David"
 	email:  "1002219331@qq.com"
 )
 
