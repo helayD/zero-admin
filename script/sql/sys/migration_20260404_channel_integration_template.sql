@@ -206,7 +206,7 @@ SET menu_name = '渠道与集成模板',
     vue_component = 'system/channel_integration_template/index',
     vue_icon = 'el-icon-connection',
     vue_redirect = '',
-    background_url = '/api/sys/channelIntegrationTemplate/queryChannelIntegrationTemplateList',
+    background_url = '/api/sys/channelIntegrationTemplate/queryChannelIntegrationTemplateList,/api/sys/channelIntegrationTemplate/queryChannelIntegrationTemplateDetail,/api/sys/channelIntegrationTemplate/createChannelIntegrationTemplate,/api/sys/channelIntegrationTemplate/updateChannelIntegrationTemplate,/api/sys/channelIntegrationTemplate/updateChannelIntegrationTemplateStatus',
     update_by = 'codex',
     update_time = NOW()
 WHERE background_url = '/api/sys/channelIntegrationTemplate/queryChannelIntegrationTemplateList';
@@ -255,7 +255,7 @@ SELECT
     'system/channel_integration_template/index',
     'el-icon-connection',
     '',
-    '/api/sys/channelIntegrationTemplate/queryChannelIntegrationTemplateList'
+    '/api/sys/channelIntegrationTemplate/queryChannelIntegrationTemplateList,/api/sys/channelIntegrationTemplate/queryChannelIntegrationTemplateDetail,/api/sys/channelIntegrationTemplate/createChannelIntegrationTemplate,/api/sys/channelIntegrationTemplate/updateChannelIntegrationTemplate,/api/sys/channelIntegrationTemplate/updateChannelIntegrationTemplateStatus'
 FROM DUAL
 WHERE NOT EXISTS (
     SELECT 1
