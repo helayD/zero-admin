@@ -96,6 +96,9 @@ func ensureTemplateScopeSubjectExists(ctx context.Context, db *gorm.DB, scopeTyp
 		}
 		return nil
 	case "merchant":
+		if !db.Migrator().HasTable(&merchantmodel.SysMerchant{}) {
+			return errors.New("当前环境未初始化商户主体表")
+		}
 		var merchant merchantTenantRow
 		if err := db.WithContext(ctx).Table("sys_merchant").Select("id, tenant_id").Where("id = ?", merchantID).Take(&merchant).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -439,6 +442,9 @@ func queryTenantBindingSubjects(ctx context.Context, tx *gorm.DB, template chann
 }
 
 func queryMerchantBindingSubjects(ctx context.Context, tx *gorm.DB, template channelIntegrationTemplateRow, impactConfig templateImpactScopeConfig) ([]bindingSubjectRow, error) {
+	if !tx.Migrator().HasTable(&merchantmodel.SysMerchant{}) {
+		return []bindingSubjectRow{}, nil
+	}
 	q := tx.WithContext(ctx).Table("sys_merchant").Select("id AS subject_id, tenant_id, merchant_code AS subject_code, merchant_name AS subject_name, available_channels").Where("business_status <> ?", merchantmodel.MerchantBusinessArchived)
 	if template.ScopeType == "tenant" || template.ScopeType == "merchant" {
 		q = q.Where("tenant_id = ?", template.TenantID)

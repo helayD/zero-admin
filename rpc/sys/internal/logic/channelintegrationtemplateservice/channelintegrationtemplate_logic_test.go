@@ -2,6 +2,7 @@ package channelintegrationtemplateservicelogic
 
 import (
 	"context"
+	"encoding/json"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -191,6 +192,47 @@ func TestQueryChannelIntegrationTemplateListSupportsAliasFilter(t *testing.T) {
 	}
 	if resp.List[0].TargetCode != channeltemplate.TargetMiniProgram {
 		t.Fatalf("unexpected list item: %+v", resp.List[0])
+	}
+}
+
+func TestQueryChannelIntegrationTemplateListGracefullyHandlesMissingMerchantTable(t *testing.T) {
+	svcCtx := newChannelIntegrationTemplateTestSvc(t)
+	if err := svcCtx.DB.Exec(`DROP TABLE sys_merchant`).Error; err != nil {
+		t.Fatalf("drop merchant schema failed: %v", err)
+	}
+	if err := svcCtx.DB.Exec(`INSERT INTO sys_channel_integration_template (
+		template_code, template_name, template_type, target_code, scope_type, platform_id, tenant_id, merchant_id, status,
+		metadata_config, secret_ref_config, intent_contract_config, impact_scope_config, remark, create_by, create_time, update_by
+	) VALUES (
+		'tpl_h5_merchant', 'H5 商户模板', 'channel', 'h5', 'platform', 1, 0, 0, 'enabled',
+		'{}', '{}', '{"home":{"intent":"home","routeKey":"home"}}', '{"subjectTypes":["merchant"]}', '', 'seed', CURRENT_TIMESTAMP, 'seed'
+	)`).Error; err != nil {
+		t.Fatalf("seed merchant template failed: %v", err)
+	}
+
+	logic := NewQueryChannelIntegrationTemplateListLogic(context.Background(), svcCtx)
+	resp, err := logic.QueryChannelIntegrationTemplateList(&sysclient.QueryChannelIntegrationTemplateListReq{
+		PageNum:  1,
+		PageSize: 20,
+	})
+	if err != nil {
+		t.Fatalf("QueryChannelIntegrationTemplateList returned error: %v", err)
+	}
+	if resp.Total != 1 || len(resp.List) != 1 {
+		t.Fatalf("unexpected list response: %+v", resp)
+	}
+	impactScopeConfig := make(map[string]json.RawMessage)
+	if err := json.Unmarshal([]byte(resp.List[0].ImpactScopeConfig), &impactScopeConfig); err != nil {
+		t.Fatalf("decode impact scope config failed: %v", err)
+	}
+	var summary struct {
+		BindingMerchantCount int64 `json:"bindingMerchantCount"`
+	}
+	if err := json.Unmarshal(impactScopeConfig["impactSummary"], &summary); err != nil {
+		t.Fatalf("decode impact summary failed: %v", err)
+	}
+	if summary.BindingMerchantCount != 0 {
+		t.Fatalf("unexpected merchant binding count: %+v", summary)
 	}
 }
 
