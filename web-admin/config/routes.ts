@@ -109,8 +109,13 @@
       {
         name: '模板治理',
         icon: 'table',
-        path: '/system/channel-integration-template/list',
+        path: '/system/channelIntegrationTemplate/list',
         component: './system/channel_integration_template',
+      },
+      {
+        path: '/system/channel-integration-template/list',
+        redirect: '/system/channelIntegrationTemplate/list',
+        hideInMenu: true,
       },
       // {
       //   name: '参数管理',
