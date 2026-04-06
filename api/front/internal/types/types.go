@@ -548,7 +548,7 @@ type DirectOrderItemReq struct {
 }
 
 type GenerateOrderReq struct {
-	CartIds                []int64             `json:"cartIds"` //购物车id
+	CartIds                []int64             `json:"cartIds,optional"` //购物车id
 	DirectItem             *DirectOrderItemReq `json:"directItem,optional"`
 	CouponId               int64               `json:"couponId"`                //优惠券id
 	MemberReceiveAddressId int64               `json:"memberReceiveAddressId"`  //
