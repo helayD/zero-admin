@@ -6,6 +6,7 @@ package handler
 import (
 	"net/http"
 
+	appversion "github.com/feihua/zero-admin/api/front/internal/handler/app/version"
 	home "github.com/feihua/zero-admin/api/front/internal/handler/home"
 	memberaddress "github.com/feihua/zero-admin/api/front/internal/handler/member/address"
 	memberattention "github.com/feihua/zero-admin/api/front/internal/handler/member/attention"
@@ -30,13 +31,30 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		[]rest.Route{
 			{
 				Method:  http.MethodGet,
-				Path:    "/index",
-				Handler: home.IndexHandler(serverCtx),
+				Path:    "/version/policy",
+				Handler: appversion.QueryAppVersionPolicyHandler(serverCtx),
 			},
+		},
+		rest.WithPrefix("/api/app"),
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
 			{
 				Method:  http.MethodPost,
 				Path:    "/recordHomeAdvertiseClick",
 				Handler: home.RecordHomeAdvertiseClickHandler(serverCtx),
+			},
+		},
+		rest.WithPrefix("/api/home"),
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodGet,
+				Path:    "/index",
+				Handler: home.IndexHandler(serverCtx),
 			},
 		},
 		rest.WithPrefix("/api/home"),
@@ -253,11 +271,6 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: ordercart.QueryCartItemDetailHandler(serverCtx),
 			},
 			{
-				Method:  http.MethodGet,
-				Path:    "/queryPromotionList",
-				Handler: ordercart.QueryPromotionListHandler(serverCtx),
-			},
-			{
 				Method:  http.MethodPost,
 				Path:    "/queryPromotionList",
 				Handler: ordercart.QueryPromotionListHandler(serverCtx),
@@ -303,11 +316,6 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodGet,
 				Path:    "/deleteOrder",
 				Handler: orderorder.DeleteOrderHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodGet,
-				Path:    "/generateConfirmOrder",
-				Handler: orderorder.GenerateConfirmOrderHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodPost,
@@ -431,19 +439,12 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Path:    "/queryCommentList",
 				Handler: productcomment.QueryCommentListHandler(serverCtx),
 			},
-		},
-		rest.WithPrefix("/api/product/comment"),
-	)
-
-	server.AddRoutes(
-		[]rest.Route{
 			{
 				Method:  http.MethodPost,
 				Path:    "/submitAppeal",
 				Handler: productcomment.SubmitCommentAppealHandler(serverCtx),
 			},
 		},
-		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
 		rest.WithPrefix("/api/product/comment"),
 	)
 

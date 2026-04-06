@@ -1,0 +1,54 @@
+info (
+	desc:   "App 版本治理"
+	author: "Codex"
+	email:  "1002219331@qq.com"
+)
+
+type AppVersionPolicyReq {
+	Scene          string `form:"scene,optional"`
+	TargetType     string `form:"targetType,optional"`
+	TargetId       int64  `form:"targetId,optional"`
+	Channel        string `form:"channel,optional"`
+	InstallerStore string `form:"installerStore,optional"`
+}
+
+type AppVersionPolicyData {
+	CurrentVersion      string   `json:"currentVersion"`
+	MinSupportedVersion string   `json:"minSupportedVersion"`
+	RecommendedVersion  string   `json:"recommendedVersion"`
+	RequiredVersion     string   `json:"requiredVersion"`
+	UpdateMode          string   `json:"updateMode"`
+	EffectiveAt         string   `json:"effectiveAt"`
+	DeadlineAt          string   `json:"deadlineAt"`
+	AffectedCapabilities []string `json:"affectedCapabilities"`
+	Blocking            bool     `json:"blocking"`
+	ReleaseNotesSummary string   `json:"releaseNotesSummary"`
+	UpgradeUrl          string   `json:"upgradeUrl"`
+	StoreTarget         string   `json:"storeTarget"`
+	RecoveryHint        string   `json:"recoveryHint"`
+	TraceId             string   `json:"traceId"`
+	Platform            string   `json:"platform"`
+	Channel             string   `json:"channel"`
+	InstallerStore      string   `json:"installerStore"`
+	Scene               string   `json:"scene"`
+	TargetType          string   `json:"targetType"`
+	TargetId            int64    `json:"targetId"`
+}
+
+type AppVersionPolicyResp {
+	Code    int64                `json:"code"`
+	Message string               `json:"message"`
+	Data    AppVersionPolicyData `json:"data"`
+}
+
+@server (
+	group:    app/version
+	prefix:   /api/app
+	tags:     "App 版本治理"
+	authType: apiKey
+)
+service front-api {
+	// 查询当前客户端版本策略
+	@handler QueryAppVersionPolicy
+	get /version/policy (AppVersionPolicyReq) returns (AppVersionPolicyResp)
+}

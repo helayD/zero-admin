@@ -1,3 +1,4 @@
+import "app/app_version.api"
 import "home/home.api"
 import "home/home_advertise.api"
 import "home/home_recommend_subject.api"

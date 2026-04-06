@@ -50,6 +50,19 @@ type Config struct {
 		Pass    string
 	}
 
+	UpgradePolicy struct {
+		CurrentVersion       string
+		MinSupportedVersion  string
+		RecommendedVersion   string
+		EffectiveAt          string
+		DeadlineAt           string
+		ReleaseNotesSummary  string
+		UpgradeUrl           string
+		StoreTarget          string
+		RecoveryHint         string
+		AffectedCapabilities []string
+	}
+
 	Swagger struct {
 		IsTest bool
 		Path   string

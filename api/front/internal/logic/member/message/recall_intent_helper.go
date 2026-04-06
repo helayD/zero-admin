@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	logiccommon "github.com/feihua/zero-admin/api/front/internal/logic/common"
 	"github.com/feihua/zero-admin/api/front/internal/types"
 	"github.com/feihua/zero-admin/rpc/ums/umsclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -32,6 +33,13 @@ const (
 )
 
 func WithRecallRequestMetadata(ctx context.Context, metadata RecallRequestMetadata) context.Context {
+	ctx = logiccommon.WithClientRequestMetadata(ctx, logiccommon.ClientRequestMetadata{
+		AppVersion:   metadata.AppVersion,
+		Platform:     metadata.Platform,
+		IntentSource: metadata.IntentSource,
+		IntentID:     metadata.IntentID,
+		NetworkState: metadata.NetworkState,
+	})
 	ctx = context.WithValue(ctx, recallAppVersionContextKey, strings.TrimSpace(metadata.AppVersion))
 	ctx = context.WithValue(ctx, recallPlatformContextKey, strings.TrimSpace(metadata.Platform))
 	ctx = context.WithValue(ctx, recallIntentSourceContextKey, strings.TrimSpace(metadata.IntentSource))
@@ -65,7 +73,7 @@ func messageIntentResponseFromRPC(ctx context.Context, item *umsclient.MemberMes
 
 	if appVersion := recallStringFromContext(ctx, recallAppVersionContextKey); appVersion != "" &&
 		intent.MinAppVersion != "" &&
-		compareVersion(appVersion, intent.MinAppVersion) < 0 {
+		logiccommon.CompareAppVersion(appVersion, intent.MinAppVersion) < 0 {
 		intent.Blocked = true
 		intent.FailureReason = recallFailureMinVersionUnmet
 		if strings.TrimSpace(intent.RecoveryHint) == "" {
@@ -90,51 +98,6 @@ func messageIntentResponseFromRPC(ctx context.Context, item *umsclient.MemberMes
 func recallStringFromContext(ctx context.Context, key recallRequestContextKey) string {
 	value, _ := ctx.Value(key).(string)
 	return strings.TrimSpace(value)
-}
-
-func compareVersion(current, minimum string) int {
-	currentParts := splitVersion(current)
-	minimumParts := splitVersion(minimum)
-	maxLen := len(currentParts)
-	if len(minimumParts) > maxLen {
-		maxLen = len(minimumParts)
-	}
-
-	for i := 0; i < maxLen; i++ {
-		currentValue := versionPartAt(currentParts, i)
-		minimumValue := versionPartAt(minimumParts, i)
-		if currentValue > minimumValue {
-			return 1
-		}
-		if currentValue < minimumValue {
-			return -1
-		}
-	}
-
-	return 0
-}
-
-func splitVersion(value string) []int {
-	rawParts := strings.Split(strings.TrimSpace(value), ".")
-	result := make([]int, 0, len(rawParts))
-	for _, rawPart := range rawParts {
-		number := 0
-		for _, char := range rawPart {
-			if char < '0' || char > '9' {
-				break
-			}
-			number = number*10 + int(char-'0')
-		}
-		result = append(result, number)
-	}
-	return result
-}
-
-func versionPartAt(parts []int, idx int) int {
-	if idx < 0 || idx >= len(parts) {
-		return 0
-	}
-	return parts[idx]
 }
 
 func defaultRecallValue(value, fallback string) string {

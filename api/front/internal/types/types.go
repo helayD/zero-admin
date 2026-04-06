@@ -64,6 +64,43 @@ type AdvertiseList struct {
 	Sort         int32  `json:"sort"`         //排序
 }
 
+type AppVersionPolicyData struct {
+	CurrentVersion       string   `json:"currentVersion"`
+	MinSupportedVersion  string   `json:"minSupportedVersion"`
+	RecommendedVersion   string   `json:"recommendedVersion"`
+	RequiredVersion      string   `json:"requiredVersion"`
+	UpdateMode           string   `json:"updateMode"`
+	EffectiveAt          string   `json:"effectiveAt"`
+	DeadlineAt           string   `json:"deadlineAt"`
+	AffectedCapabilities []string `json:"affectedCapabilities"`
+	Blocking             bool     `json:"blocking"`
+	ReleaseNotesSummary  string   `json:"releaseNotesSummary"`
+	UpgradeUrl           string   `json:"upgradeUrl"`
+	StoreTarget          string   `json:"storeTarget"`
+	RecoveryHint         string   `json:"recoveryHint"`
+	TraceId              string   `json:"traceId"`
+	Platform             string   `json:"platform"`
+	Channel              string   `json:"channel"`
+	InstallerStore       string   `json:"installerStore"`
+	Scene                string   `json:"scene"`
+	TargetType           string   `json:"targetType"`
+	TargetId             int64    `json:"targetId"`
+}
+
+type AppVersionPolicyReq struct {
+	Scene          string `form:"scene,optional"`
+	TargetType     string `form:"targetType,optional"`
+	TargetId       int64  `form:"targetId,optional"`
+	Channel        string `form:"channel,optional"`
+	InstallerStore string `form:"installerStore,optional"`
+}
+
+type AppVersionPolicyResp struct {
+	Code    int64                `json:"code"`
+	Message string               `json:"message"`
+	Data    AppVersionPolicyData `json:"data"`
+}
+
 type ApplyAfterSalesReq struct {
 	OrderId     int64  `json:"orderId"`     // 关联订单ID
 	Type        int32  `json:"type"`        // 售后类型：0=退货退款, 1=仅退款, 2=换货
@@ -507,6 +544,12 @@ type DeleteOrderResp struct {
 	Message string `json:"message"`
 }
 
+type DirectOrderItemReq struct {
+	ProductId    int64 `json:"productId"`
+	ProductSkuId int64 `json:"productSkuId"`
+	Quantity     int32 `json:"quantity"`
+}
+
 type GenerateConfirmOrderReq struct {
 	Ids        []int64             `json:"ids,optional" form:"ids,optional"`
 	DirectItem *DirectOrderItemReq `json:"directItem,optional"`
@@ -539,12 +582,6 @@ type GenerateOrderData struct {
 	PromotionInfo     string `json:"promotionInfo"`     // 活动信息
 	Note              string `json:"note"`              // 订单备注
 	UseIntegration    int32  `json:"useIntegration"`    // 下单时使用的积分
-}
-
-type DirectOrderItemReq struct {
-	ProductId    int64 `json:"productId"`
-	ProductSkuId int64 `json:"productSkuId"`
-	Quantity     int32 `json:"quantity"`
 }
 
 type GenerateOrderReq struct {
@@ -585,16 +622,6 @@ type HomeResp struct {
 	Code    int64  `json:"code"`
 	Message string `json:"message"`
 	Data    Data   `json:"data"`
-}
-
-type RecordHomeAdvertiseClickReq struct {
-	AdvertiseId int64  `json:"advertiseId"`      //首页广告ID
-	TraceId     string `json:"traceId,optional"` //幂等追踪ID
-}
-
-type RecordHomeAdvertiseClickResp struct {
-	Code    int64  `json:"code"`
-	Message string `json:"message"`
 }
 
 type IndexBrandData struct {
@@ -1084,16 +1111,6 @@ type QueryCommentListResp struct {
 	Total   int64             `json:"total"`
 }
 
-type SubmitCommentAppealReq struct {
-	Id           string `json:"id"`
-	AppealReason string `json:"appealReason"`
-}
-
-type SubmitCommentAppealResp struct {
-	Code    int64  `json:"code"`
-	Message string `json:"message"`
-}
-
 type QueryLogisticsReq struct {
 	OrderId int64 `form:"orderId"`
 }
@@ -1275,6 +1292,16 @@ type ReadHistoryResp struct {
 	Message string `json:"message"`
 }
 
+type RecordHomeAdvertiseClickReq struct {
+	AdvertiseId int64  `json:"advertiseId"`      //首页广告ID
+	TraceId     string `json:"traceId,optional"` //幂等追踪ID
+}
+
+type RecordHomeAdvertiseClickResp struct {
+	Code    int64  `json:"code"`
+	Message string `json:"message"`
+}
+
 type RegisterReq struct {
 	Nickname        string `json:"nickname"`        //昵称
 	Password        string `json:"password"`        //密码
@@ -1369,6 +1396,16 @@ type SubjectList struct {
 	ForwardCount    int32  `json:"forwardCount"`    //转发数
 	CategoryName    string `json:"categoryName"`    //专题分类名称
 	Sort            int32  `json:"sort"`            //排序
+}
+
+type SubmitCommentAppealReq struct {
+	Id           string `json:"id"`
+	AppealReason string `json:"appealReason"`
+}
+
+type SubmitCommentAppealResp struct {
+	Code    int64  `json:"code"`
+	Message string `json:"message"`
 }
 
 type UpdateAddressStatusReq struct {

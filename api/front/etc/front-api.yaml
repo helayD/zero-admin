@@ -88,3 +88,21 @@ Rabbitmq:
 Redis:
   Address: 127.0.0.1:6379
   Pass: "123456"
+
+UpgradePolicy:
+  CurrentVersion: "1.0.0"
+  MinSupportedVersion: "1.0.0"
+  RecommendedVersion: "1.1.0"
+  EffectiveAt: "2026-04-30T00:00:00+08:00"
+  DeadlineAt: "2026-05-31T23:59:59+08:00"
+  ReleaseNotesSummary: "升级后可获得统一升级门闸、恢复链路与关键交易兼容保护。"
+  UpgradeUrl: "https://example.com/download/zero-admin-app"
+  StoreTarget: "browser_download"
+  RecoveryHint: "升级完成后将优先恢复你刚才的目标；若目标已失效，会回到可用替代页面。"
+  AffectedCapabilities:
+    - "app_bootstrap"
+    - "message_recall"
+    - "order_confirm"
+    - "order_pay"
+    - "order_recovery"
+    - "after_sales_apply"
