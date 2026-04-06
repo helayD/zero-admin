@@ -6,23 +6,23 @@ declare namespace API {
     code: string;
     message: string;
     data: UserInfoData;
-  }
+  };
 
   type UserInfoData = {
     avatar: string;
     name: string;
     menuTree: [];
-  }
+  };
 
   type LoginResult = {
     code: string;
     message: string;
     data: LoginData;
-  }
+  };
 
   type LoginData = {
     token: string;
-  }
+  };
 
   type PageParams = {
     current?: number;
@@ -57,10 +57,9 @@ declare namespace API {
   };
 
   type LoginParams = {
-    username?: string;
+    account?: string;
     password?: string;
     autoLogin?: boolean;
-    type?: string;
   };
 
   type ErrorResponse = {

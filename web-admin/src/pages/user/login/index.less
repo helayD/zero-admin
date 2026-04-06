@@ -1,354 +1,595 @@
 @import (reference) '~antd/es/style/themes/index';
 
 .container {
+  --brand-950: #0f172a;
+  --brand-900: #172554;
+  --brand-700: #1d4ed8;
+  --brand-500: #3b82f6;
+  --brand-100: #dbeafe;
+  --accent-500: #f97316;
+  --surface-0: #fff;
+  --surface-50: #f8fafc;
+  --surface-100: #eff6ff;
+  --text-main: #0f172a;
+  --text-subtle: #475569;
+  --border-soft: rgba(148, 163, 184, 0.24);
+
   display: flex;
-  flex-direction: row;
-  height: 100vh;
-  overflow: hidden;
-  background: #f0f2f5;
+  min-height: 100vh;
+  background: radial-gradient(circle at top left, rgba(37, 99, 235, 0.1) 0%, transparent 32%),
+    radial-gradient(circle at bottom right, rgba(249, 115, 22, 0.08) 0%, transparent 28%),
+    linear-gradient(135deg, #f8fbff 0%, #eef4fb 46%, #f6f8fb 100%);
 }
 
-/* ========== 左侧品牌展示区 ========== */
 .brandSide {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 40%, #0f3460 100%);
   position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  padding: 72px 72px 56px 80px;
   overflow: hidden;
-  padding: 60px;
+  background: linear-gradient(145deg, #0f172a 0%, #14213d 48%, #1e3a8a 100%);
+
+  &::before,
+  &::after {
+    position: absolute;
+    content: '';
+    pointer-events: none;
+    inset: auto;
+  }
 
   &::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle at 30% 50%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
-      radial-gradient(circle at 70% 80%, rgba(139, 92, 246, 0.06) 0%, transparent 40%);
-    animation: floatBg 20s ease-in-out infinite;
+    top: -120px;
+    right: -90px;
+    width: 340px;
+    height: 340px;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.3) 0%, transparent 72%);
+    border-radius: 50%;
   }
 
   &::after {
-    content: '';
-    position: absolute;
-    width: 400px;
-    height: 400px;
+    bottom: -160px;
+    left: -140px;
+    width: 420px;
+    height: 420px;
+    background: radial-gradient(circle, rgba(249, 115, 22, 0.2) 0%, transparent 72%);
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
-    top: 20%;
-    right: -100px;
-    animation: pulse 8s ease-in-out infinite;
   }
-}
-
-@keyframes floatBg {
-  0%, 100% { transform: translate(0, 0) rotate(0deg); }
-  25% { transform: translate(10px, -10px) rotate(1deg); }
-  50% { transform: translate(-5px, 15px) rotate(-1deg); }
-  75% { transform: translate(-10px, -5px) rotate(0.5deg); }
-}
-
-@keyframes pulse {
-  0%, 100% { transform: scale(1); opacity: 0.5; }
-  50% { transform: scale(1.2); opacity: 0.8; }
 }
 
 .brandContent {
   position: relative;
   z-index: 1;
-  text-align: center;
-  max-width: 480px;
+  max-width: 720px;
+}
+
+.brandEyebrow {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  color: rgba(219, 234, 254, 0.92);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(219, 234, 254, 0.16);
+  border-radius: 999px;
+}
+
+.brandHero {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  margin: 24px 0 28px;
 }
 
 .brandLogo {
-  width: 72px;
-  height: 72px;
-  margin-bottom: 32px;
-  filter: drop-shadow(0 4px 12px rgba(59, 130, 246, 0.3));
+  width: 60px;
+  height: 60px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(219, 234, 254, 0.18);
+  border-radius: 18px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.24);
+}
+
+.brandHeroText {
+  min-width: 0;
 }
 
 .brandTitle {
-  font-size: 36px;
+  color: #fff;
   font-weight: 700;
-  color: #ffffff;
-  margin-bottom: 16px;
-  letter-spacing: -0.5px;
-  line-height: 1.2;
+  font-size: 34px;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+
+.brandTagline {
+  margin-top: 6px;
+  color: rgba(226, 232, 240, 0.78);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.brandHeadline {
+  max-width: 12ch;
+  margin-bottom: 20px;
+  color: #fff;
+  font-weight: 700;
+  font-size: clamp(38px, 3.4vw, 54px);
+  line-height: 1.12;
+  letter-spacing: -0.04em;
 }
 
 .brandSubtitle {
+  max-width: 640px;
+  margin-bottom: 26px;
+  color: rgba(226, 232, 240, 0.84);
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.6);
-  line-height: 1.8;
-  margin-bottom: 48px;
+  line-height: 1.85;
 }
 
-.featureList {
+.modulePills {
   display: flex;
-  flex-direction: column;
-  gap: 20px;
-  text-align: left;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 32px;
 }
 
-.featureItem {
-  display: flex;
+.modulePill {
+  display: inline-flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px 20px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(10px);
-  transition: all 0.3s ease;
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(59, 130, 246, 0.3);
-    transform: translateX(4px);
-  }
+  padding: 8px 14px;
+  color: #dbeafe;
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 1;
+  background: rgba(15, 23, 42, 0.26);
+  border: 1px solid rgba(219, 234, 254, 0.14);
+  border-radius: 999px;
 }
 
-.featureIcon {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  display: flex;
+.brandGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 28px;
+}
+
+.brandPanel {
+  min-height: 208px;
+  padding: 22px 20px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 24px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(18px);
+}
+
+.brandPanelIcon {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  margin-bottom: 16px;
+  color: #fff;
+  font-size: 20px;
+  background: linear-gradient(135deg, var(--accent-500) 0%, #ea580c 100%);
+  border-radius: 14px;
+  box-shadow: 0 12px 28px rgba(234, 88, 12, 0.3);
 }
 
-.featureIconBlue {
-  background: rgba(59, 130, 246, 0.15);
-  color: #60a5fa;
+.brandPanelTitle {
+  margin-bottom: 10px;
+  color: #fff;
+  font-weight: 600;
+  font-size: 17px;
+  line-height: 1.4;
 }
 
-.featureIconPurple {
-  background: rgba(139, 92, 246, 0.15);
-  color: #a78bfa;
-}
-
-.featureIconGreen {
-  background: rgba(16, 185, 129, 0.15);
-  color: #34d399;
-}
-
-.featureText {
+.brandPanelDesc {
+  color: rgba(226, 232, 240, 0.8);
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.85);
-  font-weight: 500;
+  line-height: 1.8;
 }
 
-/* ========== 右侧登录区 ========== */
-.loginSide {
-  width: 520px;
+.trustStrip {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.trustTag {
+  display: inline-flex;
   align-items: center;
-  background: #ffffff;
-  padding: 60px;
+  padding: 10px 14px;
+  color: rgba(255, 255, 255, 0.92);
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 1;
+  background: rgba(15, 23, 42, 0.3);
+  border: 1px solid rgba(219, 234, 254, 0.14);
+  border-radius: 14px;
+}
+
+.loginSide {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 520px;
+  padding: 48px 32px 32px;
+}
+
+.loginShell {
   position: relative;
-  box-shadow: -20px 0 60px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  max-width: 432px;
 }
 
 .lang {
   position: absolute;
-  top: 20px;
-  right: 24px;
+  top: 0;
+  right: 0;
   z-index: 10;
+
   :global(.ant-dropdown-trigger) {
     margin-right: 0;
+    color: #334155;
   }
 }
 
 .loginCard {
-  width: 100%;
-  max-width: 380px;
+  margin-top: 52px;
+  padding: 32px 32px 28px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--border-soft);
+  border-radius: 28px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.16);
+  backdrop-filter: blur(18px);
+}
+
+.loginBadge {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 18px;
+  padding: 8px 14px;
+  color: var(--brand-700);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  background: rgba(37, 99, 235, 0.08);
+  border: 1px solid rgba(37, 99, 235, 0.12);
+  border-radius: 999px;
 }
 
 .loginHeader {
-  margin-bottom: 40px;
+  margin-bottom: 24px;
 }
 
 .loginLogo {
   display: flex;
-  align-items: center;
   gap: 12px;
-  margin-bottom: 32px;
+  align-items: center;
+  margin-bottom: 20px;
 
   img {
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
+    padding: 8px;
+    background: var(--surface-100);
+    border-radius: 14px;
   }
 
   span {
-    font-size: 20px;
+    color: var(--text-main);
     font-weight: 700;
-    color: #1a1a2e;
-    letter-spacing: -0.3px;
+    font-size: 20px;
+    letter-spacing: -0.02em;
   }
 }
 
 .loginTitle {
-  font-size: 28px;
+  margin-bottom: 10px;
+  color: var(--text-main);
   font-weight: 700;
-  color: #1a1a2e;
-  margin-bottom: 8px;
-  line-height: 1.3;
+  font-size: 30px;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
 }
 
 .loginSubtitle {
-  font-size: 15px;
-  color: #8c8c8c;
+  color: var(--text-subtle);
+  font-size: 14px;
+  line-height: 1.75;
 }
 
-/* ========== 表单样式覆盖 ========== */
+.securityAlert {
+  margin-bottom: 20px;
+  background: linear-gradient(180deg, #f8fbff 0%, #eff6ff 100%);
+  border: 1px solid #dbeafe;
+  border-radius: 18px;
+}
+
 .loginFormWrapper {
   :global {
     .ant-pro-form-login-main {
+      width: 100%;
       min-width: unset;
       max-width: unset;
-      width: 100%;
     }
 
-    .ant-pro-form-login-header {
+    .ant-pro-form-login-header,
+    .ant-pro-form-login-desc,
+    .ant-pro-form-login-other {
       display: none;
     }
 
-    .ant-pro-form-login-desc {
-      display: none;
+    .ant-form-item {
+      margin-bottom: 18px;
     }
 
-    .ant-tabs-nav {
-      margin-bottom: 24px;
-
-      &::before {
-        border-bottom: 1px solid #f0f0f0;
-      }
+    .ant-form-vertical .ant-form-item-label {
+      padding-bottom: 8px;
     }
 
-    .ant-tabs-tab {
-      font-size: 15px;
-      padding: 8px 0;
+    .ant-form-item-label > label {
+      height: auto;
+      color: var(--text-main);
+      font-weight: 600;
+      font-size: 13px;
     }
 
-    .ant-tabs-tab-active .ant-tabs-tab-btn {
-      color: #1a1a2e;
+    .ant-form-item-explain-error {
+      font-size: 12px;
+    }
+
+    .ant-alert-message {
       font-weight: 600;
     }
 
-    .ant-tabs-ink-bar {
-      background: linear-gradient(90deg, #3b82f6, #8b5cf6);
-      height: 3px !important;
-      border-radius: 3px;
+    .ant-alert-description {
+      line-height: 1.7;
     }
 
     .ant-input-affix-wrapper {
+      min-height: 52px;
       padding: 10px 14px;
-      border-radius: 10px;
-      border: 1.5px solid #e8e8e8;
-      transition: all 0.3s ease;
+      background: var(--surface-50);
+      border: 1px solid #cbd5e1;
+      border-radius: 14px;
+      transition: all 0.2s ease;
 
       &:hover {
-        border-color: #3b82f6;
+        background: var(--surface-0);
+        border-color: #93c5fd;
       }
 
       &:focus,
       &-focused {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        background: var(--surface-0);
+        border-color: var(--brand-700);
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
       }
     }
 
     .ant-input {
+      color: var(--text-main);
       font-size: 14px;
+      line-height: 1.6;
+      background: transparent;
     }
 
-    .ant-btn-primary {
-      height: 46px;
-      border-radius: 10px;
-      font-size: 15px;
-      font-weight: 600;
-      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-      border: none;
-      box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
-      transition: all 0.3s ease;
-
-      &:hover {
-        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.45);
-        transform: translateY(-1px);
-      }
-
-      &:active {
-        transform: translateY(0);
-        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-      }
-    }
-
-    .ant-pro-form-login-other {
-      display: none;
+    .ant-checkbox-wrapper {
+      color: var(--text-subtle);
+      font-size: 13px;
+      line-height: 1.6;
     }
   }
 }
 
 .prefixIcon {
-  color: #bfbfbf;
+  color: #64748b;
   font-size: 16px;
 }
 
-/* ========== Footer ========== */
-.footer {
-  position: absolute;
-  bottom: 24px;
-  left: 0;
-  right: 0;
-  text-align: center;
-  font-size: 12px;
-  color: #bfbfbf;
+.formOptions {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
 }
 
-/* ========== 响应式 ========== */
-@media (max-width: 992px) {
+.supportText {
+  flex: 1;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.6;
+  text-align: right;
+}
+
+.submitButton {
+  width: 100%;
+  height: 52px;
+  font-weight: 600;
+  font-size: 15px;
+  background: linear-gradient(135deg, var(--brand-700) 0%, #1e40af 100%);
+  border: none;
+  border-radius: 14px;
+  box-shadow: 0 14px 30px rgba(37, 99, 235, 0.28);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+
+  &:hover,
+  &:focus {
+    background: linear-gradient(135deg, var(--brand-700) 0%, #1e40af 100%);
+    box-shadow: 0 18px 34px rgba(37, 99, 235, 0.3);
+    transform: translateY(-1px);
+    filter: brightness(1.02);
+  }
+
+  &:active {
+    box-shadow: 0 12px 24px rgba(37, 99, 235, 0.24);
+    transform: translateY(0);
+  }
+}
+
+.submitHint {
+  margin-top: 14px;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.footer {
+  margin-top: 16px;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.7;
+  text-align: center;
+}
+
+@media (max-width: 1440px) {
   .brandSide {
-    display: none;
+    padding: 64px 52px 48px 56px;
+  }
+
+  .brandGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1180px) {
+  .container {
+    flex-direction: column;
+  }
+
+  .brandSide {
+    padding: 40px 28px 18px;
+  }
+
+  .brandHeadline {
+    max-width: none;
+    font-size: 36px;
+  }
+
+  .brandGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .brandPanel {
+    min-height: unset;
   }
 
   .loginSide {
     width: 100%;
-    box-shadow: none;
+    padding: 0 28px 32px;
+  }
+
+  .loginShell {
+    max-width: 560px;
+  }
+
+  .loginCard {
+    margin-top: 28px;
   }
 }
 
-@media (max-width: 576px) {
+@media (max-width: 768px) {
+  .brandSide {
+    padding: 32px 20px 12px;
+  }
+
+  .brandEyebrow {
+    font-size: 11px;
+  }
+
+  .brandHero {
+    margin: 20px 0 18px;
+  }
+
+  .brandTitle {
+    font-size: 28px;
+  }
+
+  .brandHeadline {
+    font-size: 30px;
+  }
+
+  .brandSubtitle {
+    margin-bottom: 20px;
+    font-size: 14px;
+  }
+
+  .modulePills {
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .modulePill,
+  .trustTag {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .brandGrid {
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .brandPanel {
+    padding: 18px 16px;
+    border-radius: 20px;
+  }
+
   .loginSide {
-    padding: 40px 24px;
+    padding: 0 16px 24px;
+  }
+
+  .loginCard {
+    padding: 24px 20px 20px;
+    border-radius: 22px;
   }
 
   .loginTitle {
     font-size: 24px;
   }
 
-  .loginCard {
-    max-width: 100%;
+  .formOptions {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .supportText {
+    text-align: left;
+  }
+
+  .lang {
+    position: static;
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 12px;
   }
 }
 
-.icon {
-  margin-left: 8px;
-  color: rgba(0, 0, 0, 0.2);
-  font-size: 24px;
-  vertical-align: middle;
-  cursor: pointer;
-  transition: color 0.3s;
+@media (max-width: 480px) {
+  .brandGrid,
+  .trustStrip {
+    display: none;
+  }
 
-  &:hover {
-    color: @primary-color;
+  .brandSubtitle {
+    margin-bottom: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .container,
+  .container * {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
   }
 }
