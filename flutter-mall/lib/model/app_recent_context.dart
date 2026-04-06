@@ -4,6 +4,8 @@ enum AppRecentTargetType {
   orderList,
   productDetail,
   orderDetail,
+  settings,
+  commentCompose,
   couponList,
   couponCenter,
   afterSalesApply,
@@ -24,6 +26,10 @@ AppRecentTargetType? appRecentTargetTypeFromValue(String? value) {
       return AppRecentTargetType.productDetail;
     case 'order_detail':
       return AppRecentTargetType.orderDetail;
+    case 'settings':
+      return AppRecentTargetType.settings;
+    case 'comment_compose':
+      return AppRecentTargetType.commentCompose;
     case 'coupon_list':
       return AppRecentTargetType.couponList;
     case 'coupon_center':
@@ -53,6 +59,10 @@ String appRecentTargetTypeToValue(AppRecentTargetType type) {
       return 'product_detail';
     case AppRecentTargetType.orderDetail:
       return 'order_detail';
+    case AppRecentTargetType.settings:
+      return 'settings';
+    case AppRecentTargetType.commentCompose:
+      return 'comment_compose';
     case AppRecentTargetType.couponList:
       return 'coupon_list';
     case AppRecentTargetType.couponCenter:
@@ -406,11 +416,13 @@ class AppRecentContext {
       case AppRecentTargetType.home:
       case AppRecentTargetType.cart:
       case AppRecentTargetType.orderList:
+      case AppRecentTargetType.settings:
       case AppRecentTargetType.couponList:
       case AppRecentTargetType.couponCenter:
         return targetId == null || targetId > 0;
       case AppRecentTargetType.productDetail:
       case AppRecentTargetType.orderDetail:
+      case AppRecentTargetType.commentCompose:
       case AppRecentTargetType.afterSalesApply:
         return targetId != null && targetId > 0;
       case AppRecentTargetType.activity:
@@ -432,6 +444,8 @@ class AppRecentContext {
         return tabIndex == null || (tabIndex >= 0 && tabIndex <= 2);
       case AppRecentTargetType.productDetail:
       case AppRecentTargetType.orderDetail:
+      case AppRecentTargetType.settings:
+      case AppRecentTargetType.commentCompose:
       case AppRecentTargetType.couponCenter:
       case AppRecentTargetType.afterSalesApply:
       case AppRecentTargetType.activity:
@@ -481,6 +495,7 @@ class AppRecentContext {
       case AppRecentTargetType.home:
       case AppRecentTargetType.cart:
       case AppRecentTargetType.orderList:
+      case AppRecentTargetType.settings:
       case AppRecentTargetType.couponList:
       case AppRecentTargetType.couponCenter:
       case AppRecentTargetType.activity:
@@ -489,6 +504,7 @@ class AppRecentContext {
         return true;
       case AppRecentTargetType.productDetail:
       case AppRecentTargetType.orderDetail:
+      case AppRecentTargetType.commentCompose:
       case AppRecentTargetType.afterSalesApply:
         return false;
     }
@@ -516,6 +532,8 @@ class AppRecentContext {
         return true;
       case AppRecentTargetType.productDetail:
       case AppRecentTargetType.orderDetail:
+      case AppRecentTargetType.settings:
+      case AppRecentTargetType.commentCompose:
       case AppRecentTargetType.couponCenter:
       case AppRecentTargetType.afterSalesApply:
       case AppRecentTargetType.activity:

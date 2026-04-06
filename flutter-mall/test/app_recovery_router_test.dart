@@ -1,13 +1,23 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_mall/layout/main_tab.dart';
 import 'package:flutter_mall/model/app_recent_context.dart';
+import 'package:flutter_mall/model/permission_flow_context.dart';
 import 'package:flutter_mall/utils/app_recovery_router.dart';
+import 'package:flutter_mall/utils/app_recovery_store.dart';
+import 'package:flutter_mall/utils/shared_preferences_util.dart';
 import 'package:flutter_mall/view/mine/coupon/available_coupon_list.dart';
 import 'package:flutter_mall/view/mine/coupon/coupon_list.dart';
 import 'package:flutter_mall/view/mine/order/order_list.dart';
+import 'package:flutter_mall/view/mine/ping_jia/ping_jia.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    await SharedPreferencesUtil.init();
+  });
 
   test('fallback widgets keep original intent source', () {
     const source = 'message_recall';
@@ -66,5 +76,53 @@ void main() {
     );
     expect(couponCenterFallback, isA<AvailableCouponList>());
     expect((couponCenterFallback as AvailableCouponList).intentSource, source);
+  });
+
+  test('comment compose recovery uses saved draft snapshot', () async {
+    await AppRecoveryStore.saveCommentDraft(
+      CommentDraftSnapshot(
+        orderId: 1001,
+        productId: 2001,
+        productName: '测试商品',
+        productPic: 'https://example.com/pic.png',
+        productAttribute: '红色',
+        memberNickName: '张三',
+        starRating: 5,
+        content: '',
+        pics: <String>[],
+        updatedAt: DateTime.now(),
+      ),
+    );
+
+    final target = AppRecoveryRouter.buildTarget(
+      AppRecentContext.create(
+        targetType: AppRecentTargetType.commentCompose,
+        targetId: 1001,
+        source: 'manual_open',
+        requiresAuth: true,
+        fallbackType: AppRecentTargetType.orderDetail,
+        fallbackTargetId: 1001,
+      ),
+    );
+
+    expect(target, isA<PinJia>());
+    expect((target as PinJia).orderId, 1001);
+    expect(target.productId, 2001);
+    expect(target.productName, '测试商品');
+  });
+
+  test('comment compose recovery falls back when draft snapshot is missing',
+      () {
+    final target = AppRecoveryRouter.buildTarget(
+      AppRecentContext.create(
+        targetType: AppRecentTargetType.commentCompose,
+        targetId: 1001,
+        source: 'manual_open',
+        requiresAuth: true,
+        fallbackType: AppRecentTargetType.home,
+      ),
+    );
+
+    expect(target, isA<MainTab>());
   });
 }

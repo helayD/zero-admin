@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_mall/model/app_recent_context.dart';
+import 'package:flutter_mall/model/permission_flow_context.dart';
+import 'package:flutter_mall/provider/app_lifecycle_provider.dart';
 import 'package:flutter_mall/utils/app_recovery_store.dart';
+import 'package:flutter_mall/utils/permission_broker.dart';
+import 'package:flutter_mall/view/mine/message/message.dart';
 import 'package:flutter_mall/view/mine/profile/profile_edit.dart';
+import 'package:flutter_mall/widgets/permission_prompt_sheet.dart';
+import 'package:provider/provider.dart';
 
 ///
 /// 设置页面
@@ -9,93 +16,347 @@ import 'package:flutter_mall/view/mine/profile/profile_edit.dart';
 /// 日期：2023/11/21 17:17
 ///
 class Settings extends StatefulWidget {
-  const Settings({super.key});
+  final PermissionBroker permissionBroker;
+
+  const Settings({
+    super.key,
+    this.permissionBroker = const PermissionBroker(),
+  });
 
   @override
   State<Settings> createState() => _SettingsState();
 }
 
 class _SettingsState extends State<Settings> {
+  NotificationPreferenceSnapshot? _notificationSnapshot;
+  bool _isLoadingNotification = true;
+  AppLifecycleProvider? _lifecycleProvider;
+  int _lastResumeTick = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _refreshNotificationSnapshot();
+      await _resumePendingNotificationFlow();
+      await AppRecoveryStore.saveRecentContext(
+        AppRecentContext.create(
+          targetType: AppRecentTargetType.settings,
+          source: 'manual_open',
+          requiresAuth: false,
+          fallbackType: AppRecentTargetType.home,
+          fallbackTabIndex: 4,
+        ),
+      );
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final provider = context.read<AppLifecycleProvider>();
+    if (_lifecycleProvider == provider) {
+      return;
+    }
+    _lifecycleProvider?.removeListener(_handleLifecycleChanged);
+    _lifecycleProvider = provider;
+    _lastResumeTick = provider.resumeTick;
+    provider.addListener(_handleLifecycleChanged);
+  }
+
+  @override
+  void dispose() {
+    _lifecycleProvider?.removeListener(_handleLifecycleChanged);
+    super.dispose();
+  }
+
+  Future<void> _refreshNotificationSnapshot() async {
+    final snapshot =
+        await widget.permissionBroker.getNotificationPreferenceSnapshot(
+      flow: _buildNotificationFlow(),
+    );
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _notificationSnapshot = snapshot;
+      _isLoadingNotification = false;
+    });
+  }
+
+  Future<void> _resumePendingNotificationFlow() async {
+    final pending = AppRecoveryStore.peekPendingPermissionContext();
+    if (pending == null ||
+        !pending.matchesReturnTarget(AppRecentTargetType.settings)) {
+      return;
+    }
+
+    await AppRecoveryStore.clearPendingPermissionContext();
+    final inspection = await widget.permissionBroker.inspect(pending);
+    if (inspection.isUsable && pending.requestedToggleEnabled) {
+      await widget.permissionBroker.persistNotificationPreference(true);
+      _recordPermissionGranted(pending);
+      if (!mounted) {
+        return;
+      }
+      _showToast('系统通知已允许，消息提醒已开启');
+    } else if (!inspection.isUsable) {
+      _recordPermissionDenied(pending);
+      if (!mounted) {
+        return;
+      }
+      _showToast('系统通知仍未开启，你仍可通过站内消息查看提醒');
+    }
+    await _refreshNotificationSnapshot();
+  }
+
+  void _handleLifecycleChanged() {
+    final provider = _lifecycleProvider;
+    if (provider == null) {
+      return;
+    }
+    if (_lastResumeTick == provider.resumeTick) {
+      return;
+    }
+    _lastResumeTick = provider.resumeTick;
+    _resumePendingNotificationFlow();
+  }
+
+  PermissionFlowContext _buildNotificationFlow() {
+    return PermissionFlowContext.create(
+      scene: PermissionScene.notificationSubscription,
+      permissionType: PermissionType.notification,
+      source: PermissionFlowSource.notificationToggle,
+      returnTarget: AppRecentTargetType.settings,
+      fallbackAction: PermissionFallbackAction.openMessageCenter,
+      intentId: 'settings_notification_toggle',
+      recoveryId: 'settings_notification_toggle',
+      requestedToggleEnabled: true,
+      retryOnResume: true,
+    );
+  }
+
+  Future<void> _handleNotificationChanged(bool value) async {
+    if (_isLoadingNotification) {
+      return;
+    }
+
+    if (!value) {
+      await widget.permissionBroker.persistNotificationPreference(false);
+      await _refreshNotificationSnapshot();
+      if (!mounted) {
+        return;
+      }
+      _showToast('已关闭 App 内提醒偏好，仍可在消息中心查看站内消息');
+      return;
+    }
+
+    final flow = _buildNotificationFlow();
+    final inspection = await widget.permissionBroker.inspect(flow);
+    if (inspection.isUsable) {
+      await widget.permissionBroker.persistNotificationPreference(true);
+      _recordPermissionGranted(flow);
+      await _refreshNotificationSnapshot();
+      if (!mounted) {
+        return;
+      }
+      _showToast('消息提醒已开启');
+      return;
+    }
+
+    final action = await _showPermissionPrompt(
+      flow,
+      inspection.status,
+      alternativeLabel: '查看站内消息',
+      statusCheckOnly: inspection.statusCheckOnly,
+    );
+    if (!mounted || action == null) {
+      return;
+    }
+    await _handleNotificationPromptAction(
+      flow,
+      action,
+      currentStatus: inspection.status,
+    );
+  }
+
+  Future<void> _handleNotificationPromptAction(
+    PermissionFlowContext flow,
+    PermissionPromptAction action, {
+    required PermissionFlowStatus currentStatus,
+  }) async {
+    switch (action) {
+      case PermissionPromptAction.request:
+        final result = await widget.permissionBroker.request(flow);
+        if (result.isUsable) {
+          await widget.permissionBroker.persistNotificationPreference(true);
+          _recordPermissionGranted(flow);
+          await _refreshNotificationSnapshot();
+          if (!mounted) {
+            return;
+          }
+          _showToast('消息提醒已开启');
+          return;
+        }
+        _recordPermissionDenied(flow);
+        final followUpAction = await _showPermissionPrompt(
+          flow,
+          result.status,
+          alternativeLabel: '查看站内消息',
+          statusCheckOnly: result.statusCheckOnly,
+        );
+        if (!mounted || followUpAction == null) {
+          return;
+        }
+        await _handleNotificationPromptAction(
+          flow,
+          followUpAction,
+          currentStatus: result.status,
+        );
+        return;
+      case PermissionPromptAction.openSettings:
+        _recordPermissionSettingsRedirected(flow);
+        await widget.permissionBroker.openSettingsForFlow(
+          flow.copyWith(status: currentStatus),
+        );
+        return;
+      case PermissionPromptAction.alternative:
+        await widget.permissionBroker.persistNotificationPreference(false);
+        _recordPermissionFallbackUsed(flow);
+        await _refreshNotificationSnapshot();
+        if (!mounted) {
+          return;
+        }
+        await Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const Message()),
+        );
+        return;
+      case PermissionPromptAction.dismiss:
+        return;
+    }
+  }
+
+  Future<PermissionPromptAction?> _showPermissionPrompt(
+    PermissionFlowContext flow,
+    PermissionFlowStatus status, {
+    required String alternativeLabel,
+    bool statusCheckOnly = false,
+  }) {
+    _recordPermissionPromptShown(flow);
+    final shouldOpenSystemNotificationSettings =
+        statusCheckOnly && status == PermissionFlowStatus.denied;
+    return PermissionPromptSheet.show(
+      context,
+      flow: flow,
+      status: status,
+      alternativeLabel: alternativeLabel,
+      detailOverride: shouldOpenSystemNotificationSettings
+          ? '当前系统版本不会在应用内弹出通知授权，请前往系统通知设置开启提醒；未开启时你仍可通过站内消息中心和未读角标查看提醒。'
+          : null,
+      primaryActionOverride: shouldOpenSystemNotificationSettings
+          ? PermissionPromptAction.openSettings
+          : null,
+      primaryLabelOverride:
+          shouldOpenSystemNotificationSettings ? '去系统设置' : null,
+    );
+  }
+
+  void _recordPermissionPromptShown(PermissionFlowContext flow) {
+    _lifecycleProvider?.recordPermissionPromptShown(
+      scene: permissionSceneToValue(flow.scene),
+      source: permissionFlowSourceToValue(flow.source),
+      intentId: flow.intentId,
+      recoveryId: flow.recoveryId,
+    );
+  }
+
+  void _recordPermissionGranted(PermissionFlowContext flow) {
+    _lifecycleProvider?.recordPermissionGranted(
+      scene: permissionSceneToValue(flow.scene),
+      source: permissionFlowSourceToValue(flow.source),
+      intentId: flow.intentId,
+      recoveryId: flow.recoveryId,
+    );
+  }
+
+  void _recordPermissionDenied(PermissionFlowContext flow) {
+    _lifecycleProvider?.recordPermissionDenied(
+      scene: permissionSceneToValue(flow.scene),
+      source: permissionFlowSourceToValue(flow.source),
+      intentId: flow.intentId,
+      recoveryId: flow.recoveryId,
+    );
+  }
+
+  void _recordPermissionSettingsRedirected(PermissionFlowContext flow) {
+    _lifecycleProvider?.recordPermissionSettingsRedirected(
+      scene: permissionSceneToValue(flow.scene),
+      source: permissionFlowSourceToValue(flow.source),
+      intentId: flow.intentId,
+      recoveryId: flow.recoveryId,
+    );
+  }
+
+  void _recordPermissionFallbackUsed(PermissionFlowContext flow) {
+    _lifecycleProvider?.recordPermissionFallbackUsed(
+      scene: permissionSceneToValue(flow.scene),
+      source: permissionFlowSourceToValue(flow.source),
+      intentId: flow.intentId,
+      recoveryId: flow.recoveryId,
+    );
+  }
+
+  void _showToast(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    var border = BorderSide(width: 1, color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255));
-    var boxDecoration = BoxDecoration(color: Colors.white, border: Border(bottom: border));
-    var list = ['个人资料', '收货地址', '实名认证', '消息推送', '清除缓存', '关于九克城', '检查更新'];
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
-        title: const Text("设置"),
+        title: const Text('设置'),
         centerTitle: true,
       ),
       body: Container(
-        color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
-        // padding: const EdgeInsets.symmetric(horizontal: 15),
-        width: MediaQuery.of(context).size.width,
-        child: Column(
+        color: const Color(0xFFF5F5F5),
+        child: ListView(
           children: [
-            Container(
-              color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
-              height: 400,
-              child: ListView.builder(
-                  itemCount: list.length,
-                  itemBuilder: (BuildContext context, int index) {
-                    return InkWell(
-                      onTap: () {
-                        if (index == 0) {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => const ProfileEdit(),
-                            ),
-                          );
-                        }
-                        if (index == 4) {
-                          AppRecoveryStore.clearRecoveryState();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('缓存已清理')),
-                          );
-                        }
-                      },
-                      child: Container(
-                      height: 51,
-                      padding: const EdgeInsets.all(15),
-                      decoration: boxDecoration,
-                      margin: index == 3 ? const EdgeInsets.symmetric(vertical: 5) : const EdgeInsets.all(0),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(list[index],
-                                style: TextStyle(
-                                    fontSize: 15, color: Color(int.parse('303133', radix: 16)).withAlpha(255))),
-                          ),
-                          Visibility(
-                            visible: index == 6,
-                            child: Text("当前版本 1.0.0",
-                                style: TextStyle(
-                                    fontSize: 12, color: Color(int.parse('707070', radix: 16)).withAlpha(255))),
-                          ),
-                          Visibility(
-                              visible: index != 3,
-                              child: Image.asset(
-                                "images/right_arrow.png",
-                                height: 16,
-                                width: 17,
-                              )),
-                          Visibility(
-                            visible: index == 3,
-                            child: Switch(
-                              value: true,
-                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              onChanged: (value) {},
-                              activeThumbColor: Colors.white,
-                              activeTrackColor: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    );
-                  }),
+            const SizedBox(height: 8),
+            _buildSettingsTile(
+              title: '个人资料',
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const ProfileEdit(),
+                  ),
+                );
+              },
             ),
+            _buildSettingsTile(title: '收货地址'),
+            _buildSettingsTile(title: '实名认证'),
+            _buildNotificationTile(),
+            _buildSettingsTile(
+              title: '清除缓存',
+              onTap: () async {
+                await AppRecoveryStore.clearRecoveryState();
+                if (!mounted) {
+                  return;
+                }
+                _showToast('缓存已清理');
+              },
+            ),
+            _buildSettingsTile(title: '关于九克城'),
+            _buildSettingsTile(
+              title: '检查更新',
+              trailing: const Text(
+                '当前版本 1.0.0',
+                style: TextStyle(fontSize: 12, color: Color(0xFF707070)),
+              ),
+            ),
+            const SizedBox(height: 14),
             InkWell(
               onTap: () async {
                 await AppRecoveryStore.clearAuthToken();
@@ -106,15 +367,11 @@ class _SettingsState extends State<Settings> {
               },
               child: Container(
                 alignment: Alignment.center,
-                width: MediaQuery.of(context).size.width,
                 height: 50,
-                margin: const EdgeInsets.only(top: 15),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                ),
-                child: Text(
+                color: Colors.white,
+                child: const Text(
                   '退出登录',
-                  style: TextStyle(color: Color(int.parse('fa436a', radix: 16)).withAlpha(255), fontSize: 15),
+                  style: TextStyle(color: Color(0xFFFA436A), fontSize: 15),
                 ),
               ),
             ),
@@ -122,5 +379,85 @@ class _SettingsState extends State<Settings> {
         ),
       ),
     );
+  }
+
+  Widget _buildNotificationTile() {
+    final snapshot = _notificationSnapshot;
+    final enabled = snapshot?.isEnabled ?? false;
+    final subtitle = _notificationSubtitle(snapshot);
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      color: Colors.white,
+      child: ListTile(
+        title: const Text(
+          '消息推送',
+          style: TextStyle(fontSize: 15, color: Color(0xFF303133)),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: const TextStyle(fontSize: 12, color: Color(0xFF909399)),
+        ),
+        trailing: Switch(
+          value: enabled,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          onChanged: _isLoadingNotification ? null : _handleNotificationChanged,
+          activeThumbColor: Colors.white,
+          activeTrackColor: const Color(0xFFFA436A),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingsTile({
+    required String title,
+    VoidCallback? onTap,
+    Widget? trailing,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        height: 56,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(
+            bottom: BorderSide(color: Color(0xFFF5F5F5), width: 1),
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(fontSize: 15, color: Color(0xFF303133)),
+              ),
+            ),
+            trailing ??
+                Image.asset(
+                  'images/right_arrow.png',
+                  height: 16,
+                  width: 17,
+                ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _notificationSubtitle(NotificationPreferenceSnapshot? snapshot) {
+    if (_isLoadingNotification || snapshot == null) {
+      return '正在同步系统通知状态...';
+    }
+    switch (snapshot.presentation) {
+      case NotificationPreferencePresentation.enabled:
+        return snapshot.statusCheckOnly
+            ? '系统通知已允许，App 内提醒偏好已开启'
+            : '系统通知已允许，重要提醒会优先通过系统通知展示';
+      case NotificationPreferencePresentation.mutedLocally:
+        return '系统通知可用，但 App 内提醒偏好当前关闭';
+      case NotificationPreferencePresentation.blockedBySystem:
+        return '系统通知未开启，可继续通过站内消息中心和未读角标查看提醒';
+    }
   }
 }

@@ -47,7 +47,10 @@ class SharedPreferencesUtil {
     return _prefs.getBool(key);
   }
 
-  static Future<void> saveJsonString(String key, Map<String, dynamic> value) async {
+  static Future<void> saveJsonString(
+    String key,
+    Map<String, dynamic> value,
+  ) async {
     await _prefs.setString(key, jsonEncode(value));
   }
 
@@ -65,6 +68,10 @@ class SharedPreferencesUtil {
 
   static Future<void> remove(String key) async {
     await _prefs.remove(key);
+  }
+
+  static Set<String> getKeys() {
+    return _prefs.getKeys();
   }
 
   static Future<void> clear() async {

@@ -2,14 +2,25 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_mall/config/service_url.dart';
+import 'package:flutter_mall/model/app_recent_context.dart';
 import 'package:flutter_mall/model/comment_model.dart';
+import 'package:flutter_mall/model/permission_flow_context.dart';
+import 'package:flutter_mall/provider/app_lifecycle_provider.dart';
 import 'package:flutter_mall/provider/comment_provider.dart';
+import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/utils/http_util.dart';
+import 'package:flutter_mall/utils/permission_broker.dart';
 import 'package:flutter_mall/widgets/cached_image_widget.dart';
 import 'package:flutter_mall/widgets/empty_state_widget.dart';
+import 'package:flutter_mall/widgets/permission_prompt_sheet.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+
+typedef CommentListLoader = Future<CommentListModel> Function({
+  required int productId,
+  required int page,
+  required int pageSize,
+});
 
 ///
 /// 商品评价页面（Story 8-2 重构）
@@ -43,6 +54,10 @@ class PinJia extends StatefulWidget {
   /// 评价者昵称（Review Fix H-5: 从收货人姓名获取，非硬编码）
   final String? memberNickName;
 
+  final PermissionBroker permissionBroker;
+
+  final CommentListLoader? commentListLoader;
+
   const PinJia({
     super.key,
     this.orderId,
@@ -51,6 +66,8 @@ class PinJia extends StatefulWidget {
     this.productPic,
     this.productAttribute,
     this.memberNickName,
+    this.permissionBroker = const PermissionBroker(),
+    this.commentListLoader,
   });
 
   @override
@@ -66,8 +83,9 @@ class _PinJiaState extends State<PinJia> with SingleTickerProviderStateMixin {
   int _starRating = 5;
   bool _starValidated = true;
   List<String> _selectedPics = [];
-  final ImagePicker _picker = ImagePicker();
   bool _isSubmitting = false;
+  AppLifecycleProvider? _lifecycleProvider;
+  int _lastResumeTick = 0;
 
   // 评价列表相关状态
   bool _isLoadingComments = true;
@@ -82,13 +100,35 @@ class _PinJiaState extends State<PinJia> with SingleTickerProviderStateMixin {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(_onTabChanged);
+    _contentController.addListener(_handleDraftChanged);
+    _restoreDraft();
     _loadCommentList();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _saveRecentContext();
+      await _persistDraft();
+      await _resumePendingPermissionFlow();
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final provider = context.read<AppLifecycleProvider>();
+    if (_lifecycleProvider == provider) {
+      return;
+    }
+    _lifecycleProvider?.removeListener(_handleLifecycleChanged);
+    _lifecycleProvider = provider;
+    _lastResumeTick = provider.resumeTick;
+    provider.addListener(_handleLifecycleChanged);
   }
 
   @override
   void dispose() {
+    _lifecycleProvider?.removeListener(_handleLifecycleChanged);
     _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
+    _contentController.removeListener(_handleDraftChanged);
     _contentController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -97,6 +137,127 @@ class _PinJiaState extends State<PinJia> with SingleTickerProviderStateMixin {
   void _onTabChanged() {
     if (!_tabController.indexIsChanging) {
       setState(() {});
+    }
+  }
+
+  void _handleLifecycleChanged() {
+    final provider = _lifecycleProvider;
+    if (provider == null) {
+      return;
+    }
+    if (_lastResumeTick == provider.resumeTick) {
+      return;
+    }
+    _lastResumeTick = provider.resumeTick;
+    _resumePendingPermissionFlow();
+  }
+
+  void _handleDraftChanged() {
+    _persistDraft();
+  }
+
+  bool get _hasRecoverableComposeContext {
+    final orderId = widget.orderId;
+    final productId = widget.productId;
+    return orderId != null && orderId > 0 && productId != null && productId > 0;
+  }
+
+  Future<void> _saveRecentContext() async {
+    if (!_hasRecoverableComposeContext) {
+      return;
+    }
+    await AppRecoveryStore.saveRecentContext(
+      AppRecentContext.create(
+        targetType: AppRecentTargetType.commentCompose,
+        targetId: widget.orderId,
+        source: 'manual_open',
+        requiresAuth: true,
+        fallbackType: AppRecentTargetType.orderDetail,
+        fallbackTargetId: widget.orderId,
+      ),
+    );
+  }
+
+  void _restoreDraft() {
+    final orderId = widget.orderId;
+    if (orderId == null || orderId <= 0) {
+      return;
+    }
+    final draft = AppRecoveryStore.getCommentDraft(orderId);
+    if (draft == null) {
+      return;
+    }
+    _starRating = draft.starRating;
+    _selectedPics = List<String>.from(draft.pics.take(3));
+    _contentController.text = draft.content;
+  }
+
+  Future<void> _persistDraft() async {
+    if (!_hasRecoverableComposeContext) {
+      return;
+    }
+    await AppRecoveryStore.saveCommentDraft(
+      CommentDraftSnapshot(
+        orderId: widget.orderId!,
+        productId: widget.productId!,
+        productName: widget.productName ?? '',
+        productPic: widget.productPic ?? '',
+        productAttribute: widget.productAttribute ?? '',
+        memberNickName: widget.memberNickName ?? '',
+        starRating: _starRating,
+        content: _contentController.text,
+        pics: _selectedPics,
+        updatedAt: DateTime.now(),
+      ),
+    );
+  }
+
+  Future<void> _resumePendingPermissionFlow() async {
+    if (!_hasRecoverableComposeContext) {
+      return;
+    }
+    final pending = AppRecoveryStore.peekPendingPermissionContext();
+    final targetId = widget.orderId;
+    if (pending == null ||
+        targetId == null ||
+        !pending.matchesReturnTarget(
+          AppRecentTargetType.commentCompose,
+          targetId: targetId,
+        )) {
+      return;
+    }
+
+    final lostMedia = AppRecoveryStore.peekPendingLostMedia();
+    if (lostMedia != null &&
+        lostMedia.recoveryId == pending.recoveryId &&
+        lostMedia.scene == PermissionScene.commentImage) {
+      await AppRecoveryStore.clearPendingLostMedia();
+      await AppRecoveryStore.clearPendingPermissionContext();
+      _applyRecoveredPics(lostMedia.mediaBase64List);
+      _recordPermissionLostDataRecovered(pending);
+      if (mounted) {
+        _showToast('已恢复上次未完成的补图内容');
+      }
+      return;
+    }
+
+    if (pending.status != PermissionFlowStatus.settingsReturnPending) {
+      return;
+    }
+
+    await AppRecoveryStore.clearPendingPermissionContext();
+    final inspection = await widget.permissionBroker.inspect(pending);
+    if (inspection.isUsable && pending.retryOnResume) {
+      _recordPermissionGranted(pending);
+      await _pickImageWithFlow(
+        pending.copyWith(status: inspection.status),
+      );
+      return;
+    }
+
+    _recordPermissionDenied(pending);
+    if (mounted) {
+      _showToast('权限仍未开启，你仍可继续无图评价');
     }
   }
 
@@ -116,15 +277,17 @@ class _PinJiaState extends State<PinJia> with SingleTickerProviderStateMixin {
 
     try {
       final pageSize = 20;
-      final result = await HttpUtil.get(
-        queryCommentListUrl,
-        queryParameters: {
-          "productId": widget.productId,
-          "pageNum": page,
-          "pageSize": pageSize,
-        },
-      );
-      final model = CommentListModel.fromJson(result.data);
+      final model = widget.commentListLoader != null
+          ? await widget.commentListLoader!(
+              productId: widget.productId!,
+              page: page,
+              pageSize: pageSize,
+            )
+          : await _loadCommentListFromApi(
+              productId: widget.productId!,
+              page: page,
+              pageSize: pageSize,
+            );
 
       if (!mounted) return;
 
@@ -157,6 +320,22 @@ class _PinJiaState extends State<PinJia> with SingleTickerProviderStateMixin {
     }
   }
 
+  Future<CommentListModel> _loadCommentListFromApi({
+    required int productId,
+    required int page,
+    required int pageSize,
+  }) async {
+    final result = await HttpUtil.get(
+      queryCommentListUrl,
+      queryParameters: {
+        "productId": productId,
+        "pageNum": page,
+        "pageSize": pageSize,
+      },
+    );
+    return CommentListModel.fromJson(result.data);
+  }
+
   void _onRefresh() {
     _currentPage = 1;
     _loadCommentList(refresh: true);
@@ -170,34 +349,37 @@ class _PinJiaState extends State<PinJia> with SingleTickerProviderStateMixin {
 
   // ==================== 图片上传 ====================
 
-  Future<void> _pickImage(ImageSource source) async {
+  Future<void> _handlePickImage(PermissionFlowSource source) async {
     if (_selectedPics.length >= 3) {
       _showToast('最多上传 3 张图片');
       return;
     }
-    try {
-      final XFile? image = await _picker.pickImage(
-        source: source,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 80,
-      );
-      if (image == null) return;
-      if (!mounted) return;
-      final bytes = await image.readAsBytes();
-      final base64Str = base64Encode(bytes);
-      setState(() {
-        _selectedPics = [..._selectedPics, base64Str];
-      });
-    } catch (e) {
-      if (!mounted) return;
-      if (e.toString().contains('permission') ||
-          e.toString().contains('PERMISSION')) {
-        _showToast('请在设置中授权图片权限');
-      } else {
-        _showToast('图片选择失败');
-      }
+    if (!_hasRecoverableComposeContext) {
+      _showToast('当前评价上下文不完整，请从订单页重新进入后再补图');
+      return;
     }
+
+    final flow = _buildPermissionFlow(source);
+    final inspection = await widget.permissionBroker.inspect(flow);
+    if (inspection.isUsable) {
+      await _pickImageWithFlow(flow.copyWith(status: inspection.status));
+      return;
+    }
+
+    final action = await _showPermissionPrompt(
+      flow,
+      inspection.status,
+      alternativeLabel: _alternativeLabel(source),
+    );
+    if (!mounted || action == null) {
+      return;
+    }
+
+    await _handlePermissionPromptAction(
+      flow,
+      action,
+      currentStatus: inspection.status,
+    );
   }
 
   void _showPickImageSheet() {
@@ -212,7 +394,7 @@ class _PinJiaState extends State<PinJia> with SingleTickerProviderStateMixin {
               title: const Text('相册'),
               onTap: () {
                 Navigator.pop(ctx);
-                _pickImage(ImageSource.gallery);
+                _handlePickImage(PermissionFlowSource.gallery);
               },
             ),
             ListTile(
@@ -220,7 +402,7 @@ class _PinJiaState extends State<PinJia> with SingleTickerProviderStateMixin {
               title: const Text('拍照'),
               onTap: () {
                 Navigator.pop(ctx);
-                _pickImage(ImageSource.camera);
+                _handlePickImage(PermissionFlowSource.camera);
               },
             ),
             const SizedBox(height: 8),
@@ -234,6 +416,183 @@ class _PinJiaState extends State<PinJia> with SingleTickerProviderStateMixin {
     setState(() {
       _selectedPics = List.from(_selectedPics)..removeAt(index);
     });
+    _persistDraft();
+  }
+
+  PermissionFlowContext _buildPermissionFlow(PermissionFlowSource source) {
+    return PermissionFlowContext.create(
+      scene: PermissionScene.commentImage,
+      permissionType: source == PermissionFlowSource.camera
+          ? PermissionType.camera
+          : PermissionType.photos,
+      source: source,
+      returnTarget: AppRecentTargetType.commentCompose,
+      returnTargetId: widget.orderId,
+      orderId: widget.orderId,
+      productId: widget.productId,
+      fallbackAction: source == PermissionFlowSource.camera
+          ? PermissionFallbackAction.switchToGallery
+          : PermissionFallbackAction.switchToCamera,
+      intentId:
+          'comment_${permissionFlowSourceToValue(source)}_${widget.orderId ?? 0}',
+      recoveryId:
+          'comment_${permissionFlowSourceToValue(source)}_${widget.orderId ?? 0}',
+      requiresAuth: true,
+      retryOnResume: true,
+    );
+  }
+
+  Future<void> _pickImageWithFlow(PermissionFlowContext flow) async {
+    final result = await widget.permissionBroker.pickImageAsBase64(flow);
+    if (!mounted) {
+      return;
+    }
+    if (result.hasMedia) {
+      _applyRecoveredPics(result.mediaBase64List);
+      _recordPermissionGranted(flow);
+      return;
+    }
+    if (result.errorMessage.isNotEmpty) {
+      _showToast('图片选择失败');
+    }
+  }
+
+  void _applyRecoveredPics(List<String> pics) {
+    if (pics.isEmpty) {
+      return;
+    }
+    setState(() {
+      final merged = <String>[..._selectedPics, ...pics];
+      _selectedPics = merged.take(3).toList();
+    });
+    _persistDraft();
+  }
+
+  Future<void> _handlePermissionPromptAction(
+    PermissionFlowContext flow,
+    PermissionPromptAction action, {
+    required PermissionFlowStatus currentStatus,
+  }) async {
+    switch (action) {
+      case PermissionPromptAction.request:
+        final result = await widget.permissionBroker.request(flow);
+        if (result.isUsable) {
+          _recordPermissionGranted(flow);
+          await _pickImageWithFlow(
+            flow.copyWith(status: result.status),
+          );
+          return;
+        }
+        _recordPermissionDenied(flow);
+        final followUpAction = await _showPermissionPrompt(
+          flow,
+          result.status,
+          alternativeLabel: _alternativeLabel(flow.source),
+        );
+        if (!mounted || followUpAction == null) {
+          return;
+        }
+        await _handlePermissionPromptAction(
+          flow,
+          followUpAction,
+          currentStatus: result.status,
+        );
+        return;
+      case PermissionPromptAction.openSettings:
+        _recordPermissionSettingsRedirected(flow);
+        await widget.permissionBroker.openSettingsForFlow(
+          flow.copyWith(status: currentStatus),
+        );
+        return;
+      case PermissionPromptAction.alternative:
+        _recordPermissionFallbackUsed(flow);
+        final alternative = flow.source == PermissionFlowSource.camera
+            ? PermissionFlowSource.gallery
+            : PermissionFlowSource.camera;
+        await _handlePickImage(alternative);
+        if (mounted) {
+          _showToast('你仍可继续无图评价');
+        }
+        return;
+      case PermissionPromptAction.dismiss:
+        _showToast('已保留当前评价内容，你仍可继续无图评价');
+        return;
+    }
+  }
+
+  Future<PermissionPromptAction?> _showPermissionPrompt(
+    PermissionFlowContext flow,
+    PermissionFlowStatus status, {
+    required String alternativeLabel,
+  }) {
+    _recordPermissionPromptShown(flow);
+    return PermissionPromptSheet.show(
+      context,
+      flow: flow,
+      status: status,
+      alternativeLabel: alternativeLabel,
+    );
+  }
+
+  String _alternativeLabel(PermissionFlowSource source) {
+    if (source == PermissionFlowSource.camera) {
+      return '改用相册';
+    }
+    return '改用拍照';
+  }
+
+  void _recordPermissionPromptShown(PermissionFlowContext flow) {
+    _lifecycleProvider?.recordPermissionPromptShown(
+      scene: permissionSceneToValue(flow.scene),
+      source: permissionFlowSourceToValue(flow.source),
+      intentId: flow.intentId,
+      recoveryId: flow.recoveryId,
+    );
+  }
+
+  void _recordPermissionGranted(PermissionFlowContext flow) {
+    _lifecycleProvider?.recordPermissionGranted(
+      scene: permissionSceneToValue(flow.scene),
+      source: permissionFlowSourceToValue(flow.source),
+      intentId: flow.intentId,
+      recoveryId: flow.recoveryId,
+    );
+  }
+
+  void _recordPermissionDenied(PermissionFlowContext flow) {
+    _lifecycleProvider?.recordPermissionDenied(
+      scene: permissionSceneToValue(flow.scene),
+      source: permissionFlowSourceToValue(flow.source),
+      intentId: flow.intentId,
+      recoveryId: flow.recoveryId,
+    );
+  }
+
+  void _recordPermissionSettingsRedirected(PermissionFlowContext flow) {
+    _lifecycleProvider?.recordPermissionSettingsRedirected(
+      scene: permissionSceneToValue(flow.scene),
+      source: permissionFlowSourceToValue(flow.source),
+      intentId: flow.intentId,
+      recoveryId: flow.recoveryId,
+    );
+  }
+
+  void _recordPermissionFallbackUsed(PermissionFlowContext flow) {
+    _lifecycleProvider?.recordPermissionFallbackUsed(
+      scene: permissionSceneToValue(flow.scene),
+      source: permissionFlowSourceToValue(flow.source),
+      intentId: flow.intentId,
+      recoveryId: flow.recoveryId,
+    );
+  }
+
+  void _recordPermissionLostDataRecovered(PermissionFlowContext flow) {
+    _lifecycleProvider?.recordPermissionLostDataRecovered(
+      scene: permissionSceneToValue(flow.scene),
+      source: permissionFlowSourceToValue(flow.source),
+      intentId: flow.intentId,
+      recoveryId: flow.recoveryId,
+    );
   }
 
   // ==================== 提交评价 ====================
@@ -271,6 +630,11 @@ class _PinJiaState extends State<PinJia> with SingleTickerProviderStateMixin {
 
       if (resp.isSuccess) {
         // Review Fix R-5: 提交成功后切换到评价列表页，让用户确认提交内容
+        if ((widget.orderId ?? 0) > 0) {
+          await AppRecoveryStore.clearCommentDraft(widget.orderId!);
+        }
+        await AppRecoveryStore.clearPendingPermissionContext();
+        await AppRecoveryStore.clearPendingLostMedia();
         _showToast('评价提交成功，审核通过后可查看');
         setState(() => _isSubmitting = false);
         // 切换到评价列表 Tab，让用户看到提交后的状态
@@ -441,6 +805,7 @@ class _PinJiaState extends State<PinJia> with SingleTickerProviderStateMixin {
                     _starRating = star;
                     _starValidated = true;
                   });
+                  _persistDraft();
                 },
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),

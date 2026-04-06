@@ -4,10 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mall/config/service_url.dart';
 import 'package:flutter_mall/model/app_recent_context.dart';
 import 'package:flutter_mall/model/after_sales.dart';
+import 'package:flutter_mall/model/permission_flow_context.dart';
+import 'package:flutter_mall/provider/app_lifecycle_provider.dart';
 import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/utils/http_util.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:flutter_mall/utils/permission_broker.dart';
+import 'package:flutter_mall/widgets/permission_prompt_sheet.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:provider/provider.dart';
 
 ///
 /// 售后申请页面（Story 6-4 Task 9）
@@ -29,10 +33,18 @@ class ApplyAfterSales extends StatefulWidget {
   /// Intent 来源（Story 9-3 预留）
   final String? intentSource;
 
+  final PermissionBroker permissionBroker;
+
+  final Future<ReturnReasonListData> Function()? reasonLoader;
+  final AfterSalesSubmitter? submitter;
+
   const ApplyAfterSales({
     super.key,
     required this.orderId,
     this.intentSource,
+    this.permissionBroker = const PermissionBroker(),
+    this.reasonLoader,
+    this.submitter,
   });
 
   @override
@@ -48,6 +60,10 @@ enum SalesPageState {
   error,
 }
 
+typedef AfterSalesSubmitter = Future<ApplyAfterSalesRespData> Function(
+  ApplyAfterSalesReqData request,
+);
+
 class ApplyAfterSalesState extends State<ApplyAfterSales> {
   // ==================== 表单控制器 ====================
   final _formKey = GlobalKey<FormState>();
@@ -61,33 +77,104 @@ class ApplyAfterSalesState extends State<ApplyAfterSales> {
   String? _errorMessage;
   String? _successReturnNo;
   List<ReturnReasonItemData> _reasonList = [];
-  final ImagePicker _picker = ImagePicker();
   bool _isSubmitting = false;
+  AppLifecycleProvider? _lifecycleProvider;
+  int _lastResumeTick = 0;
 
   // ==================== 生命周期 ====================
   @override
   void initState() {
     super.initState();
+    _descController.addListener(_handleDraftChanged);
+    _restoreDraft();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadReasonList();
     });
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final provider = context.read<AppLifecycleProvider>();
+    if (_lifecycleProvider == provider) {
+      return;
+    }
+    _lifecycleProvider?.removeListener(_handleLifecycleChanged);
+    _lifecycleProvider = provider;
+    _lastResumeTick = provider.resumeTick;
+    provider.addListener(_handleLifecycleChanged);
+  }
+
+  @override
   void dispose() {
+    _lifecycleProvider?.removeListener(_handleLifecycleChanged);
+    _descController.removeListener(_handleDraftChanged);
     _descController.dispose();
     super.dispose();
+  }
+
+  void _handleLifecycleChanged() {
+    final provider = _lifecycleProvider;
+    if (provider == null) {
+      return;
+    }
+    if (_lastResumeTick == provider.resumeTick) {
+      return;
+    }
+    _lastResumeTick = provider.resumeTick;
+    _resumePendingPermissionFlow();
+  }
+
+  void _handleDraftChanged() {
+    _persistDraft();
+  }
+
+  void _restoreDraft() {
+    final draft = AppRecoveryStore.getAfterSalesDraft(widget.orderId);
+    if (draft == null) {
+      return;
+    }
+    _selectedType = AfterSalesType.fromValue(draft.typeValue);
+    _proofPics = List<String>.from(draft.proofPics.take(3));
+    _descController.text = draft.description;
+    if (draft.reasonId != null && draft.reasonId! > 0) {
+      _selectedReason = ReturnReasonItemData(
+        id: draft.reasonId!,
+        name: draft.reasonName,
+      );
+    }
+  }
+
+  Future<void> _persistDraft() async {
+    await AppRecoveryStore.saveAfterSalesDraft(
+      AfterSalesDraftSnapshot(
+        orderId: widget.orderId,
+        typeValue: _selectedType.value,
+        reasonId: _selectedReason?.id,
+        reasonName: _selectedReason?.name ?? '',
+        description: _descController.text,
+        proofPics: _proofPics,
+        updatedAt: DateTime.now(),
+      ),
+    );
   }
 
   // ==================== 加载原因列表 ====================
   Future<void> _loadReasonList() async {
     try {
-      final resp = await HttpUtil.post(queryReturnReasonListUrl);
-      final jsonData = resp.data;
-      final data = ReturnReasonListData.fromJson(jsonData);
+      final data = widget.reasonLoader != null
+          ? await widget.reasonLoader!.call()
+          : await _loadReasonListFromApi();
       if (!mounted) return;
       setState(() {
         _reasonList = data.reasonList;
+        if (_selectedReason != null) {
+          final matched =
+              _reasonList.where((item) => item.id == _selectedReason!.id);
+          if (matched.isNotEmpty) {
+            _selectedReason = matched.first;
+          }
+        }
         _pageState = SalesPageState.ready;
       });
       await AppRecoveryStore.saveRecentContext(
@@ -100,6 +187,7 @@ class ApplyAfterSalesState extends State<ApplyAfterSales> {
           fallbackTargetId: widget.orderId,
         ),
       );
+      await _resumePendingPermissionFlow();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -109,37 +197,98 @@ class ApplyAfterSalesState extends State<ApplyAfterSales> {
     }
   }
 
+  Future<ReturnReasonListData> _loadReasonListFromApi() async {
+    final resp = await HttpUtil.post(queryReturnReasonListUrl);
+    return ReturnReasonListData.fromJson(resp.data);
+  }
+
+  Future<ApplyAfterSalesRespData> _submitAfterSales(
+    ApplyAfterSalesReqData request,
+  ) async {
+    if (widget.submitter != null) {
+      return widget.submitter!(request);
+    }
+    final resp = await HttpUtil.post(
+      applyAfterSalesUrl,
+      data: request.toJson(),
+    );
+    return ApplyAfterSalesRespData.fromJson(resp.data);
+  }
+
+  Future<void> _resumePendingPermissionFlow() async {
+    final pending = AppRecoveryStore.peekPendingPermissionContext();
+    if (pending == null ||
+        !pending.matchesReturnTarget(
+          AppRecentTargetType.afterSalesApply,
+          targetId: widget.orderId,
+        )) {
+      return;
+    }
+
+    final lostMedia = AppRecoveryStore.peekPendingLostMedia();
+    if (lostMedia != null &&
+        lostMedia.recoveryId == pending.recoveryId &&
+        lostMedia.scene == PermissionScene.afterSalesProof) {
+      await AppRecoveryStore.clearPendingLostMedia();
+      await AppRecoveryStore.clearPendingPermissionContext();
+      _applyRecoveredPics(lostMedia.mediaBase64List);
+      _recordPermissionLostDataRecovered(pending);
+      if (mounted) {
+        _showToast('已恢复上次未完成的凭证图片');
+      }
+      return;
+    }
+
+    if (pending.status != PermissionFlowStatus.settingsReturnPending) {
+      return;
+    }
+
+    await AppRecoveryStore.clearPendingPermissionContext();
+    final inspection = await widget.permissionBroker.inspect(pending);
+    if (inspection.isUsable && pending.retryOnResume) {
+      _recordPermissionGranted(pending);
+      await _pickImageWithFlow(
+        pending.copyWith(status: inspection.status),
+      );
+      return;
+    }
+
+    _recordPermissionDenied(pending);
+    if (mounted) {
+      _showToast('权限仍未开启，你仍可继续无图提交售后申请');
+    }
+  }
+
   // ==================== 图片上传 ====================
   /// 阶段一（当前 Story）：转为 base64
   /// 阶段二（未来 Story）：上传 OSS 后获取 URL
-  Future<void> _pickImage(ImageSource source) async {
+  Future<void> _handlePickImage(PermissionFlowSource source) async {
     if (_proofPics.length >= 3) {
       _showToast('最多上传 3 张凭证图片');
       return;
     }
-    try {
-      final XFile? image = await _picker.pickImage(
-        source: source,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 80,
-      );
-      if (image == null) return;
-      if (!mounted) return;
-      final bytes = await image.readAsBytes();
-      final base64Str = base64Encode(bytes);
-      setState(() {
-        _proofPics = [..._proofPics, base64Str];
-      });
-    } catch (e) {
-      if (!mounted) return;
-      if (e.toString().contains('permission') ||
-          e.toString().contains('PERMISSION')) {
-        _showToast('请在设置中授权图片权限');
-      } else {
-        _showToast('图片选择失败');
-      }
+
+    final flow = _buildPermissionFlow(source);
+    final inspection = await widget.permissionBroker.inspect(flow);
+    if (inspection.isUsable) {
+      await _pickImageWithFlow(flow.copyWith(status: inspection.status));
+      return;
     }
+
+    final action = await _showPermissionPrompt(
+      flow,
+      inspection.status,
+      alternativeLabel: _alternativeLabel(source),
+    );
+    if (!mounted || action == null) {
+      return;
+    }
+
+    await _handlePermissionPromptAction(
+      flow,
+      action,
+      currentStatus: inspection.status,
+    );
   }
 
   void _showPickImageSheet() {
@@ -154,7 +303,7 @@ class ApplyAfterSalesState extends State<ApplyAfterSales> {
               title: const Text('相册'),
               onTap: () {
                 Navigator.pop(ctx);
-                _pickImage(ImageSource.gallery);
+                _handlePickImage(PermissionFlowSource.gallery);
               },
             ),
             ListTile(
@@ -162,7 +311,7 @@ class ApplyAfterSalesState extends State<ApplyAfterSales> {
               title: const Text('拍照'),
               onTap: () {
                 Navigator.pop(ctx);
-                _pickImage(ImageSource.camera);
+                _handlePickImage(PermissionFlowSource.camera);
               },
             ),
             const SizedBox(height: 8),
@@ -176,6 +325,182 @@ class ApplyAfterSalesState extends State<ApplyAfterSales> {
     setState(() {
       _proofPics = List.from(_proofPics)..removeAt(index);
     });
+    _persistDraft();
+  }
+
+  PermissionFlowContext _buildPermissionFlow(PermissionFlowSource source) {
+    return PermissionFlowContext.create(
+      scene: PermissionScene.afterSalesProof,
+      permissionType: source == PermissionFlowSource.camera
+          ? PermissionType.camera
+          : PermissionType.photos,
+      source: source,
+      returnTarget: AppRecentTargetType.afterSalesApply,
+      returnTargetId: widget.orderId,
+      orderId: widget.orderId,
+      fallbackAction: source == PermissionFlowSource.camera
+          ? PermissionFallbackAction.switchToGallery
+          : PermissionFallbackAction.switchToCamera,
+      intentId:
+          'after_sales_${permissionFlowSourceToValue(source)}_${widget.orderId}',
+      recoveryId:
+          'after_sales_${permissionFlowSourceToValue(source)}_${widget.orderId}',
+      requiresAuth: true,
+      retryOnResume: true,
+    );
+  }
+
+  Future<void> _pickImageWithFlow(PermissionFlowContext flow) async {
+    final result = await widget.permissionBroker.pickImageAsBase64(flow);
+    if (!mounted) {
+      return;
+    }
+    if (result.hasMedia) {
+      _applyRecoveredPics(result.mediaBase64List);
+      _recordPermissionGranted(flow);
+      return;
+    }
+    if (result.errorMessage.isNotEmpty) {
+      _showToast('图片选择失败');
+    }
+  }
+
+  void _applyRecoveredPics(List<String> pics) {
+    if (pics.isEmpty) {
+      return;
+    }
+    setState(() {
+      final merged = <String>[..._proofPics, ...pics];
+      _proofPics = merged.take(3).toList();
+    });
+    _persistDraft();
+  }
+
+  Future<void> _handlePermissionPromptAction(
+    PermissionFlowContext flow,
+    PermissionPromptAction action, {
+    required PermissionFlowStatus currentStatus,
+  }) async {
+    switch (action) {
+      case PermissionPromptAction.request:
+        final result = await widget.permissionBroker.request(flow);
+        if (result.isUsable) {
+          _recordPermissionGranted(flow);
+          await _pickImageWithFlow(
+            flow.copyWith(status: result.status),
+          );
+          return;
+        }
+        _recordPermissionDenied(flow);
+        final followUpAction = await _showPermissionPrompt(
+          flow,
+          result.status,
+          alternativeLabel: _alternativeLabel(flow.source),
+        );
+        if (!mounted || followUpAction == null) {
+          return;
+        }
+        await _handlePermissionPromptAction(
+          flow,
+          followUpAction,
+          currentStatus: result.status,
+        );
+        return;
+      case PermissionPromptAction.openSettings:
+        _recordPermissionSettingsRedirected(flow);
+        await widget.permissionBroker.openSettingsForFlow(
+          flow.copyWith(status: currentStatus),
+        );
+        return;
+      case PermissionPromptAction.alternative:
+        _recordPermissionFallbackUsed(flow);
+        final alternative = flow.source == PermissionFlowSource.camera
+            ? PermissionFlowSource.gallery
+            : PermissionFlowSource.camera;
+        await _handlePickImage(alternative);
+        if (mounted) {
+          _showToast('已保留当前售后内容，你仍可继续无图提交');
+        }
+        return;
+      case PermissionPromptAction.dismiss:
+        _showToast('已保留当前售后内容，你仍可继续无图提交');
+        return;
+    }
+  }
+
+  Future<PermissionPromptAction?> _showPermissionPrompt(
+    PermissionFlowContext flow,
+    PermissionFlowStatus status, {
+    required String alternativeLabel,
+  }) {
+    _recordPermissionPromptShown(flow);
+    return PermissionPromptSheet.show(
+      context,
+      flow: flow,
+      status: status,
+      alternativeLabel: alternativeLabel,
+    );
+  }
+
+  String _alternativeLabel(PermissionFlowSource source) {
+    if (source == PermissionFlowSource.camera) {
+      return '改用相册';
+    }
+    return '改用拍照';
+  }
+
+  void _recordPermissionPromptShown(PermissionFlowContext flow) {
+    _lifecycleProvider?.recordPermissionPromptShown(
+      scene: permissionSceneToValue(flow.scene),
+      source: permissionFlowSourceToValue(flow.source),
+      intentId: flow.intentId,
+      recoveryId: flow.recoveryId,
+    );
+  }
+
+  void _recordPermissionGranted(PermissionFlowContext flow) {
+    _lifecycleProvider?.recordPermissionGranted(
+      scene: permissionSceneToValue(flow.scene),
+      source: permissionFlowSourceToValue(flow.source),
+      intentId: flow.intentId,
+      recoveryId: flow.recoveryId,
+    );
+  }
+
+  void _recordPermissionDenied(PermissionFlowContext flow) {
+    _lifecycleProvider?.recordPermissionDenied(
+      scene: permissionSceneToValue(flow.scene),
+      source: permissionFlowSourceToValue(flow.source),
+      intentId: flow.intentId,
+      recoveryId: flow.recoveryId,
+    );
+  }
+
+  void _recordPermissionSettingsRedirected(PermissionFlowContext flow) {
+    _lifecycleProvider?.recordPermissionSettingsRedirected(
+      scene: permissionSceneToValue(flow.scene),
+      source: permissionFlowSourceToValue(flow.source),
+      intentId: flow.intentId,
+      recoveryId: flow.recoveryId,
+    );
+  }
+
+  void _recordPermissionFallbackUsed(PermissionFlowContext flow) {
+    _lifecycleProvider?.recordPermissionFallbackUsed(
+      scene: permissionSceneToValue(flow.scene),
+      source: permissionFlowSourceToValue(flow.source),
+      intentId: flow.intentId,
+      recoveryId: flow.recoveryId,
+    );
+  }
+
+  void _recordPermissionLostDataRecovered(PermissionFlowContext flow) {
+    _lifecycleProvider?.recordPermissionLostDataRecovered(
+      scene: permissionSceneToValue(flow.scene),
+      source: permissionFlowSourceToValue(flow.source),
+      intentId: flow.intentId,
+      recoveryId: flow.recoveryId,
+    );
   }
 
   // ==================== 提交售后申请 ====================
@@ -200,14 +525,7 @@ class ApplyAfterSalesState extends State<ApplyAfterSales> {
         description: _descController.text.trim(),
         proofPics: _proofPics.join(','),
       );
-
-      final resp = await HttpUtil.post(
-        applyAfterSalesUrl,
-        data: req.toJson(),
-      );
-
-      final jsonData = resp.data;
-      final result = ApplyAfterSalesRespData.fromJson(jsonData);
+      final result = await _submitAfterSales(req);
 
       if (!mounted) return;
 
@@ -221,6 +539,17 @@ class ApplyAfterSalesState extends State<ApplyAfterSales> {
           return;
         }
         // 新提交成功
+        await AppRecoveryStore.clearAfterSalesDraft(widget.orderId);
+        await AppRecoveryStore.clearPendingPermissionContext();
+        await AppRecoveryStore.clearPendingLostMedia();
+        await AppRecoveryStore.clearActiveIntentCandidateIfMatches(
+          AppRecentTargetType.afterSalesApply,
+          targetId: widget.orderId,
+        );
+        await AppRecoveryStore.clearRecentContextIfMatches(
+          AppRecentTargetType.afterSalesApply,
+          targetId: widget.orderId,
+        );
         setState(() {
           _pageState = SalesPageState.success;
           _successReturnNo = result.returnNo;
@@ -327,6 +656,7 @@ class ApplyAfterSalesState extends State<ApplyAfterSales> {
                   onChanged: (value) {
                     if (value != null) {
                       setState(() => _selectedType = value);
+                      _persistDraft();
                     }
                   },
                   child: Column(
@@ -342,6 +672,7 @@ class ApplyAfterSalesState extends State<ApplyAfterSales> {
                         ),
                         onTap: () {
                           setState(() => _selectedType = type);
+                          _persistDraft();
                         },
                       );
                     }).toList(),
@@ -378,6 +709,7 @@ class ApplyAfterSalesState extends State<ApplyAfterSales> {
                   validator: (v) => v == null ? '请选择退货原因' : null,
                   onChanged: (v) {
                     setState(() => _selectedReason = v);
+                    _persistDraft();
                   },
                 ),
               ),

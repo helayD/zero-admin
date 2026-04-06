@@ -20,6 +20,24 @@ class IntentTelemetrySnapshot {
   });
 }
 
+class PermissionTelemetrySnapshot {
+  final String eventName;
+  final String scene;
+  final String source;
+  final String intentId;
+  final String recoveryId;
+  final DateTime recordedAt;
+
+  const PermissionTelemetrySnapshot({
+    required this.eventName,
+    required this.scene,
+    required this.source,
+    required this.intentId,
+    required this.recoveryId,
+    required this.recordedAt,
+  });
+}
+
 class AppLifecycleProvider extends ChangeNotifier with WidgetsBindingObserver {
   AppLifecycleState _currentState = AppLifecycleState.resumed;
   AppRecentContext? _pausedCandidate;
@@ -33,6 +51,7 @@ class AppLifecycleProvider extends ChangeNotifier with WidgetsBindingObserver {
   int _intentRestoredCount = 0;
   int _intentFallbackUsedCount = 0;
   IntentTelemetrySnapshot? _latestIntentTelemetry;
+  PermissionTelemetrySnapshot? _latestPermissionTelemetry;
 
   AppLifecycleState get currentState => _currentState;
 
@@ -57,6 +76,9 @@ class AppLifecycleProvider extends ChangeNotifier with WidgetsBindingObserver {
   int get intentFallbackUsedCount => _intentFallbackUsedCount;
 
   IntentTelemetrySnapshot? get latestIntentTelemetry => _latestIntentTelemetry;
+
+  PermissionTelemetrySnapshot? get latestPermissionTelemetry =>
+      _latestPermissionTelemetry;
 
   void startObserving() {
     WidgetsBinding.instance.addObserver(this);
@@ -132,6 +154,114 @@ class AppLifecycleProvider extends ChangeNotifier with WidgetsBindingObserver {
       targetType: intent.targetTypeValue,
       source: intent.source,
       intentId: intent.intentId,
+      recordedAt: DateTime.now(),
+    );
+    notifyListeners();
+  }
+
+  void recordPermissionPromptShown({
+    required String scene,
+    required String source,
+    required String intentId,
+    required String recoveryId,
+  }) {
+    _recordPermissionEvent(
+      'permissionPromptShown',
+      scene: scene,
+      source: source,
+      intentId: intentId,
+      recoveryId: recoveryId,
+    );
+  }
+
+  void recordPermissionGranted({
+    required String scene,
+    required String source,
+    required String intentId,
+    required String recoveryId,
+  }) {
+    _recordPermissionEvent(
+      'permissionGranted',
+      scene: scene,
+      source: source,
+      intentId: intentId,
+      recoveryId: recoveryId,
+    );
+  }
+
+  void recordPermissionDenied({
+    required String scene,
+    required String source,
+    required String intentId,
+    required String recoveryId,
+  }) {
+    _recordPermissionEvent(
+      'permissionDenied',
+      scene: scene,
+      source: source,
+      intentId: intentId,
+      recoveryId: recoveryId,
+    );
+  }
+
+  void recordPermissionSettingsRedirected({
+    required String scene,
+    required String source,
+    required String intentId,
+    required String recoveryId,
+  }) {
+    _recordPermissionEvent(
+      'permissionSettingsRedirected',
+      scene: scene,
+      source: source,
+      intentId: intentId,
+      recoveryId: recoveryId,
+    );
+  }
+
+  void recordPermissionFallbackUsed({
+    required String scene,
+    required String source,
+    required String intentId,
+    required String recoveryId,
+  }) {
+    _recordPermissionEvent(
+      'permissionFallbackUsed',
+      scene: scene,
+      source: source,
+      intentId: intentId,
+      recoveryId: recoveryId,
+    );
+  }
+
+  void recordPermissionLostDataRecovered({
+    required String scene,
+    required String source,
+    required String intentId,
+    required String recoveryId,
+  }) {
+    _recordPermissionEvent(
+      'permissionLostDataRecovered',
+      scene: scene,
+      source: source,
+      intentId: intentId,
+      recoveryId: recoveryId,
+    );
+  }
+
+  void _recordPermissionEvent(
+    String eventName, {
+    required String scene,
+    required String source,
+    required String intentId,
+    required String recoveryId,
+  }) {
+    _latestPermissionTelemetry = PermissionTelemetrySnapshot(
+      eventName: eventName,
+      scene: scene,
+      source: source,
+      intentId: intentId,
+      recoveryId: recoveryId,
       recordedAt: DateTime.now(),
     );
     notifyListeners();

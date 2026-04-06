@@ -198,6 +198,8 @@ class _IntentRecoveryShellState extends State<IntentRecoveryShell> {
       case AppRecentTargetType.orderList:
       case AppRecentTargetType.productDetail:
       case AppRecentTargetType.orderDetail:
+      case AppRecentTargetType.settings:
+      case AppRecentTargetType.commentCompose:
       case AppRecentTargetType.afterSalesApply:
       case AppRecentTargetType.activity:
       case AppRecentTargetType.subject:

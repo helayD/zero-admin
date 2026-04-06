@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mall/layout/main_tab.dart';
 import 'package:flutter_mall/model/app_recent_context.dart';
-import 'package:flutter_mall/utils/app_intent_dispatcher.dart';
 import 'package:flutter_mall/utils/app_recovery_store.dart';
+import 'package:flutter_mall/utils/app_intent_dispatcher.dart';
+import 'package:flutter_mall/view/mine/ping_jia/ping_jia.dart';
 import 'package:flutter_mall/view/category/product/product_detail.dart';
 import 'package:flutter_mall/view/mine/coupon/available_coupon_list.dart';
 import 'package:flutter_mall/view/mine/coupon/coupon_list.dart';
 import 'package:flutter_mall/view/mine/order/apply_after_sales.dart';
 import 'package:flutter_mall/view/mine/order/order_detail.dart';
 import 'package:flutter_mall/view/mine/order/order_list.dart';
+import 'package:flutter_mall/view/mine/setting/settings.dart';
 
 class AppRecoveryRouter {
   static Widget buildTarget(AppRecentContext context) {
@@ -37,6 +39,25 @@ class AppRecoveryRouter {
         return OrderDetail(
           orderId: context.targetId!,
           intentSource: context.source,
+        );
+      case AppRecentTargetType.settings:
+        return const Settings();
+      case AppRecentTargetType.commentCompose:
+        final targetId = context.targetId;
+        if (targetId == null || targetId <= 0) {
+          return buildFallback(context);
+        }
+        final draft = AppRecoveryStore.getCommentDraft(targetId);
+        if (draft == null || draft.orderId <= 0 || draft.productId <= 0) {
+          return buildFallback(context);
+        }
+        return PinJia(
+          orderId: draft.orderId,
+          productId: draft.productId,
+          productName: draft.productName,
+          productPic: draft.productPic,
+          productAttribute: draft.productAttribute,
+          memberNickName: draft.memberNickName,
         );
       case AppRecentTargetType.couponList:
         return CouponList(
@@ -92,6 +113,8 @@ class AppRecoveryRouter {
         );
       case AppRecentTargetType.couponCenter:
         return AvailableCouponList(intentSource: context.source);
+      case AppRecentTargetType.settings:
+      case AppRecentTargetType.commentCompose:
       case AppRecentTargetType.productDetail:
       case AppRecentTargetType.afterSalesApply:
       case AppRecentTargetType.activity:
