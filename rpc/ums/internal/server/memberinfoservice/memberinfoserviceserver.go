@@ -7,7 +7,7 @@ package server
 import (
 	"context"
 
-	memberinfoservicelogic "github.com/feihua/zero-admin/rpc/ums/internal/logic/memberinfoservice"
+	"github.com/feihua/zero-admin/rpc/ums/internal/logic/memberinfoservice"
 	"github.com/feihua/zero-admin/rpc/ums/internal/svc"
 	"github.com/feihua/zero-admin/rpc/ums/umsclient"
 )

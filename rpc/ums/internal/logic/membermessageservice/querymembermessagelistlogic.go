@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/feihua/zero-admin/rpc/ums/gen/model"
 	"github.com/feihua/zero-admin/rpc/ums/internal/svc"
 	"github.com/feihua/zero-admin/rpc/ums/umsclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -33,11 +32,11 @@ func NewQueryMemberMessageListLogic(ctx context.Context, svcCtx *svc.ServiceCont
 
 // QueryMemberMessageList 查询消息列表
 func (l *QueryMemberMessageListLogic) QueryMemberMessageList(in *umsclient.QueryMemberMessageListReq) (*umsclient.QueryMemberMessageListResp, error) {
-	var messages []*model.UmsMemberMessage
+	var messages []*memberMessageRecord
 	var total int64
 	var err error
 
-	queryBuilder := l.svcCtx.DB.WithContext(l.ctx).Model(&model.UmsMemberMessage{}).Where("member_id = ?", in.MemberId)
+	queryBuilder := l.svcCtx.DB.WithContext(l.ctx).Model(&memberMessageRecord{}).Where("member_id = ?", in.MemberId)
 
 	// 按消息类型筛选
 	if in.MessageType > 0 {
@@ -77,6 +76,7 @@ func (l *QueryMemberMessageListLogic) QueryMemberMessageList(in *umsclient.Query
 			RelatedOrderId: msg.RelatedOrderID,
 			Status:         msg.Status,
 			CreateTime:     msg.CreateTime.Format("2006-01-02 15:04:05"),
+			Intent:         resolvePersistedIntent(msg),
 		}
 		if msg.ReadTime != nil {
 			item.ReadTime = msg.ReadTime.Format("2006-01-02 15:04:05")

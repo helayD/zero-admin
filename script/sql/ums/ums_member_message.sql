@@ -12,6 +12,7 @@ create table ums_member_message
     link_type       varchar(50)  default ''                null comment '跳转类型(order/product/coupon/activity)',
     link_id         varchar(100) default ''               null comment '跳转目标ID',
     related_order_id bigint    default 0                  null comment '关联订单ID',
+    intent_contract text         default '{}'             not null comment '统一意图契约(JSON)',
     status          int       default 0                 not null comment '状态（0:未读,1:已读）',
     read_time       datetime                              null comment '阅读时间',
     create_time     datetime    default CURRENT_TIMESTAMP not null comment '创建时间',

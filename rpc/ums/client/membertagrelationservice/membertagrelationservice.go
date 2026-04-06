@@ -80,12 +80,14 @@ type (
 	MarkMessageAsReadResp                      = umsclient.MarkMessageAsReadResp
 	MemberAddressListData                      = umsclient.MemberAddressListData
 	MemberBrandAttentionListData               = umsclient.MemberBrandAttentionListData
+	MemberBriefData                            = umsclient.MemberBriefData
 	MemberConsumeSettingListData               = umsclient.MemberConsumeSettingListData
 	MemberGrowthLogListData                    = umsclient.MemberGrowthLogListData
 	MemberInfoListData                         = umsclient.MemberInfoListData
 	MemberLevelListData                        = umsclient.MemberLevelListData
 	MemberLoginLogListData                     = umsclient.MemberLoginLogListData
 	MemberMessageData                          = umsclient.MemberMessageData
+	MemberMessageRecallIntent                  = umsclient.MemberMessageRecallIntent
 	MemberPointsLogListData                    = umsclient.MemberPointsLogListData
 	MemberProductCategoryRelationListData      = umsclient.MemberProductCategoryRelationListData
 	MemberProductCollectionListData            = umsclient.MemberProductCollectionListData
@@ -104,6 +106,8 @@ type (
 	QueryMemberBrandAttentionDetailResp        = umsclient.QueryMemberBrandAttentionDetailResp
 	QueryMemberBrandAttentionListReq           = umsclient.QueryMemberBrandAttentionListReq
 	QueryMemberBrandAttentionListResp          = umsclient.QueryMemberBrandAttentionListResp
+	QueryMemberBriefByIdsReq                   = umsclient.QueryMemberBriefByIdsReq
+	QueryMemberBriefByIdsResp                  = umsclient.QueryMemberBriefByIdsResp
 	QueryMemberConsumeSettingDetailReq         = umsclient.QueryMemberConsumeSettingDetailReq
 	QueryMemberConsumeSettingDetailResp        = umsclient.QueryMemberConsumeSettingDetailResp
 	QueryMemberConsumeSettingListReq           = umsclient.QueryMemberConsumeSettingListReq

@@ -80,12 +80,14 @@ type (
 	MarkMessageAsReadResp                      = umsclient.MarkMessageAsReadResp
 	MemberAddressListData                      = umsclient.MemberAddressListData
 	MemberBrandAttentionListData               = umsclient.MemberBrandAttentionListData
+	MemberBriefData                            = umsclient.MemberBriefData
 	MemberConsumeSettingListData               = umsclient.MemberConsumeSettingListData
 	MemberGrowthLogListData                    = umsclient.MemberGrowthLogListData
 	MemberInfoListData                         = umsclient.MemberInfoListData
 	MemberLevelListData                        = umsclient.MemberLevelListData
 	MemberLoginLogListData                     = umsclient.MemberLoginLogListData
 	MemberMessageData                          = umsclient.MemberMessageData
+	MemberMessageRecallIntent                  = umsclient.MemberMessageRecallIntent
 	MemberPointsLogListData                    = umsclient.MemberPointsLogListData
 	MemberProductCategoryRelationListData      = umsclient.MemberProductCategoryRelationListData
 	MemberProductCollectionListData            = umsclient.MemberProductCollectionListData
@@ -104,6 +106,8 @@ type (
 	QueryMemberBrandAttentionDetailResp        = umsclient.QueryMemberBrandAttentionDetailResp
 	QueryMemberBrandAttentionListReq           = umsclient.QueryMemberBrandAttentionListReq
 	QueryMemberBrandAttentionListResp          = umsclient.QueryMemberBrandAttentionListResp
+	QueryMemberBriefByIdsReq                   = umsclient.QueryMemberBriefByIdsReq
+	QueryMemberBriefByIdsResp                  = umsclient.QueryMemberBriefByIdsResp
 	QueryMemberConsumeSettingDetailReq         = umsclient.QueryMemberConsumeSettingDetailReq
 	QueryMemberConsumeSettingDetailResp        = umsclient.QueryMemberConsumeSettingDetailResp
 	QueryMemberConsumeSettingListReq           = umsclient.QueryMemberConsumeSettingListReq
@@ -208,19 +212,12 @@ type (
 	UpdateStatusReq                            = umsclient.UpdateStatusReq
 
 	MemberMessageService interface {
-		// 创建消息
 		AddMemberMessage(ctx context.Context, in *AddMemberMessageReq, opts ...grpc.CallOption) (*AddMemberMessageResp, error)
-		// 查询消息列表
 		QueryMemberMessageList(ctx context.Context, in *QueryMemberMessageListReq, opts ...grpc.CallOption) (*QueryMemberMessageListResp, error)
-		// 查询消息详情
 		QueryMemberMessageDetail(ctx context.Context, in *QueryMemberMessageDetailReq, opts ...grpc.CallOption) (*QueryMemberMessageDetailResp, error)
-		// 标记已读
 		MarkMessageAsRead(ctx context.Context, in *MarkMessageAsReadReq, opts ...grpc.CallOption) (*MarkMessageAsReadResp, error)
-		// 标记全部已读
 		MarkAllMessagesAsRead(ctx context.Context, in *MarkAllMessagesAsReadReq, opts ...grpc.CallOption) (*MarkAllMessagesAsReadResp, error)
-		// 删除消息
 		DeleteMemberMessage(ctx context.Context, in *DeleteMemberMessageReq, opts ...grpc.CallOption) (*DeleteMemberMessageResp, error)
-		// 查询未读数量
 		QueryUnreadCount(ctx context.Context, in *QueryUnreadCountReq, opts ...grpc.CallOption) (*QueryUnreadCountResp, error)
 	}
 
@@ -235,43 +232,36 @@ func NewMemberMessageService(cli zrpc.Client) MemberMessageService {
 	}
 }
 
-// 创建消息
 func (m *defaultMemberMessageService) AddMemberMessage(ctx context.Context, in *AddMemberMessageReq, opts ...grpc.CallOption) (*AddMemberMessageResp, error) {
 	client := umsclient.NewMemberMessageServiceClient(m.cli.Conn())
 	return client.AddMemberMessage(ctx, in, opts...)
 }
 
-// 查询消息列表
 func (m *defaultMemberMessageService) QueryMemberMessageList(ctx context.Context, in *QueryMemberMessageListReq, opts ...grpc.CallOption) (*QueryMemberMessageListResp, error) {
 	client := umsclient.NewMemberMessageServiceClient(m.cli.Conn())
 	return client.QueryMemberMessageList(ctx, in, opts...)
 }
 
-// 查询消息详情
 func (m *defaultMemberMessageService) QueryMemberMessageDetail(ctx context.Context, in *QueryMemberMessageDetailReq, opts ...grpc.CallOption) (*QueryMemberMessageDetailResp, error) {
 	client := umsclient.NewMemberMessageServiceClient(m.cli.Conn())
 	return client.QueryMemberMessageDetail(ctx, in, opts...)
 }
 
-// 标记已读
 func (m *defaultMemberMessageService) MarkMessageAsRead(ctx context.Context, in *MarkMessageAsReadReq, opts ...grpc.CallOption) (*MarkMessageAsReadResp, error) {
 	client := umsclient.NewMemberMessageServiceClient(m.cli.Conn())
 	return client.MarkMessageAsRead(ctx, in, opts...)
 }
 
-// 标记全部已读
 func (m *defaultMemberMessageService) MarkAllMessagesAsRead(ctx context.Context, in *MarkAllMessagesAsReadReq, opts ...grpc.CallOption) (*MarkAllMessagesAsReadResp, error) {
 	client := umsclient.NewMemberMessageServiceClient(m.cli.Conn())
 	return client.MarkAllMessagesAsRead(ctx, in, opts...)
 }
 
-// 删除消息
 func (m *defaultMemberMessageService) DeleteMemberMessage(ctx context.Context, in *DeleteMemberMessageReq, opts ...grpc.CallOption) (*DeleteMemberMessageResp, error) {
 	client := umsclient.NewMemberMessageServiceClient(m.cli.Conn())
 	return client.DeleteMemberMessage(ctx, in, opts...)
 }
 
-// 查询未读数量
 func (m *defaultMemberMessageService) QueryUnreadCount(ctx context.Context, in *QueryUnreadCountReq, opts ...grpc.CallOption) (*QueryUnreadCountResp, error) {
 	client := umsclient.NewMemberMessageServiceClient(m.cli.Conn())
 	return client.QueryUnreadCount(ctx, in, opts...)

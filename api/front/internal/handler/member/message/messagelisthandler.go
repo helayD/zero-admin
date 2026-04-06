@@ -17,12 +17,13 @@ func MessageListHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := message.NewMessageListLogic(r.Context(), svcCtx)
+		ctx := enrichRecallRequestContext(r.Context(), r)
+		l := message.NewMessageListLogic(ctx, svcCtx)
 		resp, err := l.MessageList(&req)
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+			httpx.ErrorCtx(ctx, w, err)
 		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			httpx.OkJsonCtx(ctx, w, resp)
 		}
 	}
 }

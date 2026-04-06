@@ -5,7 +5,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/feihua/zero-admin/rpc/ums/gen/model"
 	"github.com/feihua/zero-admin/rpc/ums/internal/svc"
 	"github.com/feihua/zero-admin/rpc/ums/umsclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -34,23 +33,30 @@ func NewAddMemberMessageLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 
 // AddMemberMessage 创建消息
 func (l *AddMemberMessageLogic) AddMemberMessage(in *umsclient.AddMemberMessageReq) (*umsclient.AddMemberMessageResp, error) {
-	msg := &model.UmsMemberMessage{
-		MemberID:       in.MemberId,
-		MessageType:    in.MessageType,
-		Title:         in.Title,
-		Content:       in.Content,
-		ImageURL:      in.ImageUrl,
-		LinkType:      in.LinkType,
-		LinkID:        in.LinkId,
-		RelatedOrderID: in.RelatedOrderId,
-		Status:        model.MessageStatusUnread,
-		CreateTime:    time.Now(),
-		PlatformID:    in.PlatformId,
-		TenantID:      in.TenantId,
-		MerchantID:    in.MerchantId,
+	linkType, linkID, relatedOrderID, intentContract, err := normalizeMessageCreatePayload(in)
+	if err != nil {
+		logc.Errorf(l.ctx, "创建会员消息前归一化意图失败,参数:%+v,异常:%s", in, err.Error())
+		return nil, errors.New("创建会员消息失败")
 	}
 
-	err := l.svcCtx.DB.WithContext(l.ctx).Create(msg).Error
+	msg := &memberMessageRecord{
+		MemberID:       in.MemberId,
+		MessageType:    in.MessageType,
+		Title:          in.Title,
+		Content:        in.Content,
+		ImageURL:       in.ImageUrl,
+		LinkType:       linkType,
+		LinkID:         linkID,
+		RelatedOrderID: relatedOrderID,
+		Status:         0,
+		CreateTime:     time.Now(),
+		PlatformID:     in.PlatformId,
+		TenantID:       in.TenantId,
+		MerchantID:     in.MerchantId,
+		IntentContract: intentContract,
+	}
+
+	err = l.svcCtx.DB.WithContext(l.ctx).Create(msg).Error
 	if err != nil {
 		logc.Errorf(l.ctx, "创建会员消息失败,参数:%+v,异常:%s", in, err.Error())
 		return nil, errors.New("创建会员消息失败")

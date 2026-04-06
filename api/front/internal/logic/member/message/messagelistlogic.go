@@ -49,8 +49,8 @@ func (l *MessageListLogic) MessageList(req *types.QueryMemberMessageReq) (resp *
 		MemberId:    memberId,
 		MessageType: int32(req.MessageType),
 		Status:      status,
-		PageNum:     req.PageNum,
-		PageSize:    req.PageSize,
+		PageNum:     int32(req.PageNum),
+		PageSize:    int32(req.PageSize),
 	})
 	if err != nil {
 		logc.Errorf(l.ctx, "获取消息列表失败,参数:%+v,异常:%s", req, err.Error())
@@ -68,6 +68,7 @@ func (l *MessageListLogic) MessageList(req *types.QueryMemberMessageReq) (resp *
 			LinkType:       item.LinkType,
 			LinkID:         item.LinkId,
 			RelatedOrderID: item.RelatedOrderId,
+			Intent:         messageIntentResponseFromRPC(l.ctx, item),
 			Status:         int64(item.Status),
 			ReadTime:       item.ReadTime,
 			CreateTime:     item.CreateTime,
@@ -75,11 +76,11 @@ func (l *MessageListLogic) MessageList(req *types.QueryMemberMessageReq) (resp *
 	}
 
 	return &types.QueryMemberMessageListResp{
-		Code:    0,
-		Message: "查询成功",
-		Data:    list,
-		Total:   result.Total,
-		PageNum:  result.PageNum,
-		PageSize: result.PageSize,
+		Code:     0,
+		Message:  "查询成功",
+		Data:     list,
+		Total:    result.Total,
+		PageNum:  int64(result.PageNum),
+		PageSize: int64(result.PageSize),
 	}, nil
 }

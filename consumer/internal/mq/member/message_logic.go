@@ -10,17 +10,18 @@ import (
 
 // MemberMessageEvent 会员消息事件 payload
 type MemberMessageEvent struct {
-	MemberId       int64  `json:"memberId"`
-	MessageType    int32  `json:"messageType"`
-	Title          string `json:"title"`
-	Content        string `json:"content"`
-	ImageUrl       string `json:"imageUrl"`
-	LinkType       string `json:"linkType"`
-	LinkId         string `json:"linkId"`
-	RelatedOrderId int64  `json:"relatedOrderId"`
-	PlatformId     int64  `json:"platformId"`
-	TenantId       int64  `json:"tenantId"`
-	MerchantId     int64  `json:"merchantId"`
+	MemberId       int64                                           `json:"memberId"`
+	MessageType    int32                                           `json:"messageType"`
+	Title          string                                          `json:"title"`
+	Content        string                                          `json:"content"`
+	ImageUrl       string                                          `json:"imageUrl"`
+	LinkType       string                                          `json:"linkType"`
+	LinkId         string                                          `json:"linkId"`
+	RelatedOrderId int64                                           `json:"relatedOrderId"`
+	PlatformId     int64                                           `json:"platformId"`
+	TenantId       int64                                           `json:"tenantId"`
+	MerchantId     int64                                           `json:"merchantId"`
+	Intent         *membermessageservice.MemberMessageRecallIntent `json:"intent"`
 }
 
 // CreateMemberMessage 创建会员消息
@@ -43,6 +44,7 @@ func CreateMemberMessage(ctx context.Context, body []byte, umsClient membermessa
 		PlatformId:     event.PlatformId,
 		TenantId:       event.TenantId,
 		MerchantId:     event.MerchantId,
+		Intent:         event.Intent,
 	})
 	if err != nil {
 		logc.Errorf(ctx, "创建会员消息失败, memberId=%d, title=%s, err=%s", event.MemberId, event.Title, err.Error())
@@ -63,9 +65,9 @@ func CreateMemberMessageDirect(ctx context.Context, db interface{}, event Member
 
 // 消息类型常量
 const (
-	MessageTypeOrder    int32 = 1 // 订单消息
-	MessageTypePayment  int32 = 2 // 支付消息
+	MessageTypeOrder     int32 = 1 // 订单消息
+	MessageTypePayment   int32 = 2 // 支付消息
 	MessageTypeAfterSale int32 = 3 // 售后消息
-	MessageTypeActivity int32 = 4 // 活动消息
-	MessageTypeMember  int32 = 5 // 会员消息
+	MessageTypeActivity  int32 = 4 // 活动消息
+	MessageTypeMember    int32 = 5 // 会员消息
 )

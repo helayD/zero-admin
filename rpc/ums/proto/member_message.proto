@@ -4,6 +4,24 @@ package main;
 
 option go_package = "./proto";
 
+message MemberMessageRecallIntent {
+  string intent_type = 1;
+  string target_type = 2;
+  int64 target_id = 3;
+  int32 target_tab = 4;
+  string fallback_type = 5;
+  int64 fallback_target_id = 6;
+  int32 fallback_tab = 7;
+  bool requires_auth = 8;
+  string min_app_version = 9;
+  string intent_id = 10;
+  string issued_at = 11;
+  string failure_reason = 12;
+  string recovery_hint = 13;
+  bool blocked = 14;
+  string source = 15;
+}
+
 message AddMemberMessageReq {
   int64 member_id = 1;
   int32 message_type = 2;
@@ -16,6 +34,7 @@ message AddMemberMessageReq {
   int64 platform_id = 9;
   int64 tenant_id = 10;
   int64 merchant_id = 11;
+  MemberMessageRecallIntent intent = 12;
 }
 
 message AddMemberMessageResp {
@@ -45,6 +64,7 @@ message MemberMessageData {
   int32 status = 10;
   string read_time = 11;
   string create_time = 12;
+  MemberMessageRecallIntent intent = 13;
 }
 
 message QueryMemberMessageListResp {

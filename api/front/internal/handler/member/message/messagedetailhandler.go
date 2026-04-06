@@ -17,12 +17,13 @@ func MessageDetailHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 			return
 		}
 
-		l := message.NewMessageDetailLogic(r.Context(), svcCtx)
+		ctx := enrichRecallRequestContext(r.Context(), r)
+		l := message.NewMessageDetailLogic(ctx, svcCtx)
 		resp, err := l.MessageDetail(&req)
 		if err != nil {
-			httpx.ErrorCtx(r.Context(), w, err)
+			httpx.ErrorCtx(ctx, w, err)
 		} else {
-			httpx.OkJsonCtx(r.Context(), w, resp)
+			httpx.OkJsonCtx(ctx, w, resp)
 		}
 	}
 }

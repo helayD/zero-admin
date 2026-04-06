@@ -3,7 +3,6 @@ package membermessageservicelogic
 import (
 	"context"
 
-	"github.com/feihua/zero-admin/rpc/ums/gen/model"
 	"github.com/feihua/zero-admin/rpc/ums/internal/svc"
 	"github.com/feihua/zero-admin/rpc/ums/umsclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -32,7 +31,7 @@ func NewQueryMemberMessageDetailLogic(ctx context.Context, svcCtx *svc.ServiceCo
 
 // QueryMemberMessageDetail 查询消息详情
 func (l *QueryMemberMessageDetailLogic) QueryMemberMessageDetail(in *umsclient.QueryMemberMessageDetailReq) (*umsclient.QueryMemberMessageDetailResp, error) {
-	var msg model.UmsMemberMessage
+	var msg memberMessageRecord
 	err := l.svcCtx.DB.WithContext(l.ctx).Where("id = ? AND member_id = ?", in.Id, in.MemberId).First(&msg).Error
 	if err != nil {
 		logc.Errorf(l.ctx, "查询消息详情失败,参数:%+v,异常:%s", in, err.Error())
@@ -54,6 +53,7 @@ func (l *QueryMemberMessageDetailLogic) QueryMemberMessageDetail(in *umsclient.Q
 		RelatedOrderId: msg.RelatedOrderID,
 		Status:         msg.Status,
 		CreateTime:     msg.CreateTime.Format("2006-01-02 15:04:05"),
+		Intent:         resolvePersistedIntent(&msg),
 	}
 	if msg.ReadTime != nil {
 		item.ReadTime = msg.ReadTime.Format("2006-01-02 15:04:05")
