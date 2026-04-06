@@ -17,7 +17,7 @@ class CartModel with ChangeNotifier, DiagnosticableTreeMixin {
   // 购物车选中的商品（key 为购物车记录 id）
   Map<int, CartData> checkCartProduct = <int, CartData>{};
 
-  // 促销信息（按商品ID索引）
+  // 促销信息（按购物车记录 id 索引）
   Map<int, CartPromotionData> promotionMap = <int, CartPromotionData>{};
 
   // 无效购物车项（key: cartItemId, value: errorMessage）
@@ -87,14 +87,14 @@ class CartModel with ChangeNotifier, DiagnosticableTreeMixin {
   void setPromotionData(List<CartPromotionData> promotionList) {
     promotionMap.clear();
     for (var item in promotionList) {
-      promotionMap[item.productId] = item;
+      promotionMap[item.id] = item;
     }
     notifyListeners();
   }
 
   // 获取商品的促销信息
-  CartPromotionData? getPromotion(int productId) {
-    return promotionMap[productId];
+  CartPromotionData? getPromotion(int cartItemId) {
+    return promotionMap[cartItemId];
   }
 
   // 计算所选中的商品的价格（扣除促销优惠）
@@ -103,9 +103,9 @@ class CartModel with ChangeNotifier, DiagnosticableTreeMixin {
     checkCartProduct.forEach((key, value) {
       // 跳过无效商品
       if (invalidCartItems.containsKey(key)) return;
-      final promo = promotionMap[value.productId];
+      final promo = promotionMap[key];
       if (promo != null) {
-        allProductPrice += (promo.price - promo.reduceAmount) * promo.quantity;
+        allProductPrice += (promo.price - promo.reduceAmount) * value.quantity;
       } else {
         allProductPrice += value.price * value.quantity;
       }
@@ -162,6 +162,7 @@ class CartModel with ChangeNotifier, DiagnosticableTreeMixin {
   void removeItem(int cartItemId) {
     allCartProduct.remove(cartItemId);
     checkCartProduct.remove(cartItemId);
+    promotionMap.remove(cartItemId);
     invalidCartItems.remove(cartItemId);
     notifyListeners();
   }
@@ -203,10 +204,14 @@ class CartModel with ChangeNotifier, DiagnosticableTreeMixin {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(DiagnosticsProperty<Map<int, CartData>>('allCartProduct', allCartProduct));
-    properties.add(DiagnosticsProperty<Map<int, CartData>>('checkCartProduct', checkCartProduct));
-    properties.add(DiagnosticsProperty<Map<int, CartPromotionData>>('promotionMap', promotionMap));
-    properties.add(DiagnosticsProperty<Map<int, String>>('invalidCartItems', invalidCartItems));
+    properties.add(DiagnosticsProperty<Map<int, CartData>>(
+        'allCartProduct', allCartProduct));
+    properties.add(DiagnosticsProperty<Map<int, CartData>>(
+        'checkCartProduct', checkCartProduct));
+    properties.add(DiagnosticsProperty<Map<int, CartPromotionData>>(
+        'promotionMap', promotionMap));
+    properties.add(DiagnosticsProperty<Map<int, String>>(
+        'invalidCartItems', invalidCartItems));
     properties.add(IntProperty('allProductPrice', allProductPrice));
   }
 }

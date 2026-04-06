@@ -12,6 +12,7 @@ import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/utils/http_util.dart';
 import 'package:provider/provider.dart';
 
+import '../../layout/main_tab.dart';
 import '../../model/cart_list.dart';
 import '../mine/order/order_submit.dart';
 
@@ -433,15 +434,624 @@ class _CartState extends State<Cart> {
     );
   }
 
-  var boxDecoration = BoxDecoration(
-    color: Colors.white,
-    border: Border(
-      bottom: BorderSide(
-        width: 1,
-        color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
+  int _estimateSelectedSavings(CartModel cartModel) {
+    int total = 0;
+    for (final item in cartModel.getValidCheckProduct()) {
+      final promo = cartModel.getPromotion(item.id);
+      if (promo != null && promo.reduceAmount > 0) {
+        total += promo.reduceAmount * item.quantity;
+      }
+    }
+    return total;
+  }
+
+  int _selectedQuantity(CartModel cartModel) {
+    return cartModel
+        .getValidCheckProduct()
+        .fold<int>(0, (sum, item) => sum + item.quantity);
+  }
+
+  String _formatPrice(int amountInYuan) {
+    return amountInYuan.toString();
+  }
+
+  Widget _buildSummaryMetric(String label, String value) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white.withAlpha(200),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(fontSize: 12, color: Color(0xFF909399)),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF303133),
+              ),
+            ),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
+
+  Widget _buildSummaryCard(
+    CartModel cartModel,
+    List<CartData> cartListData,
+  ) {
+    final selectedKinds = cartModel.getValidCheckProduct().length;
+    final selectedQuantity = _selectedQuantity(cartModel);
+    final estimatedSavings = _estimateSelectedSavings(cartModel);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFFF5F7), Color(0xFFFFFBFC)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  "今日购物袋",
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF303133),
+                  ),
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFA436A).withAlpha(25),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  "共${cartListData.length}款",
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFFFA436A),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            "支持加购后统一结算，也支持从详情页立即购买，优惠券会在订单确认页自动可选。",
+            style: TextStyle(
+              fontSize: 13,
+              height: 1.5,
+              color: Color(0xFF606266),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              _buildSummaryMetric("已选商品", "$selectedQuantity件"),
+              const SizedBox(width: 10),
+              _buildSummaryMetric(
+                  "当前应付", "¥${_formatPrice(cartModel.getProductAllPrice())}"),
+              const SizedBox(width: 10),
+              _buildSummaryMetric(
+                "预计已省",
+                estimatedSavings > 0
+                    ? "¥${_formatPrice(estimatedSavings)}"
+                    : "待解锁",
+              ),
+            ],
+          ),
+          if (cartModel.invalidCartItems.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white.withAlpha(210),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Text(
+                "有${cartModel.invalidCartItems.length}件商品待处理，结算前请先调整库存异常或失效商品。",
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF909399),
+                ),
+              ),
+            ),
+          ] else if (selectedKinds > 0) ...[
+            const SizedBox(height: 14),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white.withAlpha(210),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Text(
+                "已为你选中$selectedKinds款商品，可直接去确认订单选择优惠券和积分。",
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF606266),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuantityCapsule(
+    CartData item,
+    CartPromotionData? promo,
+    bool isInvalid,
+  ) {
+    return GestureDetector(
+      onTap: isInvalid
+          ? null
+          : () => _updateQuantity(
+                item.id,
+                item.quantity,
+                promo?.realStock ?? 999,
+              ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF7F7F7),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: const Color(0xFFE4E7ED)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              "×${item.quantity}",
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF303133),
+              ),
+            ),
+            const SizedBox(width: 6),
+            const Icon(Icons.edit_outlined, size: 14, color: Color(0xFF909399)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCartCard(
+    BuildContext context,
+    CartModel cartModel,
+    CartData item,
+    CartPromotionData? promo,
+    bool isInvalid,
+    String? invalidReason,
+  ) {
+    final currentPrice = promo != null && promo.reduceAmount > 0
+        ? promo.price - promo.reduceAmount
+        : item.price;
+    final originalPrice =
+        promo != null && promo.reduceAmount > 0 ? promo.price : item.price;
+
+    return Opacity(
+      opacity: isInvalid ? 0.55 : 1,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: [
+            BoxShadow(
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+              color: Colors.black.withAlpha(10),
+            ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 34),
+              child: InkWell(
+                onTap: () => cartModel.setCartItemStatus(item.id),
+                child: Image.asset(
+                  cartModel.getProductIsCheck(item.id)
+                      ? "images/checkbox_round_1.png"
+                      : "images/checkbox_round_2.png",
+                  height: 24,
+                  width: 24,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: Image.network(
+                kIsWeb ? proxyImageUrl(item.productPic) : item.productPic,
+                width: 96,
+                height: 96,
+                fit: BoxFit.cover,
+                errorBuilder: (ctx, err, stack) => Container(
+                  width: 96,
+                  height: 96,
+                  color: Colors.grey[200],
+                  child: const Icon(Icons.image_not_supported),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          item.productName,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            height: 1.35,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF303133),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      InkWell(
+                        onTap:
+                            _isSubmitting ? null : () => _deleteItem(item.id),
+                        child: const Icon(
+                          Icons.close,
+                          size: 18,
+                          color: Color(0xFF909399),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (item.productSubTitle.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      item.productSubTitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF909399),
+                      ),
+                    ),
+                  ],
+                  if (item.productAttr.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF5F7FA),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        item.productAttr,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF606266),
+                        ),
+                      ),
+                    ),
+                  ],
+                  if (promo != null && promo.promotionMessage.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF1F4),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        promo.promotionMessage,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFFA436A),
+                        ),
+                      ),
+                    ),
+                  ],
+                  if (isInvalid && invalidReason != null) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 7,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF4F4),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        invalidReason,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFFE34D59),
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "到手价",
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Color(0xFF909399),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Text(
+                                  "¥${_formatPrice(currentPrice)}",
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF303133),
+                                  ),
+                                ),
+                                if (promo != null &&
+                                    promo.reduceAmount > 0) ...[
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    "¥${_formatPrice(originalPrice)}",
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFFB0B4BC),
+                                      decoration: TextDecoration.lineThrough,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      _buildQuantityCapsule(item, promo, isInvalid),
+                    ],
+                  ),
+                  if (promo != null &&
+                      promo.realStock > 0 &&
+                      promo.realStock <= 10) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      "库存紧张，仅剩${promo.realStock}件",
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Colors.orange,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 108,
+              height: 108,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF1F4),
+                borderRadius: BorderRadius.circular(32),
+              ),
+              child: const Icon(
+                Icons.shopping_bag_outlined,
+                size: 46,
+                color: Color(0xFFFA436A),
+              ),
+            ),
+            const SizedBox(height: 18),
+            const Text(
+              "购物车还是空的",
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF303133),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              "去首页挑几件好商品吧，支持加购后统一结算，也支持从详情页直接下单。",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                height: 1.6,
+                color: Color(0xFF909399),
+              ),
+            ),
+            const SizedBox(height: 22),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const MainTab()),
+                  (route) => false,
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFA436A),
+                foregroundColor: Colors.white,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
+              ),
+              child: const Text("去首页逛逛"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCheckoutBar(CartModel cartModel) {
+    final selectedKinds = cartModel.getValidCheckProduct().length;
+    final selectedQuantity = _selectedQuantity(cartModel);
+    final totalPrice = cartModel.getProductAllPrice();
+    final estimatedSavings = _estimateSelectedSavings(cartModel);
+
+    return Positioned(
+      bottom: 0,
+      width: MediaQuery.of(context).size.width,
+      child: SafeArea(
+        top: false,
+        child: Container(
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+                color: Colors.black.withAlpha(16),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              InkWell(
+                onTap: () => context.read<CartModel>().setAllStatus(),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Image.asset(
+                      Provider.of<CartModel>(context, listen: true)
+                              .getAllStatus()
+                          ? "images/checkbox_round_1.png"
+                          : "images/checkbox_round_2.png",
+                      height: 28,
+                      width: 28,
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      "全选",
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF909399),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "合计 ¥${_formatPrice(totalPrice)}",
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF303133),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      estimatedSavings > 0
+                          ? "已优惠 ¥${_formatPrice(estimatedSavings)}，共$selectedQuantity件商品"
+                          : "已选$selectedKinds款，共$selectedQuantity件商品",
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF909399),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              SizedBox(
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: _isSubmitting ? null : _goToCheckout,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFA436A),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    selectedKinds > 0 ? "去结算($selectedKinds)" : "去结算",
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -465,351 +1075,36 @@ class _CartState extends State<Cart> {
       ),
       body: Stack(
         children: [
+          Container(
+            color: const Color(0xFFF8F5F6),
+          ),
           if (_isSubmitting)
             Container(
               color: Colors.black26,
               child: const Center(child: CircularProgressIndicator()),
             ),
           cartListData.isNotEmpty
-              ? ListView.builder(
-                  itemCount: cartListData.length,
-                  itemBuilder: (BuildContext context, int index) {
-                    final item = cartListData[index];
-                    final promo = cartModel.getPromotion(item.productId);
-                    final isInvalid = invalidItems.containsKey(item.id);
-                    final invalidReason = invalidItems[item.id];
-
-                    return Opacity(
-                      opacity: isInvalid ? 0.5 : 1.0,
-                      child: Container(
-                        decoration: boxDecoration,
-                        padding: const EdgeInsets.all(15),
-                        child: Stack(
-                          children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // 勾选框
-                                InkWell(
-                                  onTap: () {
-                                    cartModel.setCartItemStatus(item.id);
-                                  },
-                                  child: Image.asset(
-                                    cartModel.getProductIsCheck(item.id)
-                                        ? "images/checkbox_round_1.png"
-                                        : "images/checkbox_round_2.png",
-                                    height: 23,
-                                    width: 22,
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                // 商品图片
-                                ClipRRect(
-                                  borderRadius: const BorderRadius.all(
-                                      Radius.circular(20)),
-                                  child: Image.network(
-                                    kIsWeb
-                                        ? proxyImageUrl(item.productPic)
-                                        : item.productPic,
-                                    width: 80,
-                                    height: 80,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (ctx, err, stack) =>
-                                        Container(
-                                      width: 80,
-                                      height: 80,
-                                      color: Colors.grey[200],
-                                      child:
-                                          const Icon(Icons.image_not_supported),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                // 商品信息
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        item.productName,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: Color(
-                                            int.parse('303133', radix: 16),
-                                          ).withAlpha(255),
-                                          decoration: isInvalid
-                                              ? TextDecoration.lineThrough
-                                              : null,
-                                        ),
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 2),
-                                        child: Text(
-                                          item.productAttr,
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Color(
-                                              int.parse('909399', radix: 16),
-                                            ).withAlpha(255),
-                                          ),
-                                        ),
-                                      ),
-                                      // 促销标签
-                                      if (promo != null &&
-                                          promo.reduceAmount > 0) ...[
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 6, vertical: 2),
-                                          margin:
-                                              const EdgeInsets.only(bottom: 2),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFFFFF0F0),
-                                            borderRadius:
-                                                BorderRadius.circular(4),
-                                          ),
-                                          child: Text(
-                                            promo.promotionMessage,
-                                            style: const TextStyle(
-                                              fontSize: 11,
-                                              color: Color(0xFFFA436A),
-                                            ),
-                                          ),
-                                        ),
-                                        Row(
-                                          children: [
-                                            Text(
-                                              "¥${(promo.price - promo.reduceAmount) ~/ 100}",
-                                              style: TextStyle(
-                                                fontSize: 14,
-                                                color: Color(
-                                                  int.parse('303133',
-                                                      radix: 16),
-                                                ).withAlpha(255),
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              "¥${promo.price ~/ 100}",
-                                              style: const TextStyle(
-                                                fontSize: 11,
-                                                color: Colors.grey,
-                                                decoration:
-                                                    TextDecoration.lineThrough,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ] else
-                                        Text(
-                                          "¥${item.price ~/ 100}",
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: Color(
-                                              int.parse('303133', radix: 16),
-                                            ).withAlpha(255),
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      // 库存提示
-                                      if (promo != null &&
-                                          promo.realStock > 0 &&
-                                          promo.realStock <= 10)
-                                        Padding(
-                                          padding:
-                                              const EdgeInsets.only(top: 2),
-                                          child: Text(
-                                            "仅剩${promo.realStock}件",
-                                            style: const TextStyle(
-                                              fontSize: 11,
-                                              color: Colors.orange,
-                                            ),
-                                          ),
-                                        ),
-                                      // 数量显示（可点击修改，失效商品不可改，Task 10.3）
-                                      GestureDetector(
-                                        onTap: isInvalid
-                                            ? null
-                                            : () => _updateQuantity(
-                                                  item.id,
-                                                  item.quantity,
-                                                  promo?.realStock ?? 999,
-                                                ),
-                                        child: Container(
-                                          margin: const EdgeInsets.only(top: 4),
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 2,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            border: Border.all(
-                                              color: Colors.grey[300]!,
-                                            ),
-                                            borderRadius:
-                                                BorderRadius.circular(4),
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Text(
-                                                "×${item.quantity}",
-                                                style: const TextStyle(
-                                                    fontSize: 13),
-                                              ),
-                                              const SizedBox(width: 4),
-                                              const Icon(Icons.edit, size: 12),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                // 删除按钮（Task 6.1）
-                                GestureDetector(
-                                  onTap: _isSubmitting
-                                      ? null
-                                      : () => _deleteItem(item.id),
-                                  child: Image.asset(
-                                    "images/close.png",
-                                    height: 16,
-                                    width: 17,
-                                    color: Color(
-                                      int.parse('909399', radix: 16),
-                                    ).withAlpha(255),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            // 无效商品角标（Task 9.2 & Task 10.2）
-                            if (isInvalid && invalidReason != null)
-                              Positioned(
-                                left: 0,
-                                top: 0,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
-                                  decoration: const BoxDecoration(
-                                    color: Colors.red,
-                                    borderRadius: BorderRadius.only(
-                                      topLeft: Radius.circular(4),
-                                      bottomRight: Radius.circular(4),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    invalidReason,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                )
-              : Container(
-                  alignment: Alignment.topCenter,
-                  margin: const EdgeInsets.only(top: 200),
-                  child: Text(
-                    "囧~ 购物车还是空的",
-                    style: TextStyle(
-                      fontSize: 20,
-                      color:
-                          Color(int.parse('909399', radix: 16)).withAlpha(255),
-                    ),
-                  ),
-                ),
-          // 底部结算栏
-          Visibility(
-            visible: cartListData.isNotEmpty,
-            child: Positioned(
-              bottom: 0,
-              width: MediaQuery.of(context).size.width,
-              child: Container(
-                height: 60,
-                padding: const EdgeInsets.symmetric(horizontal: 15),
-                margin: const EdgeInsets.all(15),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: Colors.grey, width: 1),
-                  boxShadow: const [
-                    BoxShadow(
-                      blurRadius: 2,
-                      spreadRadius: 1,
-                      color: Colors.grey,
-                    ),
-                  ],
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              ? ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 140),
                   children: [
-                    InkWell(
-                      onTap: () {
-                        context.read<CartModel>().setAllStatus();
-                      },
-                      child: Image.asset(
-                        Provider.of<CartModel>(context, listen: true)
-                                .getAllStatus()
-                            ? "images/checkbox_round_1.png"
-                            : "images/checkbox_round_2.png",
-                        height: 30,
-                        width: 30,
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        Text(
-                          "￥${Provider.of<CartModel>(context, listen: true).getProductAllPrice() ~/ 100}",
-                          style: const TextStyle(fontSize: 16),
-                        ),
-                        const SizedBox(width: 25),
-                        Container(
-                          height: 40,
-                          width: 90,
-                          decoration: BoxDecoration(
-                            color: Color(int.parse('fa436a', radix: 16))
-                                .withAlpha(255),
-                            borderRadius:
-                                const BorderRadius.all(Radius.circular(50)),
-                            boxShadow: const [
-                              BoxShadow(
-                                blurRadius: 2,
-                                spreadRadius: 1,
-                                color: Colors.grey,
-                              ),
-                            ],
-                          ),
-                          child: TextButton(
-                            onPressed: _isSubmitting ? null : _goToCheckout,
-                            child: const Text(
-                              '去结算',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                    _buildSummaryCard(cartModel, cartListData),
+                    ...cartListData.map((item) {
+                      final promo = cartModel.getPromotion(item.id);
+                      final isInvalid = invalidItems.containsKey(item.id);
+                      final invalidReason = invalidItems[item.id];
+                      return _buildCartCard(
+                        context,
+                        cartModel,
+                        item,
+                        promo,
+                        isInvalid,
+                        invalidReason,
+                      );
+                    }),
                   ],
-                ),
-              ),
-            ),
-          ),
+                )
+              : _buildEmptyState(),
+          if (cartListData.isNotEmpty) _buildCheckoutBar(cartModel),
         ],
       ),
     );

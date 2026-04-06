@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mall/config/service_url.dart';
 import 'package:flutter_mall/model/confirm_order.dart';
+import 'package:flutter_mall/model/direct_checkout.dart';
 import 'package:flutter_mall/provider/cart_model.dart';
 import 'package:flutter_mall/utils/http_util.dart';
 import 'package:flutter_mall/widgets/cached_image_widget.dart';
@@ -20,7 +21,9 @@ import 'order_pay.dart';
 /// Story 5-3: Task 5-11 实现
 ///
 class OrderSubmit extends StatefulWidget {
-  const OrderSubmit({super.key});
+  final DirectCheckoutParams? directItem;
+
+  const OrderSubmit({super.key, this.directItem});
 
   @override
   State<OrderSubmit> createState() => _OrderSubmitState();
@@ -40,7 +43,8 @@ class _OrderSubmitState extends State<OrderSubmit> {
   // Task 7: 积分抵扣
   final TextEditingController _integrationController = TextEditingController();
   bool _integrationConflict = false; // 积分与优惠券互斥
-  final TextEditingController _remarkController = TextEditingController(); // 订单备注（MEDIUM-3）
+  final TextEditingController _remarkController =
+      TextEditingController(); // 订单备注（MEDIUM-3）
 
   // Task 8: 支付方式（1=支付宝，2=微信，默认微信）
   int _selectedPayType = 2;
@@ -51,11 +55,21 @@ class _OrderSubmitState extends State<OrderSubmit> {
   // Price Breakdown Card（Task 11）
   int _previewIntegrationAmount = 0;
 
+  String _formatAmount(num amount) {
+    final normalized = amount.toDouble();
+    if (normalized == normalized.truncateToDouble()) {
+      return normalized.toStringAsFixed(0);
+    }
+    return normalized.toStringAsFixed(2);
+  }
+
   @override
   void initState() {
     super.initState();
     _loadConfirmOrder();
   }
+
+  bool get _isDirectBuy => widget.directItem != null;
 
   @override
   void dispose() {
@@ -73,8 +87,11 @@ class _OrderSubmitState extends State<OrderSubmit> {
       });
       final cartModel = context.read<CartModel>();
       final ids = cartModel.getCheckProduct().map((e) => e.id).toList();
-      Response result = await HttpUtil.post(
-          generateConfirmOrderUrl, data: {"ids": ids});
+      final Map<String, dynamic> requestData = _isDirectBuy
+          ? {"directItem": widget.directItem!.toJson()}
+          : {"ids": ids};
+      Response result =
+          await HttpUtil.post(generateConfirmOrderUrl, data: requestData);
       ConfirmOrderModel model = ConfirmOrderModel.fromJson(result.data);
       if (mounted) {
         setState(() {
@@ -82,9 +99,7 @@ class _OrderSubmitState extends State<OrderSubmit> {
           _loading = false;
           // 自动选择默认地址
           _selectedAddressIndex = 0;
-          for (int i = 0;
-              i < model.data.memberReceiveAddressList.length;
-              i++) {
+          for (int i = 0; i < model.data.memberReceiveAddressList.length; i++) {
             if (model.data.memberReceiveAddressList[i].isDefault == 1) {
               _selectedAddressIndex = i;
               break;
@@ -115,9 +130,8 @@ class _OrderSubmitState extends State<OrderSubmit> {
     final totalAmt = data.calcAmount.totalAmount;
     int maxByPercent = 0;
     if (setting.maxPercentPerOrder > 0 && totalAmt > 0) {
-      maxByPercent =
-          (totalAmt * setting.maxPercentPerOrder ~/ 100) *
-              setting.deductionPerAmount;
+      maxByPercent = (totalAmt * setting.maxPercentPerOrder ~/ 100) *
+          setting.deductionPerAmount;
     }
     final maxIntegration =
         integration < maxByPercent ? integration : maxByPercent;
@@ -128,11 +142,11 @@ class _OrderSubmitState extends State<OrderSubmit> {
 
   int _calcIntegrationAmount(int useIntegration) {
     final data = _orderData;
-    if (data == null || data.integrationConsumeSetting.deductionPerAmount <= 0) {
+    if (data == null ||
+        data.integrationConsumeSetting.deductionPerAmount <= 0) {
       return 0;
     }
-    return useIntegration ~/
-        data.integrationConsumeSetting.deductionPerAmount;
+    return useIntegration ~/ data.integrationConsumeSetting.deductionPerAmount;
   }
 
   void _onIntegrationChanged(String val) {
@@ -140,13 +154,12 @@ class _OrderSubmitState extends State<OrderSubmit> {
     if (data == null) return;
     final v = int.tryParse(val) ?? 0;
     final integration = data.memberIntegration;
-    final maxByPercent =
-        data.integrationConsumeSetting.maxPercentPerOrder > 0
-            ? (data.calcAmount.totalAmount *
-                    data.integrationConsumeSetting.maxPercentPerOrder ~/
-                    100) *
-                data.integrationConsumeSetting.deductionPerAmount
-            : integration;
+    final maxByPercent = data.integrationConsumeSetting.maxPercentPerOrder > 0
+        ? (data.calcAmount.totalAmount *
+                data.integrationConsumeSetting.maxPercentPerOrder ~/
+                100) *
+            data.integrationConsumeSetting.deductionPerAmount
+        : integration;
     final maxIntegration =
         integration < maxByPercent ? integration : maxByPercent;
     if (v > maxIntegration) {
@@ -170,13 +183,12 @@ class _OrderSubmitState extends State<OrderSubmit> {
         ? data.integrationConsumeSetting.useUnit
         : 100;
     final integration = data.memberIntegration;
-    final maxByPercent =
-        data.integrationConsumeSetting.maxPercentPerOrder > 0
-            ? (data.calcAmount.totalAmount *
-                    data.integrationConsumeSetting.maxPercentPerOrder ~/
-                    100) *
-                data.integrationConsumeSetting.deductionPerAmount
-            : integration;
+    final maxByPercent = data.integrationConsumeSetting.maxPercentPerOrder > 0
+        ? (data.calcAmount.totalAmount *
+                data.integrationConsumeSetting.maxPercentPerOrder ~/
+                100) *
+            data.integrationConsumeSetting.deductionPerAmount
+        : integration;
     final maxIntegration =
         integration < maxByPercent ? integration : maxByPercent;
     var next = (cur + delta * step).clamp(0, maxIntegration);
@@ -210,13 +222,12 @@ class _OrderSubmitState extends State<OrderSubmit> {
       backgroundColor: Colors.transparent,
       builder: (ctx) => AddressSelectSheet(
         addresses: _orderData!.memberReceiveAddressList,
-        selectedAddressId:
-            _orderData!.memberReceiveAddressList.isNotEmpty &&
-                    _selectedAddressIndex <
-                        _orderData!.memberReceiveAddressList.length
-                ? _orderData!.memberReceiveAddressList[_selectedAddressIndex].id
-                : 0,
-        onAddressesChanged: () => _loadConfirmOrder(),  // LOW-2: 地址变更后刷新确认单
+        selectedAddressId: _orderData!.memberReceiveAddressList.isNotEmpty &&
+                _selectedAddressIndex <
+                    _orderData!.memberReceiveAddressList.length
+            ? _orderData!.memberReceiveAddressList[_selectedAddressIndex].id
+            : 0,
+        onAddressesChanged: () => _loadConfirmOrder(), // LOW-2: 地址变更后刷新确认单
       ),
     ).then((selectedId) {
       if (selectedId != null && selectedId > 0) {
@@ -254,8 +265,7 @@ class _OrderSubmitState extends State<OrderSubmit> {
       setState(() {
         _selectedCoupon = result;
         final data = _orderData;
-        if (data != null &&
-            data.integrationConsumeSetting.couponStatus == 0) {
+        if (data != null && data.integrationConsumeSetting.couponStatus == 0) {
           _integrationController.text = "0";
           _previewIntegrationAmount = 0;
         }
@@ -296,8 +306,7 @@ class _OrderSubmitState extends State<OrderSubmit> {
 
     final cartModel = context.read<CartModel>();
     final cartIds = cartModel.getCheckProduct().map((e) => e.id).toList();
-    final useIntegration =
-        int.tryParse(_integrationController.text) ?? 0;
+    final useIntegration = int.tryParse(_integrationController.text) ?? 0;
 
     setState(() => _isSubmitting = true);
 
@@ -307,20 +316,32 @@ class _OrderSubmitState extends State<OrderSubmit> {
       final uuid = const Uuid();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final memberId = selectedAddr.memberId; // 修复 CRITICAL-1：使用会员 ID 而非地址 ID
-      final cartIdsStr = cartIds.join(',');
-      final idempotencyKey = '$memberId:$timestamp:$cartIdsStr:${_selectedCoupon?.id ?? 0}:$useIntegration:${uuid.v4()}';
+      final checkoutSource = _isDirectBuy
+          ? 'direct:${widget.directItem!.productId}:${widget.directItem!.productSkuId}:${widget.directItem!.quantity}'
+          : cartIds.join(',');
+      final idempotencyKey =
+          '$memberId:$timestamp:$checkoutSource:${_selectedCoupon?.id ?? 0}:$useIntegration:${uuid.v4()}';
 
       // === Task 7.2: 通过 HTTP header 传递幂等键 ===
       final resp = await HttpUtil.postWithHeaders(
         generateOrderUrl,
-        data: {
-          "cartIds": cartIds,
-          "memberReceiveAddressId": selectedAddr.id,
-          "couponId": _selectedCoupon?.id ?? 0,
-          "useIntegration": useIntegration,
-          "payType": _selectedPayType,
-          "note": _remarkController.text.trim(),  // MEDIUM-3：订单备注
-        },
+        data: _isDirectBuy
+            ? {
+                "directItem": widget.directItem!.toJson(),
+                "memberReceiveAddressId": selectedAddr.id,
+                "couponId": _selectedCoupon?.id ?? 0,
+                "useIntegration": useIntegration,
+                "payType": _selectedPayType,
+                "note": _remarkController.text.trim(),
+              }
+            : {
+                "cartIds": cartIds,
+                "memberReceiveAddressId": selectedAddr.id,
+                "couponId": _selectedCoupon?.id ?? 0,
+                "useIntegration": useIntegration,
+                "payType": _selectedPayType,
+                "note": _remarkController.text.trim(),
+              },
         headers: {"X-Idempotency-Key": idempotencyKey},
       );
 
@@ -333,9 +354,11 @@ class _OrderSubmitState extends State<OrderSubmit> {
         final payAmount = _calcFinalPayAmount();
 
         // Task 9.3: 清空已结算购物车项
-        try {
-          await HttpUtil.post(deleteCartUrl, data: {"ids": cartIds});
-        } catch (_) {}
+        if (!_isDirectBuy) {
+          try {
+            await HttpUtil.post(deleteCartUrl, data: {"ids": cartIds});
+          } catch (_) {}
+        }
 
         if (!mounted) return;
 
@@ -346,7 +369,7 @@ class _OrderSubmitState extends State<OrderSubmit> {
               orderId: orderId,
               orderSn: orderSn,
               payType: _selectedPayType,
-              amount: payAmount / 100.0,
+              amount: payAmount,
             ),
           ),
         );
@@ -355,23 +378,24 @@ class _OrderSubmitState extends State<OrderSubmit> {
         // errorx.NewDefaultError 返回 {"code": 1, "message": "错误码字符串"}
         // Flutter int64 比较与 Go 常量 string 比较永远不同，需从 message 字段取错误码
         final msg = resp.data["message"] ?? "提交失败，请稍后重试";
-        final errCode = resp.data["message"] ?? ""; // 错误码在 message 字段（修复 CRITICAL-2）
+        final errCode =
+            resp.data["message"] ?? ""; // 错误码在 message 字段（修复 CRITICAL-2）
 
-        if (errCode == ErrCodeOrderDuplicatedRequest) {
+        if (errCode == errCodeOrderDuplicatedRequest) {
           _showInlineError("订单正在处理中，请稍后查看");
-        } else if (errCode == ErrCodeOrderCompensationFailed) {
+        } else if (errCode == errCodeOrderCompensationFailed) {
           _showSubmitFailureWithActions("订单创建异常，请稍后重试");
-        } else if (errCode == ErrCodeOrderStockLocked) {
+        } else if (errCode == errCodeOrderStockLocked) {
           _showSubmitFailureWithActions("库存已被其他订单占用，请返回购物车重新选择");
-        } else if (errCode == ErrCodeOrderStockInsufficient) {
+        } else if (errCode == errCodeOrderStockInsufficient) {
           _showSubmitFailureWithActions("库存不足，请返回购物车重新选择");
-        } else if (errCode == ErrCodeOrderCouponUnavailable) {
+        } else if (errCode == errCodeOrderCouponUnavailable) {
           _showSubmitFailureWithActions("优惠券不可用，请返回重新选择");
-        } else if (errCode == ErrCodeOrderIntegrationExceed) {
+        } else if (errCode == errCodeOrderIntegrationExceed) {
           _showInlineError("积分不足，请调整使用数量");
-        } else if (errCode == ErrCodeOrderAddressInvalid) {
+        } else if (errCode == errCodeOrderAddressInvalid) {
           _showSubmitFailureWithActions("收货地址无效，请重新选择");
-        } else if (errCode == ErrCodeOrderPayTypeInvalid) {
+        } else if (errCode == errCodeOrderPayTypeInvalid) {
           _showSubmitFailureWithActions("支付方式无效，请重新选择");
         } else if (resp.data["code"] == 0 && resp.data["data"]?["id"] != null) {
           // 幂等命中：后端返回 code=0 但已有订单（message="订单已存在"）
@@ -399,26 +423,31 @@ class _OrderSubmitState extends State<OrderSubmit> {
   }
 
   // Story 5.4 错误码常量（与后端 errorx 保持一致）
-  static const String ErrCodeOrderDuplicatedRequest = 'OMS_ORDER_DUPLICATED_REQUEST';
-  static const String ErrCodeOrderCompensationFailed = 'OMS_ORDER_COMPENSATION_FAILED';
-  static const String ErrCodeOrderStockLocked = 'OMS_ORDER_STOCK_LOCKED';
-  static const String ErrCodeOrderStockInsufficient = 'OMS_ORDER_STOCK_INSUFFICIENT';
-  static const String ErrCodeOrderCouponUnavailable = 'OMS_ORDER_COUPON_UNAVAILABLE';
-  static const String ErrCodeOrderIntegrationExceed = 'OMS_ORDER_INTEGRATION_EXCEED';
-  static const String ErrCodeOrderAddressInvalid = 'OMS_ORDER_ADDRESS_INVALID';
-  static const String ErrCodeOrderPayTypeInvalid = 'OMS_ORDER_PAY_TYPE_INVALID';
+  static const String errCodeOrderDuplicatedRequest =
+      'OMS_ORDER_DUPLICATED_REQUEST';
+  static const String errCodeOrderCompensationFailed =
+      'OMS_ORDER_COMPENSATION_FAILED';
+  static const String errCodeOrderStockLocked = 'OMS_ORDER_STOCK_LOCKED';
+  static const String errCodeOrderStockInsufficient =
+      'OMS_ORDER_STOCK_INSUFFICIENT';
+  static const String errCodeOrderCouponUnavailable =
+      'OMS_ORDER_COUPON_UNAVAILABLE';
+  static const String errCodeOrderIntegrationExceed =
+      'OMS_ORDER_INTEGRATION_EXCEED';
+  static const String errCodeOrderAddressInvalid = 'OMS_ORDER_ADDRESS_INVALID';
+  static const String errCodeOrderPayTypeInvalid = 'OMS_ORDER_PAY_TYPE_INVALID';
 
   /// 计算最终实付金额（与底部栏保持一致）
-  int _calcFinalPayAmount() {
+  double _calcFinalPayAmount() {
     final calc = _orderData?.calcAmount;
     if (calc == null) return 0;
-    final totalAmount = calc.totalAmount;
-    final promotionAmount = calc.promotionAmount;
-    final couponAmount = _selectedCoupon != null
-        ? (_selectedCoupon!.amount * 100).toInt()
-        : 0;
-    final integrationAmount = _previewIntegrationAmount;
-    return totalAmount - promotionAmount - couponAmount - integrationAmount;
+    final totalAmount = calc.totalAmount.toDouble();
+    final promotionAmount = calc.promotionAmount.toDouble();
+    final couponAmount = _selectedCoupon?.amount ?? 0;
+    final integrationAmount = _previewIntegrationAmount.toDouble();
+    final payAmount =
+        totalAmount - promotionAmount - couponAmount - integrationAmount;
+    return payAmount < 0 ? 0 : payAmount;
   }
 
   void _showInlineError(String msg) {
@@ -441,8 +470,7 @@ class _OrderSubmitState extends State<OrderSubmit> {
         appBar: AppBar(
           backgroundColor: Colors.white,
           title: const Text("创建订单"),
-          titleTextStyle:
-              const TextStyle(fontSize: 16, color: Colors.black),
+          titleTextStyle: const TextStyle(fontSize: 16, color: Colors.black),
           centerTitle: true,
         ),
         body: const Center(child: CircularProgressIndicator()),
@@ -454,8 +482,7 @@ class _OrderSubmitState extends State<OrderSubmit> {
         appBar: AppBar(
           backgroundColor: Colors.white,
           title: const Text("创建订单"),
-          titleTextStyle:
-              const TextStyle(fontSize: 16, color: Colors.black),
+          titleTextStyle: const TextStyle(fontSize: 16, color: Colors.black),
           centerTitle: true,
         ),
         body: Center(
@@ -478,8 +505,7 @@ class _OrderSubmitState extends State<OrderSubmit> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         title: const Text("创建订单"),
-        titleTextStyle:
-            const TextStyle(fontSize: 16, color: Colors.black),
+        titleTextStyle: const TextStyle(fontSize: 16, color: Colors.black),
         centerTitle: true,
       ),
       body: SafeArea(
@@ -510,104 +536,103 @@ class _OrderSubmitState extends State<OrderSubmit> {
 
   // Task 5: 收货地址行（可点击选择）
   SliverPadding buildAddress() {
-    final border = BorderSide(
-        width: 5, color: const Color(0xFFF5F5F5));
+    final border = BorderSide(width: 5, color: const Color(0xFFF5F5F5));
     final addresses = _orderData?.memberReceiveAddressList ?? [];
-    final addr = addresses.isNotEmpty &&
-            _selectedAddressIndex < addresses.length
-        ? addresses[_selectedAddressIndex]
-        : null;
+    final addr =
+        addresses.isNotEmpty && _selectedAddressIndex < addresses.length
+            ? addresses[_selectedAddressIndex]
+            : null;
 
     return SliverPadding(
       padding: EdgeInsets.zero,
       sliver: SliverList(
-        delegate: SliverChildListDelegate(<Widget>[
-          InkWell(
-            onTap: _openAddressSheet,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border(bottom: border),
-              ),
-              height: 78,
-              padding: const EdgeInsets.symmetric(horizontal: 15),
-              child: Row(
-                children: [
-                  Image.asset(
-                    "images/address.png",
-                    height: 24,
-                    width: 22,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: addr != null
-                        ? Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                "${addr.receiverName} ${addr.receiverPhone}",
-                                style: const TextStyle(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.w500),
-                              ),
-                              const SizedBox(height: 5),
-                              Text(
-                                "${addr.province} ${addr.city} ${addr.district} ${addr.detailAddress}",
-                                style: const TextStyle(
-                                    fontSize: 14, color: Colors.grey),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          )
-                        : Row(
-                            children: [
-                              Text(
-                                "去添加收货地址",
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  color: Color(0xFFFA436A),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Icon(
-                                Icons.add,
+          delegate: SliverChildListDelegate(<Widget>[
+        InkWell(
+          onTap: _openAddressSheet,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border(bottom: border),
+            ),
+            height: 78,
+            padding: const EdgeInsets.symmetric(horizontal: 15),
+            child: Row(
+              children: [
+                Image.asset(
+                  "images/address.png",
+                  height: 24,
+                  width: 22,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: addr != null
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "${addr.receiverName} ${addr.receiverPhone}",
+                              style: const TextStyle(
+                                  fontSize: 17, fontWeight: FontWeight.w500),
+                            ),
+                            const SizedBox(height: 5),
+                            Text(
+                              "${addr.province} ${addr.city} ${addr.district} ${addr.detailAddress}",
+                              style: const TextStyle(
+                                  fontSize: 14, color: Colors.grey),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        )
+                      : Row(
+                          children: [
+                            Text(
+                              "去添加收货地址",
+                              style: TextStyle(
+                                fontSize: 15,
                                 color: Color(0xFFFA436A),
-                                size: 20,
                               ),
-                            ],
-                          ),
-                  ),
-                  Icon(Icons.chevron_right, color: Colors.grey),
-                ],
-              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Icon(
+                              Icons.add,
+                              color: Color(0xFFFA436A),
+                              size: 20,
+                            ),
+                          ],
+                        ),
+                ),
+                Icon(Icons.chevron_right, color: Colors.grey),
+              ],
             ),
           ),
-        ])),
+        ),
+      ])),
     );
   }
 
   // 商品标题
   SliverPadding buildProductTitle() {
-    final border = BorderSide(
-        width: 1, color: const Color(0xFFF5F5F5));
+    final border = BorderSide(width: 1, color: const Color(0xFFF5F5F5));
     return SliverPadding(
       padding: EdgeInsets.zero,
       sliver: SliverList(
-        delegate: SliverChildListDelegate(<Widget>[
-          Container(
-            alignment: AlignmentDirectional.centerStart,
-            padding: const EdgeInsets.only(left: 15),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border(bottom: border),
-            ),
-            height: 42,
-            child: const Text("商品信息",
-                style: TextStyle(fontSize: 15, color: Color(0xFF606266))),
+          delegate: SliverChildListDelegate(<Widget>[
+        Container(
+          alignment: AlignmentDirectional.centerStart,
+          padding: const EdgeInsets.only(left: 15),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border(bottom: border),
           ),
-        ])),
+          height: 42,
+          child: Text(
+            _isDirectBuy ? "立即购买商品" : "商品信息",
+            style: const TextStyle(fontSize: 15, color: Color(0xFF606266)),
+          ),
+        ),
+      ])),
     );
   }
 
@@ -624,8 +649,7 @@ class _OrderSubmitState extends State<OrderSubmit> {
           padding: const EdgeInsets.all(15),
           child: Row(
             children: [
-              CachedImageWidget(70, 70, item.productPic,
-                  fit: BoxFit.cover),
+              CachedImageWidget(70, 70, item.productPic, fit: BoxFit.cover),
               const SizedBox(width: 8),
               Expanded(
                 child: Column(
@@ -659,8 +683,7 @@ class _OrderSubmitState extends State<OrderSubmit> {
                       children: [
                         Text("￥$finalPrice",
                             style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold)),
+                                fontSize: 16, fontWeight: FontWeight.bold)),
                         Text(" x${item.quantity}",
                             style: const TextStyle(
                                 fontSize: 13, color: Colors.grey)),
@@ -686,67 +709,62 @@ class _OrderSubmitState extends State<OrderSubmit> {
 
   // Task 6: 优惠券选择行
   SliverPadding buildCoupon() {
-    final border = BorderSide(
-        width: 5, color: const Color(0xFFF5F5F5));
-    final enableCoupons =
-        _orderData?.couponHistoryDetailList.enableList ?? [];
+    final border = BorderSide(width: 5, color: const Color(0xFFF5F5F5));
+    final enableCoupons = _orderData?.couponHistoryDetailList.enableList ?? [];
 
     return SliverPadding(
       padding: EdgeInsets.zero,
       sliver: SliverList(
-        delegate: SliverChildListDelegate(<Widget>[
-          Container(
-            margin: const EdgeInsets.only(top: 5),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border(top: border),
-            ),
-            child: InkWell(
-              onTap: _openCouponSheet,
-              child: Container(
-                height: 45,
-                padding: const EdgeInsets.symmetric(horizontal: 15),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 20,
-                      height: 20,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF85E52),
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                      child: const Text("券",
-                          style:
-                              TextStyle(fontSize: 12, color: Colors.white)),
+          delegate: SliverChildListDelegate(<Widget>[
+        Container(
+          margin: const EdgeInsets.only(top: 5),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border(top: border),
+          ),
+          child: InkWell(
+            onTap: _openCouponSheet,
+            child: Container(
+              height: 45,
+              padding: const EdgeInsets.symmetric(horizontal: 15),
+              child: Row(
+                children: [
+                  Container(
+                    width: 20,
+                    height: 20,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF85E52),
+                      borderRadius: BorderRadius.circular(3),
                     ),
-                    const SizedBox(width: 5),
-                    const Expanded(
-                        child:
-                            Text("优惠券", style: TextStyle(fontSize: 13))),
-                    if (_selectedCoupon != null)
-                      Text(
-                        "-￥${_selectedCoupon!.amount.toStringAsFixed(2)} ${_selectedCoupon!.name}",
-                        style: const TextStyle(
-                            fontSize: 13, color: Color(0xFFFA436A)),
-                      )
-                    else
-                      Text(
-                        enableCoupons.isNotEmpty
-                            ? "${enableCoupons.length}张可用"
-                            : "暂无可用优惠券",
-                        style: const TextStyle(
-                            fontSize: 13, color: Color(0xFFFA436A)),
-                      ),
-                    const SizedBox(width: 4),
-                    const Icon(Icons.chevron_right,
-                        color: Colors.grey, size: 20),
-                  ],
-                ),
+                    child: const Text("券",
+                        style: TextStyle(fontSize: 12, color: Colors.white)),
+                  ),
+                  const SizedBox(width: 5),
+                  const Expanded(
+                      child: Text("优惠券", style: TextStyle(fontSize: 13))),
+                  if (_selectedCoupon != null)
+                    Text(
+                      "-￥${_formatAmount(_selectedCoupon!.amount)} ${_selectedCoupon!.name}",
+                      style: const TextStyle(
+                          fontSize: 13, color: Color(0xFFFA436A)),
+                    )
+                  else
+                    Text(
+                      enableCoupons.isNotEmpty
+                          ? "${enableCoupons.length}张可用"
+                          : "暂无可用优惠券",
+                      style: const TextStyle(
+                          fontSize: 13, color: Color(0xFFFA436A)),
+                    ),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
+                ],
               ),
             ),
           ),
-        ])),
+        ),
+      ])),
     );
   }
 
@@ -757,9 +775,7 @@ class _OrderSubmitState extends State<OrderSubmit> {
     final totalAmt = data?.calcAmount.totalAmount ?? 0;
     int maxIntegration = data?.memberIntegration ?? 0;
     if (setting != null && setting.maxPercentPerOrder > 0 && totalAmt > 0) {
-      final maxByPercent = (totalAmt *
-              setting.maxPercentPerOrder ~/
-              100) *
+      final maxByPercent = (totalAmt * setting.maxPercentPerOrder ~/ 100) *
           setting.deductionPerAmount;
       if (maxByPercent < maxIntegration) maxIntegration = maxByPercent;
     }
@@ -769,177 +785,169 @@ class _OrderSubmitState extends State<OrderSubmit> {
     return SliverPadding(
       padding: EdgeInsets.zero,
       sliver: SliverList(
-        delegate: SliverChildListDelegate(<Widget>[
-          Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              border: Border(
-                  top: BorderSide(width: 1, color: Color(0xFFF5F5F5))),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 15),
-            height: 52,
-            child: Row(
-              children: [
-                Container(
-                  width: 20,
-                  height: 20,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFAA0E),
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                  child: const Text("积",
-                      style: TextStyle(fontSize: 12, color: Colors.white)),
-                ),
-                const SizedBox(width: 5),
-                const Expanded(
-                    child: Text("积分抵扣", style: TextStyle(fontSize: 13))),
-                if (!hasEnoughPoints)
-                  const Text("暂无可用积分",
-                      style: TextStyle(fontSize: 13, color: Colors.grey))
-                else if (_integrationConflict)
-                  const Row(
-                    children: [
-                      Icon(Icons.warning_amber,
-                          color: Colors.orange, size: 16),
-                      SizedBox(width: 4),
-                      Text("该优惠券不支持与积分共用",
-                          style: TextStyle(fontSize: 12, color: Colors.orange)),
-                    ],
-                  )
-                else ...[
-                  // Task 7.2: 步进按钮 + 输入框
-                  GestureDetector(
-                    onTap: () => _onStepperPressed(-1),
-                    child: Container(
-                      width: 28,
-                      height: 24,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300),
-                        borderRadius:
-                            const BorderRadius.horizontal(
-                                left: Radius.circular(4)),
-                      ),
-                      child: const Text("—",
-                          style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                  SizedBox(
-                    width: 60,
-                    height: 24,
-                    child: TextField(
-                      controller: _integrationController,
-                      keyboardType: TextInputType.number,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 13),
-                      decoration: InputDecoration(
-                        contentPadding: EdgeInsets.zero,
-                        isDense: true,
-                        border: const OutlineInputBorder(
-                          borderRadius: BorderRadius.zero,
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.zero,
-                          borderSide:
-                              BorderSide(color: Colors.grey.shade300),
-                        ),
-                        disabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.zero,
-                          borderSide:
-                              BorderSide(color: Colors.grey.shade200),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey.shade100,
-                      ),
-                      onChanged: _onIntegrationChanged,
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () => _onStepperPressed(1),
-                    child: Container(
-                      width: 28,
-                      height: 24,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300),
-                        borderRadius:
-                            const BorderRadius.horizontal(
-                                right: Radius.circular(4)),
-                      ),
-                      child: const Text("+",
-                          style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  if (_previewIntegrationAmount > 0)
-                    Text(
-                      "-￥${(_previewIntegrationAmount / 100).toStringAsFixed(2)}",
-                      style: const TextStyle(
-                          fontSize: 13, color: Color(0xFFFA436A)),
-                    )
-                  else
-                    Text(
-                      "可用${data?.memberIntegration ?? 0}积分（$useUnit 积分起）",
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                ],
-              ],
-            ),
+          delegate: SliverChildListDelegate(<Widget>[
+        Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            border: Border(top: BorderSide(width: 1, color: Color(0xFFF5F5F5))),
           ),
-        ])),
+          padding: const EdgeInsets.symmetric(horizontal: 15),
+          height: 52,
+          child: Row(
+            children: [
+              Container(
+                width: 20,
+                height: 20,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFAA0E),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+                child: const Text("积",
+                    style: TextStyle(fontSize: 12, color: Colors.white)),
+              ),
+              const SizedBox(width: 5),
+              const Expanded(
+                  child: Text("积分抵扣", style: TextStyle(fontSize: 13))),
+              if (!hasEnoughPoints)
+                const Text("暂无可用积分",
+                    style: TextStyle(fontSize: 13, color: Colors.grey))
+              else if (_integrationConflict)
+                const Row(
+                  children: [
+                    Icon(Icons.warning_amber, color: Colors.orange, size: 16),
+                    SizedBox(width: 4),
+                    Text("该优惠券不支持与积分共用",
+                        style: TextStyle(fontSize: 12, color: Colors.orange)),
+                  ],
+                )
+              else ...[
+                // Task 7.2: 步进按钮 + 输入框
+                GestureDetector(
+                  onTap: () => _onStepperPressed(-1),
+                  child: Container(
+                    width: 28,
+                    height: 24,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: const BorderRadius.horizontal(
+                          left: Radius.circular(4)),
+                    ),
+                    child: const Text("—",
+                        style: TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+                SizedBox(
+                  width: 60,
+                  height: 24,
+                  child: TextField(
+                    controller: _integrationController,
+                    keyboardType: TextInputType.number,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 13),
+                    decoration: InputDecoration(
+                      contentPadding: EdgeInsets.zero,
+                      isDense: true,
+                      border: const OutlineInputBorder(
+                        borderRadius: BorderRadius.zero,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.zero,
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      disabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.zero,
+                        borderSide: BorderSide(color: Colors.grey.shade200),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                    ),
+                    onChanged: _onIntegrationChanged,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => _onStepperPressed(1),
+                  child: Container(
+                    width: 28,
+                    height: 24,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: const BorderRadius.horizontal(
+                          right: Radius.circular(4)),
+                    ),
+                    child: const Text("+",
+                        style: TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                if (_previewIntegrationAmount > 0)
+                  Text(
+                    "-￥${_formatAmount(_previewIntegrationAmount)}",
+                    style:
+                        const TextStyle(fontSize: 13, color: Color(0xFFFA436A)),
+                  )
+                else
+                  Text(
+                    "可用${data?.memberIntegration ?? 0}积分（$useUnit 积分起）",
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+              ],
+            ],
+          ),
+        ),
+      ])),
     );
   }
 
   // Task 8: 支付方式选择
   SliverPadding buildPayType() {
-    final border = BorderSide(
-        width: 5, color: const Color(0xFFF5F5F5));
+    final border = BorderSide(width: 5, color: const Color(0xFFF5F5F5));
     return SliverPadding(
       padding: EdgeInsets.zero,
       sliver: SliverList(
-        delegate: SliverChildListDelegate(<Widget>[
-          Container(
-            margin: const EdgeInsets.only(top: 5),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border(top: border),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.only(left: 15, top: 10, bottom: 8),
-                  child: const Text("支付方式",
-                      style:
-                          TextStyle(fontSize: 13, color: Color(0xFF606266))),
-                ),
-                // Task 8.1: 微信支付
-                _PayTypeItem(
-                  icon: "images/wx_pay.png",
-                  label: "微信支付",
-                  desc: "推荐使用",
-                  value: 2,
-                  groupValue: _selectedPayType,
-                  onChanged: (v) => setState(() => _selectedPayType = v),
-                ),
-                const Divider(height: 1, indent: 15),
-                // Task 8.1: 支付宝
-                _PayTypeItem(
-                  icon: "images/ali_pay.png",
-                  label: "支付宝支付",
-                  desc: "",
-                  value: 1,
-                  groupValue: _selectedPayType,
-                  onChanged: (v) => setState(() => _selectedPayType = v),
-                ),
-                const SizedBox(height: 8),
-              ],
-            ),
+          delegate: SliverChildListDelegate(<Widget>[
+        Container(
+          margin: const EdgeInsets.only(top: 5),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border(top: border),
           ),
-        ])),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.only(left: 15, top: 10, bottom: 8),
+                child: const Text("支付方式",
+                    style: TextStyle(fontSize: 13, color: Color(0xFF606266))),
+              ),
+              // Task 8.1: 微信支付
+              _PayTypeItem(
+                icon: "images/wx_pay.png",
+                label: "微信支付",
+                desc: "推荐使用",
+                value: 2,
+                groupValue: _selectedPayType,
+                onChanged: (v) => setState(() => _selectedPayType = v),
+              ),
+              const Divider(height: 1, indent: 15),
+              // Task 8.1: 支付宝
+              _PayTypeItem(
+                icon: "images/ali_pay.png",
+                label: "支付宝支付",
+                desc: "",
+                value: 1,
+                groupValue: _selectedPayType,
+                onChanged: (v) => setState(() => _selectedPayType = v),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ])),
     );
   }
 
@@ -949,76 +957,69 @@ class _OrderSubmitState extends State<OrderSubmit> {
     final totalAmount = calc?.totalAmount ?? 0;
     final freightAmount = calc?.freightAmount ?? 0;
     final promotionAmount = calc?.promotionAmount ?? 0;
-    final couponAmount = _selectedCoupon != null
-        ? (_selectedCoupon!.amount * 100).toInt()
-        : 0;
+    final couponAmount = _selectedCoupon?.amount ?? 0;
     final integrationAmount = _previewIntegrationAmount;
 
     return SliverPadding(
       padding: const EdgeInsets.only(bottom: 80),
       sliver: SliverList(
-        delegate: SliverChildListDelegate(<Widget>[
-          Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              border: Border(
-                  top: BorderSide(width: 5, color: Color(0xFFF5F5F5))),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 15),
-            child: Column(
-              children: [
-                _AmountRow(
-                    label: "商品合计", value: totalAmount, prefix: "￥"),
-                const Divider(height: 1),
-                _AmountRow(label: "运费", value: freightAmount, prefix: "￥"),
-                const Divider(height: 1),
-                _AmountRow(
-                    label: "活动优惠",
-                    value: -promotionAmount,
-                    prefix: "-￥",
-                    valueColor: const Color(0xFFFA436A)),
-                const Divider(height: 1),
-                _AmountRow(
-                    label: "优惠券",
-                    value: couponAmount > 0 ? -couponAmount : 0,
-                    prefix: "-￥",
-                    valueColor: const Color(0xFFFA436A)),
-                const Divider(height: 1),
-                _AmountRow(
-                    label: "积分抵扣",
-                    value: integrationAmount > 0 ? -integrationAmount : 0,
-                    prefix: "-￥",
-                    valueColor: const Color(0xFFFA436A)),
-                const Divider(height: 1),
-                SizedBox(
-                  height: 45,
-                  child: Row(
-                    textBaseline: TextBaseline.alphabetic,
-                    children: [
-                      const Text("备注",
-                          style: TextStyle(fontSize: 13, color: Colors.grey)),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: TextField(
-                          controller: _remarkController,
-                          decoration: InputDecoration(
-                            hintText: "选填，可填写备注信息",
-                            contentPadding: EdgeInsets.zero,
-                            isDense: true,
-                            border: InputBorder.none,
-                            hintStyle: TextStyle(fontSize: 12),
-                          ),
-                          style: TextStyle(fontSize: 13),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 5),
-              ],
-            ),
+          delegate: SliverChildListDelegate(<Widget>[
+        Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            border: Border(top: BorderSide(width: 5, color: Color(0xFFF5F5F5))),
           ),
-        ])),
+          padding: const EdgeInsets.symmetric(horizontal: 15),
+          child: Column(
+            children: [
+              _AmountRow(label: "商品合计", value: totalAmount),
+              const Divider(height: 1),
+              _AmountRow(label: "运费", value: freightAmount),
+              const Divider(height: 1),
+              _AmountRow(
+                  label: "活动优惠",
+                  value: -promotionAmount,
+                  valueColor: const Color(0xFFFA436A)),
+              const Divider(height: 1),
+              _AmountRow(
+                  label: "优惠券",
+                  value: couponAmount > 0 ? -couponAmount : 0,
+                  valueColor: const Color(0xFFFA436A)),
+              const Divider(height: 1),
+              _AmountRow(
+                  label: "积分抵扣",
+                  value: integrationAmount > 0 ? -integrationAmount : 0,
+                  valueColor: const Color(0xFFFA436A)),
+              const Divider(height: 1),
+              SizedBox(
+                height: 45,
+                child: Row(
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    const Text("备注",
+                        style: TextStyle(fontSize: 13, color: Colors.grey)),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: TextField(
+                        controller: _remarkController,
+                        decoration: InputDecoration(
+                          hintText: "选填，可填写备注信息",
+                          contentPadding: EdgeInsets.zero,
+                          isDense: true,
+                          border: InputBorder.none,
+                          hintStyle: TextStyle(fontSize: 12),
+                        ),
+                        style: TextStyle(fontSize: 13),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 5),
+            ],
+          ),
+        ),
+      ])),
     );
   }
 
@@ -1050,16 +1051,14 @@ class _OrderSubmitState extends State<OrderSubmit> {
             child: Row(
               children: [
                 const Text("实付款 ",
-                    style: TextStyle(
-                        fontSize: 15, color: Color(0xFF606266))),
+                    style: TextStyle(fontSize: 15, color: Color(0xFF606266))),
                 Text("￥",
-                    style: TextStyle(
-                        fontSize: 15, color: Colors.red.shade400)),
-                TweenAnimationBuilder<int>(
-                  tween: IntTween(begin: payAmount, end: payAmount),
+                    style: TextStyle(fontSize: 15, color: Colors.red.shade400)),
+                TweenAnimationBuilder<double>(
+                  tween: Tween<double>(begin: payAmount, end: payAmount),
                   duration: const Duration(milliseconds: 300),
                   builder: (context, val, _) {
-                    return Text((val / 100).toStringAsFixed(2),
+                    return Text(_formatAmount(val),
                         style: TextStyle(
                             fontSize: 18,
                             color: Colors.red.shade400,
@@ -1077,8 +1076,7 @@ class _OrderSubmitState extends State<OrderSubmit> {
                 alignment: Alignment.center,
                 height: 60,
                 decoration: BoxDecoration(
-                  color:
-                      _isSubmitting ? Colors.grey : const Color(0xFFFA436A),
+                  color: _isSubmitting ? Colors.grey : const Color(0xFFFA436A),
                 ),
                 child: _isSubmitting
                     ? const SizedBox(
@@ -1086,8 +1084,7 @@ class _OrderSubmitState extends State<OrderSubmit> {
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor:
-                              AlwaysStoppedAnimation(Colors.white),
+                          valueColor: AlwaysStoppedAnimation(Colors.white),
                         ),
                       )
                     : const Text(
@@ -1103,7 +1100,7 @@ class _OrderSubmitState extends State<OrderSubmit> {
   }
 
   /// Task 10.1 & HIGH-3: 提交前确认对话框（展示商品摘要 + 提交锁定提示）
-  Future<void> _confirmAndSubmit(int payAmount) async {
+  Future<void> _confirmAndSubmit(double payAmount) async {
     final products = _orderData?.cartPromotionItemList ?? [];
     final productSummary = products.length == 1
         ? products.first.productName
@@ -1123,7 +1120,7 @@ class _OrderSubmitState extends State<OrderSubmit> {
             ),
             const SizedBox(height: 4),
             Text(
-              "提交后将锁定库存和优惠，实付款 ￥${(payAmount / 100).toStringAsFixed(2)}，是否继续？",
+              "提交后将锁定库存和优惠，实付款 ￥${_formatAmount(payAmount)}，是否继续？",
               style: const TextStyle(fontSize: 14),
             ),
           ],
@@ -1240,14 +1237,12 @@ class _PayTypeItem extends StatelessWidget {
 // Task 11: 金额行 Widget
 class _AmountRow extends StatelessWidget {
   final String label;
-  final int value; // 单位：分
-  final String prefix;
+  final num value; // 单位：元
   final Color? valueColor;
 
   const _AmountRow({
     required this.label,
     required this.value,
-    this.prefix = "￥",
     this.valueColor,
   });
 
@@ -1264,13 +1259,20 @@ class _AmountRow extends StatelessWidget {
                 style: const TextStyle(fontSize: 13, color: Colors.grey)),
           ),
           Text(
-            "$prefix${isNegative ? "-" : ""}${(absVal / 100).toStringAsFixed(2)}",
+            "${isNegative ? "-" : ""}￥${formatCurrencyAmount(absVal)}",
             style: TextStyle(
-                fontSize: 13,
-                color: valueColor ?? const Color(0xFF303133)),
+                fontSize: 13, color: valueColor ?? const Color(0xFF303133)),
           ),
         ],
       ),
     );
   }
+}
+
+String formatCurrencyAmount(num amount) {
+  final normalized = amount.toDouble();
+  if (normalized == normalized.truncateToDouble()) {
+    return normalized.toStringAsFixed(0);
+  }
+  return normalized.toStringAsFixed(2);
 }

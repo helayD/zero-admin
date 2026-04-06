@@ -127,8 +127,16 @@ class _IntentRecoveryShellState extends State<IntentRecoveryShell> {
     final activeIntentCandidate = AppRecoveryStore.peekActiveIntentCandidate();
     final recentContext = AppRecoveryStore.getRecentContext();
     final candidate = pendingIntent ?? activeIntentCandidate ?? recentContext;
+    final isPassiveRecentRestore = pendingIntent == null &&
+        activeIntentCandidate == null &&
+        recentContext != null;
 
     if (candidate == null) {
+      return const _RecoveryDecision.fallback();
+    }
+
+    if (isPassiveRecentRestore && _shouldSkipPassiveRecentRestore(candidate)) {
+      await AppRecoveryStore.clearRecentContext();
       return const _RecoveryDecision.fallback();
     }
 
@@ -177,6 +185,24 @@ class _IntentRecoveryShellState extends State<IntentRecoveryShell> {
           reason: plan.failureReason,
           message: plan.message,
         );
+    }
+  }
+
+  bool _shouldSkipPassiveRecentRestore(AppRecentContext context) {
+    switch (context.targetType) {
+      case AppRecentTargetType.couponList:
+      case AppRecentTargetType.couponCenter:
+        return true;
+      case AppRecentTargetType.home:
+      case AppRecentTargetType.cart:
+      case AppRecentTargetType.orderList:
+      case AppRecentTargetType.productDetail:
+      case AppRecentTargetType.orderDetail:
+      case AppRecentTargetType.afterSalesApply:
+      case AppRecentTargetType.activity:
+      case AppRecentTargetType.subject:
+      case AppRecentTargetType.preferredArea:
+        return false;
     }
   }
 

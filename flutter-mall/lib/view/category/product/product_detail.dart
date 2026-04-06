@@ -3,11 +3,16 @@ import 'package:card_swiper/card_swiper.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter_mall/config/constant_param.dart';
 import 'package:flutter_mall/model/app_recent_context.dart';
+import 'package:flutter_mall/model/coupon_model.dart' as coupon_model;
+import 'package:flutter_mall/model/direct_checkout.dart';
 import 'package:flutter_mall/utils/app_recovery_store.dart';
+import 'package:flutter_mall/utils/shared_preferences_util.dart';
 import 'package:flutter_mall/config/service_url.dart';
 import 'package:flutter_mall/utils/http_util.dart';
 import 'package:flutter_mall/view/cart/cart.dart';
+import 'package:flutter_mall/view/mine/order/order_submit.dart';
 import 'package:flutter_mall/widgets/cached_image_widget.dart';
 
 import '../../../layout/main_tab.dart';
@@ -77,6 +82,7 @@ class _ProductDetailState extends State<ProductDetail> {
           productLadderList = productDetailData.productLadderList;
           productFullReductionList = productDetailData.productFullReductionList;
           memberPriceList = productDetailData.memberPriceList;
+          _resetSkuSelection();
         } else {
           product = null;
           productAttributeList = [];
@@ -86,8 +92,12 @@ class _ProductDetailState extends State<ProductDetail> {
           productLadderList = [];
           productFullReductionList = [];
           memberPriceList = [];
+          _clearSkuSelection();
         }
       });
+      if (productDetailData.visibility.visible) {
+        await _refreshCouponReceiveStatus();
+      }
       if (productDetailData.visibility.visible) {
         await AppRecoveryStore.saveRecentContext(
           AppRecentContext.create(
@@ -120,6 +130,7 @@ class _ProductDetailState extends State<ProductDetail> {
         productLadderList = [];
         productFullReductionList = [];
         memberPriceList = [];
+        _clearSkuSelection();
         visibility = ProductVisibility(
           visible: false,
           purchasable: false,
@@ -264,7 +275,9 @@ class _ProductDetailState extends State<ProductDetail> {
                   ),
                 ),
                 Text(
-                  selectedSku != null ? '${selectedSku!.price}' : product!.price.toString(),
+                  selectedSku != null
+                      ? '${selectedSku!.price}'
+                      : product!.price.toString(),
                   style: TextStyle(
                     fontSize: 17,
                     color: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
@@ -275,7 +288,8 @@ class _ProductDetailState extends State<ProductDetail> {
                     " (${product!.priceRange})",
                     style: TextStyle(
                       fontSize: 13,
-                      color: Color(int.parse('909399', radix: 16)).withAlpha(255),
+                      color:
+                          Color(int.parse('909399', radix: 16)).withAlpha(255),
                     ),
                   ),
               ],
@@ -569,13 +583,17 @@ class _ProductDetailState extends State<ProductDetail> {
   // 图文详情
   Column buildImageDetailInfo() {
     List<String> imageUrls = [];
-    final detailContent = product?.detailMobileHtml ?? product?.detailHtml ?? '';
+    final detailContent =
+        product?.detailMobileHtml ?? product?.detailHtml ?? '';
     if (detailContent.isNotEmpty) {
-      final urlPattern = RegExp(r'(https?://[^\s"<>]+\.(?:jpg|jpeg|png|gif|webp)[^\s"<>]*)');
-      imageUrls = urlPattern.allMatches(detailContent).map((m) => m.group(0)!).toList();
+      final urlPattern =
+          RegExp(r'(https?://[^\s"<>]+\.(?:jpg|jpeg|png|gif|webp)[^\s"<>]*)');
+      imageUrls =
+          urlPattern.allMatches(detailContent).map((m) => m.group(0)!).toList();
     }
     if (imageUrls.isEmpty && product != null && product!.albumPics.isNotEmpty) {
-      imageUrls = product!.albumPics.split(",").where((s) => s.isNotEmpty).toList();
+      imageUrls =
+          product!.albumPics.split(",").where((s) => s.isNotEmpty).toList();
     }
 
     if (imageUrls.isEmpty) {
@@ -637,112 +655,143 @@ class _ProductDetailState extends State<ProductDetail> {
   // 底部悬浮
   Positioned buildFooter(BuildContext context) {
     final bool spuDisabled = !visibility.purchasable;
-    final bool skuDisabled = selectedSku != null && !selectedSku!.purchasable;
+    final SkuStockList? resolvedSku =
+        selectedSku ?? (skuStockList.length == 1 ? skuStockList.first : null);
+    final bool skuDisabled = resolvedSku != null && !resolvedSku.purchasable;
     final bool disabled = spuDisabled || skuDisabled;
-
     final bool isAddingNow = _isAdding;
+    final bool needSelectSku =
+        !spuDisabled && resolvedSku == null && skuStockList.length > 1;
 
-    String buttonLabel;
-    if (isAddingNow) {
-      buttonLabel = '添加中...';
-    } else if (spuDisabled) {
-      buttonLabel = visibility.reasonMessage.isNotEmpty
-          ? visibility.reasonMessage
-          : '暂不可购买';
-    } else if (skuDisabled) {
-      buttonLabel = selectedSku!.purchaseReasonLabel.isNotEmpty
-          ? selectedSku!.purchaseReasonLabel
-          : '暂不可购买';
-    } else if (selectedSku == null && skuStockList.length > 1) {
-      buttonLabel = '请先选规格';
-    } else {
-      buttonLabel = '加入购物车';
-    }
-
-    final bool needSelectSku = !spuDisabled && selectedSku == null && skuStockList.length > 1;
+    final String disabledLabel = spuDisabled
+        ? (visibility.reasonMessage.isNotEmpty
+            ? visibility.reasonMessage
+            : '暂不可购买')
+        : (resolvedSku?.purchaseReasonLabel.isNotEmpty == true
+            ? resolvedSku!.purchaseReasonLabel
+            : '暂不可购买');
 
     return Positioned(
       bottom: 0,
       width: MediaQuery.of(context).size.width,
-      child: Container(
-        height: 60,
-        padding: const EdgeInsets.symmetric(horizontal: 15),
-        margin: const EdgeInsets.all(15),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(
-            color: Colors.grey, //边框颜色
-            width: 1, //边框宽度
+      child: SafeArea(
+        top: false,
+        child: Container(
+          height: 74,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+                color: Colors.black.withAlpha(18),
+              ),
+            ],
           ),
-          boxShadow: [
-            BoxShadow(
-              blurRadius: 3, //阴影范围
-              spreadRadius: 1, //阴影浓度
-              color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
-            ),
-            //阴影颜色
-          ],
-          borderRadius: BorderRadius.circular(10), // 圆角也可控件一边圆角大小
-        ),
-        child: Row(
-          // mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Row(
-                children: [
-                  buildImage("images/home.png", "首页"),
-                  buildImage("images/cart.png", "购物车"),
-                  buildImage("images/love1.png", "收藏"),
-                  // buildImage("images/love1.png", context.watch<Counter>().count.toString()),
-                ],
+          child: Row(
+            children: [
+              Expanded(
+                flex: 4,
+                child: Row(
+                  children: [
+                    buildImage("images/home.png", "首页"),
+                    buildImage("images/cart.png", "购物车"),
+                  ],
+                ),
               ),
-            ),
-            Container(
-              height: 40,
-              width: 100,
-              decoration: BoxDecoration(
-                color: (disabled || needSelectSku)
-                    ? Color(int.parse('c0c4cc', radix: 16)).withAlpha(255)
-                    : Color(int.parse('fa436a', radix: 16)).withAlpha(255),
-                borderRadius: const BorderRadius.all(Radius.circular(50)),
-                boxShadow: const [
-                  BoxShadow(
-                    blurRadius: 2, //阴影范围
-                    spreadRadius: 1, //阴影浓度
-                    color: Colors.grey, //阴影颜色
-                  ),
-                ],
-              ),
-              child: TextButton(
-                onPressed: (isAddingNow || disabled)
-                    ? null
-                    : needSelectSku
-                        ? () {
-                            _openBottomSheetWithInfo(context, "购买类型");
-                          }
-                        : () {
-                            _addCart(product!);
-                          },
-                child: isAddingNow
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              Expanded(
+                flex: 6,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: disabled || isAddingNow
+                            ? null
+                            : needSelectSku
+                                ? () =>
+                                    _openBottomSheetWithInfo(context, "购买类型")
+                                : () => _addCart(product!),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          foregroundColor: Color(int.parse('fa436a', radix: 16))
+                              .withAlpha(255),
+                          side: BorderSide(
+                            color: (disabled && !needSelectSku)
+                                ? Color(int.parse('dcdfe6', radix: 16))
+                                    .withAlpha(255)
+                                : Color(int.parse('fa436a', radix: 16))
+                                    .withAlpha(255),
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                          ),
                         ),
-                      )
-                    : Text(
-                        buttonLabel,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
+                        child: isAddingNow
+                            ? SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Color(int.parse('fa436a', radix: 16))
+                                        .withAlpha(255),
+                                  ),
+                                ),
+                              )
+                            : Text(
+                                disabled && !needSelectSku
+                                    ? disabledLabel
+                                    : '加入购物车',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: disabled
+                            ? null
+                            : needSelectSku
+                                ? () =>
+                                    _openBottomSheetWithInfo(context, "购买类型")
+                                : _buyNow,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(int.parse('fa436a', radix: 16))
+                              .withAlpha(255),
+                          disabledBackgroundColor:
+                              Color(int.parse('c0c4cc', radix: 16))
+                                  .withAlpha(255),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          disabled ? disabledLabel : '立即购买',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -848,6 +897,55 @@ class _ProductDetailState extends State<ProductDetail> {
     }
   }
 
+  SkuStockList? _resolvePurchaseSku({bool promptSelectorOnMissing = true}) {
+    final sku =
+        selectedSku ?? (skuStockList.length == 1 ? skuStockList.first : null);
+    if (sku == null) {
+      if (promptSelectorOnMissing && skuStockList.length > 1) {
+        _openBottomSheetWithInfo(context, "购买类型");
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('请先选择规格')),
+        );
+      }
+      return null;
+    }
+    if (!sku.purchasable) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            sku.purchaseReasonLabel.isNotEmpty
+                ? sku.purchaseReasonLabel
+                : '该规格暂不可购买',
+          ),
+        ),
+      );
+      return null;
+    }
+    return sku;
+  }
+
+  void _buyNow() {
+    if (product == null) {
+      return;
+    }
+    final sku = _resolvePurchaseSku();
+    if (sku == null) {
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => OrderSubmit(
+          directItem: DirectCheckoutParams(
+            productId: product!.id,
+            productSkuId: sku.id,
+            quantity: 1,
+          ),
+        ),
+      ),
+    );
+  }
+
   InkWell buildImage(String url, String title) {
     return InkWell(
       onTap: () {
@@ -867,7 +965,7 @@ class _ProductDetailState extends State<ProductDetail> {
         );
       },
       child: Container(
-        margin: const EdgeInsets.only(right: 25),
+        margin: const EdgeInsets.only(right: 16),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -937,7 +1035,8 @@ class _ProductDetailState extends State<ProductDetail> {
   String _couponSummary() {
     if (couponList.isEmpty) return '暂无优惠券';
     final first = couponList.first;
-    final prefix = first.amount > 0 ? '满${first.minAmount}减${first.amount}' : first.name;
+    final prefix =
+        first.amount > 0 ? '满${first.minAmount}减${first.amount}' : first.name;
     if (couponList.length > 1) {
       return '$prefix 等${couponList.length}张券';
     }
@@ -956,6 +1055,66 @@ class _ProductDetailState extends State<ProductDetail> {
       return '默认规格';
     }
     return '请选择规格';
+  }
+
+  Future<void> _refreshCouponReceiveStatus() async {
+    final currentToken = SharedPreferencesUtil.getString(token);
+    if (currentToken == null ||
+        currentToken.trim().isEmpty ||
+        couponList.isEmpty) {
+      return;
+    }
+
+    try {
+      final result = await HttpUtil.get(availableCouponUrl);
+      final couponModel = coupon_model.CouponModel.fromJson(result.data);
+      final receiveStatusMap = <int, int>{
+        for (final item in couponModel.data) item.id: item.receiveStatus,
+      };
+
+      bool changed = false;
+      for (final coupon in couponList) {
+        final latestStatus = receiveStatusMap[coupon.id];
+        if (latestStatus != null && latestStatus != coupon.receiveStatus) {
+          coupon.receiveStatus = latestStatus;
+          changed = true;
+        }
+      }
+
+      if (changed && mounted) {
+        setState(() {});
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401 || e.response?.statusCode == 403) {
+        return;
+      }
+    } catch (_) {
+      // 忽略优惠券状态同步失败，保留商品详情主链路可用
+    }
+  }
+
+  void _clearSkuSelection() {
+    _specSelection.clear();
+    selectedSku = null;
+  }
+
+  void _resetSkuSelection() {
+    _clearSkuSelection();
+    if (skuStockList.isEmpty) {
+      return;
+    }
+    if (skuStockList.length == 1) {
+      selectedSku = skuStockList.first;
+      _specSelection.addAll(selectedSku!.parsedSpecData);
+      return;
+    }
+
+    final specOptions = _buildSpecOptions();
+    for (final entry in specOptions.entries) {
+      if (entry.value.length == 1) {
+        _specSelection[entry.key] = entry.value.first;
+      }
+    }
   }
 
   Map<String, List<String>> _buildSpecOptions() {
@@ -1069,8 +1228,7 @@ class _ProductDetailState extends State<ProductDetail> {
                           spacing: 8,
                           runSpacing: 8,
                           children: entry.value.map((val) {
-                            final isSelected =
-                                _specSelection[entry.key] == val;
+                            final isSelected = _specSelection[entry.key] == val;
 
                             final testSelection =
                                 Map<String, String>.from(_specSelection);
@@ -1093,11 +1251,9 @@ class _ProductDetailState extends State<ProductDetail> {
                                     ? Color(int.parse('fa436a', radix: 16))
                                         .withAlpha(255)
                                     : !isAvailable
-                                        ? Color(
-                                                int.parse('c0c4cc', radix: 16))
+                                        ? Color(int.parse('c0c4cc', radix: 16))
                                             .withAlpha(255)
-                                        : Color(
-                                                int.parse('303133', radix: 16))
+                                        : Color(int.parse('303133', radix: 16))
                                             .withAlpha(255),
                                 fontSize: 13,
                               ),
@@ -1107,23 +1263,25 @@ class _ProductDetailState extends State<ProductDetail> {
                                           Color(int.parse('fa436a', radix: 16))
                                               .withAlpha(255))
                                   : null,
-                              onSelected: (selected) {
-                                setSheetState(() {
-                                  if (selected) {
-                                    _specSelection[entry.key] = val;
-                                  } else {
-                                    _specSelection.remove(entry.key);
-                                  }
-                                });
-                                final matched =
-                                    _findExactMatchingSku(_specSelection);
-                                if (_specSelection.length ==
-                                    specOptions.length) {
-                                  setState(() {
-                                    selectedSku = matched;
-                                  });
-                                }
-                              },
+                              onSelected: !isAvailable
+                                  ? null
+                                  : (selected) {
+                                      setSheetState(() {
+                                        if (selected) {
+                                          _specSelection[entry.key] = val;
+                                        } else {
+                                          _specSelection.remove(entry.key);
+                                        }
+                                      });
+                                      final matched =
+                                          _findExactMatchingSku(_specSelection);
+                                      setState(() {
+                                        selectedSku = _specSelection.length ==
+                                                specOptions.length
+                                            ? matched
+                                            : null;
+                                      });
+                                    },
                             );
                           }).toList(),
                         ),
@@ -1163,16 +1321,18 @@ class _ProductDetailState extends State<ProductDetail> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: (selectedSku != null && selectedSku!.purchasable)
-                          ? () {
-                              Navigator.of(context).pop();
-                            }
-                          : null,
+                      onPressed:
+                          (selectedSku != null && selectedSku!.purchasable)
+                              ? () {
+                                  Navigator.of(context).pop();
+                                }
+                              : null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            Color(int.parse('fa436a', radix: 16)).withAlpha(255),
+                        backgroundColor: Color(int.parse('fa436a', radix: 16))
+                            .withAlpha(255),
                         disabledBackgroundColor:
-                            Color(int.parse('c0c4cc', radix: 16)).withAlpha(255),
+                            Color(int.parse('c0c4cc', radix: 16))
+                                .withAlpha(255),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
@@ -1320,7 +1480,7 @@ class _ProductDetailState extends State<ProductDetail> {
       case 0:
         return '领取';
       case 1:
-        return '已领取';
+        return '可使用';
       case 2:
         return '已领完';
       case 3:
@@ -1332,21 +1492,149 @@ class _ProductDetailState extends State<ProductDetail> {
     }
   }
 
+  bool _canTapCouponAction(int status) {
+    return status == 0 || status == 1;
+  }
+
+  Color _couponActionBackgroundColor(int status) {
+    if (status == 0) {
+      return Color(int.parse('fa436a', radix: 16)).withAlpha(255);
+    }
+    if (status == 1) {
+      return Color(int.parse('fff1f4', radix: 16)).withAlpha(255);
+    }
+    return Colors.grey[300]!;
+  }
+
+  Color _couponActionForegroundColor(int status) {
+    if (status == 1) {
+      return Color(int.parse('fa436a', radix: 16)).withAlpha(255);
+    }
+    return Colors.white;
+  }
+
+  void _showCouponUsageHint() {
+    if (product == null) {
+      return;
+    }
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '这张券已经领取成功',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Color(int.parse('303133', radix: 16)).withAlpha(255),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '下单结算时系统会自动展示可用优惠券。你可以现在立即购买，也可以先加入购物车后再统一结算。',
+                  style: TextStyle(
+                    fontSize: 14,
+                    height: 1.5,
+                    color: Color(int.parse('606266', radix: 16)).withAlpha(255),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          Navigator.of(sheetContext).pop();
+                          _addCart(product!);
+                        },
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          foregroundColor: Color(int.parse('fa436a', radix: 16))
+                              .withAlpha(255),
+                          side: BorderSide(
+                            color: Color(int.parse('fa436a', radix: 16))
+                                .withAlpha(255),
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                        ),
+                        child: const Text('加入购物车'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(sheetContext).pop();
+                          _buyNow();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(int.parse('fa436a', radix: 16))
+                              .withAlpha(255),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: const Text('立即购买'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _handleCouponAction(CouponList coupon, BuildContext actionContext) {
+    if (coupon.receiveStatus == 0) {
+      _claimCoupon(coupon.id);
+      return;
+    }
+    if (coupon.receiveStatus == 1) {
+      if (Navigator.of(actionContext).canPop()) {
+        Navigator.of(actionContext).pop();
+      }
+      _showCouponUsageHint();
+    }
+  }
+
   void _claimCoupon(int couponId) async {
     try {
-      Response result = await HttpUtil.post(addCouponUrl, data: {"couponId": couponId});
+      Response result =
+          await HttpUtil.post(addCouponUrl, data: {"couponId": couponId});
       Map<String, dynamic> resp = result.data;
       if (resp["code"] == 0) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(resp["message"] ?? "领取成功"), backgroundColor: Colors.green),
+            SnackBar(
+                content: Text(resp["message"] ?? "领取成功"),
+                backgroundColor: Colors.green),
           );
           refreshProductDetail();
         }
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(resp["message"] ?? "领取失败"), backgroundColor: Colors.red),
+            SnackBar(
+                content: Text(resp["message"] ?? "领取失败"),
+                backgroundColor: Colors.red),
           );
         }
       }
@@ -1391,7 +1679,8 @@ class _ProductDetailState extends State<ProductDetail> {
       itemCount: couponList.length,
       itemBuilder: (context, index) {
         final coupon = couponList[index];
-        final endStr = '${coupon.endTime.year}-${coupon.endTime.month.toString().padLeft(2, '0')}-${coupon.endTime.day.toString().padLeft(2, '0')}';
+        final endStr =
+            '${coupon.endTime.year}-${coupon.endTime.month.toString().padLeft(2, '0')}-${coupon.endTime.day.toString().padLeft(2, '0')}';
         return Container(
           padding: const EdgeInsets.all(15),
           decoration: BoxDecoration(
@@ -1415,14 +1704,16 @@ class _ProductDetailState extends State<ProductDetail> {
                           coupon.name,
                           style: TextStyle(
                             fontSize: 16,
-                            color: Color(int.parse('303133', radix: 16)).withAlpha(255),
+                            color: Color(int.parse('303133', radix: 16))
+                                .withAlpha(255),
                           ),
                         ),
                         Text(
                           '有效期至$endStr',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Color(int.parse('909399', radix: 16)).withAlpha(255),
+                            color: Color(int.parse('909399', radix: 16))
+                                .withAlpha(255),
                           ),
                         ),
                       ],
@@ -1436,14 +1727,16 @@ class _ProductDetailState extends State<ProductDetail> {
                             "￥",
                             style: TextStyle(
                               fontSize: 17,
-                              color: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
+                              color: Color(int.parse('fa436a', radix: 16))
+                                  .withAlpha(255),
                             ),
                           ),
                           Text(
                             '${coupon.amount}',
                             style: TextStyle(
                               fontSize: 22,
-                              color: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
+                              color: Color(int.parse('fa436a', radix: 16))
+                                  .withAlpha(255),
                             ),
                           ),
                         ],
@@ -1452,7 +1745,8 @@ class _ProductDetailState extends State<ProductDetail> {
                         coupon.minAmount > 0 ? '满${coupon.minAmount}可用' : '无门槛',
                         style: TextStyle(
                           fontSize: 13,
-                          color: Color(int.parse('707070', radix: 16)).withAlpha(255),
+                          color: Color(int.parse('707070', radix: 16))
+                              .withAlpha(255),
                         ),
                       ),
                     ],
@@ -1461,14 +1755,17 @@ class _ProductDetailState extends State<ProductDetail> {
                   SizedBox(
                     height: 28,
                     child: ElevatedButton(
-                      onPressed: coupon.receiveStatus == 0 ? () => _claimCoupon(coupon.id) : null,
+                      onPressed: _canTapCouponAction(coupon.receiveStatus)
+                          ? () => _handleCouponAction(coupon, context)
+                          : null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: coupon.receiveStatus == 0
-                            ? Color(int.parse('fa436a', radix: 16)).withAlpha(255)
-                            : Colors.grey[300],
-                        foregroundColor: Colors.white,
+                        backgroundColor:
+                            _couponActionBackgroundColor(coupon.receiveStatus),
+                        foregroundColor:
+                            _couponActionForegroundColor(coupon.receiveStatus),
                         padding: const EdgeInsets.symmetric(horizontal: 10),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14)),
                       ),
                       child: Text(
                         _receiveStatusText(coupon.receiveStatus),
@@ -1504,21 +1801,27 @@ class _ProductDetailState extends State<ProductDetail> {
     final items = <Widget>[];
 
     if (productFullReductionList.isNotEmpty) {
-      items.add(_buildPromotionSection('满减优惠', productFullReductionList.map((fr) {
-        return '满${fr.fullPrice}元减${fr.reducePrice}元';
-      }).toList()));
+      items.add(_buildPromotionSection(
+          '满减优惠',
+          productFullReductionList.map((fr) {
+            return '满${fr.fullPrice}元减${fr.reducePrice}元';
+          }).toList()));
     }
 
     if (productLadderList.isNotEmpty) {
-      items.add(_buildPromotionSection('阶梯价格', productLadderList.map((ld) {
-        return '满${ld.count}件，折后¥${ld.price}';
-      }).toList()));
+      items.add(_buildPromotionSection(
+          '阶梯价格',
+          productLadderList.map((ld) {
+            return '满${ld.count}件，折后¥${ld.price}';
+          }).toList()));
     }
 
     if (memberPriceList.isNotEmpty) {
-      items.add(_buildPromotionSection('会员专享', memberPriceList.map((mp) {
-        return '${mp.memberLevelName}：¥${mp.memberPrice}';
-      }).toList()));
+      items.add(_buildPromotionSection(
+          '会员专享',
+          memberPriceList.map((mp) {
+            return '${mp.memberLevelName}：¥${mp.memberPrice}';
+          }).toList()));
     }
 
     if (items.isEmpty) {
@@ -1579,15 +1882,15 @@ class _ProductDetailState extends State<ProductDetail> {
           ),
           const SizedBox(height: 8),
           ...details.map((d) => Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Text(
-              d,
-              style: TextStyle(
-                fontSize: 14,
-                color: Color(int.parse('303133', radix: 16)).withAlpha(255),
-              ),
-            ),
-          )),
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  d,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Color(int.parse('303133', radix: 16)).withAlpha(255),
+                  ),
+                ),
+              )),
         ],
       ),
     );
@@ -1621,12 +1924,8 @@ class _ProductDetailState extends State<ProductDetail> {
 
   //添加商品到购物车（带幂等键 + 按钮防抖 + 错误码映射）
   void _addCart(Product product) async {
-    final sku = selectedSku ?? (skuStockList.isNotEmpty ? skuStockList.first : null);
-
-    if (sku != null && !sku.purchasable) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(sku.purchaseReasonLabel.isNotEmpty ? sku.purchaseReasonLabel : '该规格暂不可购买')),
-      );
+    final sku = _resolvePurchaseSku();
+    if (sku == null) {
       return;
     }
 
@@ -1635,9 +1934,10 @@ class _ProductDetailState extends State<ProductDetail> {
     setState(() => _isAdding = true);
 
     try {
-      final skuId = sku?.id ?? 0;
+      final skuId = sku.id;
       // 幂等键：productSkuId + 时间戳
-      final idempotencyKey = '${skuId}_${DateTime.now().millisecondsSinceEpoch}';
+      final idempotencyKey =
+          '${skuId}_${DateTime.now().millisecondsSinceEpoch}';
       final Map<String, String> headers = {
         'X-Idempotency-Key': idempotencyKey,
       };
@@ -1646,16 +1946,17 @@ class _ProductDetailState extends State<ProductDetail> {
       addCartParams["productId"] = product.id;
       addCartParams["productSkuId"] = skuId;
       addCartParams["quantity"] = 1;
-      addCartParams["price"] = sku != null ? sku.price.toDouble() : double.parse(product.price);
-      addCartParams["productPic"] = sku?.mainPic.isNotEmpty == true ? sku!.mainPic : product.mainPic;
+      addCartParams["price"] = sku.price.toDouble();
+      addCartParams["productPic"] =
+          sku.mainPic.isNotEmpty ? sku.mainPic : product.mainPic;
       addCartParams["productName"] = product.name;
       addCartParams["productSubTitle"] = product.subTitle;
-      addCartParams["productSkuCode"] = sku?.skuCode ?? "";
+      addCartParams["productSkuCode"] = sku.skuCode;
       addCartParams["productCategoryId"] = product.categoryId;
       addCartParams["productBrand"] = product.brandName;
       addCartParams["productSn"] = product.productSn;
       addCartParams["memberNickname"] = "test";
-      addCartParams["productAttr"] = sku?.specData ?? "[]";
+      addCartParams["productAttr"] = sku.specData;
 
       final result = await HttpUtil.postWithHeaders(
         cartAddUrl,
@@ -1684,7 +1985,9 @@ class _ProductDetailState extends State<ProductDetail> {
         // 后端返回错误码，映射为用户可理解文案
         final errorCode = resp["code"]?.toString() ?? '';
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_mapCartErrorCode(errorCode, resp)), backgroundColor: Colors.red),
+          SnackBar(
+              content: Text(_mapCartErrorCode(errorCode, resp)),
+              backgroundColor: Colors.red),
         );
       }
     } on DioException catch (e) {
@@ -1692,7 +1995,8 @@ class _ProductDetailState extends State<ProductDetail> {
       // Dio 网络层错误（如 500/网络不可达）
       String msg = '添加失败，请稍后重试';
       if (e.response?.data != null && e.response!.data is Map) {
-        msg = _mapCartErrorCode(e.response!.data["code"]?.toString() ?? '', e.response!.data);
+        msg = _mapCartErrorCode(
+            e.response!.data["code"]?.toString() ?? '', e.response!.data);
       }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(msg), backgroundColor: Colors.red),
@@ -1700,7 +2004,8 @@ class _ProductDetailState extends State<ProductDetail> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('添加失败，请稍后重试'), backgroundColor: Colors.red),
+        const SnackBar(
+            content: Text('添加失败，请稍后重试'), backgroundColor: Colors.red),
       );
     } finally {
       if (mounted) setState(() => _isAdding = false);

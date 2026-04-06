@@ -640,7 +640,7 @@ class SkuStockList {
         promotionEndTime: json["promotionEndTime"],
         stock: json["stock"],
         lowStock: json["lowStock"],
-        specData: json["specData"],
+        specData: _normalizeSpecData(json["specData"]),
         weight: json["weight"]?.toDouble(),
         publishStatus: json["publishStatus"],
         verifyStatus: json["verifyStatus"],
@@ -677,11 +677,24 @@ class SkuStockList {
     if (specData.isEmpty) return {};
     try {
       final decoded = json.decode(specData);
+      if (decoded is Map) {
+        final map = <String, String>{};
+        for (final entry in decoded.entries) {
+          final key = entry.key.toString().trim();
+          final value = entry.value?.toString().trim() ?? "";
+          if (key.isEmpty || value.isEmpty) continue;
+          map[key] = value;
+        }
+        return map;
+      }
       if (decoded is List) {
         final map = <String, String>{};
         for (final item in decoded) {
-          if (item is Map<String, dynamic>) {
-            map[item["key"] ?? ""] = item["value"] ?? "";
+          if (item is Map) {
+            final key = item["key"]?.toString().trim() ?? "";
+            final value = item["value"]?.toString().trim() ?? "";
+            if (key.isEmpty || value.isEmpty) continue;
+            map[key] = value;
           }
         }
         return map;
@@ -702,6 +715,17 @@ class SkuStockList {
         return '该规格暂不可售';
       default:
         return '';
+    }
+  }
+
+  static String _normalizeSpecData(dynamic rawSpecData) {
+    if (rawSpecData == null) return "";
+    if (rawSpecData is String) return rawSpecData;
+
+    try {
+      return json.encode(rawSpecData);
+    } catch (_) {
+      return rawSpecData.toString();
     }
   }
 }
