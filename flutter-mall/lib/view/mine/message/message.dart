@@ -1,15 +1,23 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mall/config/service_url.dart';
 import 'package:flutter_mall/model/message_model.dart';
+import 'package:flutter_mall/provider/app_lifecycle_provider.dart';
+import 'package:flutter_mall/utils/app_intent_dispatcher.dart';
+import 'package:flutter_mall/utils/app_recovery_router.dart';
+import 'package:flutter_mall/utils/app_recovery_store.dart';
+import 'package:flutter_mall/utils/commerce_state_resolver.dart';
 import 'package:flutter_mall/utils/http_util.dart';
-import 'package:flutter_mall/view/mine/coupon/coupon_list.dart';
-import 'package:flutter_mall/view/mine/order/order_detail.dart';
+import 'package:flutter_mall/view/mine/login/login.dart';
+import 'package:flutter_mall/widgets/commerce_state_shell.dart';
+import 'package:provider/provider.dart';
 
 ///
 /// 消息页面
 ///
-/// Story 8-1 重构：实现真实 API 调用、分页、点击跳转
+/// Story 9-3：接入统一 recall intent dispatcher，并复用 Commerce State Shell
 ///
 /// 作者：David
 /// 日期：2026/4/2
@@ -23,12 +31,19 @@ class Message extends StatefulWidget {
 
 class _MessageState extends State<Message> {
   final List<MessageData> _messages = [];
-  final Map<int, List<MessageData>> _tabMessages = {0: [], 1: [], 2: [], 3: [], 4: []};
+  final Map<int, List<MessageData>> _tabMessages = {
+    0: [],
+    1: [],
+    2: [],
+    3: [],
+    4: [],
+  };
   int _selectedTab = 0; // 0-全部 1-订单 2-售后 3-活动 4-会员
   bool _isLoading = false;
   bool _hasMore = true;
   int _pageNum = 1;
   static const int _pageSize = 20;
+  Object? _loadError;
 
   @override
   void initState() {
@@ -44,15 +59,19 @@ class _MessageState extends State<Message> {
     }
     if (!_hasMore && !reset) return;
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      if (reset) {
+        _loadError = null;
+      }
+    });
 
     int? messageType;
     if (_selectedTab != 0) {
-      messageType = _selectedTab; // 1-订单 2-售后 3-活动 4-会员
+      messageType = _selectedTab;
     }
 
     try {
-      String url = messageListDataUrl;
       final params = <String, String>{
         'pageNum': _pageNum.toString(),
         'pageSize': _pageSize.toString(),
@@ -60,10 +79,12 @@ class _MessageState extends State<Message> {
       if (messageType != null) {
         params['messageType'] = messageType.toString();
       }
-      final queryString = params.entries.map((e) => '${e.key}=${e.value}').join('&');
-      Response result = await HttpUtil.get('$url?$queryString');
+      final queryString =
+          params.entries.map((e) => '${e.key}=${e.value}').join('&');
+      final Response result =
+          await HttpUtil.get('$messageListDataUrl?$queryString');
 
-      MessageModel model = MessageModel.fromJson(result.data);
+      final model = MessageModel.fromJson(result.data);
       if (!mounted) return;
 
       setState(() {
@@ -82,14 +103,15 @@ class _MessageState extends State<Message> {
             _tabMessages[_selectedTab]?.addAll(model.data);
           }
         }
+        _loadError = null;
         _isLoading = false;
       });
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('加载消息失败: $e'), backgroundColor: Colors.red),
-        );
+        setState(() {
+          _loadError = e;
+          _isLoading = false;
+        });
       }
     }
   }
@@ -104,14 +126,31 @@ class _MessageState extends State<Message> {
     await _loadMessages();
   }
 
-  /// 标记单条消息已读
-  Future<void> _markAsRead(int messageId) async {
+  Future<bool> _markAsRead(int messageId) async {
     try {
       await HttpUtil.post(messageReadUrl, data: {'id': messageId});
-    } catch (_) {}
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
-  /// 标记全部已读
+  void _markLocalAsRead(int messageId) {
+    MessageData patch(MessageData data) =>
+        data.id == messageId ? data.copyWith(status: 1) : data;
+
+    setState(() {
+      for (final entry in _tabMessages.entries) {
+        _tabMessages[entry.key] = entry.value.map(patch).toList();
+      }
+      for (var i = 0; i < _messages.length; i++) {
+        if (_messages[i].id == messageId) {
+          _messages[i] = _messages[i].copyWith(status: 1);
+        }
+      }
+    });
+  }
+
   Future<void> _markAllAsRead() async {
     try {
       await HttpUtil.post(markAllReadUrl);
@@ -127,6 +166,80 @@ class _MessageState extends State<Message> {
           SnackBar(content: Text('操作失败: $e'), backgroundColor: Colors.red),
         );
       }
+    }
+  }
+
+  Future<void> _handleMessageTap(MessageData msg) async {
+    final intent = msg.intent;
+    if (intent == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('跳转目标无效'), backgroundColor: Colors.orange),
+      );
+      return;
+    }
+
+    final resolvedIntent = intent.copyWith(
+      source: 'message_tap',
+      lastValidatedAt: DateTime.now(),
+    );
+    final lifecycleProvider = context.read<AppLifecycleProvider>();
+    lifecycleProvider.recordIntentReceived(resolvedIntent);
+    final plan = AppIntentDispatcher.resolve(
+      resolvedIntent,
+      hasValidToken: AppRecoveryStore.hasValidToken(),
+    );
+
+    if (plan.shouldMarkMessageRead && msg.status == 0) {
+      final success = await _markAsRead(msg.id);
+      if (success) {
+        _markLocalAsRead(msg.id);
+      }
+    }
+
+    if (!mounted) return;
+
+    switch (plan.action) {
+      case AppIntentDispatchAction.login:
+        lifecycleProvider.recordIntentLoginRequired(plan.intent);
+        await AppRecoveryStore.savePendingIntent(
+          plan.intent.copyWith(
+            source: 'login_restore',
+            lastValidatedAt: DateTime.now(),
+          ),
+        );
+        if (!mounted) return;
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => Login(recoveryIntent: plan.intent),
+          ),
+        );
+        await _loadMessages(reset: true);
+        return;
+      case AppIntentDispatchAction.target:
+        lifecycleProvider.recordIntentRestored(plan.intent);
+        await AppRecoveryStore.saveActiveIntentCandidate(
+          plan.intent.copyWith(lastValidatedAt: DateTime.now()),
+        );
+        if (!mounted) return;
+        await AppRecoveryRouter.pushTarget(
+          context,
+          plan.intent,
+          message: plan.message,
+        );
+        return;
+      case AppIntentDispatchAction.fallback:
+        lifecycleProvider.recordIntentFallbackUsed(
+          plan.intent,
+          failureReason: plan.failureReason,
+        );
+        if (!mounted) return;
+        await AppRecoveryRouter.pushFallback(
+          context,
+          recentContext: plan.intent,
+          message: plan.message,
+        );
+        return;
     }
   }
 
@@ -204,54 +317,109 @@ class _MessageState extends State<Message> {
   }
 
   Widget _buildMessageList() {
-    final data = _selectedTab == 0 ? _messages : (_tabMessages[_selectedTab] ?? []);
+    final data =
+        _selectedTab == 0 ? _messages : (_tabMessages[_selectedTab] ?? []);
+    final pageState = CommerceStateResolver.resolvePageState(
+      isLoading: _isLoading,
+      hasContent: data.isNotEmpty,
+      isEmpty: data.isEmpty,
+      error: _loadError,
+    );
+    final failure = CommerceStateResolver.resolveFailure(
+      _loadError,
+      errorSummary: '消息加载失败，请稍后重试',
+      weakNetworkSummary: '当前网络较弱，消息列表可能暂时无法刷新',
+    );
 
-    if (_isLoading && data.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (data.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.notifications_none,
-                size: 64, color: Color(int.parse('c0c0c0', radix: 16)).withAlpha(255)),
-            const SizedBox(height: 16),
-            Text("暂无消息",
-                style: TextStyle(
-                    fontSize: 14,
-                    color: Color(int.parse('909399', radix: 16)).withAlpha(255))),
-          ],
-        ),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: _onRefresh,
-      child: NotificationListener<ScrollNotification>(
-        onNotification: (ScrollNotification scrollInfo) {
-          if (scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 100) {
-            _loadMore();
-          }
-          return false;
-        },
-        child: ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 15),
-          itemCount: data.length + (_hasMore ? 1 : 0),
-          itemBuilder: (context, index) {
-            if (index == data.length) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-              );
+    return CommerceStateShell(
+      state: pageState,
+      title: _stateTitle(pageState),
+      summary: _stateSummary(pageState, failure),
+      detail: failure?.detail,
+      primaryAction: pageState == CommercePageState.content
+          ? null
+          : CommerceStateAction(
+              label: '重新加载',
+              onPressed: () {
+                _loadMessages(reset: true);
+              },
+            ),
+      secondaryAction: pageState == CommercePageState.empty
+          ? CommerceStateAction(
+              label: '返回上一页',
+              onPressed: () {
+                Navigator.of(context).maybePop();
+              },
+            )
+          : null,
+      showWeakNetworkBanner:
+          data.isNotEmpty && failure != null && failure.isWeakNetwork,
+      weakNetworkBannerAction:
+          data.isNotEmpty && failure != null && failure.isWeakNetwork
+              ? CommerceStateAction(
+                  label: '重试刷新',
+                  onPressed: () {
+                    _loadMessages(reset: true);
+                  },
+                )
+              : null,
+      child: RefreshIndicator(
+        onRefresh: _onRefresh,
+        child: NotificationListener<ScrollNotification>(
+          onNotification: (ScrollNotification scrollInfo) {
+            if (scrollInfo.metrics.pixels >=
+                scrollInfo.metrics.maxScrollExtent - 100) {
+              _loadMore();
             }
-            final msg = data[index];
-            return _buildMessageCard(msg);
+            return false;
           },
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 15),
+            itemCount: data.length + (_hasMore ? 1 : 0),
+            itemBuilder: (context, index) {
+              if (index == data.length) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child:
+                      Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                );
+              }
+              final msg = data[index];
+              return _buildMessageCard(msg);
+            },
+          ),
         ),
       ),
     );
+  }
+
+  String _stateTitle(CommercePageState state) {
+    switch (state) {
+      case CommercePageState.initialLoading:
+        return '正在加载消息';
+      case CommercePageState.empty:
+        return '暂无消息';
+      case CommercePageState.error:
+        return '消息加载失败';
+      case CommercePageState.weakNetwork:
+        return '网络较弱，消息加载受阻';
+      case CommercePageState.content:
+        return '消息列表';
+    }
+  }
+
+  String _stateSummary(CommercePageState state, CommerceFailure? failure) {
+    switch (state) {
+      case CommercePageState.initialLoading:
+        return '正在同步订单提醒、活动通知和优惠券消息';
+      case CommercePageState.empty:
+        return '订单、活动和优惠券相关消息会在这里统一展示';
+      case CommercePageState.error:
+      case CommercePageState.weakNetwork:
+        return failure?.summary ?? '请稍后重试';
+      case CommercePageState.content:
+        return '';
+    }
   }
 
   Widget _buildMessageCard(MessageData msg) {
@@ -260,19 +428,18 @@ class _MessageState extends State<Message> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 时间 + 类型标签
           Row(
             children: [
               Text(
                 _formatTime(msg.createTime),
                 style: TextStyle(
-                    fontSize: 13,
-                    color: Color(int.parse('7d7d7d', radix: 16)).withAlpha(255)),
+                  fontSize: 13,
+                  color: Color(int.parse('7d7d7d', radix: 16)).withAlpha(255),
+                ),
               ),
               const SizedBox(width: 8),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: Color(msg.typeColor).withAlpha(40),
                   borderRadius: BorderRadius.circular(4),
@@ -297,13 +464,9 @@ class _MessageState extends State<Message> {
                 ),
             ],
           ),
-          // 消息卡片
           GestureDetector(
             onTap: () {
-              if (msg.status == 0) {
-                _markAsRead(msg.id);
-              }
-              _handleMessageTap(msg);
+              unawaited(_handleMessageTap(msg));
             },
             child: Container(
               color: Colors.white,
@@ -317,7 +480,8 @@ class _MessageState extends State<Message> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: Color(int.parse('303133', radix: 16)).withAlpha(255),
+                      color:
+                          Color(int.parse('303133', radix: 16)).withAlpha(255),
                     ),
                   ),
                   if (msg.imageUrl != null && msg.imageUrl!.isNotEmpty) ...[
@@ -335,11 +499,23 @@ class _MessageState extends State<Message> {
                     msg.content,
                     style: TextStyle(
                       fontSize: 14,
-                      color: Color(int.parse('606266', radix: 16)).withAlpha(255),
+                      color:
+                          Color(int.parse('606266', radix: 16)).withAlpha(255),
                     ),
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  if (msg.intent?.failureReason.isNotEmpty == true) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      msg.intent!.recoveryHint,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Color(int.parse('fa436a', radix: 16))
+                            .withAlpha(255),
+                      ),
+                    ),
+                  ],
                   Container(
                     margin: const EdgeInsets.only(top: 10),
                     padding: const EdgeInsets.only(top: 10),
@@ -347,19 +523,22 @@ class _MessageState extends State<Message> {
                       border: Border(
                         top: BorderSide(
                           width: 1,
-                          color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
+                          color: Color(int.parse('f5f5f5', radix: 16))
+                              .withAlpha(255),
                         ),
                       ),
                     ),
                     child: Row(
                       children: [
                         Expanded(
-                          child: Text("查看详情",
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Color(int.parse('707070', radix: 16))
-                                    .withAlpha(255),
-                              )),
+                          child: Text(
+                            "查看详情",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(int.parse('707070', radix: 16))
+                                  .withAlpha(255),
+                            ),
+                          ),
                         ),
                         Image.asset(
                           "images/right_arrow.png",
@@ -375,64 +554,6 @@ class _MessageState extends State<Message> {
           ),
         ],
       ),
-    );
-  }
-
-  void _handleMessageTap(MessageData msg) {
-    // Story 8-1 Fix #3: 根据 linkType 跳转到对应页面
-    final linkType = msg.linkType ?? '';
-    final linkId = msg.linkId ?? '';
-
-    if (linkType.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('跳转目标无效'), backgroundColor: Colors.orange),
-      );
-      return;
-    }
-
-    Widget targetPage;
-    switch (linkType) {
-      case 'order':
-        // 跳转订单详情
-        final orderId = int.tryParse(linkId) ?? 0;
-        if (orderId <= 0) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('订单ID无效'), backgroundColor: Colors.orange),
-          );
-          return;
-        }
-        targetPage = OrderDetail(orderId: orderId, intentSource: 'message');
-        break;
-      case 'coupon':
-        // 跳转优惠券列表
-        targetPage = const CouponList();
-        break;
-      case 'product':
-        // 跳转商品详情（如果有商品详情页面的话，用 message 作为来源）
-        Navigator.of(context).pushNamed('/product', arguments: {
-          'productId': linkId,
-          'source': 'message',
-        });
-        return;
-      case 'activity':
-        // 跳转活动详情（如果没有活动详情页面，显示提示）
-        Navigator.of(context).pushNamed('/activity', arguments: {
-          'activityId': linkId,
-          'source': 'message',
-        });
-        return;
-      default:
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('暂不支持跳转类型: $linkType'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-        return;
-    }
-
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => targetPage),
     );
   }
 

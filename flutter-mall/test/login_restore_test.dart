@@ -16,7 +16,9 @@ void main() {
     await SharedPreferencesUtil.init();
   });
 
-  testWidgets('opens login builder and stores pending intent when auth is required', (tester) async {
+  testWidgets(
+      'opens login builder and stores pending intent when auth is required',
+      (tester) async {
     final provider = AppLifecycleProvider();
     final context = AppRecentContext.create(
       targetType: AppRecentTargetType.orderDetail,
@@ -45,6 +47,11 @@ void main() {
 
     expect(find.text('login-page'), findsOneWidget);
     expect(provider.restoreFailedReason, 'login_required');
+    expect(provider.intentReceivedCount, 1);
+    expect(provider.intentLoginRequiredCount, 1);
+    expect(provider.latestIntentTelemetry?.eventName, 'intentLoginRequired');
+    expect(provider.latestIntentTelemetry?.targetType, 'order_detail');
+    expect(provider.latestIntentTelemetry?.failureReason, 'login_required');
 
     final pendingIntent = AppRecoveryStore.peekPendingIntent();
     expect(pendingIntent, isNotNull);

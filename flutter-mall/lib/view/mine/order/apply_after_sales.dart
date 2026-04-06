@@ -2,7 +2,9 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_mall/config/service_url.dart';
+import 'package:flutter_mall/model/app_recent_context.dart';
 import 'package:flutter_mall/model/after_sales.dart';
+import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/utils/http_util.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -88,6 +90,16 @@ class ApplyAfterSalesState extends State<ApplyAfterSales> {
         _reasonList = data.reasonList;
         _pageState = SalesPageState.ready;
       });
+      await AppRecoveryStore.saveRecentContext(
+        AppRecentContext.create(
+          targetType: AppRecentTargetType.afterSalesApply,
+          targetId: widget.orderId,
+          source: widget.intentSource ?? 'manual_open',
+          requiresAuth: true,
+          fallbackType: AppRecentTargetType.orderDetail,
+          fallbackTargetId: widget.orderId,
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -217,9 +229,8 @@ class ApplyAfterSalesState extends State<ApplyAfterSales> {
       } else {
         setState(() {
           _pageState = SalesPageState.error;
-          _errorMessage = result.message.isNotEmpty
-              ? result.message
-              : '提交失败，请稍后重试';
+          _errorMessage =
+              result.message.isNotEmpty ? result.message : '提交失败，请稍后重试';
           _isSubmitting = false;
         });
       }
@@ -311,27 +322,30 @@ class ApplyAfterSalesState extends State<ApplyAfterSales> {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: border.color),
                 ),
-                child: Column(
-                  children: AfterSalesType.values.map((type) {
-                    return ListTile(
-                      dense: true,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                      title: Text(type.label, style: labelStyle),
-                      leading: Radio<int>(
-                        value: type.value,
-                        groupValue: _selectedType.value,
-                        activeColor: const Color(0xFFFA436A),
-                        onChanged: (v) {
-                          if (v != null) {
-                            setState(() => _selectedType = AfterSalesType.fromValue(v));
-                          }
+                child: RadioGroup<AfterSalesType>(
+                  groupValue: _selectedType,
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() => _selectedType = value);
+                    }
+                  },
+                  child: Column(
+                    children: AfterSalesType.values.map((type) {
+                      return ListTile(
+                        dense: true,
+                        contentPadding:
+                            const EdgeInsets.symmetric(horizontal: 8),
+                        title: Text(type.label, style: labelStyle),
+                        leading: Radio<AfterSalesType>(
+                          value: type,
+                          activeColor: const Color(0xFFFA436A),
+                        ),
+                        onTap: () {
+                          setState(() => _selectedType = type);
                         },
-                      ),
-                      onTap: () {
-                        setState(() => _selectedType = type);
-                      },
-                    );
-                  }).toList(),
+                      );
+                    }).toList(),
+                  ),
                 ),
               ),
 
@@ -347,10 +361,11 @@ class ApplyAfterSalesState extends State<ApplyAfterSales> {
                   border: Border.all(color: border.color),
                 ),
                 child: DropdownButtonFormField<ReturnReasonItemData>(
-                  value: _selectedReason,
+                  initialValue: _selectedReason,
                   hint: Text('请选择退货原因', style: hintStyle),
                   decoration: const InputDecoration(
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    contentPadding:
+                        EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                     border: InputBorder.none,
                   ),
                   items: _reasonList.map((reason) {
@@ -387,7 +402,8 @@ class ApplyAfterSalesState extends State<ApplyAfterSales> {
                     hintStyle: hintStyle,
                     contentPadding: const EdgeInsets.all(12),
                     border: InputBorder.none,
-                    counterStyle: TextStyle(color: Colors.grey[400], fontSize: 12),
+                    counterStyle:
+                        TextStyle(color: Colors.grey[400], fontSize: 12),
                   ),
                 ),
               ),
@@ -439,12 +455,14 @@ class ApplyAfterSalesState extends State<ApplyAfterSales> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.info_outline, size: 16, color: Colors.orange[700]),
+                    Icon(Icons.info_outline,
+                        size: 16, color: Colors.orange[700]),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         '提交后预计 1-3 个工作日处理，请耐心等待',
-                        style: TextStyle(fontSize: 12, color: Colors.orange[800]),
+                        style:
+                            TextStyle(fontSize: 12, color: Colors.orange[800]),
                       ),
                     ),
                   ],
@@ -625,7 +643,8 @@ class ApplyAfterSalesState extends State<ApplyAfterSales> {
                 color: Colors.green[50],
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.check_circle, size: 60, color: Colors.green[400]),
+              child:
+                  Icon(Icons.check_circle, size: 60, color: Colors.green[400]),
             ),
             const SizedBox(height: 24),
             const Text(

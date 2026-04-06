@@ -2,6 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mall/model/app_recent_context.dart';
 import 'package:flutter_mall/utils/app_recovery_store.dart';
 
+class IntentTelemetrySnapshot {
+  final String eventName;
+  final String? failureReason;
+  final String targetType;
+  final String source;
+  final String intentId;
+  final DateTime recordedAt;
+
+  const IntentTelemetrySnapshot({
+    required this.eventName,
+    required this.targetType,
+    required this.source,
+    required this.intentId,
+    required this.recordedAt,
+    this.failureReason,
+  });
+}
+
 class AppLifecycleProvider extends ChangeNotifier with WidgetsBindingObserver {
   AppLifecycleState _currentState = AppLifecycleState.resumed;
   AppRecentContext? _pausedCandidate;
@@ -10,6 +28,11 @@ class AppLifecycleProvider extends ChangeNotifier with WidgetsBindingObserver {
   bool _restoreSucceeded = false;
   bool _fallbackUsed = false;
   String? _restoreFailedReason;
+  int _intentReceivedCount = 0;
+  int _intentLoginRequiredCount = 0;
+  int _intentRestoredCount = 0;
+  int _intentFallbackUsedCount = 0;
+  IntentTelemetrySnapshot? _latestIntentTelemetry;
 
   AppLifecycleState get currentState => _currentState;
 
@@ -24,6 +47,16 @@ class AppLifecycleProvider extends ChangeNotifier with WidgetsBindingObserver {
   bool get fallbackUsed => _fallbackUsed;
 
   String? get restoreFailedReason => _restoreFailedReason;
+
+  int get intentReceivedCount => _intentReceivedCount;
+
+  int get intentLoginRequiredCount => _intentLoginRequiredCount;
+
+  int get intentRestoredCount => _intentRestoredCount;
+
+  int get intentFallbackUsedCount => _intentFallbackUsedCount;
+
+  IntentTelemetrySnapshot? get latestIntentTelemetry => _latestIntentTelemetry;
 
   void startObserving() {
     WidgetsBinding.instance.addObserver(this);
@@ -54,6 +87,53 @@ class AppLifecycleProvider extends ChangeNotifier with WidgetsBindingObserver {
   void markRestoreFailed(String reason) {
     _restoreSucceeded = false;
     _restoreFailedReason = reason;
+    notifyListeners();
+  }
+
+  void recordIntentReceived(AppRecentContext intent) {
+    _intentReceivedCount++;
+    _recordIntentEvent('intentReceived', intent);
+  }
+
+  void recordIntentLoginRequired(AppRecentContext intent) {
+    _intentLoginRequiredCount++;
+    _recordIntentEvent(
+      'intentLoginRequired',
+      intent,
+      failureReason: 'login_required',
+    );
+  }
+
+  void recordIntentRestored(AppRecentContext intent) {
+    _intentRestoredCount++;
+    _recordIntentEvent('intentRestored', intent);
+  }
+
+  void recordIntentFallbackUsed(
+    AppRecentContext intent, {
+    String? failureReason,
+  }) {
+    _intentFallbackUsedCount++;
+    _recordIntentEvent(
+      'intentFallbackUsed',
+      intent,
+      failureReason: failureReason,
+    );
+  }
+
+  void _recordIntentEvent(
+    String eventName,
+    AppRecentContext intent, {
+    String? failureReason,
+  }) {
+    _latestIntentTelemetry = IntentTelemetrySnapshot(
+      eventName: eventName,
+      failureReason: failureReason,
+      targetType: intent.targetTypeValue,
+      source: intent.source,
+      intentId: intent.intentId,
+      recordedAt: DateTime.now(),
+    );
     notifyListeners();
   }
 

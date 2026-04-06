@@ -1,9 +1,11 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mall/config/service_url.dart';
+import 'package:flutter_mall/utils/commerce_state_resolver.dart';
 import 'package:flutter_mall/view/category/product/product_list.dart';
 import 'package:flutter_mall/utils/http_util.dart';
 import 'package:flutter_mall/widgets/cached_image_widget.dart';
+import 'package:flutter_mall/widgets/commerce_state_shell.dart';
 import 'package:flutter_mall/widgets/empty_state_widget.dart';
 
 import '../../model/categories_model.dart';
@@ -37,6 +39,7 @@ class _CategoriesState extends State<Categories> {
 
   bool _isLoading = true;
   bool _hasError = false;
+  Object? _pageError;
 
   @override
   void initState() {
@@ -49,6 +52,7 @@ class _CategoriesState extends State<Categories> {
     setState(() {
       _isLoading = true;
       _hasError = false;
+      _pageError = null;
     });
     try {
       Response result = await HttpUtil.get(categoriesDataUrl);
@@ -67,6 +71,7 @@ class _CategoriesState extends State<Categories> {
       setState(() {
         _isLoading = false;
         _hasError = true;
+        _pageError = e;
       });
     }
   }
@@ -85,15 +90,34 @@ class _CategoriesState extends State<Categories> {
   }
 
   Widget _buildBody() {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (_hasError) {
-      return ErrorRetryWidget(
-        message: '分类数据加载失败',
-        onRetry: _queryCategoriesData,
+    final bool hasContent = firstCategoriesData != null && firstCategoriesData!.isNotEmpty;
+    final CommercePageState pageState = CommerceStateResolver.resolvePageState(
+      isLoading: _isLoading,
+      hasContent: hasContent,
+      isEmpty: !_isLoading && !_hasError && !hasContent,
+      error: _pageError,
+    );
+
+    if (pageState != CommercePageState.content) {
+      final failure = CommerceStateResolver.resolveFailure(
+        _pageError,
+        errorSummary: '分类数据加载失败',
+        weakNetworkSummary: '当前网络较弱，分类数据暂时无法加载',
+      );
+      return CommerceStateShell(
+        state: pageState,
+        title: pageState == CommercePageState.empty ? '暂无商品分类' : '分类页暂不可用',
+        summary: pageState == CommercePageState.empty
+            ? '当前还没有可浏览的分类，稍后再来看看'
+            : failure?.summary ?? '分类数据加载失败',
+        detail: failure?.detail,
+        icon: pageState == CommercePageState.empty ? Icons.category_outlined : null,
+        primaryAction: pageState == CommercePageState.initialLoading
+            ? null
+            : CommerceStateAction(label: '重试', onPressed: _queryCategoriesData),
       );
     }
+
     if (firstCategoriesData == null || firstCategoriesData!.isEmpty) {
       return const EmptyStateWidget(
         message: '暂无商品分类',

@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mall/config/service_url.dart';
+import 'package:flutter_mall/model/app_recent_context.dart';
+import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/utils/http_util.dart';
 
 import '../../../model/coupon_model.dart';
@@ -9,7 +11,12 @@ import '../../../model/coupon_model.dart';
 /// 可领取优惠券列表页面（领券中心）
 ///
 class AvailableCouponList extends StatefulWidget {
-  const AvailableCouponList({super.key});
+  final String? intentSource;
+
+  const AvailableCouponList({
+    super.key,
+    this.intentSource,
+  });
 
   @override
   State<AvailableCouponList> createState() => _AvailableCouponListState();
@@ -36,6 +43,15 @@ class _AvailableCouponListState extends State<AvailableCouponList> {
         couponListData = couponModel.data;
         isLoading = false;
       });
+      await AppRecoveryStore.saveRecentContext(
+        AppRecentContext.create(
+          targetType: AppRecentTargetType.couponCenter,
+          source: widget.intentSource ?? 'manual_open',
+          requiresAuth: true,
+          fallbackType: AppRecentTargetType.couponList,
+          fallbackTabIndex: 0,
+        ),
+      );
     } catch (e) {
       setState(() {
         isLoading = false;
@@ -50,19 +66,24 @@ class _AvailableCouponListState extends State<AvailableCouponList> {
 
   void claimCoupon(CouponData coupon) async {
     try {
-      Response result = await HttpUtil.post(addCouponUrl, data: {"couponId": coupon.id});
+      Response result =
+          await HttpUtil.post(addCouponUrl, data: {"couponId": coupon.id});
       Map<String, dynamic> resp = result.data;
       if (resp["code"] == 0) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(resp["message"] ?? "领取成功"), backgroundColor: Colors.green),
+            SnackBar(
+                content: Text(resp["message"] ?? "领取成功"),
+                backgroundColor: Colors.green),
           );
         }
         queryAvailableCoupons();
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(resp["message"] ?? "领取失败"), backgroundColor: Colors.red),
+            SnackBar(
+                content: Text(resp["message"] ?? "领取失败"),
+                backgroundColor: Colors.red),
           );
         }
       }
@@ -99,7 +120,8 @@ class _AvailableCouponListState extends State<AvailableCouponList> {
                     String btnText = canClaim ? '立即领取' : '已领取';
 
                     return Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(8),
@@ -118,7 +140,8 @@ class _AvailableCouponListState extends State<AvailableCouponList> {
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             decoration: BoxDecoration(
                               color: canClaim
-                                  ? Color(int.parse('fa436a', radix: 16)).withAlpha(255)
+                                  ? Color(int.parse('fa436a', radix: 16))
+                                      .withAlpha(255)
                                   : Colors.grey,
                               borderRadius: const BorderRadius.only(
                                 topLeft: Radius.circular(8),
@@ -133,7 +156,8 @@ class _AvailableCouponListState extends State<AvailableCouponList> {
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
                                     const Text('￥',
-                                        style: TextStyle(fontSize: 14, color: Colors.white)),
+                                        style: TextStyle(
+                                            fontSize: 14, color: Colors.white)),
                                     Text('${coupon.amount}',
                                         style: const TextStyle(
                                             fontSize: 24,
@@ -143,7 +167,8 @@ class _AvailableCouponListState extends State<AvailableCouponList> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text('满${coupon.minAmount}可用',
-                                    style: const TextStyle(fontSize: 11, color: Colors.white70)),
+                                    style: const TextStyle(
+                                        fontSize: 11, color: Colors.white70)),
                               ],
                             ),
                           ),
@@ -155,13 +180,18 @@ class _AvailableCouponListState extends State<AvailableCouponList> {
                                 children: [
                                   Text(coupon.name,
                                       style: const TextStyle(
-                                          fontSize: 14, fontWeight: FontWeight.w500)),
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500)),
                                   const SizedBox(height: 4),
                                   Text(_getScopeText(coupon.scopeType),
-                                      style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey[600])),
                                   const SizedBox(height: 4),
                                   Text('有效期至 ${coupon.endTime}',
-                                      style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                                      style: TextStyle(
+                                          fontSize: 11,
+                                          color: Colors.grey[500])),
                                 ],
                               ),
                             ),
@@ -169,18 +199,21 @@ class _AvailableCouponListState extends State<AvailableCouponList> {
                           Padding(
                             padding: const EdgeInsets.only(right: 12),
                             child: ElevatedButton(
-                              onPressed: canClaim ? () => claimCoupon(coupon) : null,
+                              onPressed:
+                                  canClaim ? () => claimCoupon(coupon) : null,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: canClaim
-                                    ? Color(int.parse('fa436a', radix: 16)).withAlpha(255)
+                                    ? Color(int.parse('fa436a', radix: 16))
+                                        .withAlpha(255)
                                     : Colors.grey[300],
                                 foregroundColor: Colors.white,
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 6),
                                 shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(16)),
                               ),
-                              child: Text(btnText, style: const TextStyle(fontSize: 12)),
+                              child: Text(btnText,
+                                  style: const TextStyle(fontSize: 12)),
                             ),
                           ),
                         ],

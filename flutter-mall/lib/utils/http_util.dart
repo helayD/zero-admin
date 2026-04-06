@@ -5,8 +5,8 @@ import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/config/constant_param.dart';
+import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/view/mine/login/login.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -80,7 +80,8 @@ class HttpUtil {
               if (navigatorState == null) {
                 return handler.next(e);
               }
-              final recoveryIntent = AppRecoveryStore.peekActiveIntentCandidate() ?? AppRecoveryStore.getRecentContext();
+              final recoveryIntent =
+                  AppRecoveryStore.peekCurrentIntentContext();
               if (recoveryIntent != null) {
                 await AppRecoveryStore.savePendingIntent(
                   recoveryIntent.copyWith(
@@ -108,29 +109,26 @@ class HttpUtil {
   }
 
   // 封装GET请求
-  static Future<Response> get(String path, {Map<String, dynamic>? queryParameters}) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    Map<String, dynamic> header = <String, dynamic>{};
-    header["Authorization"] = prefs.getString(token);
-
+  static Future<Response> get(String path,
+      {Map<String, dynamic>? queryParameters}) async {
     Response response = await dio.get(
       path,
       queryParameters: queryParameters,
-      options: Options(headers: header),
+      options: Options(headers: await _buildHeaders()),
     );
     return response;
   }
 
   // 封装POST请求，数据以JSON格式发送
-  static Future<Response> post(String path, {Map<String, dynamic>? data}) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    Map<String, dynamic> header = <String, dynamic>{};
-    header["Authorization"] = prefs.getString(token);
-
+  static Future<Response> post(String path,
+      {Map<String, dynamic>? data}) async {
     Response response = await dio.post(
       path,
       data: jsonEncode(data),
-      options: Options(contentType: 'application/json', headers: header),
+      options: Options(
+        contentType: 'application/json',
+        headers: await _buildHeaders(),
+      ),
     );
     return response;
   }
@@ -141,9 +139,7 @@ class HttpUtil {
     Map<String, dynamic>? data,
     Map<String, String>? headers,
   }) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    Map<String, dynamic> header = <String, dynamic>{};
-    header["Authorization"] = prefs.getString(token) ?? "";
+    final header = await _buildHeaders();
     if (headers != null) {
       header.addAll(headers);
     }
@@ -153,18 +149,63 @@ class HttpUtil {
       data: jsonEncode(data),
       options: Options(
         contentType: 'application/json',
-        headers: header.cast<String, dynamic>(),
+        headers: header,
       ),
     );
     return response;
   }
 
   // 封装POST请求，数据以form表单格式发送
-  static Future<Response> postForm(String path, {Map<String, dynamic>? data}) async {
+  static Future<Response> postForm(String path,
+      {Map<String, dynamic>? data}) async {
     Response response = await dio.post(
       path,
       queryParameters: data,
+      options: Options(headers: await _buildHeaders()),
     );
     return response;
+  }
+
+  static Future<Map<String, dynamic>> _buildHeaders() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final Map<String, dynamic> header = <String, dynamic>{};
+    header["Authorization"] = prefs.getString(token) ?? "";
+    header["X-App-Version"] = appVersion;
+    header["X-Client-Platform"] = _currentPlatform();
+    header["X-Network-State"] = "unknown";
+
+    final currentIntent = AppRecoveryStore.peekCurrentIntentContext();
+    if (currentIntent != null) {
+      if (currentIntent.source.trim().isNotEmpty) {
+        header["X-Intent-Source"] = currentIntent.source;
+      }
+      if (currentIntent.intentId.trim().isNotEmpty) {
+        header["X-Intent-Id"] = currentIntent.intentId;
+      }
+    }
+
+    return header;
+  }
+
+  static String _currentPlatform() {
+    if (kIsWeb) {
+      return "web";
+    }
+    if (Platform.isAndroid) {
+      return "android";
+    }
+    if (Platform.isIOS) {
+      return "ios";
+    }
+    if (Platform.isMacOS) {
+      return "macos";
+    }
+    if (Platform.isWindows) {
+      return "windows";
+    }
+    if (Platform.isLinux) {
+      return "linux";
+    }
+    return "unknown";
   }
 }

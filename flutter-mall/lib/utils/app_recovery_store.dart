@@ -8,14 +8,16 @@ import 'package:flutter_mall/utils/shared_preferences_util.dart';
 class AppRecoveryStore {
   static const String recentContextKey = 'app_recent_context';
   static const String pendingIntentKey = 'app_pending_recovery_intent';
-  static const String activeIntentCandidateKey = 'app_active_recovery_candidate';
+  static const String activeIntentCandidateKey =
+      'app_active_recovery_candidate';
 
   static Future<void> saveRecentContext(AppRecentContext context) async {
     final normalized = _attachCurrentMember(context);
     if (!normalized.isRecoverable) {
       return;
     }
-    await SharedPreferencesUtil.saveJsonString(recentContextKey, normalized.toJson());
+    await SharedPreferencesUtil.saveJsonString(
+        recentContextKey, normalized.toJson());
     await clearActiveIntentCandidate();
   }
 
@@ -32,7 +34,8 @@ class AppRecoveryStore {
     if (!normalized.isRecoverable) {
       return;
     }
-    await SharedPreferencesUtil.saveJsonString(pendingIntentKey, normalized.toJson());
+    await SharedPreferencesUtil.saveJsonString(
+        pendingIntentKey, normalized.toJson());
   }
 
   static AppRecentContext? peekPendingIntent() {
@@ -49,16 +52,24 @@ class AppRecoveryStore {
     await SharedPreferencesUtil.remove(pendingIntentKey);
   }
 
-  static Future<void> saveActiveIntentCandidate(AppRecentContext context) async {
+  static Future<void> saveActiveIntentCandidate(
+      AppRecentContext context) async {
     final normalized = _attachCurrentMember(context);
     if (!normalized.isRecoverable) {
       return;
     }
-    await SharedPreferencesUtil.saveJsonString(activeIntentCandidateKey, normalized.toJson());
+    await SharedPreferencesUtil.saveJsonString(
+        activeIntentCandidateKey, normalized.toJson());
   }
 
   static AppRecentContext? peekActiveIntentCandidate() {
     return _loadContext(activeIntentCandidateKey, clearOnMismatch: true);
+  }
+
+  static AppRecentContext? peekCurrentIntentContext() {
+    return peekPendingIntent() ??
+        peekActiveIntentCandidate() ??
+        getRecentContext();
   }
 
   static Future<void> clearActiveIntentCandidate() async {
@@ -177,7 +188,8 @@ class AppRecoveryStore {
     }
   }
 
-  static AppRecentContext? _loadContext(String key, {required bool clearOnMismatch}) {
+  static AppRecentContext? _loadContext(String key,
+      {required bool clearOnMismatch}) {
     final raw = SharedPreferencesUtil.getJsonString(key);
     final context = AppRecentContext.tryParse(raw);
     if (context == null || !context.isRecoverable) {
@@ -193,7 +205,8 @@ class AppRecoveryStore {
   }
 
   static AppRecentContext _attachCurrentMember(AppRecentContext context) {
-    if (!context.requiresAuth || (context.ownerMemberId != null && context.ownerMemberId! > 0)) {
+    if (!context.requiresAuth ||
+        (context.ownerMemberId != null && context.ownerMemberId! > 0)) {
       return context;
     }
     final currentMemberId = getCurrentMemberId();

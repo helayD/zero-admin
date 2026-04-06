@@ -5,10 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mall/model/app_recent_context.dart';
 import 'package:flutter_mall/model/home_model.dart';
 import 'package:flutter_mall/utils/app_recovery_store.dart';
+import 'package:flutter_mall/utils/commerce_state_resolver.dart';
 import 'package:flutter_mall/utils/http_util.dart';
 import 'package:flutter_mall/view/home/brand/brand_detail.dart';
 import 'package:flutter_mall/view/home/brand/brand_list.dart';
 import 'package:flutter_mall/widgets/cached_image_widget.dart';
+import 'package:flutter_mall/widgets/commerce_state_shell.dart';
 
 import '../../config/service_url.dart';
 import '../../model/brand_list.dart';
@@ -21,7 +23,9 @@ import '../category/product/product_detail.dart';
 /// 日期：2023/11/21 17:17
 ///
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final String? intentSource;
+
+  const HomePage({super.key, this.intentSource});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -49,6 +53,11 @@ class _HomePageState extends State<HomePage> {
 
   int _count = 4;
   late EasyRefreshController _controller;
+  bool _isInitialLoading = true;
+  bool _hasLoadedOnce = false;
+  Object? _pageError;
+  String? _contentBannerText;
+  bool _contentBannerIsWeakNetwork = false;
 
   @override
   void initState() {
@@ -60,12 +69,33 @@ class _HomePageState extends State<HomePage> {
     _queryHomeData();
   }
 
-  Future<void> _queryHomeData() async {
+  bool get _hasHomeContent {
+    return advertiseList.isNotEmpty ||
+        brandList.isNotEmpty ||
+        flashProductList.isNotEmpty ||
+        newProductList.isNotEmpty ||
+        hotProductList.isNotEmpty ||
+        preferredAreaList.isNotEmpty;
+  }
+
+  Future<void> _queryHomeData({bool isManualRefresh = false}) async {
+    final hasContentBeforeRefresh = _hasHomeContent;
+    if (mounted) {
+      setState(() {
+        if (!hasContentBeforeRefresh) {
+          _isInitialLoading = true;
+        }
+        _pageError = null;
+        _contentBannerText = null;
+        _contentBannerIsWeakNetwork = false;
+      });
+    }
+
     try {
       Response result = await HttpUtil.get(homeDataUrl);
+      final HomeModel homeModel = HomeModel.fromJson(result.data);
       if (!mounted) return;
       setState(() {
-        HomeModel homeModel = HomeModel.fromJson(result.data);
         advertiseList = homeModel.data.advertiseList;
         brandList = homeModel.data.brandList;
         homeFlashPromotion = homeModel.data.homeFlashPromotion;
@@ -73,19 +103,46 @@ class _HomePageState extends State<HomePage> {
         newProductList = homeModel.data.newProductList;
         hotProductList = homeModel.data.hotProductList;
         preferredAreaList = homeModel.data.preferredAreaList;
+        _isInitialLoading = false;
+        _hasLoadedOnce = true;
+        _pageError = null;
+        _contentBannerText = null;
+        _contentBannerIsWeakNetwork = false;
       });
       await AppRecoveryStore.saveRecentContext(
         AppRecentContext.create(
           targetType: AppRecentTargetType.home,
           tabIndex: 0,
-          source: 'manual_open',
+          source: widget.intentSource ?? 'manual_open',
           requiresAuth: false,
           fallbackType: AppRecentTargetType.home,
           fallbackTabIndex: 0,
         ),
       );
+      if (isManualRefresh && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('首页已刷新到最新状态'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     } catch (e) {
-      // 首页数据加载失败时保持现有数据，不清空
+      if (!mounted) return;
+      final failure = CommerceStateResolver.resolveFailure(
+        e,
+        errorSummary: '首页加载失败，请重试',
+        weakNetworkSummary: '首页加载超时或网络较弱，请检查网络后重试',
+      );
+      setState(() {
+        _isInitialLoading = false;
+        if (_hasHomeContent) {
+          _contentBannerText = failure?.summary ?? '刷新失败，已保留当前内容';
+          _contentBannerIsWeakNetwork = failure?.isWeakNetwork ?? false;
+        } else {
+          _pageError = e;
+        }
+      });
     }
   }
 
@@ -98,47 +155,100 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        color: Colors.white,
-        child: EasyRefresh(
-          controller: _controller,
-          onRefresh: () async {
-            await _queryHomeData();
-            _controller.finishRefresh();
-            _controller.resetFooter();
-          },
-          onLoad: () async {
-            await Future.delayed(const Duration(seconds: 2));
-            if (!mounted) {
-              return;
-            }
-            setState(() {
-              _count += 2;
-            });
-            _controller.finishLoad(
-              _count >= 30 ? IndicatorResult.noMore : IndicatorResult.success,
-            );
-          },
-          child: CustomScrollView(
-            shrinkWrap: true,
-            slivers: [
-              buildHeader(),
-              if (advertiseList.isNotEmpty) buildBanner(),
-              buildSubject(),
-              if (preferredAreaList.isNotEmpty) buildPreferredAreaTitle(),
-              if (preferredAreaList.isNotEmpty) buildPreferredAreaContent(),
-              if (brandList.isNotEmpty) buildBrandTitle(),
-              if (brandList.isNotEmpty) buildBrandContent(),
-              if (flashProductList.isNotEmpty) buildFlashSaleTitle(),
-              if (flashProductList.isNotEmpty) buildFlashSaleContent(4),
-              if (newProductList.isNotEmpty) buildNewProductTitle(),
-              if (newProductList.isNotEmpty) buildNewProductContent(6),
-              if (hotProductList.isNotEmpty) buildHotProductTitle(),
-              if (hotProductList.isNotEmpty) buildHotProductContent(6),
-              if (hotProductList.isNotEmpty) buildLikeTitle(),
-              if (hotProductList.isNotEmpty) buildLikeContent(_count),
-            ],
-          ),
+      body: Container(color: Colors.white, child: _buildPageBody()),
+    );
+  }
+
+  Widget _buildPageBody() {
+    final CommercePageState pageState = CommerceStateResolver.resolvePageState(
+      isLoading: _isInitialLoading,
+      hasContent: _hasHomeContent,
+      isEmpty: _hasLoadedOnce && !_hasHomeContent,
+      error: _pageError,
+    );
+
+    if (pageState != CommercePageState.content) {
+      final failure = CommerceStateResolver.resolveFailure(
+        _pageError,
+        errorSummary: '首页加载失败，请重试',
+        weakNetworkSummary: '当前网络较弱，首页暂时无法加载',
+      );
+      return CommerceStateShell(
+        state: pageState,
+        title: pageState == CommercePageState.empty ? '首页暂时没有内容' : '首页暂不可用',
+        summary: pageState == CommercePageState.empty
+            ? '当前没有可展示的首页推荐内容，稍后再来看看'
+            : failure?.summary ?? '首页加载失败，请稍后重试',
+        detail: failure?.detail,
+        primaryAction: pageState == CommercePageState.initialLoading
+            ? null
+            : CommerceStateAction(
+                label: '重新加载',
+                onPressed: () {
+                  _queryHomeData(isManualRefresh: true);
+                },
+              ),
+      );
+    }
+
+    return CommerceStateShell(
+      state: CommercePageState.content,
+      title: '首页',
+      showWeakNetworkBanner: _contentBannerText != null,
+      weakNetworkBannerText: _contentBannerText,
+      weakNetworkBannerAction: CommerceStateAction(
+        label: '重试',
+        onPressed: () {
+          _queryHomeData(isManualRefresh: true);
+        },
+      ),
+      weakNetworkBannerIcon: _contentBannerIsWeakNetwork
+          ? Icons.wifi_tethering_error_rounded
+          : Icons.info_outline,
+      weakNetworkBannerBackgroundColor: _contentBannerIsWeakNetwork
+          ? const Color(0xFFFFF7E6)
+          : const Color(0xFFF4F4F5),
+      weakNetworkBannerForegroundColor: _contentBannerIsWeakNetwork
+          ? const Color(0xFFD46B08)
+          : const Color(0xFF606266),
+      child: EasyRefresh(
+        controller: _controller,
+        onRefresh: () async {
+          await _queryHomeData(isManualRefresh: true);
+          _controller.finishRefresh();
+          _controller.resetFooter();
+        },
+        onLoad: () async {
+          await Future.delayed(const Duration(seconds: 2));
+          if (!mounted) {
+            return;
+          }
+          setState(() {
+            _count += 2;
+          });
+          _controller.finishLoad(
+            _count >= 30 ? IndicatorResult.noMore : IndicatorResult.success,
+          );
+        },
+        child: CustomScrollView(
+          shrinkWrap: true,
+          slivers: [
+            buildHeader(),
+            if (advertiseList.isNotEmpty) buildBanner(),
+            buildSubject(),
+            if (preferredAreaList.isNotEmpty) buildPreferredAreaTitle(),
+            if (preferredAreaList.isNotEmpty) buildPreferredAreaContent(),
+            if (brandList.isNotEmpty) buildBrandTitle(),
+            if (brandList.isNotEmpty) buildBrandContent(),
+            if (flashProductList.isNotEmpty) buildFlashSaleTitle(),
+            if (flashProductList.isNotEmpty) buildFlashSaleContent(4),
+            if (newProductList.isNotEmpty) buildNewProductTitle(),
+            if (newProductList.isNotEmpty) buildNewProductContent(6),
+            if (hotProductList.isNotEmpty) buildHotProductTitle(),
+            if (hotProductList.isNotEmpty) buildHotProductContent(6),
+            if (hotProductList.isNotEmpty) buildLikeTitle(),
+            if (hotProductList.isNotEmpty) buildLikeContent(_count),
+          ],
         ),
       ),
     );
@@ -300,7 +410,8 @@ class _HomePageState extends State<HomePage> {
                     "优选专区",
                     style: TextStyle(
                       fontSize: 17,
-                      color: Color(int.parse('303133', radix: 16)).withAlpha(255),
+                      color:
+                          Color(int.parse('303133', radix: 16)).withAlpha(255),
                     ),
                   ),
                 ],

@@ -10,12 +10,14 @@ import 'package:flutter_mall/view/mine/mine.dart';
 /// 作者：David
 /// 日期：2023/11/21 17:17
 ///
-final pages = [
-  const HomePage(), //首页
-  const Categories(), //分类
-  const Cart(), //购物车
-  const Mine() //个人主页
-];
+List<Widget> buildPages({String? intentSource}) {
+  return [
+    HomePage(intentSource: intentSource), //首页
+    const Categories(), //分类
+    Cart(intentSource: intentSource), //购物车
+    const Mine() //个人主页
+  ];
+}
 
 ///
 /// 底部导航-图标和文字定义

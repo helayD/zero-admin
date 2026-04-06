@@ -22,7 +22,9 @@ import '../mine/order/order_submit.dart';
 /// 日期：2023/11/21 17:17
 ///
 class Cart extends StatefulWidget {
-  const Cart({super.key});
+  final String? intentSource;
+
+  const Cart({super.key, this.intentSource});
 
   @override
   State<Cart> createState() => _CartState();
@@ -36,7 +38,7 @@ class _CartState extends State<Cart> {
     return AppRecentContext.create(
       targetType: AppRecentTargetType.cart,
       tabIndex: 2,
-      source: source,
+      source: widget.intentSource ?? source,
       requiresAuth: true,
       fallbackType: AppRecentTargetType.home,
       fallbackTabIndex: 0,
@@ -121,8 +123,9 @@ class _CartState extends State<Cart> {
 
     setState(() => _isSubmitting = true);
     try {
-      Response resp =
-          await HttpUtil.post(deleteCartUrl, data: {"ids": [cartItemId]});
+      Response resp = await HttpUtil.post(deleteCartUrl, data: {
+        "ids": [cartItemId]
+      });
       final respData = resp.data as Map<String, dynamic>;
       if (respData["code"] == 0) {
         if (mounted) {
@@ -221,7 +224,8 @@ class _CartState extends State<Cart> {
   }
 
   // 修改商品数量（Task 7）
-  Future<void> _updateQuantity(int cartItemId, int currentQty, int maxStock) async {
+  Future<void> _updateQuantity(
+      int cartItemId, int currentQty, int maxStock) async {
     final controller = TextEditingController(text: currentQty.toString());
 
     final newQty = await showDialog<int>(
@@ -239,7 +243,8 @@ class _CartState extends State<Cart> {
                     ? () {
                         final v = int.tryParse(controller.text) ?? 1;
                         if (v > 1) {
-                          setDialogState(() => controller.text = (v - 1).toString());
+                          setDialogState(
+                              () => controller.text = (v - 1).toString());
                         }
                       }
                     : null,
@@ -252,7 +257,8 @@ class _CartState extends State<Cart> {
                   keyboardType: TextInputType.number,
                   textAlign: TextAlign.center,
                   decoration: const InputDecoration(
-                    contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    contentPadding:
+                        EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     isDense: true,
                     border: OutlineInputBorder(),
                   ),
@@ -274,7 +280,8 @@ class _CartState extends State<Cart> {
                     ? () {
                         final v = int.tryParse(controller.text) ?? 1;
                         if (v < maxStock) {
-                          setDialogState(() => controller.text = (v + 1).toString());
+                          setDialogState(
+                              () => controller.text = (v + 1).toString());
                         }
                       }
                     : null,
@@ -352,16 +359,15 @@ class _CartState extends State<Cart> {
 
     try {
       final ids = checkItems.map((e) => e.id).toList();
-      Response resp = await HttpUtil.post(validateCartItemsUrl, data: {"ids": ids});
+      Response resp =
+          await HttpUtil.post(validateCartItemsUrl, data: {"ids": ids});
       final respData = resp.data as Map<String, dynamic>;
       if (respData["code"] == 0) {
         final validateModel = CartValidateModel.fromJson(respData);
         cartModel.setValidationResults(validateModel.data);
         // 检查是否有无效商品
-        final invalidIds = validateModel.data
-            .where((r) => !r.valid)
-            .map((r) => r.id)
-            .toSet();
+        final invalidIds =
+            validateModel.data.where((r) => !r.valid).map((r) => r.id).toSet();
 
         if (invalidIds.isNotEmpty) {
           if (mounted) {
@@ -427,7 +433,6 @@ class _CartState extends State<Cart> {
     );
   }
 
-
   var boxDecoration = BoxDecoration(
     color: Colors.white,
     border: Border(
@@ -448,8 +453,7 @@ class _CartState extends State<Cart> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         title: const Text("购物车"),
-        titleTextStyle:
-            const TextStyle(fontSize: 16, color: Colors.black),
+        titleTextStyle: const TextStyle(fontSize: 16, color: Colors.black),
         centerTitle: true,
         actions: [
           if (cartListData.isNotEmpty)
@@ -501,8 +505,8 @@ class _CartState extends State<Cart> {
                                 const SizedBox(width: 10),
                                 // 商品图片
                                 ClipRRect(
-                                  borderRadius:
-                                      const BorderRadius.all(Radius.circular(20)),
+                                  borderRadius: const BorderRadius.all(
+                                      Radius.circular(20)),
                                   child: Image.network(
                                     kIsWeb
                                         ? proxyImageUrl(item.productPic)
@@ -510,11 +514,13 @@ class _CartState extends State<Cart> {
                                     width: 80,
                                     height: 80,
                                     fit: BoxFit.cover,
-                                    errorBuilder: (ctx, err, stack) => Container(
+                                    errorBuilder: (ctx, err, stack) =>
+                                        Container(
                                       width: 80,
                                       height: 80,
                                       color: Colors.grey[200],
-                                      child: const Icon(Icons.image_not_supported),
+                                      child:
+                                          const Icon(Icons.image_not_supported),
                                     ),
                                   ),
                                 ),
@@ -522,7 +528,8 @@ class _CartState extends State<Cart> {
                                 // 商品信息
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         item.productName,
@@ -539,8 +546,8 @@ class _CartState extends State<Cart> {
                                         ),
                                       ),
                                       Padding(
-                                        padding:
-                                            const EdgeInsets.symmetric(vertical: 2),
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 2),
                                         child: Text(
                                           item.productAttr,
                                           style: TextStyle(
@@ -557,10 +564,12 @@ class _CartState extends State<Cart> {
                                         Container(
                                           padding: const EdgeInsets.symmetric(
                                               horizontal: 6, vertical: 2),
-                                          margin: const EdgeInsets.only(bottom: 2),
+                                          margin:
+                                              const EdgeInsets.only(bottom: 2),
                                           decoration: BoxDecoration(
                                             color: const Color(0xFFFFF0F0),
-                                            borderRadius: BorderRadius.circular(4),
+                                            borderRadius:
+                                                BorderRadius.circular(4),
                                           ),
                                           child: Text(
                                             promo.promotionMessage,
@@ -577,7 +586,8 @@ class _CartState extends State<Cart> {
                                               style: TextStyle(
                                                 fontSize: 14,
                                                 color: Color(
-                                                  int.parse('303133', radix: 16),
+                                                  int.parse('303133',
+                                                      radix: 16),
                                                 ).withAlpha(255),
                                                 fontWeight: FontWeight.bold,
                                               ),
@@ -588,7 +598,8 @@ class _CartState extends State<Cart> {
                                               style: const TextStyle(
                                                 fontSize: 11,
                                                 color: Colors.grey,
-                                                decoration: TextDecoration.lineThrough,
+                                                decoration:
+                                                    TextDecoration.lineThrough,
                                               ),
                                             ),
                                           ],
@@ -609,7 +620,8 @@ class _CartState extends State<Cart> {
                                           promo.realStock > 0 &&
                                           promo.realStock <= 10)
                                         Padding(
-                                          padding: const EdgeInsets.only(top: 2),
+                                          padding:
+                                              const EdgeInsets.only(top: 2),
                                           child: Text(
                                             "仅剩${promo.realStock}件",
                                             style: const TextStyle(
@@ -637,14 +649,16 @@ class _CartState extends State<Cart> {
                                             border: Border.all(
                                               color: Colors.grey[300]!,
                                             ),
-                                            borderRadius: BorderRadius.circular(4),
+                                            borderRadius:
+                                                BorderRadius.circular(4),
                                           ),
                                           child: Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
                                               Text(
                                                 "×${item.quantity}",
-                                                style: const TextStyle(fontSize: 13),
+                                                style: const TextStyle(
+                                                    fontSize: 13),
                                               ),
                                               const SizedBox(width: 4),
                                               const Icon(Icons.edit, size: 12),
@@ -658,7 +672,9 @@ class _CartState extends State<Cart> {
                                 const SizedBox(width: 8),
                                 // 删除按钮（Task 6.1）
                                 GestureDetector(
-                                  onTap: _isSubmitting ? null : () => _deleteItem(item.id),
+                                  onTap: _isSubmitting
+                                      ? null
+                                      : () => _deleteItem(item.id),
                                   child: Image.asset(
                                     "images/close.png",
                                     height: 16,
@@ -709,7 +725,8 @@ class _CartState extends State<Cart> {
                     "囧~ 购物车还是空的",
                     style: TextStyle(
                       fontSize: 20,
-                      color: Color(int.parse('909399', radix: 16)).withAlpha(255),
+                      color:
+                          Color(int.parse('909399', radix: 16)).withAlpha(255),
                     ),
                   ),
                 ),
@@ -743,7 +760,8 @@ class _CartState extends State<Cart> {
                         context.read<CartModel>().setAllStatus();
                       },
                       child: Image.asset(
-                        Provider.of<CartModel>(context, listen: true).getAllStatus()
+                        Provider.of<CartModel>(context, listen: true)
+                                .getAllStatus()
                             ? "images/checkbox_round_1.png"
                             : "images/checkbox_round_2.png",
                         height: 30,
@@ -774,8 +792,7 @@ class _CartState extends State<Cart> {
                             ],
                           ),
                           child: TextButton(
-                            onPressed:
-                                _isSubmitting ? null : _goToCheckout,
+                            onPressed: _isSubmitting ? null : _goToCheckout,
                             child: const Text(
                               '去结算',
                               style: TextStyle(

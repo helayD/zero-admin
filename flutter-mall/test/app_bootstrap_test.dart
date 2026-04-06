@@ -42,9 +42,12 @@ void main() {
 
     expect(find.text('fallback-page'), findsOneWidget);
     expect(provider.fallbackUsed, isTrue);
+    expect(provider.intentReceivedCount, 0);
+    expect(provider.latestIntentTelemetry, isNull);
   });
 
-  testWidgets('restores target when a valid recent context exists', (tester) async {
+  testWidgets('restores target when a valid recent context exists',
+      (tester) async {
     final provider = AppLifecycleProvider();
     await AppRecoveryStore.saveRecentContext(
       AppRecentContext.create(
@@ -62,9 +65,15 @@ void main() {
 
     expect(find.text('target-home-0'), findsOneWidget);
     expect(provider.restoreSucceeded, isTrue);
+    expect(provider.intentReceivedCount, 1);
+    expect(provider.intentRestoredCount, 1);
+    expect(provider.latestIntentTelemetry?.eventName, 'intentRestored');
+    expect(provider.latestIntentTelemetry?.targetType, 'home');
+    expect(provider.latestIntentTelemetry?.source, 'resume');
   });
 
-  testWidgets('prefers active intent candidate over recent context', (tester) async {
+  testWidgets('prefers active intent candidate over recent context',
+      (tester) async {
     final provider = AppLifecycleProvider();
     await AppRecoveryStore.saveRecentContext(
       AppRecentContext.create(
@@ -92,5 +101,9 @@ void main() {
 
     expect(find.text('target-order_detail-1001'), findsOneWidget);
     expect(provider.restoreSucceeded, isTrue);
+    expect(provider.intentReceivedCount, 1);
+    expect(provider.intentRestoredCount, 1);
+    expect(provider.latestIntentTelemetry?.eventName, 'intentRestored');
+    expect(provider.latestIntentTelemetry?.targetType, 'order_detail');
   });
 }

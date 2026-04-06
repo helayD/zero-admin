@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_mall/model/app_recent_context.dart';
 import 'package:flutter_mall/provider/app_lifecycle_provider.dart';
+import 'package:flutter_mall/utils/app_intent_dispatcher.dart';
 import 'package:flutter_mall/utils/app_recovery_router.dart';
 import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/view/mine/login/login.dart';
@@ -65,24 +66,29 @@ class _IntentRecoveryShellState extends State<IntentRecoveryShell> {
     switch (result.action) {
       case _RecoveryAction.login:
         lifecycleProvider.markRestoreFailed('login_required');
+        lifecycleProvider.recordIntentLoginRequired(result.context!);
         await AppRecoveryStore.savePendingIntent(result.context!);
         if (!mounted) {
           return;
         }
         await Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (_) => widget.loginBuilder?.call(result.context!) ?? Login(recoveryIntent: result.context!),
+            builder: (_) =>
+                widget.loginBuilder?.call(result.context!) ??
+                Login(recoveryIntent: result.context!),
           ),
         );
         return;
       case _RecoveryAction.target:
         lifecycleProvider.markRestoreSucceeded();
+        lifecycleProvider.recordIntentRestored(result.context!);
         if (widget.targetBuilder != null) {
           if (!mounted) {
             return;
           }
           await Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => widget.targetBuilder!(result.context!)),
+            MaterialPageRoute(
+                builder: (_) => widget.targetBuilder!(result.context!)),
           );
           return;
         }
@@ -94,9 +100,16 @@ class _IntentRecoveryShellState extends State<IntentRecoveryShell> {
         return;
       case _RecoveryAction.fallback:
         lifecycleProvider.markFallbackUsed(result.reason);
+        if (result.context != null) {
+          lifecycleProvider.recordIntentFallbackUsed(
+            result.context!,
+            failureReason: result.reason,
+          );
+        }
         if (widget.fallbackBuilder != null) {
           await Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => widget.fallbackBuilder!(result.context)),
+            MaterialPageRoute(
+                builder: (_) => widget.fallbackBuilder!(result.context)),
           );
           return;
         }
@@ -118,6 +131,8 @@ class _IntentRecoveryShellState extends State<IntentRecoveryShell> {
     if (candidate == null) {
       return const _RecoveryDecision.fallback();
     }
+
+    context.read<AppLifecycleProvider>().recordIntentReceived(candidate);
 
     final invalidReason = candidate.validateReason();
     if (invalidReason != null) {
@@ -147,7 +162,22 @@ class _IntentRecoveryShellState extends State<IntentRecoveryShell> {
       await AppRecoveryStore.clearActiveIntentCandidate();
     }
 
-    return _RecoveryDecision.target(candidate);
+    final plan = AppIntentDispatcher.resolve(
+      candidate,
+      hasValidToken: AppRecoveryStore.hasValidToken(),
+    );
+    switch (plan.action) {
+      case AppIntentDispatchAction.login:
+        return _RecoveryDecision.login(plan.intent);
+      case AppIntentDispatchAction.target:
+        return _RecoveryDecision.target(plan.intent, message: plan.message);
+      case AppIntentDispatchAction.fallback:
+        return _RecoveryDecision.fallback(
+          context: plan.intent,
+          reason: plan.failureReason,
+          message: plan.message,
+        );
+    }
   }
 
   @override
@@ -174,8 +204,14 @@ class _RecoveryDecision {
   const _RecoveryDecision.login(AppRecentContext context)
       : this._(action: _RecoveryAction.login, context: context);
 
-  const _RecoveryDecision.target(AppRecentContext context)
-      : this._(action: _RecoveryAction.target, context: context);
+  const _RecoveryDecision.target(
+    AppRecentContext context, {
+    String? message,
+  }) : this._(
+          action: _RecoveryAction.target,
+          context: context,
+          message: message,
+        );
 
   const _RecoveryDecision.fallback({
     AppRecentContext? context,

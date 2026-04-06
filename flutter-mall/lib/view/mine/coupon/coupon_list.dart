@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_mall/model/app_recent_context.dart';
 import 'package:flutter_mall/config/service_url.dart';
+import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/utils/http_util.dart';
 import 'package:flutter_mall/view/mine/coupon/available_coupon_list.dart';
 
@@ -13,7 +15,14 @@ import '../../../model/coupon_model.dart';
 /// 日期：2023/11/21 17:17
 ///
 class CouponList extends StatefulWidget {
-  const CouponList({super.key});
+  final int initialTab;
+  final String? intentSource;
+
+  const CouponList({
+    super.key,
+    this.initialTab = 0,
+    this.intentSource,
+  });
 
   @override
   State<CouponList> createState() => _CouponListState();
@@ -24,11 +33,13 @@ class _CouponListState extends State<CouponList> {
 
   // 每个 Tab 独立数据，避免切换时短暂展示旧 Tab 数据
   final Map<int, List<CouponData>> _tabData = {0: [], 1: [], 2: []};
+  late int _currentTab;
 
   @override
   void initState() {
     super.initState();
-    queryCouponList(0);
+    _currentTab = widget.initialTab;
+    queryCouponList(_currentTab);
   }
 
   void queryCouponList(int status) async {
@@ -40,6 +51,16 @@ class _CouponListState extends State<CouponList> {
           _tabData[status] = couponModel.data;
         });
       }
+      await AppRecoveryStore.saveRecentContext(
+        AppRecentContext.create(
+          targetType: AppRecentTargetType.couponList,
+          tabIndex: status,
+          source: widget.intentSource ?? 'manual_open',
+          requiresAuth: true,
+          fallbackType: AppRecentTargetType.home,
+          fallbackTabIndex: 0,
+        ),
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -53,6 +74,7 @@ class _CouponListState extends State<CouponList> {
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: couponStatus.length,
+      initialIndex: _currentTab,
       child: Scaffold(
         appBar: AppBar(
           title: const Text(' 优惠券列表 '),
@@ -62,19 +84,40 @@ class _CouponListState extends State<CouponList> {
             TextButton(
               onPressed: () async {
                 await Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const AvailableCouponList()),
+                  MaterialPageRoute(
+                    builder: (context) => AvailableCouponList(
+                      intentSource: widget.intentSource ?? 'coupon_list',
+                    ),
+                  ),
                 );
-                queryCouponList(0);
+                if (!mounted) {
+                  return;
+                }
+                await AppRecoveryStore.saveRecentContext(
+                  AppRecentContext.create(
+                    targetType: AppRecentTargetType.couponList,
+                    tabIndex: _currentTab,
+                    source: widget.intentSource ?? 'manual_open',
+                    requiresAuth: true,
+                    fallbackType: AppRecentTargetType.home,
+                    fallbackTabIndex: 0,
+                  ),
+                );
+                queryCouponList(_currentTab);
               },
               child: Text('领券中心',
                   style: TextStyle(
-                      fontSize: 14, color: Color(int.parse('fa436a', radix: 16)).withAlpha(255))),
+                      fontSize: 14,
+                      color: Color(int.parse('fa436a', radix: 16))
+                          .withAlpha(255))),
             ),
           ],
           bottom: TabBar(
-            indicatorColor: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
+            indicatorColor:
+                Color(int.parse('fa436a', radix: 16)).withAlpha(255),
             labelColor: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
             onTap: (index) {
+              _currentTab = index;
               queryCouponList(index);
             },
             tabs: couponStatus.map((status) => Tab(text: status)).toList(),
@@ -105,8 +148,6 @@ class CouponListInfo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var border = BorderSide(width: 1, color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255));
-    var boxDecoration = BoxDecoration(border: Border(bottom: border));
     return ListView.builder(
         itemCount: couponListData.length,
         itemBuilder: (context, index) {
@@ -117,7 +158,10 @@ class CouponListInfo extends StatelessWidget {
               padding: const EdgeInsets.all(15),
               decoration: BoxDecoration(
                   border: Border(
-                      bottom: BorderSide(width: 5, color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255)))),
+                      bottom: BorderSide(
+                          width: 5,
+                          color: Color(int.parse('f5f5f5', radix: 16))
+                              .withAlpha(255)))),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -129,10 +173,14 @@ class CouponListInfo extends StatelessWidget {
                           children: [
                             Text(couponData.name,
                                 style: TextStyle(
-                                    fontSize: 16, color: Color(int.parse('303133', radix: 16)).withAlpha(255))),
+                                    fontSize: 16,
+                                    color: Color(int.parse('303133', radix: 16))
+                                        .withAlpha(255))),
                             Text("有效期至${couponData.endTime}",
                                 style: TextStyle(
-                                    fontSize: 12, color: Color(int.parse('909399', radix: 16)).withAlpha(255))),
+                                    fontSize: 12,
+                                    color: Color(int.parse('909399', radix: 16))
+                                        .withAlpha(255))),
                           ],
                         ),
                       ),
@@ -142,15 +190,23 @@ class CouponListInfo extends StatelessWidget {
                             children: [
                               Text("￥",
                                   style: TextStyle(
-                                      fontSize: 17, color: Color(int.parse('fa436a', radix: 16)).withAlpha(255))),
+                                      fontSize: 17,
+                                      color:
+                                          Color(int.parse('fa436a', radix: 16))
+                                              .withAlpha(255))),
                               Text(couponData.amount.toString(),
                                   style: TextStyle(
-                                      fontSize: 22, color: Color(int.parse('fa436a', radix: 16)).withAlpha(255))),
+                                      fontSize: 22,
+                                      color:
+                                          Color(int.parse('fa436a', radix: 16))
+                                              .withAlpha(255))),
                             ],
                           ),
                           Text("满${couponData.minAmount}可用",
-                              style:
-                                  TextStyle(fontSize: 13, color: Color(int.parse('707070', radix: 16)).withAlpha(255))),
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  color: Color(int.parse('707070', radix: 16))
+                                      .withAlpha(255))),
                         ],
                       )
                     ],
@@ -159,7 +215,10 @@ class CouponListInfo extends StatelessWidget {
                     height: 5,
                   ),
                   Text(flag,
-                      style: TextStyle(fontSize: 12, color: Color(int.parse('909399', radix: 16)).withAlpha(255))),
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: Color(int.parse('909399', radix: 16))
+                              .withAlpha(255))),
                 ],
               ));
         });
