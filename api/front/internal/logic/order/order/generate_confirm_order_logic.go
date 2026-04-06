@@ -45,8 +45,13 @@ func (l *GenerateConfirmOrderLogic) GenerateConfirmOrder(req *types.GenerateConf
 	if err != nil {
 		return nil, err
 	}
-	// 1.获取购物车信息
-	cartPromotionItemList, err := cart.QueryCartListPromotion(req.Ids, l.ctx, l.svcCtx)
+	// 1.获取购物车信息或立即购买商品信息
+	var cartPromotionItemList []types.CarItemtPromotionListData
+	if req.DirectItem != nil && req.DirectItem.ProductId > 0 {
+		cartPromotionItemList, err = cart.QueryDirectOrderPromotion(req.DirectItem, l.ctx, l.svcCtx)
+	} else {
+		cartPromotionItemList, err = cart.QueryCartListPromotion(req.Ids, l.ctx, l.svcCtx)
+	}
 
 	if err != nil {
 		return nil, err
@@ -145,10 +150,10 @@ func (l *GenerateConfirmOrderLogic) GenerateConfirmOrder(req *types.GenerateConf
 			},
 			MemberIntegration: int64(memberInfo.Points),
 			CalcAmount: types.CalcAmount{
-				TotalAmount:     totalAmount,      // int64 单位：分
-				FreightAmount:   freightAmount,    // int64 单位：分
-				PromotionAmount: promotionAmount,   // int64 单位：分
-				PayAmount:       payAmount,        // int64 单位：分
+				TotalAmount:     totalAmount,     // int64 单位：分
+				FreightAmount:   freightAmount,   // int64 单位：分
+				PromotionAmount: promotionAmount, // int64 单位：分
+				PayAmount:       payAmount,       // int64 单位：分
 			},
 		},
 	}, nil

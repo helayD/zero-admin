@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"time"
 
 	frontcommon "github.com/feihua/zero-admin/api/front/internal/logic/common"
 	"github.com/feihua/zero-admin/pkg/errorx"
@@ -74,7 +75,6 @@ func (l *QueryPromotionListLogic) QueryPromotionList(req *types.CarItemListPromo
 
 // QueryCartListPromotion 抽取单独方法(方便在下单确认的使用)
 func QueryCartListPromotion(ids []int64, ctx context.Context, svcCtx *svc.ServiceContext) ([]types.CarItemtPromotionListData, error) {
-	// 1.获取会员购物车里面所有商品信息(根据会员id查询购物车所有商品,(表：oms_cart))
 	memberId, _ := ctx.Value("memberId").(json.Number).Int64()
 	cartItemListResp, err := svcCtx.CartItemService.QueryCartItemList(ctx, &omsclient.QueryCartItemListReq{MemberId: memberId})
 
@@ -101,6 +101,33 @@ func QueryCartListPromotion(ids []int64, ctx context.Context, svcCtx *svc.Servic
 		cartItemListData = itemListData
 	}
 
+	return buildPromotionItemList(memberId, cartItemListData, ctx, svcCtx)
+}
+
+// QueryDirectOrderPromotion 根据立即购买参数构建临时结算商品
+func QueryDirectOrderPromotion(directItem *types.DirectOrderItemReq, ctx context.Context, svcCtx *svc.ServiceContext) ([]types.CarItemtPromotionListData, error) {
+	if directItem == nil || directItem.ProductId <= 0 || directItem.ProductSkuId <= 0 || directItem.Quantity <= 0 {
+		return nil, errorx.NewDefaultError("立即购买参数错误")
+	}
+
+	memberId, _ := ctx.Value("memberId").(json.Number).Int64()
+	now := time.Now().Format("2006-01-02 15:04:05")
+	item := &omsclient.CartItemData{
+		Id:           0,
+		MemberId:     memberId,
+		ProductId:    directItem.ProductId,
+		ProductSkuId: directItem.ProductSkuId,
+		Quantity:     directItem.Quantity,
+		Selected:     1,
+		Source:       4,
+		CreateTime:   now,
+		UpdateTime:   now,
+	}
+
+	return buildPromotionItemList(memberId, []*omsclient.CartItemData{item}, ctx, svcCtx)
+}
+
+func buildPromotionItemList(memberId int64, cartItemListData []*omsclient.CartItemData, ctx context.Context, svcCtx *svc.ServiceContext) ([]types.CarItemtPromotionListData, error) {
 	// 3.先根据productId对CartItem进行分组，以spu为单位进行计算优惠(为后面满多少件打折做准备)
 	// 比如：购物车中有二台iphone15 pro max,其中一台是iphone15 pro max 是粉色,另外一台是黑色。{'productId':[iphone15 pro max 是粉色,iphone15 pro max 是黑色]}
 	productCartMap := make(map[int64][]*omsclient.CartItemData)
@@ -158,8 +185,10 @@ func QueryCartListPromotion(ids []int64, ctx context.Context, svcCtx *svc.Servic
 		} else if promotionType == 1 {
 			for _, item := range itemList {
 				skuStock := getSkuStock(skuStockList, item.ProductSkuId)
-				cartPromotionItem := types.CarItemtPromotionListData{}
-				_ = copier.Copy(&cartPromotionItem, &item)
+				if skuStock == nil {
+					continue
+				}
+				cartPromotionItem := newCartPromotionItem(item, product, skuStock)
 				cartPromotionItem.Price = float32(skuStock.Price) // 单品促销使用原价
 				cartPromotionItem.PromotionMessage = "单品促销"
 				cartPromotionItem.ReduceAmount = int64(skuStock.Price - skuStock.PromotionPrice) // 商品原价-促销价
@@ -185,8 +214,10 @@ func QueryCartListPromotion(ids []int64, ctx context.Context, svcCtx *svc.Servic
 			}
 			for _, item := range itemList {
 				skuStock := getSkuStock(skuStockList, item.ProductSkuId)
-				cartPromotionItem := types.CarItemtPromotionListData{}
-				_ = copier.Copy(&cartPromotionItem, &item)
+				if skuStock == nil {
+					continue
+				}
+				cartPromotionItem := newCartPromotionItem(item, product, skuStock)
 				cartPromotionItem.Price = float32(skuStock.Price) // 单品促销使用原价
 				cartPromotionItem.PromotionMessage = "会员价格"
 				cartPromotionItem.ReduceAmount = memberPrice // 会员价
@@ -215,8 +246,10 @@ func QueryCartListPromotion(ids []int64, ctx context.Context, svcCtx *svc.Servic
 			if productLadder != nil {
 				for _, item := range itemList {
 					skuStock := getSkuStock(skuStockList, item.ProductSkuId)
-					cartPromotionItem := types.CarItemtPromotionListData{}
-					_ = copier.Copy(&cartPromotionItem, &item)
+					if skuStock == nil {
+						continue
+					}
+					cartPromotionItem := newCartPromotionItem(item, product, skuStock)
 					cartPromotionItem.Price = float32(skuStock.Price)
 					c := strconv.FormatInt(int64(productLadder.Count), 10)
 					d := fmt.Sprintf("%1.0f", float64(productLadder.Discount)*10)
@@ -252,8 +285,10 @@ func QueryCartListPromotion(ids []int64, ctx context.Context, svcCtx *svc.Servic
 			if productFull != nil {
 				for _, item := range itemList {
 					skuStock := getSkuStock(skuStockList, item.ProductSkuId)
-					cartPromotionItem := types.CarItemtPromotionListData{}
-					_ = copier.Copy(&cartPromotionItem, &item)
+					if skuStock == nil {
+						continue
+					}
+					cartPromotionItem := newCartPromotionItem(item, product, skuStock)
 					cartPromotionItem.Price = float32(skuStock.Price)
 					f := fmt.Sprintf("%d", productFull.FullPrice)
 					r := fmt.Sprintf("%d", productFull.ReducePrice)
@@ -279,8 +314,10 @@ func QueryCartListPromotion(ids []int64, ctx context.Context, svcCtx *svc.Servic
 					SkuId: item.ProductSkuId,
 				})
 				skuStock := getSkuStock(skuStockList, item.ProductSkuId)
-				cartPromotionItem := types.CarItemtPromotionListData{}
-				_ = copier.Copy(&cartPromotionItem, &item)
+				if skuStock == nil {
+					continue
+				}
+				cartPromotionItem := newCartPromotionItem(item, product, skuStock)
 				cartPromotionItem.Price = float32(skuStock.Price)
 				cartPromotionItem.PromotionMessage = "限时购"
 				if promotionByProduct != nil {
@@ -304,8 +341,7 @@ func handleNoReduce(itemList []*omsclient.CartItemData, skuStockList []*pmsclien
 		if skuStock == nil {
 			continue
 		}
-		cartPromotionItem := types.CarItemtPromotionListData{}
-		_ = copier.Copy(&cartPromotionItem, &item)
+		cartPromotionItem := newCartPromotionItem(item, product, skuStock)
 		cartPromotionItem.Price = float32(skuStock.Price)
 		cartPromotionItem.PromotionMessage = "无优惠"
 		cartPromotionItem.ReduceAmount = 0
@@ -315,6 +351,47 @@ func handleNoReduce(itemList []*omsclient.CartItemData, skuStockList []*pmsclien
 		cartPromotionItemList = append(cartPromotionItemList, cartPromotionItem)
 	}
 	return cartPromotionItemList
+}
+
+func newCartPromotionItem(item *omsclient.CartItemData, product *pmsclient.ProductSpuListData, skuStock *pmsclient.SkuStockData) types.CarItemtPromotionListData {
+	cartPromotionItem := types.CarItemtPromotionListData{}
+	_ = copier.Copy(&cartPromotionItem, &item)
+	fillCartPromotionSnapshot(&cartPromotionItem, product, skuStock)
+	return cartPromotionItem
+}
+
+func fillCartPromotionSnapshot(item *types.CarItemtPromotionListData, product *pmsclient.ProductSpuListData, skuStock *pmsclient.SkuStockData) {
+	if product == nil {
+		return
+	}
+	if item.ProductName == "" {
+		item.ProductName = product.Name
+	}
+	if item.ProductSubTitle == "" {
+		item.ProductSubTitle = product.SubTitle
+	}
+	if item.ProductPic == "" {
+		if skuStock != nil && skuStock.MainPic != "" {
+			item.ProductPic = skuStock.MainPic
+		} else {
+			item.ProductPic = product.MainPic
+		}
+	}
+	if item.ProductSkuCode == "" && skuStock != nil {
+		item.ProductSkuCode = skuStock.SkuCode
+	}
+	if item.ProductSn == "" {
+		item.ProductSn = product.ProductSn
+	}
+	if item.ProductBrand == "" {
+		item.ProductBrand = product.BrandName
+	}
+	if item.ProductCategoryId == 0 {
+		item.ProductCategoryId = product.CategoryId
+	}
+	if item.ProductAttr == "" && skuStock != nil {
+		item.ProductAttr = skuStock.SpecData
+	}
 }
 
 // 获取sku（L1 修复：找不到时返回 nil，调用方需判空）

@@ -8,6 +8,7 @@ info (
 
 type GenerateConfirmOrderReq {
 	Ids []int64 `json:"ids,optional"`
+	DirectItem DirectOrderItemReq `json:"directItem,optional"`
 }
 
 type GenerateConfirmOrderResp {
@@ -80,8 +81,15 @@ type MemberReceiveAddressList {
 	IsDefault     int32  `json:"isDefault"` //是否默认地址
 }
 
+type DirectOrderItemReq {
+	ProductId int64 `json:"productId"`
+	ProductSkuId int64 `json:"productSkuId"`
+	Quantity int32 `json:"quantity"`
+}
+
 type GenerateOrderReq {
 	CartIds                []int64 `json:"cartIds"` //购物车id
+	DirectItem             DirectOrderItemReq `json:"directItem,optional"`
 	CouponId               int64   `json:"couponId"` //优惠券id
 	MemberReceiveAddressId int64   `json:"memberReceiveAddressId"` //
 	PayType                int32   `json:"payType"` //支付方式
@@ -397,4 +405,3 @@ service front-api {
 	@handler QueryOrderStatusSnapshot
 	post /queryOrderStatusSnapshot (QueryOrderStatusSnapshotReq) returns (QueryOrderStatusSnapshotResp)
 }
-

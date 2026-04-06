@@ -157,8 +157,14 @@ func (l *GenerateOrderLogic) GenerateOrder(req *types.GenerateOrderReq) (*types.
 		memberInfo = &umsclient.QueryMemberInfoDetailResp{}
 	}
 
-	// 1.获取购物车及优惠信息
-	cartPromotionItemList, err := cart.QueryCartListPromotion(req.CartIds, l.ctx, l.svcCtx)
+	// 1.获取购物车及优惠信息 / 立即购买商品信息
+	isDirectBuy := req.DirectItem != nil && req.DirectItem.ProductId > 0
+	var cartPromotionItemList []types.CarItemtPromotionListData
+	if isDirectBuy {
+		cartPromotionItemList, err = cart.QueryDirectOrderPromotion(req.DirectItem, l.ctx, l.svcCtx)
+	} else {
+		cartPromotionItemList, err = cart.QueryCartListPromotion(req.CartIds, l.ctx, l.svcCtx)
+	}
 	if err != nil {
 		if idempotencyKey != "" {
 			middleware.MarkFailed(l.ctx, l.svcCtx.Redis, idempotencyKey, ErrCodeOrderSystemError, "购物车查询失败")
@@ -167,7 +173,14 @@ func (l *GenerateOrderLogic) GenerateOrder(req *types.GenerateOrderReq) (*types.
 	}
 	if len(cartPromotionItemList) == 0 {
 		if idempotencyKey != "" {
-			middleware.MarkFailed(l.ctx, l.svcCtx.Redis, idempotencyKey, ErrCodeOrderSystemError, "购物车为空")
+			emptyMessage := "购物车为空"
+			if isDirectBuy {
+				emptyMessage = "立即购买商品为空"
+			}
+			middleware.MarkFailed(l.ctx, l.svcCtx.Redis, idempotencyKey, ErrCodeOrderSystemError, emptyMessage)
+		}
+		if isDirectBuy {
+			return result(1, "当前商品暂不可直接购买，请重新选择规格后再试"), nil
 		}
 		return result(1, "购物车还没有商品,请先添加商品到购物车!"), nil
 	}
@@ -183,7 +196,6 @@ func (l *GenerateOrderLogic) GenerateOrder(req *types.GenerateOrderReq) (*types.
 	// 2.生成下单商品信息（启用所有字段）
 	var flag = false
 	orderItemList := make([]*omsclient.OrderItemData, 0)
-	cartItemIds := make([]int64, 0)
 	for _, item := range cartPromotionItemList {
 		skuTotalAmt := int64(item.Price) * int64(item.Quantity)
 		itemPromoAmt := item.ReduceAmount
@@ -202,7 +214,6 @@ func (l *GenerateOrderLogic) GenerateOrder(req *types.GenerateOrderReq) (*types.
 		if item.RealStock <= 0 || item.RealStock < item.Quantity {
 			flag = true
 		}
-		cartItemIds = append(cartItemIds, item.Id)
 	}
 
 	// 3.判断购物车中商品是否都有库存

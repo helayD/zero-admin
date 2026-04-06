@@ -508,7 +508,8 @@ type DeleteOrderResp struct {
 }
 
 type GenerateConfirmOrderReq struct {
-	Ids []int64 `json:"ids,optional" form:"ids,optional"`
+	Ids        []int64             `json:"ids,optional" form:"ids,optional"`
+	DirectItem *DirectOrderItemReq `json:"directItem,optional"`
 }
 
 type GenerateConfirmOrderResp struct {
@@ -540,13 +541,20 @@ type GenerateOrderData struct {
 	UseIntegration    int32  `json:"useIntegration"`    // 下单时使用的积分
 }
 
+type DirectOrderItemReq struct {
+	ProductId    int64 `json:"productId"`
+	ProductSkuId int64 `json:"productSkuId"`
+	Quantity     int32 `json:"quantity"`
+}
+
 type GenerateOrderReq struct {
-	CartIds                []int64 `json:"cartIds"`                 //购物车id
-	CouponId               int64   `json:"couponId"`                //优惠券id
-	MemberReceiveAddressId int64   `json:"memberReceiveAddressId"`  //
-	PayType                int32   `json:"payType"`                 //支付方式
-	UseIntegration         int32   `json:"useIntegration"`          //使用的积分
-	IdempotencyKey         string  `json:"idempotencyKey,optional"` //幂等键，格式：{userId}:{timestamp}:{hash}（Story 5.4 新增）
+	CartIds                []int64             `json:"cartIds"` //购物车id
+	DirectItem             *DirectOrderItemReq `json:"directItem,optional"`
+	CouponId               int64               `json:"couponId"`                //优惠券id
+	MemberReceiveAddressId int64               `json:"memberReceiveAddressId"`  //
+	PayType                int32               `json:"payType"`                 //支付方式
+	UseIntegration         int32               `json:"useIntegration"`          //使用的积分
+	IdempotencyKey         string              `json:"idempotencyKey,optional"` //幂等键，格式：{userId}:{timestamp}:{hash}（Story 5.4 新增）
 }
 
 type GenerateOrderResp struct {
