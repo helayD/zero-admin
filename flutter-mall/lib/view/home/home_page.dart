@@ -4,6 +4,7 @@ import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mall/model/app_recent_context.dart';
 import 'package:flutter_mall/model/home_model.dart';
+import 'package:flutter_mall/theme/app_theme.dart';
 import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/utils/commerce_state_resolver.dart';
 import 'package:flutter_mall/utils/http_util.dart';
@@ -32,32 +33,58 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // banner轮播图
+  static const int _initialGuessLikeCount = 4;
+  static const int _guessLikeLoadStep = 2;
+  static const int _flashVisibleCount = 4;
+  static const int _newVisibleCount = 4;
+  static const int _hotVisibleCount = 4;
+
   List<AdvertiseList> advertiseList = [];
-
-  // 品牌列表
   List<BrandListData> brandList = [];
-
-  // 秒杀
   HomeFlashPromotion? homeFlashPromotion;
   List<ProductList> flashProductList = [];
-
-  // 新鲜好物商品
   List<ProductList> newProductList = [];
-
-  // 人气推荐商品
   List<ProductList> hotProductList = [];
-
-  // 优选专区
   List<PreferredAreaListData> preferredAreaList = [];
 
-  int _count = 4;
+  int _count = _initialGuessLikeCount;
   late EasyRefreshController _controller;
   bool _isInitialLoading = true;
   bool _hasLoadedOnce = false;
   Object? _pageError;
   String? _contentBannerText;
   bool _contentBannerIsWeakNetwork = false;
+
+  final List<_HomeShortcut> _shortcutItems = const [
+    _HomeShortcut(
+      label: '专题',
+      message: '专题',
+      icon: Icons.explore_outlined,
+      accentColor: Color(0xFFF97316),
+      backgroundColor: Color(0xFFFFEDD5),
+    ),
+    _HomeShortcut(
+      label: '话题',
+      message: '话题',
+      icon: Icons.forum_outlined,
+      accentColor: Color(0xFFEC4899),
+      backgroundColor: Color(0xFFFCE7F3),
+    ),
+    _HomeShortcut(
+      label: '优选',
+      message: '优选',
+      icon: Icons.auto_awesome_outlined,
+      accentColor: Color(0xFF8B5CF6),
+      backgroundColor: Color(0xFFF3E8FF),
+    ),
+    _HomeShortcut(
+      label: '特惠',
+      message: '特惠',
+      icon: Icons.local_offer_outlined,
+      accentColor: Color(0xFF65A30D),
+      backgroundColor: Color(0xFFECFCCB),
+    ),
+  ];
 
   @override
   void initState() {
@@ -78,8 +105,77 @@ class _HomePageState extends State<HomePage> {
         preferredAreaList.isNotEmpty;
   }
 
+  List<ProductList> get _featuredFlashProducts {
+    if (flashProductList.length <= _flashVisibleCount) {
+      return flashProductList;
+    }
+    return flashProductList.take(_flashVisibleCount).toList();
+  }
+
+  List<ProductList> get _featuredNewProducts {
+    if (newProductList.length <= _newVisibleCount) {
+      return newProductList;
+    }
+    return newProductList.take(_newVisibleCount).toList();
+  }
+
+  List<ProductList> get _featuredHotProducts {
+    if (hotProductList.length <= _hotVisibleCount) {
+      return hotProductList;
+    }
+    return hotProductList.take(_hotVisibleCount).toList();
+  }
+
+  List<ProductList> get _guessLikePool {
+    return _buildGuessLikePool(
+      flashProducts: _featuredFlashProducts,
+      newProducts: _featuredNewProducts,
+      hotProducts: hotProductList,
+    );
+  }
+
+  int get _guessLikeVisibleCount {
+    if (_guessLikePool.isEmpty) {
+      return 0;
+    }
+    return _count > _guessLikePool.length ? _guessLikePool.length : _count;
+  }
+
+  List<ProductList> _buildGuessLikePool({
+    required List<ProductList> flashProducts,
+    required List<ProductList> newProducts,
+    required List<ProductList> hotProducts,
+  }) {
+    final List<ProductList> featuredHotProducts =
+        hotProducts.length <= _hotVisibleCount
+            ? hotProducts
+            : hotProducts.take(_hotVisibleCount).toList();
+    final Set<int> excludedIds = <int>{
+      ...flashProducts.map((product) => product.id),
+      ...newProducts.map((product) => product.id),
+      ...featuredHotProducts.map((product) => product.id),
+    };
+    final List<ProductList> pool = <ProductList>[];
+    final Set<int> seenIds = <int>{};
+
+    void appendProducts(List<ProductList> products) {
+      for (final ProductList product in products) {
+        if (excludedIds.contains(product.id) || seenIds.contains(product.id)) {
+          continue;
+        }
+        seenIds.add(product.id);
+        pool.add(product);
+      }
+    }
+
+    appendProducts(hotProducts);
+    appendProducts(newProducts);
+    appendProducts(flashProducts);
+    return pool;
+  }
+
   Future<void> _queryHomeData({bool isManualRefresh = false}) async {
-    final hasContentBeforeRefresh = _hasHomeContent;
+    final bool hasContentBeforeRefresh = _hasHomeContent;
     if (mounted) {
       setState(() {
         if (!hasContentBeforeRefresh) {
@@ -92,23 +188,46 @@ class _HomePageState extends State<HomePage> {
     }
 
     try {
-      Response result = await HttpUtil.get(homeDataUrl);
+      final Response result = await HttpUtil.get(homeDataUrl);
       final HomeModel homeModel = HomeModel.fromJson(result.data);
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
+
+      final List<ProductList> loadedHotProducts = homeModel.data.hotProductList;
+      final List<ProductList> loadedFlashProducts =
+          homeModel.data.homeFlashPromotion.productList;
+      final List<ProductList> loadedNewProducts = homeModel.data.newProductList;
+      final List<ProductList> guessLikePool = _buildGuessLikePool(
+        flashProducts: loadedFlashProducts.length <= _flashVisibleCount
+            ? loadedFlashProducts
+            : loadedFlashProducts.take(_flashVisibleCount).toList(),
+        newProducts: loadedNewProducts.length <= _newVisibleCount
+            ? loadedNewProducts
+            : loadedNewProducts.take(_newVisibleCount).toList(),
+        hotProducts: loadedHotProducts,
+      );
+      final int initialGuessCount =
+          guessLikePool.length < _initialGuessLikeCount
+              ? guessLikePool.length
+              : _initialGuessLikeCount;
+
       setState(() {
         advertiseList = homeModel.data.advertiseList;
         brandList = homeModel.data.brandList;
         homeFlashPromotion = homeModel.data.homeFlashPromotion;
-        flashProductList = homeModel.data.homeFlashPromotion.productList;
-        newProductList = homeModel.data.newProductList;
-        hotProductList = homeModel.data.hotProductList;
+        flashProductList = loadedFlashProducts;
+        newProductList = loadedNewProducts;
+        hotProductList = loadedHotProducts;
         preferredAreaList = homeModel.data.preferredAreaList;
+        _count = initialGuessCount;
         _isInitialLoading = false;
         _hasLoadedOnce = true;
         _pageError = null;
         _contentBannerText = null;
         _contentBannerIsWeakNetwork = false;
       });
+
       await AppRecoveryStore.saveRecentContext(
         AppRecentContext.create(
           targetType: AppRecentTargetType.home,
@@ -119,21 +238,23 @@ class _HomePageState extends State<HomePage> {
           fallbackTabIndex: 0,
         ),
       );
+
       if (isManualRefresh && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('首页已刷新到最新状态'),
-            behavior: SnackBarBehavior.floating,
-          ),
+          const SnackBar(content: Text('首页已刷新到最新状态')),
         );
       }
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
+
       final failure = CommerceStateResolver.resolveFailure(
         e,
         errorSummary: '首页加载失败，请重试',
         weakNetworkSummary: '首页加载超时或网络较弱，请检查网络后重试',
       );
+
       setState(() {
         _isInitialLoading = false;
         if (_hasHomeContent) {
@@ -146,6 +267,57 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Future<void> _handleLoadMore() async {
+    if (_guessLikePool.isEmpty ||
+        _guessLikeVisibleCount >= _guessLikePool.length) {
+      _controller.finishLoad(IndicatorResult.noMore);
+      return;
+    }
+
+    await Future.delayed(const Duration(milliseconds: 300));
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      final int nextCount = _guessLikeVisibleCount + _guessLikeLoadStep;
+      _count =
+          nextCount > _guessLikePool.length ? _guessLikePool.length : nextCount;
+    });
+
+    _controller.finishLoad(
+      _guessLikeVisibleCount >= _guessLikePool.length
+          ? IndicatorResult.noMore
+          : IndicatorResult.success,
+    );
+  }
+
+  void _showFeatureInProgress(String label) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$label 功能建设中，后续会接入完整流程')),
+    );
+  }
+
+  void _openBrandList() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const BrandList()),
+    );
+  }
+
+  void _openBrandDetail(BrandListData brand) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => BrandDetail(brandId: brand.id)),
+    );
+  }
+
+  void _openProductDetail(ProductList product) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ProductDetail(productId: product.id),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _controller.dispose();
@@ -155,7 +327,11 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(color: Colors.white, child: _buildPageBody()),
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        bottom: false,
+        child: _buildPageBody(),
+      ),
     );
   }
 
@@ -210,7 +386,7 @@ class _HomePageState extends State<HomePage> {
           : const Color(0xFFF4F4F5),
       weakNetworkBannerForegroundColor: _contentBannerIsWeakNetwork
           ? const Color(0xFFD46B08)
-          : const Color(0xFF606266),
+          : AppColors.textSecondary,
       child: EasyRefresh(
         controller: _controller,
         onRefresh: () async {
@@ -218,229 +394,869 @@ class _HomePageState extends State<HomePage> {
           _controller.finishRefresh();
           _controller.resetFooter();
         },
-        onLoad: () async {
-          await Future.delayed(const Duration(seconds: 2));
-          if (!mounted) {
-            return;
-          }
-          setState(() {
-            _count += 2;
-          });
-          _controller.finishLoad(
-            _count >= 30 ? IndicatorResult.noMore : IndicatorResult.success,
-          );
-        },
+        onLoad: _handleLoadMore,
         child: CustomScrollView(
-          shrinkWrap: true,
+          physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          ),
           slivers: [
-            buildHeader(),
-            if (advertiseList.isNotEmpty) buildBanner(),
-            buildSubject(),
-            if (preferredAreaList.isNotEmpty) buildPreferredAreaTitle(),
-            if (preferredAreaList.isNotEmpty) buildPreferredAreaContent(),
-            if (brandList.isNotEmpty) buildBrandTitle(),
-            if (brandList.isNotEmpty) buildBrandContent(),
-            if (flashProductList.isNotEmpty) buildFlashSaleTitle(),
-            if (flashProductList.isNotEmpty) buildFlashSaleContent(4),
-            if (newProductList.isNotEmpty) buildNewProductTitle(),
-            if (newProductList.isNotEmpty) buildNewProductContent(6),
-            if (hotProductList.isNotEmpty) buildHotProductTitle(),
-            if (hotProductList.isNotEmpty) buildHotProductContent(6),
-            if (hotProductList.isNotEmpty) buildLikeTitle(),
-            if (hotProductList.isNotEmpty) buildLikeContent(_count),
+            _buildTopBar(),
+            if (advertiseList.isNotEmpty) _buildBannerSection(),
+            _buildShortcutSection(),
+            if (preferredAreaList.isNotEmpty) _buildPreferredAreaSection(),
+            if (brandList.isNotEmpty) _buildBrandSection(),
+            if (flashProductList.isNotEmpty)
+              _buildProductGridSection(
+                title: '秒杀专区',
+                subtitle: _flashPromotionSubtitle(),
+                icon: Icons.flash_on_rounded,
+                iconColor: AppColors.primaryDark,
+                iconBackground: AppColors.primarySoft,
+                products: _featuredFlashProducts,
+                badgeLabel: '限时价',
+              ),
+            if (newProductList.isNotEmpty)
+              _buildProductGridSection(
+                title: '新鲜好物',
+                subtitle: '为你挑选高颜值、高口碑的新鲜好物',
+                icon: Icons.inventory_2_outlined,
+                iconColor: AppColors.primaryDark,
+                iconBackground: AppColors.primarySoft,
+                products: _featuredNewProducts,
+                badgeLabel: '新品',
+              ),
+            if (hotProductList.isNotEmpty)
+              _buildProductGridSection(
+                title: '人气推荐',
+                subtitle: '口碑热卖商品，浏览和下单都更集中',
+                icon: Icons.local_fire_department_outlined,
+                iconColor: AppColors.primaryDark,
+                iconBackground: AppColors.primarySoft,
+                products: _featuredHotProducts,
+                badgeLabel: '热卖',
+              ),
+            if (_guessLikePool.isNotEmpty)
+              _buildProductGridSection(
+                title: '猜你喜欢',
+                subtitle: '根据热卖趋势展示的精选商品',
+                icon: Icons.favorite_border_rounded,
+                iconColor: AppColors.primaryDark,
+                iconBackground: AppColors.primarySoft,
+                products: _guessLikePool.take(_guessLikeVisibleCount).toList(),
+                badgeLabel: '精选',
+              ),
+            const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xxl)),
           ],
         ),
       ),
     );
   }
 
-  SliverPadding buildHeader() {
-    return SliverPadding(
-      padding: const EdgeInsets.all(0.0),
-      sliver: SliverList(
-        delegate: SliverChildListDelegate(<Widget>[
-          Container(
-            height: 44,
-            color: Colors.red.shade400,
-            width: MediaQuery.of(context).size.width,
-            padding: const EdgeInsets.only(left: 15, right: 15),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Image.asset("images/scan.png", height: 30, width: 30),
-                InkWell(
-                  onTap: () {
-                    print("click the search bar");
-                    // Navigator.of(context).push(
-                    //   MaterialPageRoute(
-                    //     builder: (context) => const SearchDetail(),
-                    //   ),
-                    // );
-                  },
-                  child: const Text(
-                    "请输入商品 例如：手机",
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-                Image.asset("images/message.png", height: 30, width: 30),
-              ],
+  String _flashPromotionSubtitle() {
+    final String nextStartTime = homeFlashPromotion?.nextStartTime.trim() ?? '';
+    if (nextStartTime.isEmpty) {
+      return '精选限时好价，先到先得';
+    }
+    return '下一场 $nextStartTime 开始';
+  }
+
+  String _bannerTitle(AdvertiseList advertise) {
+    final String title = advertise.name.trim();
+    if (title.isEmpty ||
+        title.contains('acceptance') ||
+        title.contains('_') ||
+        title.length > 24) {
+      return '首页精选活动';
+    }
+    return title;
+  }
+
+  String _bannerSubtitle(AdvertiseList advertise) {
+    final String remark = advertise.remark.trim();
+    if (remark.isNotEmpty &&
+        !remark.contains('acceptance') &&
+        remark.length <= 30) {
+      return remark;
+    }
+    return '品牌好物与限时活动持续更新，逛一逛今天的推荐内容';
+  }
+
+  SliverToBoxAdapter _buildTopBar() {
+    final ThemeData theme = Theme.of(context);
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.md,
+          AppSpacing.lg,
+          0,
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [AppColors.primary, AppColors.primaryDark],
             ),
+            borderRadius: BorderRadius.circular(AppRadii.xxl),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x29101828),
+                blurRadius: 28,
+                offset: Offset(0, 16),
+              ),
+            ],
           ),
-        ]),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.lg,
+            AppSpacing.lg,
+            AppSpacing.xl,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  _TopIconButton(
+                    icon: Icons.qr_code_scanner_rounded,
+                    semanticLabel: '扫一扫',
+                    onTap: () {
+                      _showFeatureInProgress('扫一扫');
+                    },
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: _SearchTrigger(
+                      onTap: () {
+                        _showFeatureInProgress('搜索');
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  _TopIconButton(
+                    icon: Icons.notifications_none_rounded,
+                    semanticLabel: '消息',
+                    onTap: () {
+                      _showFeatureInProgress('消息');
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              Text(
+                '九克城',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  color: Colors.white,
+                  fontSize: 26,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                '品牌直供、限时秒杀与精选好物都在这里',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: Colors.white.withValues(alpha: 0.92),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Wrap(
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.sm,
+                children: const [
+                  _HeaderTag(label: '品牌直供'),
+                  _HeaderTag(label: '限时好价'),
+                  _HeaderTag(label: '口碑精选'),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  SliverPadding buildBanner() {
-    var list = [
-      "http://macro-oss.oss-cn-shenzhen.aliyuncs.com/mall/images/20221108/xiaomi_banner_01.png",
-      'http://macro-oss.oss-cn-shenzhen.aliyuncs.com/mall/images/20221108/huawei_banner_01.png',
-      'http://macro-oss.oss-cn-shenzhen.aliyuncs.com/mall/images/20221108/apple_banner_01.png',
-      'http://macro-oss.oss-cn-shenzhen.aliyuncs.com/mall/images/20221108/sanxing_banner_01.png',
-      'http://macro-oss.oss-cn-shenzhen.aliyuncs.com/mall/images/20221108/oppo_banner_01.png',
-    ];
-    return SliverPadding(
-      padding: const EdgeInsets.all(0.0),
-      sliver: SliverList(
-        delegate: SliverChildListDelegate(<Widget>[
-          SizedBox(
-            height: 200,
+  SliverToBoxAdapter _buildBannerSection() {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.xl,
+          AppSpacing.lg,
+          0,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadii.xl),
+          child: SizedBox(
+            height: 190,
             child: Swiper(
-              itemBuilder: (BuildContext context, int index) {
-                return CachedImageWidget(
-                  double.infinity,
-                  double.infinity,
-                  advertiseList[index].pic,
-                );
-              },
               autoplay: true,
               itemCount: advertiseList.length,
-              pagination: const SwiperPagination(),
-              control: const SwiperControl(),
-              onTap: (index) {
-                print(index);
+              pagination: SwiperPagination(
+                alignment: Alignment.bottomCenter,
+                builder: DotSwiperPaginationBuilder(
+                  color: Colors.white.withValues(alpha: 0.55),
+                  activeColor: Colors.white,
+                  size: 7,
+                  activeSize: 8,
+                ),
+              ),
+              itemBuilder: (BuildContext context, int index) {
+                final AdvertiseList advertise = advertiseList[index];
+                return _HomeBannerCard(
+                  title: _bannerTitle(advertise),
+                  subtitle: _bannerSubtitle(advertise),
+                  imageUrl: advertise.pic,
+                  onTap: () {
+                    final String activityName = advertise.name.trim();
+                    _showFeatureInProgress(
+                      activityName.isEmpty ? '活动详情' : activityName,
+                    );
+                  },
+                );
+              },
+              onTap: (int index) {
+                final String activityName = advertiseList[index].name.trim();
+                _showFeatureInProgress(
+                  activityName.isEmpty ? '活动详情' : activityName,
+                );
               },
             ),
           ),
-        ]),
+        ),
       ),
     );
   }
 
-  SliverPadding buildSubject() {
-    var style = TextStyle(
-      fontSize: 12,
-      color: Color(int.parse('303133', radix: 16)).withAlpha(255),
-    );
-
-    return SliverPadding(
-      padding: const EdgeInsets.all(0.0),
-      sliver: SliverList(
-        delegate: SliverChildListDelegate(<Widget>[
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(5),
-            ),
-            margin: const EdgeInsets.only(top: 8),
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            // height: 98,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Image.asset("images/c3.png", height: 44, width: 44),
-                    const SizedBox(height: 8),
-                    Text("专题", style: style),
-                  ],
+  SliverToBoxAdapter _buildShortcutSection() {
+    return _buildSectionShell(
+      child: Row(
+        children: _shortcutItems
+            .map(
+              (item) => Expanded(
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+                  child: _ShortcutButton(
+                    item: item,
+                    onTap: () {
+                      _showFeatureInProgress(item.message);
+                    },
+                  ),
                 ),
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Image.asset("images/c5.png", height: 44, width: 44),
-                    const SizedBox(height: 8),
-                    Text("话题", style: style),
-                  ],
-                ),
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Image.asset("images/c6.png", height: 44, width: 44),
-                    const SizedBox(height: 8),
-                    Text("优选", style: style),
-                  ],
-                ),
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Image.asset("images/c7.png", height: 44, width: 44),
-                    const SizedBox(height: 8),
-                    Text("特惠", style: style),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ]),
+              ),
+            )
+            .toList(),
       ),
     );
   }
 
-  SliverPadding buildPreferredAreaTitle() {
-    return SliverPadding(
-      padding: const EdgeInsets.all(0.0),
-      sliver: SliverList(
-        delegate: SliverChildListDelegate(<Widget>[
-          Container(
-            color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
-            height: 8,
+  SliverToBoxAdapter _buildPreferredAreaSection() {
+    return _buildSectionShell(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionHeader(
+            icon: Icons.auto_awesome_rounded,
+            iconColor: const Color(0xFF7C3AED),
+            iconBackground: const Color(0xFFF3E8FF),
+            title: '优选专区',
+            subtitle: '聚合主题专场和精选活动，帮助用户快速找到想逛的内容',
           ),
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: SizedBox(
-              height: 50,
+          const SizedBox(height: AppSpacing.lg),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: preferredAreaList.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 0.74,
+              crossAxisSpacing: AppSpacing.md,
+              mainAxisSpacing: AppSpacing.md,
+            ),
+            itemBuilder: (BuildContext context, int index) {
+              final PreferredAreaListData item = preferredAreaList[index];
+              return _PreferredAreaCard(
+                item: item,
+                onTap: () {
+                  _showFeatureInProgress(
+                      item.name.isEmpty ? '优选专区' : item.name);
+                },
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  SliverToBoxAdapter _buildBrandSection() {
+    return _buildSectionShell(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SectionHeader(
+            icon: Icons.storefront_rounded,
+            iconColor: const Color(0xFF2563EB),
+            iconBackground: const Color(0xFFDBEAFE),
+            title: '品牌制造商直供',
+            subtitle: '精选品牌馆，突出货源可信与品牌背书',
+            actionLabel: '查看全部',
+            onActionTap: _openBrandList,
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: brandList.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 0.82,
+              crossAxisSpacing: AppSpacing.md,
+              mainAxisSpacing: AppSpacing.md,
+            ),
+            itemBuilder: (BuildContext context, int index) {
+              final BrandListData brand = brandList[index];
+              return _BrandCard(
+                brand: brand,
+                onTap: () {
+                  _openBrandDetail(brand);
+                },
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  SliverToBoxAdapter _buildProductGridSection({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color iconColor,
+    required Color iconBackground,
+    required List<ProductList> products,
+    String? badgeLabel,
+  }) {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.xl,
+          AppSpacing.lg,
+          0,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _SectionHeader(
+              icon: icon,
+              iconColor: iconColor,
+              iconBackground: iconBackground,
+              title: title,
+              subtitle: subtitle,
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: products.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.72,
+                crossAxisSpacing: AppSpacing.md,
+                mainAxisSpacing: AppSpacing.md,
+              ),
+              itemBuilder: (BuildContext context, int index) {
+                final ProductList product = products[index];
+                return _ProductGridCard(
+                  product: product,
+                  badgeLabel: badgeLabel,
+                  onTap: () {
+                    _openProductDetail(product);
+                  },
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  SliverToBoxAdapter _buildSectionShell({
+    required Widget child,
+    Color backgroundColor = AppColors.surface,
+    Color borderColor = AppColors.border,
+  }) {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.xl,
+          AppSpacing.lg,
+          0,
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(AppRadii.xl),
+            border: Border.all(color: borderColor),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x12101828),
+                blurRadius: 24,
+                offset: Offset(0, 12),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeShortcut {
+  final String label;
+  final String message;
+  final IconData icon;
+  final Color accentColor;
+  final Color backgroundColor;
+
+  const _HomeShortcut({
+    required this.label,
+    required this.message,
+    required this.icon,
+    required this.accentColor,
+    required this.backgroundColor,
+  });
+}
+
+class _TopIconButton extends StatelessWidget {
+  final IconData icon;
+  final String semanticLabel;
+  final VoidCallback onTap;
+
+  const _TopIconButton({
+    required this.icon,
+    required this.semanticLabel,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      child: Material(
+        color: Colors.white.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          onTap: onTap,
+          child: SizedBox(
+            width: 44,
+            height: 44,
+            child: Icon(icon, color: Colors.white),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SearchTrigger extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _SearchTrigger({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Semantics(
+      button: true,
+      label: '搜索商品',
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+          onTap: onTap,
+          child: SizedBox(
+            height: 48,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               child: Row(
                 children: [
-                  Image.asset("images/c6.png", height: 30, width: 30),
-                  const SizedBox(width: 10),
+                  Icon(
+                    Icons.search_rounded,
+                    color: AppColors.textSecondary.withValues(alpha: 0.9),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
                   Text(
-                    "优选专区",
-                    style: TextStyle(
-                      fontSize: 17,
-                      color:
-                          Color(int.parse('303133', radix: 16)).withAlpha(255),
+                    '搜索商品，例如：手机',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 ],
               ),
             ),
           ),
-        ]),
+        ),
       ),
     );
   }
+}
 
-  SliverGrid buildPreferredAreaContent() {
-    return SliverGrid.builder(
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 1.2,
+class _HeaderTag extends StatelessWidget {
+  final String label;
+
+  const _HeaderTag({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
       ),
-      itemCount: preferredAreaList.length,
-      itemBuilder: (BuildContext context, int index) {
-        final item = preferredAreaList[index];
-        return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: theme.textTheme.labelMedium?.copyWith(
           color: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeBannerCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final String imageUrl;
+  final VoidCallback onTap;
+
+  const _HomeBannerCard({
+    required this.title,
+    required this.subtitle,
+    required this.imageUrl,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            CachedImageWidget(
+              double.infinity,
+              double.infinity,
+              imageUrl,
+              fallback: const _BannerFallbackVisual(),
+            ),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.08),
+                    Colors.black.withValues(alpha: 0.12),
+                    Colors.black.withValues(alpha: 0.54),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.sm,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      '今日精选',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Colors.white.withValues(alpha: 0.9),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                          vertical: AppSpacing.sm,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          '立即查看',
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: AppColors.primaryDark,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Icon(
+                        Icons.arrow_forward_rounded,
+                        color: Colors.white.withValues(alpha: 0.92),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BannerFallbackVisual extends StatelessWidget {
+  const _BannerFallbackVisual();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primary,
+            AppColors.primaryDark,
+            Color(0xFF7A1F43),
+          ],
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            top: -16,
+            right: -12,
+            child: Container(
+              width: 96,
+              height: 96,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(32),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 22,
+            bottom: 28,
+            child: Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(24),
+              ),
+            ),
+          ),
+          Positioned(
+            right: 42,
+            bottom: 24,
+            child: Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.18),
+                  width: 1.5,
+                ),
+                borderRadius: BorderRadius.circular(36),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ShortcutButton extends StatelessWidget {
+  final _HomeShortcut item;
+  final VoidCallback onTap;
+
+  const _ShortcutButton({
+    required this.item,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Semantics(
+      button: true,
+      label: item.label,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+            child: Column(
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: item.backgroundColor,
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Icon(item.icon, color: item.accentColor, size: 28),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  item.label,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final Color iconBackground;
+  final String title;
+  final String subtitle;
+  final String? actionLabel;
+  final VoidCallback? onActionTap;
+
+  const _SectionHeader({
+    required this.icon,
+    required this.iconColor,
+    required this.iconBackground,
+    required this.title,
+    required this.subtitle,
+    this.actionLabel,
+    this.onActionTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Row(
+      children: [
+        Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: iconBackground,
+            borderRadius: BorderRadius.circular(AppRadii.md),
+          ),
+          child: Icon(icon, color: iconColor, size: 24),
+        ),
+        const SizedBox(width: AppSpacing.md),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: theme.textTheme.titleMedium),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                subtitle,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (actionLabel != null && onActionTap != null)
+          TextButton(
+            onPressed: onActionTap,
+            child: Text(actionLabel!),
+          ),
+      ],
+    );
+  }
+}
+
+class _PreferredAreaCard extends StatelessWidget {
+  final PreferredAreaListData item;
+  final VoidCallback onTap;
+
+  const _PreferredAreaCard({
+    required this.item,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Material(
+      color: AppColors.surfaceMuted,
+      borderRadius: BorderRadius.circular(AppRadii.lg),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppRadii.md),
                   child: CachedImageWidget(
                     double.infinity,
                     double.infinity,
@@ -449,761 +1265,248 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: AppSpacing.md),
               Text(
                 item.name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Color(int.parse('303133', radix: 16)).withAlpha(255),
-                ),
+                style: theme.textTheme.titleSmall,
               ),
-              if (item.subTitle.isNotEmpty)
-                Text(
-                  item.subTitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Color(int.parse('909399', radix: 16)).withAlpha(255),
-                  ),
-                ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                item.subTitle.isEmpty ? '精选主题专场' : item.subTitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall,
+              ),
             ],
-          ),
-        );
-      },
-    );
-  }
-
-  SliverPadding buildBrandTitle() {
-    return SliverPadding(
-      padding: const EdgeInsets.all(0.0),
-      sliver: SliverList(
-        delegate: SliverChildListDelegate(<Widget>[
-          Container(
-            color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
-            height: 8,
-          ),
-          Container(
-            color: Colors.white,
-            // margin: const EdgeInsets.only(top: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(
-                  height: 70,
-                  child: InkWell(
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const BrandList(),
-                        ),
-                      );
-                    },
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Row(
-                            children: [
-                              Image.asset(
-                                "images/icon_home_brand.png",
-                                height: 40,
-                                width: 40,
-                              ),
-                              const SizedBox(width: 10),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    "品牌制造商直供",
-                                    style: TextStyle(
-                                      fontSize: 17,
-                                      color: Color(
-                                        int.parse('303133', radix: 16),
-                                      ).withAlpha(255),
-                                    ),
-                                  ),
-                                  Text(
-                                    "工厂直达消费者,剔除商品溢价",
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Color(
-                                        int.parse('909399', radix: 16),
-                                      ).withAlpha(255),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        Image.asset(
-                          "images/right_arrow.png",
-                          height: 20,
-                          width: 20,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ]),
-      ),
-    );
-  }
-
-  SliverGrid buildBrandContent() {
-    return SliverGrid.builder(
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 1.4,
-      ),
-      itemCount: brandList.length,
-      itemBuilder: (BuildContext context, int index) {
-        return InkWell(
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => BrandDetail(brandId: brandList[index].id),
-              ),
-            );
-          },
-          child: Container(
-            color: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CachedImageWidget(
-                  160,
-                  75,
-                  brandList[index].logo,
-                  fit: BoxFit.contain,
-                ),
-                Text(
-                  brandList[index].name,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Color(int.parse('303133', radix: 16)).withAlpha(255),
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  "商品数量: ${brandList[index].productCount}",
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Color(int.parse('909399', radix: 16)).withAlpha(255),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  SliverPadding buildFlashSaleTitle() {
-    return SliverPadding(
-      padding: const EdgeInsets.all(0.0),
-      sliver: SliverList(
-        delegate: SliverChildListDelegate(<Widget>[
-          Container(
-            color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
-            height: 8,
-          ),
-          Container(
-            color: Colors.white,
-            // margin: const EdgeInsets.only(top: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            // height: 70,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              // crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                SizedBox(
-                  height: 70,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Row(
-                          children: [
-                            Image.asset(
-                              "images/icon_flash_promotion.png",
-                              height: 40,
-                              width: 40,
-                            ),
-                            const SizedBox(width: 10),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  "秒杀专区",
-                                  style: TextStyle(
-                                    fontSize: 17,
-                                    color: Color(
-                                      int.parse('303133', radix: 16),
-                                    ).withAlpha(255),
-                                  ),
-                                ),
-                                Text(
-                                  "下一场 ${homeFlashPromotion?.nextStartTime}开始",
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Color(
-                                      int.parse('909399', radix: 16),
-                                    ).withAlpha(255),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      Image.asset(
-                        "images/right_arrow.png",
-                        height: 20,
-                        width: 20,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ]),
-      ),
-    );
-  }
-
-  SliverGrid buildFlashSaleContent(int count) {
-    return SliverGrid.builder(
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.65,
-      ),
-      itemCount: flashProductList.length,
-      itemBuilder: (BuildContext context, int index) {
-        return InkWell(
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) =>
-                    ProductDetail(productId: flashProductList[index].id),
-              ),
-            );
-          },
-          child: Container(
-            color: Colors.white,
-            padding: const EdgeInsets.all(15),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                CachedImageWidget(
-                  165,
-                  165,
-                  flashProductList[index].mainPic,
-                  fit: BoxFit.contain,
-                ),
-                const SizedBox(height: 8),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      flashProductList[index].name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Color(
-                          int.parse('303133', radix: 16),
-                        ).withAlpha(255),
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      flashProductList[index].subTitle,
-                      maxLines: 2,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Color(
-                          int.parse('909399', radix: 16),
-                        ).withAlpha(255),
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      "￥${flashProductList[index].price}",
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Color(
-                          int.parse('fa436a', radix: 16),
-                        ).withAlpha(255),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  SliverPadding buildNewProductTitle() {
-    return SliverPadding(
-      padding: const EdgeInsets.all(0.0),
-      sliver: SliverList(
-        delegate: SliverChildListDelegate(<Widget>[
-          Container(
-            color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
-            height: 8,
-          ),
-          Container(
-            color: Colors.white,
-            // margin: const EdgeInsets.only(top: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            // height: 70,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              // crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                SizedBox(
-                  height: 70,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Row(
-                          children: [
-                            Image.asset(
-                              "images/icon_new_product.png",
-                              height: 40,
-                              width: 40,
-                            ),
-                            const SizedBox(width: 10),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  "新鲜好物",
-                                  style: TextStyle(
-                                    fontSize: 17,
-                                    color: Color(
-                                      int.parse('303133', radix: 16),
-                                    ).withAlpha(255),
-                                  ),
-                                ),
-                                Text(
-                                  "为你寻觅世间好物",
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Color(
-                                      int.parse('909399', radix: 16),
-                                    ).withAlpha(255),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      Image.asset(
-                        "images/right_arrow.png",
-                        height: 20,
-                        width: 20,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ]),
-      ),
-    );
-  }
-
-  SliverPadding buildNewProductContent(int count) {
-    return SliverPadding(
-      padding: const EdgeInsets.all(0),
-      sliver: SliverToBoxAdapter(
-        child: Container(
-          height: 270,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: newProductList.length,
-            itemBuilder: (BuildContext context, int index) {
-              return InkWell(
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          ProductDetail(productId: newProductList[index].id),
-                    ),
-                  );
-                },
-                child: Container(
-                  color: Colors.white,
-                  width: 200,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 15,
-                    vertical: 10,
-                  ),
-                  child: Column(
-                    children: [
-                      CachedImageWidget(
-                        150,
-                        150,
-                        newProductList[index].mainPic,
-                        fit: BoxFit.contain,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              newProductList[index].name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Color(
-                                  int.parse('303133', radix: 16),
-                                ).withAlpha(255),
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              newProductList[index].subTitle,
-                              maxLines: 2,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Color(
-                                  int.parse('909399', radix: 16),
-                                ).withAlpha(255),
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              "￥${newProductList[index].price}",
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Color(
-                                  int.parse('fa436a', radix: 16),
-                                ).withAlpha(255),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
           ),
         ),
       ),
     );
   }
+}
 
-  SliverPadding buildHotProductTitle() {
-    return SliverPadding(
-      padding: const EdgeInsets.all(0.0),
-      sliver: SliverList(
-        delegate: SliverChildListDelegate(<Widget>[
-          Container(
-            color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
-            height: 8,
-          ),
-          Container(
-            color: Colors.white,
-            // margin: const EdgeInsets.only(top: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            // height: 70,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              // crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                SizedBox(
-                  height: 70,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Row(
-                          children: [
-                            Image.asset(
-                              "images/icon_hot_product.png",
-                              height: 40,
-                              width: 40,
-                            ),
-                            const SizedBox(width: 10),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  "人气推荐",
-                                  style: TextStyle(
-                                    fontSize: 17,
-                                    color: Color(
-                                      int.parse('303133', radix: 16),
-                                    ).withAlpha(255),
-                                  ),
-                                ),
-                                Text(
-                                  "大家都赞不绝口的",
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Color(
-                                      int.parse('909399', radix: 16),
-                                    ).withAlpha(255),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      Image.asset(
-                        "images/right_arrow.png",
-                        height: 20,
-                        width: 20,
-                      ),
-                    ],
+class _BrandCard extends StatelessWidget {
+  final BrandListData brand;
+  final VoidCallback onTap;
+
+  const _BrandCard({
+    required this.brand,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Material(
+      color: AppColors.surfaceMuted,
+      borderRadius: BorderRadius.circular(AppRadii.lg),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceMuted,
+                    borderRadius: BorderRadius.circular(AppRadii.md),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: CachedImageWidget(
+                    double.infinity,
+                    double.infinity,
+                    brand.logo,
+                    fit: BoxFit.cover,
                   ),
                 ),
-              ],
-            ),
-          ),
-        ]),
-      ),
-    );
-  }
-
-  SliverList buildHotProductContent(int count) {
-    return SliverList.builder(
-      itemCount: hotProductList.length,
-      itemBuilder: (BuildContext context, int index) {
-        return InkWell(
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) =>
-                    ProductDetail(productId: hotProductList[index].id),
               ),
-            );
-          },
-          child: Container(
-            color: Colors.white,
-            padding: const EdgeInsets.all(15),
-            child: Row(
-              children: [
-                CachedImageWidget(
-                  103,
-                  125,
-                  hotProductList[index].mainPic,
-                  fit: BoxFit.fill,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        hotProductList[index].name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Color(
-                            int.parse('303133', radix: 16),
-                          ).withAlpha(255),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        hotProductList[index].subTitle,
-                        maxLines: 2,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(
-                            int.parse('909399', radix: 16),
-                          ).withAlpha(255),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        "￥${hotProductList[index].price}",
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Color(
-                            int.parse('fa436a', radix: 16),
-                          ).withAlpha(255),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  SliverPadding buildLikeTitle() {
-    return SliverPadding(
-      padding: const EdgeInsets.all(0.0),
-      sliver: SliverList(
-        delegate: SliverChildListDelegate(<Widget>[
-          Container(
-            color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
-            height: 8,
-          ),
-          Container(
-            color: Colors.white,
-            // margin: const EdgeInsets.only(top: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            // height: 70,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              // crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                SizedBox(
-                  height: 70,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Row(
-                          children: [
-                            Image.asset(
-                              "images/icon_recommend_product.png",
-                              height: 40,
-                              width: 40,
-                            ),
-                            const SizedBox(width: 10),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  "猜你喜欢",
-                                  style: TextStyle(
-                                    fontSize: 17,
-                                    color: Color(
-                                      int.parse('303133', radix: 16),
-                                    ).withAlpha(255),
-                                  ),
-                                ),
-                                Text(
-                                  "你喜欢的都在这里了",
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Color(
-                                      int.parse('909399', radix: 16),
-                                    ).withAlpha(255),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ]),
-      ),
-    );
-  }
-
-  SliverGrid buildLikeContent(int count) {
-    return SliverGrid.builder(
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.65,
-      ),
-      itemCount: hotProductList.length,
-      itemBuilder: (BuildContext context, int index) {
-        return InkWell(
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) =>
-                    ProductDetail(productId: hotProductList[index].id),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                brand.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.titleSmall,
               ),
-            );
-          },
-          child: Container(
-            color: Colors.white,
-            padding: const EdgeInsets.all(15),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                CachedImageWidget(
-                  165,
-                  165,
-                  hotProductList[index].mainPic,
-                  fit: BoxFit.fill,
-                ),
-                const SizedBox(height: 8),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      hotProductList[index].name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Color(
-                          int.parse('303133', radix: 16),
-                        ).withAlpha(255),
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      hotProductList[index].subTitle,
-                      maxLines: 2,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Color(
-                          int.parse('909399', radix: 16),
-                        ).withAlpha(255),
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      "￥${hotProductList[index].price}",
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Color(
-                          int.parse('fa436a', radix: 16),
-                        ).withAlpha(255),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                '商品 ${brand.productCount} · 评价 ${brand.productCommentCount}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProductCardContainer extends StatelessWidget {
+  final Widget child;
+  final VoidCallback onTap;
+
+  const _ProductCardContainer({
+    required this.child,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.72)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x08101828),
+            blurRadius: 12,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+          onTap: onTap,
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+class _ProductImagePanel extends StatelessWidget {
+  final String imageUrl;
+
+  const _ProductImagePanel({
+    required this.imageUrl,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppRadii.md),
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          color: AppColors.surfaceMuted,
+        ),
+        child: CachedImageWidget(
+          double.infinity,
+          double.infinity,
+          imageUrl,
+          fit: BoxFit.cover,
+        ),
+      ),
+    );
+  }
+}
+
+class _ProductPriceRow extends StatelessWidget {
+  final String price;
+  final String? badgeLabel;
+
+  const _ProductPriceRow({
+    required this.price,
+    this.badgeLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Row(
+      children: [
+        if (badgeLabel != null)
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: AppSpacing.xs,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.primarySoft,
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              badgeLabel!,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: AppColors.primaryDark,
+              ),
             ),
           ),
-        );
-      },
+        if (badgeLabel != null) const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: Text(
+            '￥$price',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ProductGridCard extends StatelessWidget {
+  final ProductList product;
+  final String? badgeLabel;
+  final VoidCallback onTap;
+
+  const _ProductGridCard({
+    required this.product,
+    required this.onTap,
+    this.badgeLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return _ProductCardContainer(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: _ProductImagePanel(imageUrl: product.mainPic),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              product.name,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleSmall,
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              product.subTitle.isEmpty ? '精选热卖商品' : product.subTitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _ProductPriceRow(
+              price: product.price,
+              badgeLabel: badgeLabel,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -60,9 +60,6 @@ class _MainTabState extends State<MainTab> {
         });
       },
       //onTap 点击切换页面
-      fixedColor: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
-      //样式：图标选中时的颜色：蓝色
-      type: BottomNavigationBarType.fixed, //样式：选中图标后的样式是固定的
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:flutter_mall/theme/app_theme.dart';
 
 enum CommercePageState {
   initialLoading,
@@ -114,7 +115,8 @@ class _WeakNetworkBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color resolvedForegroundColor = foregroundColor ?? const Color(0xFFD46B08);
+    final Color resolvedForegroundColor =
+        foregroundColor ?? const Color(0xFFD46B08);
     return Semantics(
       label: text,
       child: Container(
@@ -141,7 +143,8 @@ class _WeakNetworkBanner extends StatelessWidget {
                 onPressed: action!.onPressed,
                 style: TextButton.styleFrom(
                   foregroundColor: resolvedForegroundColor,
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   minimumSize: const Size(0, 0),
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
@@ -183,11 +186,14 @@ class _StateCard extends StatelessWidget {
     return Semantics(
       container: true,
       liveRegion: true,
-      label: [title, summary, detail].whereType<String>().where((value) => value.isNotEmpty).join('，'),
+      label: [title, summary, detail]
+          .whereType<String>()
+          .where((value) => value.isNotEmpty)
+          .join('，'),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(20),
           boxShadow: const [
             BoxShadow(
@@ -202,7 +208,7 @@ class _StateCard extends StatelessWidget {
           children: [
             if (isLoading)
               const SpinKitCircle(
-                color: Color(0xFFFA436A),
+                color: AppColors.primary,
                 size: 40,
               )
             else
@@ -222,7 +228,7 @@ class _StateCard extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF303133),
+                color: AppColors.textPrimary,
               ),
             ),
             if (summary != null && summary!.isNotEmpty) ...[
@@ -232,7 +238,7 @@ class _StateCard extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 14,
-                  color: Color(0xFF606266),
+                  color: AppColors.textSecondary,
                   height: 1.5,
                 ),
               ),
@@ -244,7 +250,7 @@ class _StateCard extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 13,
-                  color: Color(0xFF909399),
+                  color: AppColors.textHint,
                   height: 1.5,
                 ),
               ),
@@ -263,9 +269,10 @@ class _StateCard extends StatelessWidget {
                       child: ElevatedButton(
                         onPressed: primaryAction!.onPressed,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFA436A),
+                          backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 12),
                         ),
                         child: Text(primaryAction!.label),
                       ),
@@ -277,9 +284,10 @@ class _StateCard extends StatelessWidget {
                       child: OutlinedButton(
                         onPressed: secondaryAction!.onPressed,
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFFFA436A),
-                          side: const BorderSide(color: Color(0xFFFA436A)),
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(color: AppColors.primary),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 12),
                         ),
                         child: Text(secondaryAction!.label),
                       ),
@@ -311,9 +319,9 @@ class _StateCard extends StatelessWidget {
   Color _resolveColor() {
     switch (state) {
       case CommercePageState.initialLoading:
-        return const Color(0xFFFA436A);
+        return AppColors.primary;
       case CommercePageState.empty:
-        return const Color(0xFF909399);
+        return AppColors.textHint;
       case CommercePageState.error:
         return const Color(0xFFF56C6C);
       case CommercePageState.weakNetwork:

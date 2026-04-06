@@ -3,6 +3,7 @@ import 'package:flutter_mall/provider/cart_model.dart';
 import 'package:flutter_mall/provider/counter.dart';
 import 'package:flutter_mall/provider/comment_provider.dart';
 import 'package:flutter_mall/provider/app_lifecycle_provider.dart';
+import 'package:flutter_mall/theme/app_theme.dart';
 import 'package:flutter_mall/utils/shared_preferences_util.dart';
 import 'package:flutter_mall/welcome.dart';
 import 'package:provider/provider.dart';
@@ -50,11 +51,7 @@ class MyApp extends StatelessWidget {
         // 设置全局的navigatorKey，以便在应用的任何地方进行导航
         navigatorKey: NavKey.navKey,
         title: '九克城',
-        theme: ThemeData(
-          // 设置应用的主题颜色和使用Material 3设计
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-          useMaterial3: true,
-        ),
+        theme: AppTheme.lightTheme(),
         // 设置应用的首页为Welcome部件
         home: const Welcome(),
       ),
