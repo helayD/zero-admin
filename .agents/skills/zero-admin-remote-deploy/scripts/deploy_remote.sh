@@ -763,17 +763,20 @@ service_config_name() {
   esac
 }
 
-service_legacy_pattern() {
-  case "$1" in
-    admin-api|sys-rpc)
-      local config_name
-      config_name="$(service_config_name "$1")"
-      echo "./$1 -f ./$config_name"
-      ;;
-    *)
-      echo ""
-      ;;
-  esac
+service_flat_root_pattern() {
+  local service="$1"
+  local config_name
+
+  config_name="$(service_config_name "$service")"
+  echo "./$service -f ./$config_name"
+}
+
+service_target_legacy_pattern() {
+  local service="$1"
+  local config_name
+
+  config_name="$(service_config_name "$service")"
+  echo "./target/$service/$service -f ./target/$service/$config_name"
 }
 
 kill_if_running() {
@@ -785,6 +788,50 @@ kill_if_running() {
   fi
 }
 
+service_declared_port() {
+  local service="$1"
+  local config_path="$2"
+
+  [[ -f "$config_path" ]] || return 0
+
+  case "$service" in
+    admin-api|front-api)
+      awk '/^Port:/ {print $2; exit}' "$config_path" 2>/dev/null || true
+      ;;
+    consumer|job)
+      return 0
+      ;;
+    *)
+      awk '/^ListenOn:/ {print $2; exit}' "$config_path" 2>/dev/null | cut -d: -f2 || true
+      ;;
+  esac
+}
+
+service_running() {
+  local new_pattern="$1"
+  local flat_pattern="$2"
+  local target_pattern="$3"
+  local declared_port="$4"
+
+  if pgrep -af "$new_pattern" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if [[ -n "$flat_pattern" ]] && pgrep -af "$flat_pattern" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if [[ -n "$target_pattern" ]] && pgrep -af "$target_pattern" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  if [[ -n "$declared_port" ]] && ss -lnt | awk '{print $4}' | grep -Eq "[:.]$declared_port$"; then
+    return 0
+  fi
+
+  return 1
+}
+
 deploy_binary_service() {
   local service="$1"
   local binary="$service"
@@ -793,14 +840,17 @@ deploy_binary_service() {
   local config_source_abs
   local service_target_dir
   local new_pattern
-  local legacy_pattern
+  local flat_root_pattern
+  local target_legacy_pattern
+  local declared_port
 
   config_name="$(service_config_name "$service")"
   config_source_rel="$(service_config_source "$service")"
   config_source_abs="$remote_root/$config_source_rel"
   service_target_dir="$target_root/$service"
   new_pattern="./$service/$binary -f ./$service/$config_name"
-  legacy_pattern="$(service_legacy_pattern "$service")"
+  flat_root_pattern="$(service_flat_root_pattern "$service")"
+  target_legacy_pattern="$(service_target_legacy_pattern "$service")"
 
   mkdir -p "$backup_dir/$service" "$service_target_dir"
 
@@ -817,8 +867,10 @@ deploy_binary_service() {
 
   # ---- FIX 2: Warn on port mismatch between deployed API client config and RPC ListenOn ----
   check_rpc_port_mismatch "$service" "$service_target_dir/$config_name"
+  declared_port="$(service_declared_port "$service" "$service_target_dir/$config_name")"
 
-  kill_if_running "$legacy_pattern"
+  kill_if_running "$flat_root_pattern"
+  kill_if_running "$target_legacy_pattern"
   kill_if_running "$new_pattern"
 
   install -m 0755 "$artifact_dir/$binary" "$service_target_dir/$binary"
@@ -830,15 +882,10 @@ deploy_binary_service() {
   )
 
   sleep 3
-  if pgrep -af "$new_pattern" >/dev/null 2>&1; then
+  if service_running "$new_pattern" "$flat_root_pattern" "$target_legacy_pattern" "$declared_port"; then
     echo "  $service started successfully"
   else
-    echo "  pgrep check failed, trying direct process check..."
-    if pgrep -f "$binary" >/dev/null 2>&1; then
-      echo "  $service is running (process found)"
-    else
-      echo "  WARNING: $service may not have started cleanly. Check logs manually." >&2
-    fi
+    echo "  WARNING: $service may not have started cleanly. Check logs manually." >&2
   fi
 }
 
