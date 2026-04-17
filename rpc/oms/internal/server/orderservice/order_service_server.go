@@ -7,7 +7,7 @@ package server
 import (
 	"context"
 
-	orderservicelogic "github.com/feihua/zero-admin/rpc/oms/internal/logic/orderservice"
+	"github.com/feihua/zero-admin/rpc/oms/internal/logic/orderservice"
 	"github.com/feihua/zero-admin/rpc/oms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/oms/omsclient"
 )

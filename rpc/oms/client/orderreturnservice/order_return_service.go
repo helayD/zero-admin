@@ -127,8 +127,15 @@ type (
 	QueryOrderSettingDetailResp       = omsclient.QueryOrderSettingDetailResp
 	QueryOrderSettingListReq          = omsclient.QueryOrderSettingListReq
 	QueryOrderSettingListResp         = omsclient.QueryOrderSettingListResp
+	QueryRepeatPurchaseAnalysisReq    = omsclient.QueryRepeatPurchaseAnalysisReq
+	QueryRepeatPurchaseAnalysisResp   = omsclient.QueryRepeatPurchaseAnalysisResp
+	QueryRepeatPurchaseDetailListReq  = omsclient.QueryRepeatPurchaseDetailListReq
+	QueryRepeatPurchaseDetailListResp = omsclient.QueryRepeatPurchaseDetailListResp
 	QueryTimeOutOrderListReq          = omsclient.QueryTimeOutOrderListReq
 	ReleaseSkuStockLockData           = omsclient.ReleaseSkuStockLockData
+	RepeatPurchaseDetailRow           = omsclient.RepeatPurchaseDetailRow
+	RepeatPurchaseOverview            = omsclient.RepeatPurchaseOverview
+	RepeatPurchaseTrendPoint          = omsclient.RepeatPurchaseTrendPoint
 	ReplayCompensationChainReq        = omsclient.ReplayCompensationChainReq
 	ReplayCompensationChainResp       = omsclient.ReplayCompensationChainResp
 	RetryCompensationChainReq         = omsclient.RetryCompensationChainReq

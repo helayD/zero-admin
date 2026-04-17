@@ -98,10 +98,6 @@ type (
 	QueryOperateCartFunnelResp        = omsclient.QueryOperateCartFunnelResp
 	QueryOperateOrderFunnelReq        = omsclient.QueryOperateOrderFunnelReq
 	QueryOperateOrderFunnelResp       = omsclient.QueryOperateOrderFunnelResp
-	QueryRepeatPurchaseAnalysisReq    = omsclient.QueryRepeatPurchaseAnalysisReq
-	QueryRepeatPurchaseAnalysisResp   = omsclient.QueryRepeatPurchaseAnalysisResp
-	QueryRepeatPurchaseDetailListReq  = omsclient.QueryRepeatPurchaseDetailListReq
-	QueryRepeatPurchaseDetailListResp = omsclient.QueryRepeatPurchaseDetailListResp
 	QueryOrderDeliveryDetailReq       = omsclient.QueryOrderDeliveryDetailReq
 	QueryOrderDeliveryDetailResp      = omsclient.QueryOrderDeliveryDetailResp
 	QueryOrderDeliveryListReq         = omsclient.QueryOrderDeliveryListReq
@@ -110,9 +106,6 @@ type (
 	QueryOrderDetailResp              = omsclient.QueryOrderDetailResp
 	QueryOrderListReq                 = omsclient.QueryOrderListReq
 	QueryOrderListResp                = omsclient.QueryOrderListResp
-	RepeatPurchaseDetailRow           = omsclient.RepeatPurchaseDetailRow
-	RepeatPurchaseOverview            = omsclient.RepeatPurchaseOverview
-	RepeatPurchaseTrendPoint          = omsclient.RepeatPurchaseTrendPoint
 	QueryOrderOperationLogDetailReq   = omsclient.QueryOrderOperationLogDetailReq
 	QueryOrderOperationLogListReq     = omsclient.QueryOrderOperationLogListReq
 	QueryOrderOperationLogListResp    = omsclient.QueryOrderOperationLogListResp
@@ -134,8 +127,15 @@ type (
 	QueryOrderSettingDetailResp       = omsclient.QueryOrderSettingDetailResp
 	QueryOrderSettingListReq          = omsclient.QueryOrderSettingListReq
 	QueryOrderSettingListResp         = omsclient.QueryOrderSettingListResp
+	QueryRepeatPurchaseAnalysisReq    = omsclient.QueryRepeatPurchaseAnalysisReq
+	QueryRepeatPurchaseAnalysisResp   = omsclient.QueryRepeatPurchaseAnalysisResp
+	QueryRepeatPurchaseDetailListReq  = omsclient.QueryRepeatPurchaseDetailListReq
+	QueryRepeatPurchaseDetailListResp = omsclient.QueryRepeatPurchaseDetailListResp
 	QueryTimeOutOrderListReq          = omsclient.QueryTimeOutOrderListReq
 	ReleaseSkuStockLockData           = omsclient.ReleaseSkuStockLockData
+	RepeatPurchaseDetailRow           = omsclient.RepeatPurchaseDetailRow
+	RepeatPurchaseOverview            = omsclient.RepeatPurchaseOverview
+	RepeatPurchaseTrendPoint          = omsclient.RepeatPurchaseTrendPoint
 	ReplayCompensationChainReq        = omsclient.ReplayCompensationChainReq
 	ReplayCompensationChainResp       = omsclient.ReplayCompensationChainResp
 	RetryCompensationChainReq         = omsclient.RetryCompensationChainReq
@@ -181,7 +181,9 @@ type (
 		QueryOrderList(ctx context.Context, in *QueryOrderListReq, opts ...grpc.CallOption) (*QueryOrderListResp, error)
 		// 查询经营漏斗订单聚合
 		QueryOperateOrderFunnel(ctx context.Context, in *QueryOperateOrderFunnelReq, opts ...grpc.CallOption) (*QueryOperateOrderFunnelResp, error)
+		// 查询复购分析总览与趋势
 		QueryRepeatPurchaseAnalysis(ctx context.Context, in *QueryRepeatPurchaseAnalysisReq, opts ...grpc.CallOption) (*QueryRepeatPurchaseAnalysisResp, error)
+		// 查询复购分析详情
 		QueryRepeatPurchaseDetailList(ctx context.Context, in *QueryRepeatPurchaseDetailListReq, opts ...grpc.CallOption) (*QueryRepeatPurchaseDetailListResp, error)
 		// 查询链路监控列表
 		QueryCompensationChainList(ctx context.Context, in *QueryCompensationChainListReq, opts ...grpc.CallOption) (*QueryCompensationChainListResp, error)
@@ -264,11 +266,13 @@ func (m *defaultOrderService) QueryOperateOrderFunnel(ctx context.Context, in *Q
 	return client.QueryOperateOrderFunnel(ctx, in, opts...)
 }
 
+// 查询复购分析总览与趋势
 func (m *defaultOrderService) QueryRepeatPurchaseAnalysis(ctx context.Context, in *QueryRepeatPurchaseAnalysisReq, opts ...grpc.CallOption) (*QueryRepeatPurchaseAnalysisResp, error) {
 	client := omsclient.NewOrderServiceClient(m.cli.Conn())
 	return client.QueryRepeatPurchaseAnalysis(ctx, in, opts...)
 }
 
+// 查询复购分析详情
 func (m *defaultOrderService) QueryRepeatPurchaseDetailList(ctx context.Context, in *QueryRepeatPurchaseDetailListReq, opts ...grpc.CallOption) (*QueryRepeatPurchaseDetailListResp, error) {
 	client := omsclient.NewOrderServiceClient(m.cli.Conn())
 	return client.QueryRepeatPurchaseDetailList(ctx, in, opts...)
