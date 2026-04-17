@@ -1457,6 +1457,96 @@ var MemberInfoService_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
+	MemberIdentityService_QueryMemberIdentityProfile_FullMethodName = "/umsclient.MemberIdentityService/QueryMemberIdentityProfile"
+)
+
+// MemberIdentityServiceClient is the client API for MemberIdentityService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type MemberIdentityServiceClient interface {
+	QueryMemberIdentityProfile(ctx context.Context, in *QueryMemberIdentityProfileReq, opts ...grpc.CallOption) (*QueryMemberIdentityProfileResp, error)
+}
+
+type memberIdentityServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewMemberIdentityServiceClient(cc grpc.ClientConnInterface) MemberIdentityServiceClient {
+	return &memberIdentityServiceClient{cc}
+}
+
+func (c *memberIdentityServiceClient) QueryMemberIdentityProfile(ctx context.Context, in *QueryMemberIdentityProfileReq, opts ...grpc.CallOption) (*QueryMemberIdentityProfileResp, error) {
+	out := new(QueryMemberIdentityProfileResp)
+	err := c.cc.Invoke(ctx, MemberIdentityService_QueryMemberIdentityProfile_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// MemberIdentityServiceServer is the server API for MemberIdentityService service.
+// All implementations must embed UnimplementedMemberIdentityServiceServer
+// for forward compatibility
+type MemberIdentityServiceServer interface {
+	QueryMemberIdentityProfile(context.Context, *QueryMemberIdentityProfileReq) (*QueryMemberIdentityProfileResp, error)
+	mustEmbedUnimplementedMemberIdentityServiceServer()
+}
+
+// UnimplementedMemberIdentityServiceServer must be embedded to have forward compatible implementations.
+type UnimplementedMemberIdentityServiceServer struct {
+}
+
+func (UnimplementedMemberIdentityServiceServer) QueryMemberIdentityProfile(context.Context, *QueryMemberIdentityProfileReq) (*QueryMemberIdentityProfileResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QueryMemberIdentityProfile not implemented")
+}
+func (UnimplementedMemberIdentityServiceServer) mustEmbedUnimplementedMemberIdentityServiceServer() {}
+
+// UnsafeMemberIdentityServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to MemberIdentityServiceServer will
+// result in compilation errors.
+type UnsafeMemberIdentityServiceServer interface {
+	mustEmbedUnimplementedMemberIdentityServiceServer()
+}
+
+func RegisterMemberIdentityServiceServer(s grpc.ServiceRegistrar, srv MemberIdentityServiceServer) {
+	s.RegisterService(&MemberIdentityService_ServiceDesc, srv)
+}
+
+func _MemberIdentityService_QueryMemberIdentityProfile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryMemberIdentityProfileReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MemberIdentityServiceServer).QueryMemberIdentityProfile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MemberIdentityService_QueryMemberIdentityProfile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MemberIdentityServiceServer).QueryMemberIdentityProfile(ctx, req.(*QueryMemberIdentityProfileReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// MemberIdentityService_ServiceDesc is the grpc.ServiceDesc for MemberIdentityService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var MemberIdentityService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "umsclient.MemberIdentityService",
+	HandlerType: (*MemberIdentityServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "QueryMemberIdentityProfile",
+			Handler:    _MemberIdentityService_QueryMemberIdentityProfile_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "rpc/ums/ums.proto",
+}
+
+const (
 	MemberLevelService_AddMemberLevel_FullMethodName          = "/umsclient.MemberLevelService/AddMemberLevel"
 	MemberLevelService_DeleteMemberLevel_FullMethodName       = "/umsclient.MemberLevelService/DeleteMemberLevel"
 	MemberLevelService_UpdateMemberLevel_FullMethodName       = "/umsclient.MemberLevelService/UpdateMemberLevel"

@@ -65,6 +65,10 @@ type (
 	DrawActivityListData                    = smsclient.DrawActivityListData
 	DrawCardTemplateData                    = smsclient.DrawCardTemplateData
 	DrawHomeEntryConfig                     = smsclient.DrawHomeEntryConfig
+	DrawLandingCardPreview                  = smsclient.DrawLandingCardPreview
+	DrawLandingPoolPreview                  = smsclient.DrawLandingPoolPreview
+	DrawLandingRecentWin                    = smsclient.DrawLandingRecentWin
+	DrawMemberRecordData                    = smsclient.DrawMemberRecordData
 	DrawPoolData                            = smsclient.DrawPoolData
 	DrawPoolTemplateData                    = smsclient.DrawPoolTemplateData
 	DrawReadinessItem                       = smsclient.DrawReadinessItem
@@ -75,8 +79,12 @@ type (
 	OperateCouponRedeemBucketPoint          = smsclient.OperateCouponRedeemBucketPoint
 	OperateFunnelActivityOption             = smsclient.OperateFunnelActivityOption
 	OperateTrafficBucketPoint               = smsclient.OperateTrafficBucketPoint
+	ParticipateDrawReq                      = smsclient.ParticipateDrawReq
+	ParticipateDrawResp                     = smsclient.ParticipateDrawResp
 	PreviewDrawActivityPublishReadinessReq  = smsclient.PreviewDrawActivityPublishReadinessReq
 	PreviewDrawActivityPublishReadinessResp = smsclient.PreviewDrawActivityPublishReadinessResp
+	PreviewDrawEligibilityReq               = smsclient.PreviewDrawEligibilityReq
+	PreviewDrawEligibilityResp              = smsclient.PreviewDrawEligibilityResp
 	QueryAvailableCouponsReq                = smsclient.QueryAvailableCouponsReq
 	QueryAvailableCouponsResp               = smsclient.QueryAvailableCouponsResp
 	QueryCouponByCodeReq                    = smsclient.QueryCouponByCodeReq
@@ -102,6 +110,8 @@ type (
 	QueryCouponTypeListResp                 = smsclient.QueryCouponTypeListResp
 	QueryDrawActivityDetailReq              = smsclient.QueryDrawActivityDetailReq
 	QueryDrawActivityDetailResp             = smsclient.QueryDrawActivityDetailResp
+	QueryDrawActivityLandingReq             = smsclient.QueryDrawActivityLandingReq
+	QueryDrawActivityLandingResp            = smsclient.QueryDrawActivityLandingResp
 	QueryDrawActivityListReq                = smsclient.QueryDrawActivityListReq
 	QueryDrawActivityListResp               = smsclient.QueryDrawActivityListResp
 	QueryFlashPromotionListByDateResp       = smsclient.QueryFlashPromotionListByDateResp
@@ -111,6 +121,8 @@ type (
 	QueryHomeAdvertiseListResp              = smsclient.QueryHomeAdvertiseListResp
 	QueryMemberCouponListReq                = smsclient.QueryMemberCouponListReq
 	QueryMemberCouponListResp               = smsclient.QueryMemberCouponListResp
+	QueryMemberDrawRecordListReq            = smsclient.QueryMemberDrawRecordListReq
+	QueryMemberDrawRecordListResp           = smsclient.QueryMemberDrawRecordListResp
 	QueryOperateActivityOptionsReq          = smsclient.QueryOperateActivityOptionsReq
 	QueryOperateActivityOptionsResp         = smsclient.QueryOperateActivityOptionsResp
 	QueryOperateCouponRedeemReq             = smsclient.QueryOperateCouponRedeemReq

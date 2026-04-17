@@ -71,6 +71,11 @@ func (l *InfoLogic) Info() (resp *types.InfoResp, err error) {
 			ReturnCount:  detail.ReturnCount,          // 退货数
 			LotteryTimes: detail.LotteryTimes,         // 剩余抽奖次数
 			LastLogin:    detail.LastLogin,            // 最后登录
+			RealNameStatus: detail.RealNameStatus,     // 实名状态
+			RealNameStatusText: detail.RealNameStatusText, // 实名状态文案
+			RealNameMasked: detail.RealNameMasked,     // 脱敏实名
+			CredentialRef: detail.CredentialRef,       // 凭证引用
+			VerifiedAt: detail.VerifiedAt,             // 实名时间
 		},
 	}, nil
 }

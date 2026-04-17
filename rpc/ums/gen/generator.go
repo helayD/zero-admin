@@ -25,6 +25,7 @@ func main() {
 
 	g.ApplyBasic(
 		g.GenerateModel("ums_member_info"),
+		g.GenerateModel("ums_member_identity"),
 		g.GenerateModel("ums_member_level"),
 		g.GenerateModel("ums_member_address"),
 		g.GenerateModel("ums_member_tag"),

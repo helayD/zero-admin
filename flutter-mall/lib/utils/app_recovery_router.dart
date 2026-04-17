@@ -15,6 +15,7 @@ import 'package:flutter_mall/view/mine/order/apply_after_sales.dart';
 import 'package:flutter_mall/view/mine/order/order_detail.dart';
 import 'package:flutter_mall/view/mine/order/order_list.dart';
 import 'package:flutter_mall/view/mine/setting/settings.dart';
+import 'package:flutter_mall/view/digital_card/draw_activity_page.dart';
 
 class AppRecoveryRouter {
   static Widget buildTarget(AppRecentContext context) {
@@ -76,6 +77,14 @@ class AppRecoveryRouter {
           intentSource: context.source,
         );
       case AppRecentTargetType.activity:
+        final activityId = context.targetId;
+        if (activityId == null || activityId <= 0) {
+          return buildFallback(context);
+        }
+        return DrawActivityPage(
+          activityId: activityId,
+          intentSource: context.source,
+        );
       case AppRecentTargetType.subject:
       case AppRecentTargetType.preferredArea:
         return buildFallback(context);

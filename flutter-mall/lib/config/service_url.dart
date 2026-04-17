@@ -19,6 +19,8 @@ String proxyImageUrl(String url) {
 
 // 首页
 const homeDataUrl = "$baseUrl/api/home/index";
+// 首页广告点击
+const recordHomeAdvertiseClickUrl = "$baseUrl/api/home/recordHomeAdvertiseClick";
 // 品牌列表
 const brandListDataUrl = "$baseUrl/api/product/queryBrandList";
 // 品牌详情
@@ -117,6 +119,20 @@ const registerDataUrl = "$baseUrl/api/member/register";
 const memberInfoDataUrl = "$baseUrl/api/member/info";
 // 更新会员信息
 const updateMemberDataUrl = "$baseUrl/api/member/updateMember";
+// 数字卡片活动落地页（匿名）
+const queryDrawActivityLandingUrl =
+    "$baseUrl/api/digitalCard/queryDrawActivityLanding";
+// 数字卡片活动落地页（登录态）
+const queryMyDrawActivityLandingUrl =
+    "$baseUrl/api/digitalCard/queryMyDrawActivityLanding";
+// 预检抽卡资格
+const previewDrawEligibilityUrl =
+    "$baseUrl/api/digitalCard/previewDrawEligibility";
+// 参与抽卡
+const participateDrawUrl = "$baseUrl/api/digitalCard/participateDraw";
+// 查询我的抽卡记录
+const queryMyDrawRecordListUrl =
+    "$baseUrl/api/digitalCard/queryMyDrawRecordList";
 
 // ==================== 支付相关（Story 5.5 Task 11）====================
 // 发起支付

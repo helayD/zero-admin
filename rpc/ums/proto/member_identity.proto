@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package main;
+
+option go_package = "./proto";
+
+message QueryMemberIdentityProfileReq {
+  int64 member_id = 1; // 会员ID
+}
+
+message QueryMemberIdentityProfileResp {
+  int64 id = 1; // 主键ID
+  int64 member_id = 2; // 会员ID
+  string real_name_status = 3; // 实名状态
+  string real_name_status_text = 4; // 实名状态文案
+  string real_name_masked = 5; // 脱敏实名
+  string identity_no_masked = 6; // 脱敏证件号
+  string provider_code = 7; // 实名服务商
+  string credential_ref = 8; // 凭证引用
+  string verified_at = 9; // 认证时间
+  string failure_reason = 10; // 失败原因
+  string audit_status = 11; // 审核状态
+}
+
+service MemberIdentityService {
+  rpc QueryMemberIdentityProfile(QueryMemberIdentityProfileReq) returns (QueryMemberIdentityProfileResp){}
+}

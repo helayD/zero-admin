@@ -254,9 +254,8 @@ class MessageData {
           requiresAuth: false,
           intentId: intentId,
           issuedAt: issuedAt,
-          failureReason: 'unsupported_target',
-          recoveryHint: '当前活动入口暂不可直达，已返回首页继续浏览',
-          blocked: true,
+          recoveryHint: '已为你打开活动入口，可继续查看抽卡规则与参与记录',
+          blocked: false,
         );
       case 'subject':
         return AppRecentContext.createRecall(

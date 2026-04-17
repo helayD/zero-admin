@@ -8,6 +8,7 @@ import 'package:flutter_mall/theme/app_theme.dart';
 import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/utils/commerce_state_resolver.dart';
 import 'package:flutter_mall/utils/http_util.dart';
+import 'package:flutter_mall/view/digital_card/draw_activity_page.dart';
 import 'package:flutter_mall/view/home/brand/brand_detail.dart';
 import 'package:flutter_mall/view/home/brand/brand_list.dart';
 import 'package:flutter_mall/widgets/cached_image_widget.dart';
@@ -295,6 +296,75 @@ class _HomePageState extends State<HomePage> {
   void _showFeatureInProgress(String label) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('$label 功能建设中，后续会接入完整流程')),
+    );
+  }
+
+  int? _resolveAdvertiseActivityId(AdvertiseList advertise) {
+    if (advertise.activityId > 0) {
+      return advertise.activityId;
+    }
+
+    final String raw = advertise.url.trim();
+    if (raw.isEmpty) {
+      return null;
+    }
+
+    final int? directId = int.tryParse(raw);
+    if (directId != null && directId > 0) {
+      return directId;
+    }
+
+    final Uri? uri = Uri.tryParse(raw);
+    if (uri == null) {
+      return null;
+    }
+
+    for (final String key in <String>['activityId', 'activity_id', 'id']) {
+      final int? parsed = int.tryParse(uri.queryParameters[key] ?? '');
+      if (parsed != null && parsed > 0) {
+        return parsed;
+      }
+    }
+
+    for (final String segment in uri.pathSegments.reversed) {
+      final int? parsed = int.tryParse(segment);
+      if (parsed != null && parsed > 0) {
+        return parsed;
+      }
+    }
+
+    return null;
+  }
+
+  Future<void> _openDrawActivity(AdvertiseList advertise) async {
+    final int? activityId = _resolveAdvertiseActivityId(advertise);
+    if (activityId == null || activityId <= 0) {
+      final String activityName = advertise.name.trim();
+      _showFeatureInProgress(activityName.isEmpty ? '活动详情' : activityName);
+      return;
+    }
+
+    try {
+      await HttpUtil.post(
+        recordHomeAdvertiseClickUrl,
+        data: <String, dynamic>{'advertiseId': advertise.id},
+      );
+    } catch (_) {
+      // 点击埋点失败不阻塞真实跳转
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => DrawActivityPage(
+          activityId: activityId,
+          activityTitle: advertise.name.trim(),
+          intentSource: 'home_banner',
+        ),
+      ),
     );
   }
 
@@ -606,19 +676,11 @@ class _HomePageState extends State<HomePage> {
                   title: _bannerTitle(advertise),
                   subtitle: _bannerSubtitle(advertise),
                   imageUrl: advertise.pic,
-                  onTap: () {
-                    final String activityName = advertise.name.trim();
-                    _showFeatureInProgress(
-                      activityName.isEmpty ? '活动详情' : activityName,
-                    );
-                  },
+                  onTap: () => _openDrawActivity(advertise),
                 );
               },
               onTap: (int index) {
-                final String activityName = advertiseList[index].name.trim();
-                _showFeatureInProgress(
-                  activityName.isEmpty ? '活动详情' : activityName,
-                );
+                _openDrawActivity(advertiseList[index]);
               },
             ),
           ),

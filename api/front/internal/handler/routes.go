@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	appversion "github.com/feihua/zero-admin/api/front/internal/handler/app/version"
+	digital_carddraw_activity "github.com/feihua/zero-admin/api/front/internal/handler/digital_card/draw_activity"
 	home "github.com/feihua/zero-admin/api/front/internal/handler/home"
 	memberaddress "github.com/feihua/zero-admin/api/front/internal/handler/member/address"
 	memberattention "github.com/feihua/zero-admin/api/front/internal/handler/member/attention"
@@ -41,12 +42,39 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 	server.AddRoutes(
 		[]rest.Route{
 			{
-				Method:  http.MethodPost,
-				Path:    "/recordHomeAdvertiseClick",
-				Handler: home.RecordHomeAdvertiseClickHandler(serverCtx),
+				Method:  http.MethodGet,
+				Path:    "/queryDrawActivityLanding",
+				Handler: digital_carddraw_activity.QueryDrawActivityLandingHandler(serverCtx),
 			},
 		},
-		rest.WithPrefix("/api/home"),
+		rest.WithPrefix("/api/digitalCard"),
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodPost,
+				Path:    "/participateDraw",
+				Handler: digital_carddraw_activity.ParticipateDrawHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/previewDrawEligibility",
+				Handler: digital_carddraw_activity.PreviewDrawEligibilityHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/queryMyDrawActivityLanding",
+				Handler: digital_carddraw_activity.QueryMyDrawActivityLandingHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/queryMyDrawRecordList",
+				Handler: digital_carddraw_activity.QueryMyDrawRecordListHandler(serverCtx),
+			},
+		},
+		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/digitalCard"),
 	)
 
 	server.AddRoutes(
@@ -55,6 +83,17 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodGet,
 				Path:    "/index",
 				Handler: home.IndexHandler(serverCtx),
+			},
+		},
+		rest.WithPrefix("/api/home"),
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodPost,
+				Path:    "/recordHomeAdvertiseClick",
+				Handler: home.RecordHomeAdvertiseClickHandler(serverCtx),
 			},
 		},
 		rest.WithPrefix("/api/home"),

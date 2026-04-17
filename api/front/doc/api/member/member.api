@@ -62,6 +62,11 @@ type MemberData {
 	ReturnCount  int32   `json:"returnCount"` //退货数
 	LotteryTimes int32   `json:"lotteryTimes"` //剩余抽奖次数
 	LastLogin    string  `json:"lastLogin"` //最后登录
+	RealNameStatus string `json:"realNameStatus"` //实名状态
+	RealNameStatusText string `json:"realNameStatusText"` //实名状态文案
+	RealNameMasked string `json:"realNameMasked"` //脱敏实名
+	CredentialRef string `json:"credentialRef"` //凭证引用
+	VerifiedAt string `json:"verifiedAt"` //实名时间
 }
 
 type UpdatePasswordReq {
@@ -119,4 +124,3 @@ service front-api {
 	@handler UpdateMember
 	post /updateMember (UpdateMemberReq) returns (MemberResp)
 }
-

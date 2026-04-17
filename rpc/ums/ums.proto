@@ -485,7 +485,11 @@ message QueryMemberInfoDetailResp {
   int32 is_enabled = 24; //是否启用：0-禁用，1-启用
   string create_time = 25; //创建时间
   string update_time = 26; //更新时间
-
+  string real_name_status = 27; //实名状态
+  string real_name_status_text = 28; //实名状态文案
+  string real_name_masked = 29; //脱敏实名
+  string credential_ref = 30; //凭证引用
+  string verified_at = 31; //实名时间
 }
 
 // 分页查询会员信息列表
@@ -574,6 +578,24 @@ message UpdateFirstLoginStatusReq {
   int32 coupon_count = 18; //优惠券数量
 }
 
+message QueryMemberIdentityProfileReq {
+  int64 member_id = 1; //会员ID
+}
+
+message QueryMemberIdentityProfileResp {
+  int64 id = 1; //主键ID
+  int64 member_id = 2; //会员ID
+  string real_name_status = 3; //实名状态
+  string real_name_status_text = 4; //实名状态文案
+  string real_name_masked = 5; //脱敏实名
+  string identity_no_masked = 6; //脱敏证件号
+  string provider_code = 7; //实名服务商
+  string credential_ref = 8; //凭证引用
+  string verified_at = 9; //认证时间
+  string failure_reason = 10; //失败原因
+  string audit_status = 11; //审核状态
+}
+
 // 会员信息
 service MemberInfoService {
   // 注册会员信息
@@ -599,6 +621,10 @@ service MemberInfoService {
   //更新会员首次登录状态
   rpc UpdateFirstLoginStatus(UpdateFirstLoginStatusReq) returns(UpdateMemberInfoResp);
 
+}
+
+service MemberIdentityService {
+  rpc QueryMemberIdentityProfile(QueryMemberIdentityProfileReq) returns (QueryMemberIdentityProfileResp){}
 }
 // 添加会员等级
 message AddMemberLevelReq {

@@ -27,7 +27,7 @@ void main() {
     expect(message.intent!.blocked, isFalse);
   });
 
-  test('legacy activity message becomes blocked fallback intent', () {
+  test('legacy activity message becomes direct activity intent', () {
     final message = MessageData.fromJson({
       'id': 12,
       'messageType': 4,
@@ -41,8 +41,8 @@ void main() {
 
     expect(message.intent, isNotNull);
     expect(message.intent!.targetType, AppRecentTargetType.activity);
-    expect(message.intent!.blocked, isTrue);
-    expect(message.intent!.failureReason, 'unsupported_target');
+    expect(message.intent!.blocked, isFalse);
+    expect(message.intent!.targetId, 88);
     expect(message.intent!.fallbackType, AppRecentTargetType.home);
   });
 

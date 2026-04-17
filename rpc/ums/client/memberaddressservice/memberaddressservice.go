@@ -116,6 +116,8 @@ type (
 	QueryMemberGrowthLogDetailResp             = umsclient.QueryMemberGrowthLogDetailResp
 	QueryMemberGrowthLogListReq                = umsclient.QueryMemberGrowthLogListReq
 	QueryMemberGrowthLogListResp               = umsclient.QueryMemberGrowthLogListResp
+	QueryMemberIdentityProfileReq              = umsclient.QueryMemberIdentityProfileReq
+	QueryMemberIdentityProfileResp             = umsclient.QueryMemberIdentityProfileResp
 	QueryMemberInfoDetailReq                   = umsclient.QueryMemberInfoDetailReq
 	QueryMemberInfoDetailResp                  = umsclient.QueryMemberInfoDetailResp
 	QueryMemberInfoListReq                     = umsclient.QueryMemberInfoListReq

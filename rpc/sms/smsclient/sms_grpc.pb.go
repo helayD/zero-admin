@@ -1596,6 +1596,208 @@ var DrawActivityService_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
+	DrawParticipationService_QueryDrawActivityLanding_FullMethodName  = "/smsclient.DrawParticipationService/QueryDrawActivityLanding"
+	DrawParticipationService_PreviewDrawEligibility_FullMethodName    = "/smsclient.DrawParticipationService/PreviewDrawEligibility"
+	DrawParticipationService_ParticipateDraw_FullMethodName           = "/smsclient.DrawParticipationService/ParticipateDraw"
+	DrawParticipationService_QueryMemberDrawRecordList_FullMethodName = "/smsclient.DrawParticipationService/QueryMemberDrawRecordList"
+)
+
+// DrawParticipationServiceClient is the client API for DrawParticipationService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type DrawParticipationServiceClient interface {
+	QueryDrawActivityLanding(ctx context.Context, in *QueryDrawActivityLandingReq, opts ...grpc.CallOption) (*QueryDrawActivityLandingResp, error)
+	PreviewDrawEligibility(ctx context.Context, in *PreviewDrawEligibilityReq, opts ...grpc.CallOption) (*PreviewDrawEligibilityResp, error)
+	ParticipateDraw(ctx context.Context, in *ParticipateDrawReq, opts ...grpc.CallOption) (*ParticipateDrawResp, error)
+	QueryMemberDrawRecordList(ctx context.Context, in *QueryMemberDrawRecordListReq, opts ...grpc.CallOption) (*QueryMemberDrawRecordListResp, error)
+}
+
+type drawParticipationServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewDrawParticipationServiceClient(cc grpc.ClientConnInterface) DrawParticipationServiceClient {
+	return &drawParticipationServiceClient{cc}
+}
+
+func (c *drawParticipationServiceClient) QueryDrawActivityLanding(ctx context.Context, in *QueryDrawActivityLandingReq, opts ...grpc.CallOption) (*QueryDrawActivityLandingResp, error) {
+	out := new(QueryDrawActivityLandingResp)
+	err := c.cc.Invoke(ctx, DrawParticipationService_QueryDrawActivityLanding_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *drawParticipationServiceClient) PreviewDrawEligibility(ctx context.Context, in *PreviewDrawEligibilityReq, opts ...grpc.CallOption) (*PreviewDrawEligibilityResp, error) {
+	out := new(PreviewDrawEligibilityResp)
+	err := c.cc.Invoke(ctx, DrawParticipationService_PreviewDrawEligibility_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *drawParticipationServiceClient) ParticipateDraw(ctx context.Context, in *ParticipateDrawReq, opts ...grpc.CallOption) (*ParticipateDrawResp, error) {
+	out := new(ParticipateDrawResp)
+	err := c.cc.Invoke(ctx, DrawParticipationService_ParticipateDraw_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *drawParticipationServiceClient) QueryMemberDrawRecordList(ctx context.Context, in *QueryMemberDrawRecordListReq, opts ...grpc.CallOption) (*QueryMemberDrawRecordListResp, error) {
+	out := new(QueryMemberDrawRecordListResp)
+	err := c.cc.Invoke(ctx, DrawParticipationService_QueryMemberDrawRecordList_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// DrawParticipationServiceServer is the server API for DrawParticipationService service.
+// All implementations must embed UnimplementedDrawParticipationServiceServer
+// for forward compatibility
+type DrawParticipationServiceServer interface {
+	QueryDrawActivityLanding(context.Context, *QueryDrawActivityLandingReq) (*QueryDrawActivityLandingResp, error)
+	PreviewDrawEligibility(context.Context, *PreviewDrawEligibilityReq) (*PreviewDrawEligibilityResp, error)
+	ParticipateDraw(context.Context, *ParticipateDrawReq) (*ParticipateDrawResp, error)
+	QueryMemberDrawRecordList(context.Context, *QueryMemberDrawRecordListReq) (*QueryMemberDrawRecordListResp, error)
+	mustEmbedUnimplementedDrawParticipationServiceServer()
+}
+
+// UnimplementedDrawParticipationServiceServer must be embedded to have forward compatible implementations.
+type UnimplementedDrawParticipationServiceServer struct {
+}
+
+func (UnimplementedDrawParticipationServiceServer) QueryDrawActivityLanding(context.Context, *QueryDrawActivityLandingReq) (*QueryDrawActivityLandingResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QueryDrawActivityLanding not implemented")
+}
+func (UnimplementedDrawParticipationServiceServer) PreviewDrawEligibility(context.Context, *PreviewDrawEligibilityReq) (*PreviewDrawEligibilityResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PreviewDrawEligibility not implemented")
+}
+func (UnimplementedDrawParticipationServiceServer) ParticipateDraw(context.Context, *ParticipateDrawReq) (*ParticipateDrawResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ParticipateDraw not implemented")
+}
+func (UnimplementedDrawParticipationServiceServer) QueryMemberDrawRecordList(context.Context, *QueryMemberDrawRecordListReq) (*QueryMemberDrawRecordListResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QueryMemberDrawRecordList not implemented")
+}
+func (UnimplementedDrawParticipationServiceServer) mustEmbedUnimplementedDrawParticipationServiceServer() {
+}
+
+// UnsafeDrawParticipationServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to DrawParticipationServiceServer will
+// result in compilation errors.
+type UnsafeDrawParticipationServiceServer interface {
+	mustEmbedUnimplementedDrawParticipationServiceServer()
+}
+
+func RegisterDrawParticipationServiceServer(s grpc.ServiceRegistrar, srv DrawParticipationServiceServer) {
+	s.RegisterService(&DrawParticipationService_ServiceDesc, srv)
+}
+
+func _DrawParticipationService_QueryDrawActivityLanding_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryDrawActivityLandingReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DrawParticipationServiceServer).QueryDrawActivityLanding(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DrawParticipationService_QueryDrawActivityLanding_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DrawParticipationServiceServer).QueryDrawActivityLanding(ctx, req.(*QueryDrawActivityLandingReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DrawParticipationService_PreviewDrawEligibility_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PreviewDrawEligibilityReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DrawParticipationServiceServer).PreviewDrawEligibility(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DrawParticipationService_PreviewDrawEligibility_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DrawParticipationServiceServer).PreviewDrawEligibility(ctx, req.(*PreviewDrawEligibilityReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DrawParticipationService_ParticipateDraw_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ParticipateDrawReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DrawParticipationServiceServer).ParticipateDraw(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DrawParticipationService_ParticipateDraw_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DrawParticipationServiceServer).ParticipateDraw(ctx, req.(*ParticipateDrawReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DrawParticipationService_QueryMemberDrawRecordList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryMemberDrawRecordListReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DrawParticipationServiceServer).QueryMemberDrawRecordList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DrawParticipationService_QueryMemberDrawRecordList_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DrawParticipationServiceServer).QueryMemberDrawRecordList(ctx, req.(*QueryMemberDrawRecordListReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// DrawParticipationService_ServiceDesc is the grpc.ServiceDesc for DrawParticipationService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var DrawParticipationService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "smsclient.DrawParticipationService",
+	HandlerType: (*DrawParticipationServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "QueryDrawActivityLanding",
+			Handler:    _DrawParticipationService_QueryDrawActivityLanding_Handler,
+		},
+		{
+			MethodName: "PreviewDrawEligibility",
+			Handler:    _DrawParticipationService_PreviewDrawEligibility_Handler,
+		},
+		{
+			MethodName: "ParticipateDraw",
+			Handler:    _DrawParticipationService_ParticipateDraw_Handler,
+		},
+		{
+			MethodName: "QueryMemberDrawRecordList",
+			Handler:    _DrawParticipationService_QueryMemberDrawRecordList_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "rpc/sms/sms.proto",
+}
+
+const (
 	HomeAdvertiseService_AddHomeAdvertise_FullMethodName          = "/smsclient.HomeAdvertiseService/AddHomeAdvertise"
 	HomeAdvertiseService_DeleteHomeAdvertise_FullMethodName       = "/smsclient.HomeAdvertiseService/DeleteHomeAdvertise"
 	HomeAdvertiseService_UpdateHomeAdvertise_FullMethodName       = "/smsclient.HomeAdvertiseService/UpdateHomeAdvertise"

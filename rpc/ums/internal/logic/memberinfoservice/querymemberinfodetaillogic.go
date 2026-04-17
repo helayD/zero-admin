@@ -3,8 +3,10 @@ package memberinfoservicelogic
 import (
 	"context"
 	"errors"
+
 	"github.com/feihua/zero-admin/pkg/time_util"
 	"github.com/feihua/zero-admin/rpc/ums/gen/query"
+	memberidentityservicelogic "github.com/feihua/zero-admin/rpc/ums/internal/logic/memberidentityservice"
 	"github.com/feihua/zero-admin/rpc/ums/internal/svc"
 	"github.com/feihua/zero-admin/rpc/ums/umsclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -68,6 +70,17 @@ func (l *QueryMemberInfoDetailLogic) QueryMemberInfoDetail(in *umsclient.QueryMe
 		IsEnabled:    item.IsEnabled,                          // 是否启用：0-禁用，1-启用
 		CreateTime:   time_util.TimeToStr(item.CreateTime),    // 创建时间
 		UpdateTime:   time_util.TimeToString(item.UpdateTime), // 更新时间
+	}
+
+	identity, identityErr := memberidentityservicelogic.LoadMemberIdentityProfile(l.ctx, l.svcCtx.DB, in.MemberId)
+	if identityErr != nil {
+		logc.Errorf(l.ctx, "加载会员实名摘要失败,memberId:%d,异常:%s", in.MemberId, identityErr.Error())
+	} else {
+		data.RealNameStatus = identity.RealNameStatus
+		data.RealNameStatusText = identity.RealNameStatusText
+		data.RealNameMasked = identity.RealNameMasked
+		data.CredentialRef = identity.CredentialRef
+		data.VerifiedAt = identity.VerifiedAt
 	}
 
 	return data, nil

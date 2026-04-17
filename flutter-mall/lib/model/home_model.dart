@@ -22,16 +22,16 @@ class HomeModel {
   });
 
   factory HomeModel.fromJson(Map<String, dynamic> json) => HomeModel(
-    code: json["code"],
-    message: json["message"],
-    data: Data.fromJson(json["data"]),
-  );
+        code: json["code"],
+        message: json["message"],
+        data: Data.fromJson(json["data"]),
+      );
 
   Map<String, dynamic> toJson() => {
-    "code": code,
-    "message": message,
-    "data": data.toJson(),
-  };
+        "code": code,
+        "message": message,
+        "data": data.toJson(),
+      };
 }
 
 class Data {
@@ -54,26 +54,37 @@ class Data {
   });
 
   factory Data.fromJson(Map<String, dynamic> json) => Data(
-    advertiseList: List<AdvertiseList>.from(json["advertiseList"].map((x) => AdvertiseList.fromJson(x))),
-    brandList: List<BrandListData>.from(json["brandList"].map((x) => BrandListData.fromJson(x))),
-    homeFlashPromotion: HomeFlashPromotion.fromJson(json["homeFlashPromotion"]),
-    newProductList: List<ProductList>.from(json["newProductList"].map((x) => ProductList.fromJson(x))),
-    hotProductList: List<ProductList>.from(json["hotProductList"].map((x) => ProductList.fromJson(x))),
-    subjectList: List<SubjectList>.from(json["subjectList"].map((x) => SubjectList.fromJson(x))),
-    preferredAreaList: json["preferredAreaList"] != null
-        ? List<PreferredAreaListData>.from(json["preferredAreaList"].map((x) => PreferredAreaListData.fromJson(x)))
-        : [],
-  );
+        advertiseList: List<AdvertiseList>.from(
+            json["advertiseList"].map((x) => AdvertiseList.fromJson(x))),
+        brandList: List<BrandListData>.from(
+            json["brandList"].map((x) => BrandListData.fromJson(x))),
+        homeFlashPromotion:
+            HomeFlashPromotion.fromJson(json["homeFlashPromotion"]),
+        newProductList: List<ProductList>.from(
+            json["newProductList"].map((x) => ProductList.fromJson(x))),
+        hotProductList: List<ProductList>.from(
+            json["hotProductList"].map((x) => ProductList.fromJson(x))),
+        subjectList: List<SubjectList>.from(
+            json["subjectList"].map((x) => SubjectList.fromJson(x))),
+        preferredAreaList: json["preferredAreaList"] != null
+            ? List<PreferredAreaListData>.from(json["preferredAreaList"]
+                .map((x) => PreferredAreaListData.fromJson(x)))
+            : [],
+      );
 
   Map<String, dynamic> toJson() => {
-    "advertiseList": List<dynamic>.from(advertiseList.map((x) => x.toJson())),
-    "brandList": List<dynamic>.from(brandList.map((x) => x.toJson())),
-    "homeFlashPromotion": homeFlashPromotion.toJson(),
-    "newProductList": List<dynamic>.from(newProductList.map((x) => x.toJson())),
-    "hotProductList": List<dynamic>.from(hotProductList.map((x) => x.toJson())),
-    "subjectList": List<dynamic>.from(subjectList.map((x) => x.toJson())),
-    "preferredAreaList": List<dynamic>.from(preferredAreaList.map((x) => x.toJson())),
-  };
+        "advertiseList":
+            List<dynamic>.from(advertiseList.map((x) => x.toJson())),
+        "brandList": List<dynamic>.from(brandList.map((x) => x.toJson())),
+        "homeFlashPromotion": homeFlashPromotion.toJson(),
+        "newProductList":
+            List<dynamic>.from(newProductList.map((x) => x.toJson())),
+        "hotProductList":
+            List<dynamic>.from(hotProductList.map((x) => x.toJson())),
+        "subjectList": List<dynamic>.from(subjectList.map((x) => x.toJson())),
+        "preferredAreaList":
+            List<dynamic>.from(preferredAreaList.map((x) => x.toJson())),
+      };
 }
 
 class AdvertiseList {
@@ -87,6 +98,8 @@ class AdvertiseList {
   int clickCount;
   int orderCount;
   String url;
+  String activityType;
+  int activityId;
   String remark;
   int sort;
 
@@ -101,39 +114,45 @@ class AdvertiseList {
     required this.clickCount,
     required this.orderCount,
     required this.url,
+    required this.activityType,
+    required this.activityId,
     required this.remark,
     required this.sort,
   });
 
   factory AdvertiseList.fromJson(Map<String, dynamic> json) => AdvertiseList(
-    id: json["id"],
-    name: json["name"],
-    type: json["type"],
-    pic: json["pic"],
-    startTime: json["startTime"],
-    endTime: json["endTime"],
-    status: json["status"],
-    clickCount: json["clickCount"],
-    orderCount: json["orderCount"],
-    url: json["url"],
-    remark: json["remark"],
-    sort: json["sort"],
-  );
+        id: json["id"],
+        name: json["name"],
+        type: json["type"],
+        pic: json["pic"],
+        startTime: json["startTime"],
+        endTime: json["endTime"],
+        status: json["status"],
+        clickCount: json["clickCount"],
+        orderCount: json["orderCount"],
+        url: json["url"] ?? '',
+        activityType: json["activityType"] ?? '',
+        activityId: json["activityId"] ?? 0,
+        remark: json["remark"] ?? '',
+        sort: json["sort"] ?? 0,
+      );
 
   Map<String, dynamic> toJson() => {
-    "id": id,
-    "name": name,
-    "type": type,
-    "pic": pic,
-    "startTime": startTime,
-    "endTime": endTime,
-    "status": status,
-    "clickCount": clickCount,
-    "orderCount": orderCount,
-    "url": url,
-    "remark": remark,
-    "sort": sort,
-  };
+        "id": id,
+        "name": name,
+        "type": type,
+        "pic": pic,
+        "startTime": startTime,
+        "endTime": endTime,
+        "status": status,
+        "clickCount": clickCount,
+        "orderCount": orderCount,
+        "url": url,
+        "activityType": activityType,
+        "activityId": activityId,
+        "remark": remark,
+        "sort": sort,
+      };
 }
 
 class HomeFlashPromotion {
@@ -151,21 +170,23 @@ class HomeFlashPromotion {
     required this.productList,
   });
 
-  factory HomeFlashPromotion.fromJson(Map<String, dynamic> json) => HomeFlashPromotion(
-    startTime: json["startTime"],
-    endTime: json["endTime"],
-    nextStartTime: json["nextStartTime"],
-    nextEndTime: json["nextEndTime"],
-    productList: List<ProductList>.from(json["productList"].map((x) => ProductList.fromJson(x))),
-  );
+  factory HomeFlashPromotion.fromJson(Map<String, dynamic> json) =>
+      HomeFlashPromotion(
+        startTime: json["startTime"],
+        endTime: json["endTime"],
+        nextStartTime: json["nextStartTime"],
+        nextEndTime: json["nextEndTime"],
+        productList: List<ProductList>.from(
+            json["productList"].map((x) => ProductList.fromJson(x))),
+      );
 
   Map<String, dynamic> toJson() => {
-    "startTime": startTime,
-    "endTime": endTime,
-    "nextStartTime": nextStartTime,
-    "nextEndTime": nextEndTime,
-    "productList": List<dynamic>.from(productList.map((x) => x.toJson())),
-  };
+        "startTime": startTime,
+        "endTime": endTime,
+        "nextStartTime": nextStartTime,
+        "nextEndTime": nextEndTime,
+        "productList": List<dynamic>.from(productList.map((x) => x.toJson())),
+      };
 }
 
 class ProductList {
@@ -234,70 +255,70 @@ class ProductList {
   });
 
   factory ProductList.fromJson(Map<String, dynamic> json) => ProductList(
-    id: json["id"],
-    name: json["name"],
-    productSn: json["productSn"],
-    categoryId: json["categoryId"],
-    categoryIds: json["categoryIds"],
-    categoryName: json["categoryName"],
-    brandId: json["brandId"],
-    brandName: json["brandName"],
-    unit: json["unit"],
-    weight: json["weight"]?.toDouble(),
-    keywords: json["keywords"],
-    albumPics: json["albumPics"],
-    mainPic: json["mainPic"],
-    price: json["price"],
-    priceRange: json["priceRange"],
-    publishStatus: json["publishStatus"],
-    newStatus: json["newStatus"],
-    recommendStatus: json["recommendStatus"],
-    verifyStatus: json["verifyStatus"],
-    previewStatus: json["previewStatus"],
-    sort: json["sort"],
-    newStatusSort: json["newStatusSort"],
-    recommendStatusSort: json["recommendStatusSort"],
-    sales: json["sales"],
-    stock: json["stock"],
-    lowStock: json["lowStock"],
-    promotionType: json["promotionType"],
-    subTitle: json["subTitle"],
-    detailHtml: json["detailHtml"],
-    detailMobileHtml: json["detailMobileHtml"],
-  );
+        id: json["id"],
+        name: json["name"],
+        productSn: json["productSn"],
+        categoryId: json["categoryId"],
+        categoryIds: json["categoryIds"],
+        categoryName: json["categoryName"],
+        brandId: json["brandId"],
+        brandName: json["brandName"],
+        unit: json["unit"],
+        weight: json["weight"]?.toDouble(),
+        keywords: json["keywords"],
+        albumPics: json["albumPics"],
+        mainPic: json["mainPic"],
+        price: json["price"],
+        priceRange: json["priceRange"],
+        publishStatus: json["publishStatus"],
+        newStatus: json["newStatus"],
+        recommendStatus: json["recommendStatus"],
+        verifyStatus: json["verifyStatus"],
+        previewStatus: json["previewStatus"],
+        sort: json["sort"],
+        newStatusSort: json["newStatusSort"],
+        recommendStatusSort: json["recommendStatusSort"],
+        sales: json["sales"],
+        stock: json["stock"],
+        lowStock: json["lowStock"],
+        promotionType: json["promotionType"],
+        subTitle: json["subTitle"],
+        detailHtml: json["detailHtml"],
+        detailMobileHtml: json["detailMobileHtml"],
+      );
 
   Map<String, dynamic> toJson() => {
-    "id": id,
-    "name": name,
-    "productSn": productSn,
-    "categoryId": categoryId,
-    "categoryIds": categoryIds,
-    "categoryName": categoryName,
-    "brandId": brandId,
-    "brandName": brandName,
-    "unit": unit,
-    "weight": weight,
-    "keywords": keywords,
-    "albumPics": albumPics,
-    "mainPic": mainPic,
-    "price": price,
-    "priceRange": priceRange,
-    "publishStatus": publishStatus,
-    "newStatus": newStatus,
-    "recommendStatus": recommendStatus,
-    "verifyStatus": verifyStatus,
-    "previewStatus": previewStatus,
-    "sort": sort,
-    "newStatusSort": newStatusSort,
-    "recommendStatusSort": recommendStatusSort,
-    "sales": sales,
-    "stock": stock,
-    "lowStock": lowStock,
-    "promotionType": promotionType,
-    "subTitle": subTitle,
-    "detailHtml": detailHtml,
-    "detailMobileHtml": detailMobileHtml,
-  };
+        "id": id,
+        "name": name,
+        "productSn": productSn,
+        "categoryId": categoryId,
+        "categoryIds": categoryIds,
+        "categoryName": categoryName,
+        "brandId": brandId,
+        "brandName": brandName,
+        "unit": unit,
+        "weight": weight,
+        "keywords": keywords,
+        "albumPics": albumPics,
+        "mainPic": mainPic,
+        "price": price,
+        "priceRange": priceRange,
+        "publishStatus": publishStatus,
+        "newStatus": newStatus,
+        "recommendStatus": recommendStatus,
+        "verifyStatus": verifyStatus,
+        "previewStatus": previewStatus,
+        "sort": sort,
+        "newStatusSort": newStatusSort,
+        "recommendStatusSort": recommendStatusSort,
+        "sales": sales,
+        "stock": stock,
+        "lowStock": lowStock,
+        "promotionType": promotionType,
+        "subTitle": subTitle,
+        "detailHtml": detailHtml,
+        "detailMobileHtml": detailMobileHtml,
+      };
 }
 
 class SubjectList {
@@ -338,42 +359,42 @@ class SubjectList {
   });
 
   factory SubjectList.fromJson(Map<String, dynamic> json) => SubjectList(
-    id: json["id"],
-    categoryId: json["categoryId"],
-    title: json["title"],
-    pic: json["pic"],
-    productCount: json["productCount"],
-    recommendStatus: json["recommendStatus"],
-    collectCount: json["collectCount"],
-    readCount: json["readCount"],
-    commentCount: json["commentCount"],
-    albumPics: json["albumPics"],
-    description: json["description"],
-    showStatus: json["showStatus"],
-    content: json["content"],
-    forwardCount: json["forwardCount"],
-    categoryName: json["categoryName"],
-    sort: json["sort"],
-  );
+        id: json["id"],
+        categoryId: json["categoryId"],
+        title: json["title"],
+        pic: json["pic"],
+        productCount: json["productCount"],
+        recommendStatus: json["recommendStatus"],
+        collectCount: json["collectCount"],
+        readCount: json["readCount"],
+        commentCount: json["commentCount"],
+        albumPics: json["albumPics"],
+        description: json["description"],
+        showStatus: json["showStatus"],
+        content: json["content"],
+        forwardCount: json["forwardCount"],
+        categoryName: json["categoryName"],
+        sort: json["sort"],
+      );
 
   Map<String, dynamic> toJson() => {
-    "id": id,
-    "categoryId": categoryId,
-    "title": title,
-    "pic": pic,
-    "productCount": productCount,
-    "recommendStatus": recommendStatus,
-    "collectCount": collectCount,
-    "readCount": readCount,
-    "commentCount": commentCount,
-    "albumPics": albumPics,
-    "description": description,
-    "showStatus": showStatus,
-    "content": content,
-    "forwardCount": forwardCount,
-    "categoryName": categoryName,
-    "sort": sort,
-  };
+        "id": id,
+        "categoryId": categoryId,
+        "title": title,
+        "pic": pic,
+        "productCount": productCount,
+        "recommendStatus": recommendStatus,
+        "collectCount": collectCount,
+        "readCount": readCount,
+        "commentCount": commentCount,
+        "albumPics": albumPics,
+        "description": description,
+        "showStatus": showStatus,
+        "content": content,
+        "forwardCount": forwardCount,
+        "categoryName": categoryName,
+        "sort": sort,
+      };
 }
 
 class PreferredAreaListData {
@@ -393,21 +414,22 @@ class PreferredAreaListData {
     required this.showStatus,
   });
 
-  factory PreferredAreaListData.fromJson(Map<String, dynamic> json) => PreferredAreaListData(
-    id: json["id"] ?? 0,
-    name: json["name"] ?? "",
-    subTitle: json["subTitle"] ?? "",
-    pic: json["pic"] ?? "",
-    sort: json["sort"] ?? 0,
-    showStatus: json["showStatus"] ?? 0,
-  );
+  factory PreferredAreaListData.fromJson(Map<String, dynamic> json) =>
+      PreferredAreaListData(
+        id: json["id"] ?? 0,
+        name: json["name"] ?? "",
+        subTitle: json["subTitle"] ?? "",
+        pic: json["pic"] ?? "",
+        sort: json["sort"] ?? 0,
+        showStatus: json["showStatus"] ?? 0,
+      );
 
   Map<String, dynamic> toJson() => {
-    "id": id,
-    "name": name,
-    "subTitle": subTitle,
-    "pic": pic,
-    "sort": sort,
-    "showStatus": showStatus,
-  };
+        "id": id,
+        "name": name,
+        "subTitle": subTitle,
+        "pic": pic,
+        "sort": sort,
+        "showStatus": showStatus,
+      };
 }

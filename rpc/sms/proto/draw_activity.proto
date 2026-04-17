@@ -197,6 +197,11 @@ message QueryDrawActivityDetailResp {
   repeated DrawPoolData pools = 31; // 卡池列表
   repeated DrawReadinessItem readiness_items = 32; // 预检结果
   repeated DrawActivityAuditRecord audits = 33; // 审计记录
+  string consume_type = 34; // 消耗类型
+  int32 consume_amount = 35; // 消耗数量
+  int32 quota_per_member = 36; // 单用户总配额
+  int32 daily_quota_per_member = 37; // 单用户日配额
+  string eligibility_rule_json = 38; // 机器可读资格规则
 }
 
 message QueryDrawActivityListReq {

@@ -5,6 +5,7 @@ import 'package:flutter_mall/model/permission_flow_context.dart';
 import 'package:flutter_mall/utils/app_recovery_router.dart';
 import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/utils/shared_preferences_util.dart';
+import 'package:flutter_mall/view/digital_card/draw_activity_page.dart';
 import 'package:flutter_mall/view/mine/coupon/available_coupon_list.dart';
 import 'package:flutter_mall/view/mine/coupon/coupon_list.dart';
 import 'package:flutter_mall/view/mine/order/order_list.dart';
@@ -124,5 +125,24 @@ void main() {
     );
 
     expect(target, isA<MainTab>());
+  });
+
+  test('activity recovery opens draw activity page when target id is present',
+      () {
+    final target = AppRecoveryRouter.buildTarget(
+      AppRecentContext.createRecall(
+        intentType: 'activity_recall',
+        targetType: AppRecentTargetType.activity,
+        targetId: 88,
+        fallbackType: AppRecentTargetType.home,
+        fallbackTabIndex: 0,
+        source: 'member_message',
+        requiresAuth: false,
+        intentId: 'member_message:88',
+      ),
+    );
+
+    expect(target, isA<DrawActivityPage>());
+    expect((target as DrawActivityPage).activityId, 88);
   });
 }

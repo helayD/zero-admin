@@ -39,6 +39,7 @@ import (
 	"github.com/feihua/zero-admin/rpc/sms/client/couponscopeservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/couponservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/coupontypeservice"
+	"github.com/feihua/zero-admin/rpc/sms/client/drawparticipationservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/homeadvertiseservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/operatedashboardservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/seckillactivityservice"
@@ -55,6 +56,7 @@ import (
 	"github.com/feihua/zero-admin/rpc/ums/client/membermessageservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/memberconsumesettingservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/membergrowthlogservice"
+	"github.com/feihua/zero-admin/rpc/ums/client/memberidentityservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/memberinfoservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/memberlevelservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/memberloginlogservice"
@@ -87,6 +89,7 @@ type ServiceContext struct {
 	MemberReadHistoryService             memberreadhistoryservice.MemberReadHistoryService
 	MemberAddressService                 memberaddressservice.MemberAddressService
 	MemberRuleSettingService             memberrulesettingservice.MemberRuleSettingService
+	MemberIdentityService                memberidentityservice.MemberIdentityService
 	MemberService                        memberinfoservice.MemberInfoService
 	MemberStatisticsInfoService          memberstatisticsinfoservice.MemberStatisticsInfoService
 	MemberTagService                     membertagservice.MemberTagService
@@ -135,6 +138,7 @@ type ServiceContext struct {
 	CouponScopeService        couponscopeservice.CouponScopeService
 	CouponService             couponservice.CouponService
 	CouponTypeService         coupontypeservice.CouponTypeService
+	DrawParticipationService  drawparticipationservice.DrawParticipationService
 	HomeAdvertiseService      homeadvertiseservice.HomeAdvertiseService
 	OperateDashboardService   operatedashboardservice.OperateDashboardService
 	SeckillActivityService    seckillactivityservice.SeckillActivityService
@@ -193,6 +197,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		MemberReadHistoryService:             memberreadhistoryservice.NewMemberReadHistoryService(umsClient),
 		MemberAddressService:                 memberaddressservice.NewMemberAddressService(umsClient),
 		MemberRuleSettingService:             memberrulesettingservice.NewMemberRuleSettingService(umsClient),
+		MemberIdentityService:                memberidentityservice.NewMemberIdentityService(umsClient),
 		MemberService:                        memberinfoservice.NewMemberInfoService(umsClient),
 		MemberStatisticsInfoService:          memberstatisticsinfoservice.NewMemberStatisticsInfoService(umsClient),
 		MemberTagService:                     membertagservice.NewMemberTagService(umsClient),
@@ -240,6 +245,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		CouponScopeService:        couponscopeservice.NewCouponScopeService(smsClient),
 		CouponService:             couponservice.NewCouponService(smsClient),
 		CouponTypeService:         coupontypeservice.NewCouponTypeService(smsClient),
+		DrawParticipationService:  drawparticipationservice.NewDrawParticipationService(smsClient),
 		HomeAdvertiseService:      homeadvertiseservice.NewHomeAdvertiseService(smsClient),
 		OperateDashboardService:   operatedashboardservice.NewOperateDashboardService(smsClient),
 		SeckillActivityService:    seckillactivityservice.NewSeckillActivityService(smsClient),

@@ -755,6 +755,11 @@ message QueryDrawActivityDetailResp {
   repeated DrawPoolData pools = 31; // 卡池列表
   repeated DrawReadinessItem readiness_items = 32; // 预检结果
   repeated DrawActivityAuditRecord audits = 33; // 审计记录
+  string consume_type = 34; // 消耗类型
+  int32 consume_amount = 35; // 消耗数量
+  int32 quota_per_member = 36; // 单用户总配额
+  int32 daily_quota_per_member = 37; // 单用户日配额
+  string eligibility_rule_json = 38; // 机器可读资格规则
 }
 
 message QueryDrawActivityListReq {
@@ -814,6 +819,145 @@ service DrawActivityService {
   rpc QueryDrawActivityDetail(QueryDrawActivityDetailReq) returns (QueryDrawActivityDetailResp){}
   rpc QueryDrawActivityList(QueryDrawActivityListReq) returns (QueryDrawActivityListResp){}
   rpc PreviewDrawActivityPublishReadiness(PreviewDrawActivityPublishReadinessReq) returns (PreviewDrawActivityPublishReadinessResp){}
+}
+message DrawLandingCardPreview {
+  int64 template_id = 1; // 模板ID
+  string template_code = 2; // 模板编码
+  string template_name = 3; // 模板名称
+  string card_face_image = 4; // 卡面资源
+  string rarity = 5; // 稀有度
+  string display_copy = 6; // 展示文案
+}
+
+message DrawLandingPoolPreview {
+  int64 pool_id = 1; // 卡池ID
+  string pool_name = 2; // 卡池名称
+  string probability_rule = 3; // 概率说明
+  repeated DrawLandingCardPreview cards = 4; // 预览卡片
+}
+
+message DrawLandingRecentWin {
+  int64 record_id = 1; // 参与记录ID
+  int64 member_id = 2; // 会员ID
+  string member_name_masked = 3; // 会员昵称
+  string result_status = 4; // 结果状态
+  string result_status_text = 5; // 结果文案
+  string template_name = 6; // 模板名称
+  string rarity = 7; // 稀有度
+  string create_time = 8; // 参与时间
+}
+
+message DrawMemberRecordData {
+  int64 id = 1; // 参与记录ID
+  int64 activity_id = 2; // 活动ID
+  string request_id = 3; // 幂等请求ID
+  string result_type = 4; // 结果类型
+  string result_status = 5; // 结果状态
+  string result_status_text = 6; // 结果文案
+  string failure_code = 7; // 失败码
+  string failure_reason = 8; // 失败原因
+  int64 pool_id = 9; // 卡池ID
+  int64 template_id = 10; // 模板ID
+  string template_name = 11; // 模板名称
+  string rarity = 12; // 稀有度
+  int32 consume_amount = 13; // 消耗次数
+  int32 lottery_times_before = 14; // 扣减前次数
+  int32 lottery_times_after = 15; // 扣减后次数
+  string create_time = 16; // 参与时间
+}
+
+message QueryDrawActivityLandingReq {
+  int64 activity_id = 1; // 活动ID
+  int64 member_id = 2; // 会员ID，匿名为0
+  string channel = 3; // 渠道
+  string entry_source = 4; // 入口来源
+  GovernanceScope scope = 5; // 治理范围
+}
+
+message QueryDrawActivityLandingResp {
+  int64 activity_id = 1; // 活动ID
+  string activity_code = 2; // 活动编码
+  string name = 3; // 活动名称
+  string rule_summary = 4; // 活动规则摘要
+  string participant_condition_summary = 5; // 参与条件摘要
+  string consume_rule_summary = 6; // 消耗规则摘要
+  string probability_rule = 7; // 概率说明
+  string compliance_rule_summary = 8; // 合规摘要
+  string circulation_limit_summary = 9; // 流转限制摘要
+  string start_time = 10; // 开始时间
+  string end_time = 11; // 结束时间
+  int32 real_name_required = 12; // 是否要求实名
+  string eligibility_status = 13; // 资格状态
+  string eligibility_code = 14; // 资格编码
+  string eligibility_message = 15; // 资格提示
+  string next_action = 16; // 下一步动作
+  int32 remaining_lottery_times = 17; // 剩余抽奖次数
+  string real_name_status = 18; // 实名状态
+  string real_name_status_text = 19; // 实名状态文案
+  string real_name_masked = 20; // 脱敏实名
+  string credential_ref = 21; // 凭证引用
+  string verified_at = 22; // 实名时间
+  repeated DrawLandingCardPreview card_previews = 23; // 卡片预览
+  repeated DrawLandingPoolPreview pools = 24; // 卡池预览
+  repeated DrawLandingRecentWin recent_wins = 25; // 最近中奖记录
+  repeated DrawMemberRecordData my_records = 26; // 我的参与记录
+}
+
+message PreviewDrawEligibilityReq {
+  int64 activity_id = 1; // 活动ID
+  int64 member_id = 2; // 会员ID
+  string channel = 3; // 渠道
+  string entry_source = 4; // 入口来源
+  GovernanceScope scope = 5; // 治理范围
+}
+
+message PreviewDrawEligibilityResp {
+  string eligibility_status = 1; // 资格状态
+  string eligibility_code = 2; // 资格编码
+  string eligibility_message = 3; // 资格提示
+  string next_action = 4; // 下一步动作
+  int32 remaining_lottery_times = 5; // 剩余抽奖次数
+  string real_name_status = 6; // 实名状态
+  string real_name_status_text = 7; // 实名状态文案
+  string real_name_masked = 8; // 脱敏实名
+  string credential_ref = 9; // 凭证引用
+  string verified_at = 10; // 实名时间
+}
+
+message ParticipateDrawReq {
+  int64 activity_id = 1; // 活动ID
+  int64 member_id = 2; // 会员ID
+  string request_id = 3; // 幂等请求ID
+  string channel = 4; // 渠道
+  string entry_source = 5; // 入口来源
+  GovernanceScope scope = 6; // 治理范围
+}
+
+message ParticipateDrawResp {
+  DrawMemberRecordData record = 1; // 参与结果
+  string eligibility_code = 2; // 资格码
+  string eligibility_message = 3; // 资格说明
+  string next_action = 4; // 下一步动作
+}
+
+message QueryMemberDrawRecordListReq {
+  int64 activity_id = 1; // 活动ID
+  int64 member_id = 2; // 会员ID
+  int32 page_num = 3; // 页码
+  int32 page_size = 4; // 每页数量
+  GovernanceScope scope = 5; // 治理范围
+}
+
+message QueryMemberDrawRecordListResp {
+  int64 total = 1; // 总数
+  repeated DrawMemberRecordData list = 2; // 列表
+}
+
+service DrawParticipationService {
+  rpc QueryDrawActivityLanding(QueryDrawActivityLandingReq) returns (QueryDrawActivityLandingResp){}
+  rpc PreviewDrawEligibility(PreviewDrawEligibilityReq) returns (PreviewDrawEligibilityResp){}
+  rpc ParticipateDraw(ParticipateDrawReq) returns (ParticipateDrawResp){}
+  rpc QueryMemberDrawRecordList(QueryMemberDrawRecordListReq) returns (QueryMemberDrawRecordListResp){}
 }
 message GovernanceScope {
   string scope_type = 1; // 主体范围(platform/tenant/merchant)

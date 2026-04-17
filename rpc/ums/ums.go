@@ -7,6 +7,7 @@ import (
 	memberaddressserviceServer "github.com/feihua/zero-admin/rpc/ums/internal/server/memberaddressservice"
 	memberbrandattentionserviceServer "github.com/feihua/zero-admin/rpc/ums/internal/server/memberbrandattentionservice"
 	memberconsumesettingserviceServer "github.com/feihua/zero-admin/rpc/ums/internal/server/memberconsumesettingservice"
+	memberidentityserviceServer "github.com/feihua/zero-admin/rpc/ums/internal/server/memberidentityservice"
 	membermessageserviceServer "github.com/feihua/zero-admin/rpc/ums/internal/server/membermessageservice"
 	membergrowthlogserviceServer "github.com/feihua/zero-admin/rpc/ums/internal/server/membergrowthlogservice"
 	memberinfoserviceServer "github.com/feihua/zero-admin/rpc/ums/internal/server/memberinfoservice"
@@ -48,6 +49,7 @@ func main() {
 
 	s := zrpc.MustNewServer(c.RpcServerConf, func(grpcServer *grpc.Server) {
 		umsclient.RegisterMemberInfoServiceServer(grpcServer, memberinfoserviceServer.NewMemberInfoServiceServer(ctx))
+		umsclient.RegisterMemberIdentityServiceServer(grpcServer, memberidentityserviceServer.NewMemberIdentityServiceServer(ctx))
 		umsclient.RegisterMemberLevelServiceServer(grpcServer, memberlevelserviceServer.NewMemberLevelServiceServer(ctx))
 		umsclient.RegisterMemberLoginLogServiceServer(grpcServer, memberloginlogserviceServer.NewMemberLoginLogServiceServer(ctx))
 		umsclient.RegisterMemberTagRelationServiceServer(grpcServer, membertagrelationserviceServer.NewMemberTagRelationServiceServer(ctx))

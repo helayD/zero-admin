@@ -12,6 +12,7 @@ import (
 	couponserviceServer "github.com/feihua/zero-admin/rpc/sms/internal/server/couponservice"
 	coupontypeserviceServer "github.com/feihua/zero-admin/rpc/sms/internal/server/coupontypeservice"
 	drawactivityserviceServer "github.com/feihua/zero-admin/rpc/sms/internal/server/drawactivityservice"
+	drawparticipationserviceServer "github.com/feihua/zero-admin/rpc/sms/internal/server/drawparticipationservice"
 	homeadvertiseserviceServer "github.com/feihua/zero-admin/rpc/sms/internal/server/homeadvertiseservice"
 	operatedashboardserviceServer "github.com/feihua/zero-admin/rpc/sms/internal/server/operatedashboardservice"
 	seckillactivityserviceServer "github.com/feihua/zero-admin/rpc/sms/internal/server/seckillactivityservice"
@@ -45,6 +46,7 @@ func main() {
 		smsclient.RegisterCouponServiceServer(grpcServer, couponserviceServer.NewCouponServiceServer(ctx))
 		smsclient.RegisterCouponTypeServiceServer(grpcServer, coupontypeserviceServer.NewCouponTypeServiceServer(ctx))
 		smsclient.RegisterDrawActivityServiceServer(grpcServer, drawactivityserviceServer.NewDrawActivityServiceServer(ctx))
+		smsclient.RegisterDrawParticipationServiceServer(grpcServer, drawparticipationserviceServer.NewDrawParticipationServiceServer(ctx))
 		smsclient.RegisterHomeAdvertiseServiceServer(grpcServer, homeadvertiseserviceServer.NewHomeAdvertiseServiceServer(ctx))
 		smsclient.RegisterOperateDashboardServiceServer(grpcServer, operatedashboardserviceServer.NewOperateDashboardServiceServer(ctx))
 		smsclient.RegisterSeckillActivityServiceServer(grpcServer, seckillactivityserviceServer.NewSeckillActivityServiceServer(ctx))

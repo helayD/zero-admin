@@ -1,0 +1,178 @@
+info (
+	desc:   "数字卡片抽卡活动"
+	author: "Codex"
+	email:  "support@openai.com"
+)
+
+type DrawCardPreview {
+	TemplateId    int64  `json:"templateId"` //模板ID
+	TemplateCode  string `json:"templateCode"` //模板编码
+	TemplateName  string `json:"templateName"` //模板名称
+	CardFaceImage string `json:"cardFaceImage"` //卡面资源
+	Rarity        string `json:"rarity"` //稀有度
+	DisplayCopy   string `json:"displayCopy"` //展示文案
+}
+
+type DrawPoolPreview {
+	PoolId          int64             `json:"poolId"` //卡池ID
+	PoolName        string            `json:"poolName"` //卡池名称
+	ProbabilityRule string            `json:"probabilityRule"` //概率说明
+	Cards           []DrawCardPreview `json:"cards"` //卡片预览
+}
+
+type DrawRecentWin {
+	RecordId         int64  `json:"recordId"` //记录ID
+	MemberId         int64  `json:"memberId"` //会员ID
+	MemberNameMasked string `json:"memberNameMasked"` //脱敏会员昵称
+	ResultStatus     string `json:"resultStatus"` //结果状态
+	ResultStatusText string `json:"resultStatusText"` //结果文案
+	TemplateName     string `json:"templateName"` //模板名称
+	Rarity           string `json:"rarity"` //稀有度
+	CreateTime       string `json:"createTime"` //创建时间
+}
+
+type DrawMemberRecord {
+	Id                 int64  `json:"id"` //参与记录ID
+	ActivityId         int64  `json:"activityId"` //活动ID
+	RequestId          string `json:"requestId"` //请求ID
+	ResultType         string `json:"resultType"` //结果类型
+	ResultStatus       string `json:"resultStatus"` //结果状态
+	ResultStatusText   string `json:"resultStatusText"` //结果文案
+	FailureCode        string `json:"failureCode"` //失败码
+	FailureReason      string `json:"failureReason"` //失败原因
+	PoolId             int64  `json:"poolId"` //卡池ID
+	TemplateId         int64  `json:"templateId"` //模板ID
+	TemplateName       string `json:"templateName"` //模板名称
+	Rarity             string `json:"rarity"` //稀有度
+	ConsumeAmount      int32  `json:"consumeAmount"` //消耗次数
+	LotteryTimesBefore int32  `json:"lotteryTimesBefore"` //扣减前次数
+	LotteryTimesAfter  int32  `json:"lotteryTimesAfter"` //扣减后次数
+	CreateTime         string `json:"createTime"` //参与时间
+}
+
+type DrawIdentitySummary {
+	RealNameStatus     string `json:"realNameStatus"` //实名状态
+	RealNameStatusText string `json:"realNameStatusText"` //实名状态文案
+	RealNameMasked     string `json:"realNameMasked"` //脱敏实名
+	CredentialRef      string `json:"credentialRef"` //凭证引用
+	VerifiedAt         string `json:"verifiedAt"` //实名时间
+}
+
+type DrawEligibilitySummary {
+	EligibilityStatus    string `json:"eligibilityStatus"` //资格状态
+	EligibilityCode      string `json:"eligibilityCode"` //资格编码
+	EligibilityMessage   string `json:"eligibilityMessage"` //资格提示
+	NextAction           string `json:"nextAction"` //下一步动作
+	RemainingLotteryTimes int32 `json:"remainingLotteryTimes"` //剩余抽奖次数
+}
+
+type DrawActivityLandingReq {
+	ActivityId  int64  `form:"activityId"` //活动ID
+	Channel     string `form:"channel,optional"` //渠道
+	EntrySource string `form:"entrySource,optional"` //入口来源
+}
+
+type DrawActivityLandingData {
+	ActivityId                  int64              `json:"activityId"` //活动ID
+	ActivityCode                string             `json:"activityCode"` //活动编码
+	Name                        string             `json:"name"` //活动名称
+	RuleSummary                 string             `json:"ruleSummary"` //规则摘要
+	ParticipantConditionSummary string             `json:"participantConditionSummary"` //参与条件摘要
+	ConsumeRuleSummary          string             `json:"consumeRuleSummary"` //消耗规则摘要
+	ProbabilityRule             string             `json:"probabilityRule"` //概率说明
+	ComplianceRuleSummary       string             `json:"complianceRuleSummary"` //合规摘要
+	CirculationLimitSummary     string             `json:"circulationLimitSummary"` //流转限制摘要
+	StartTime                   string             `json:"startTime"` //开始时间
+	EndTime                     string             `json:"endTime"` //结束时间
+	RealNameRequired            int32              `json:"realNameRequired"` //是否实名要求
+	Eligibility                 DrawEligibilitySummary `json:"eligibility"` //资格摘要
+	Identity                    DrawIdentitySummary    `json:"identity"` //实名摘要
+	CardPreviews                []DrawCardPreview  `json:"cardPreviews"` //卡片预览
+	Pools                       []DrawPoolPreview  `json:"pools"` //卡池预览
+	RecentWins                  []DrawRecentWin    `json:"recentWins"` //最近中奖
+	MyRecords                   []DrawMemberRecord `json:"myRecords"` //我的记录
+}
+
+type DrawActivityLandingResp {
+	Code    string                  `json:"code"`
+	Message string                  `json:"message"`
+	Data    DrawActivityLandingData `json:"data"`
+}
+
+type PreviewDrawEligibilityReq {
+	ActivityId  int64  `form:"activityId"` //活动ID
+	Channel     string `form:"channel,optional"` //渠道
+	EntrySource string `form:"entrySource,optional"` //入口来源
+}
+
+type PreviewDrawEligibilityResp {
+	Code    string                 `json:"code"`
+	Message string                 `json:"message"`
+	Data    DrawEligibilitySummary `json:"data"`
+}
+
+type ParticipateDrawReq {
+	ActivityId  int64  `json:"activityId"` //活动ID
+	RequestId   string `json:"requestId"` //请求ID
+	Channel     string `json:"channel,optional"` //渠道
+	EntrySource string `json:"entrySource,optional"` //入口来源
+}
+
+type ParticipateDrawData {
+	Record      DrawMemberRecord       `json:"record"` //参与结果
+	Eligibility DrawEligibilitySummary `json:"eligibility"` //资格结果
+}
+
+type ParticipateDrawResp {
+	Code    string              `json:"code"`
+	Message string              `json:"message"`
+	Data    ParticipateDrawData `json:"data"`
+}
+
+type QueryMyDrawRecordListReq {
+	ActivityId int64 `form:"activityId"` //活动ID
+	PageNum    int32 `form:"pageNum,default=1"` //页码
+	PageSize   int32 `form:"pageSize,default=10"` //页大小
+}
+
+type QueryMyDrawRecordListData {
+	Total int64              `json:"total"` //总数
+	List  []DrawMemberRecord `json:"list"` //列表
+}
+
+type QueryMyDrawRecordListResp {
+	Code    string                    `json:"code"`
+	Message string                    `json:"message"`
+	Data    QueryMyDrawRecordListData `json:"data"`
+}
+
+@server (
+	group:  digital_card/draw_activity
+	prefix: /api/digitalCard
+	tags:   "数字卡片活动"
+)
+service front-api {
+	@handler QueryDrawActivityLanding
+	get /queryDrawActivityLanding (DrawActivityLandingReq) returns (DrawActivityLandingResp)
+}
+
+@server (
+	jwt:      Auth
+	group:    digital_card/draw_activity
+	prefix:   /api/digitalCard
+	tags:     "数字卡片活动"
+	authType: apiKey
+)
+service front-api {
+	@handler QueryMyDrawActivityLanding
+	get /queryMyDrawActivityLanding (DrawActivityLandingReq) returns (DrawActivityLandingResp)
+
+	@handler PreviewDrawEligibility
+	get /previewDrawEligibility (PreviewDrawEligibilityReq) returns (PreviewDrawEligibilityResp)
+
+	@handler ParticipateDraw
+	post /participateDraw (ParticipateDrawReq) returns (ParticipateDrawResp)
+
+	@handler QueryMyDrawRecordList
+	get /queryMyDrawRecordList (QueryMyDrawRecordListReq) returns (QueryMyDrawRecordListResp)
+}

@@ -1,4 +1,5 @@
 import "app/app_version.api"
+import "digital_card/draw_activity.api"
 import "home/home.api"
 import "home/home_advertise.api"
 import "home/home_recommend_subject.api"
