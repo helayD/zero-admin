@@ -16,12 +16,14 @@ Usage: $0 [OPTIONS]
 
 Options:
   --auto-clean      Run cleanup commands automatically (apt clean, docker prune)
+  --auto-clean-if-needed  Auto clean only when usage is at or above warning threshold
   --verbose         Show all known large directories
   --skip-clean      Skip cleanup suggestion (default)
   -h, --help        Show this help
 
 Examples:
   $0                           # Check only
+  $0 --auto-clean-if-needed    # Check + auto clean only when needed
   $0 --auto-clean              # Check + auto clean apt/docker
   $0 --verbose                 # Full verbose report
 EOF
@@ -29,16 +31,53 @@ EOF
 }
 
 AUTO_CLEAN=false
+AUTO_CLEAN_IF_NEEDED=false
 VERBOSE=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --auto-clean) AUTO_CLEAN=true; shift ;;
+    --auto-clean-if-needed) AUTO_CLEAN_IF_NEEDED=true; shift ;;
     --verbose) VERBOSE=true; shift ;;
     -h|--help) usage ;;
     *) echo "Unknown option: $1"; usage ;;
   esac
 done
+
+collect_disk_state() {
+  DISK_OUTPUT=$($SSH_CMD 'df -h /' 2>/dev/null)
+  ROOT_USAGE=$(echo "$DISK_OUTPUT" | awk 'NR==2 {gsub(/%/, "", $5); print $5}')
+  ROOT_AVAIL=$(echo "$DISK_OUTPUT" | awk 'NR==2 {print $4}')
+}
+
+print_verdict() {
+  echo "=============================================="
+  echo "  Verdict"
+  echo "=============================================="
+
+  if (( ROOT_USAGE >= CRIT_THRESHOLD )); then
+    echo "  STATUS:  CRITICAL  (${ROOT_USAGE}% used)"
+    echo "  ACTION:  ABORT deploy — disk is at or above ${CRIT_THRESHOLD}%"
+    echo "  AVAIL:   ${ROOT_AVAIL} remaining"
+    echo ""
+    echo "  Before deploying, run cleanup:"
+    echo "    $0 --auto-clean"
+    echo ""
+  elif (( ROOT_USAGE >= ALERT_THRESHOLD )); then
+    echo "  STATUS:  WARNING   (${ROOT_USAGE}% used)"
+    echo "  ACTION:  Proceed with caution — disk above ${ALERT_THRESHOLD}%"
+    echo "  AVAIL:   ${ROOT_AVAIL} remaining"
+    echo ""
+    echo "  Consider running cleanup first:"
+    echo "    $0 --auto-clean"
+    echo ""
+  else
+    echo "  STATUS:  OK        (${ROOT_USAGE}% used)"
+    echo "  AVAIL:   ${ROOT_AVAIL} remaining"
+    echo "  ACTION:  Safe to deploy"
+    echo ""
+  fi
+}
 
 echo "=============================================="
 echo "  Zero-Admin Remote Disk Health Check"
@@ -49,10 +88,8 @@ echo
 
 # ---- 1. Root filesystem usage ----
 echo "[1/6] Root filesystem usage..."
-DISK_OUTPUT=$($SSH_CMD 'df -h /' 2>/dev/null)
+collect_disk_state
 echo "$DISK_OUTPUT"
-ROOT_USAGE=$(echo "$DISK_OUTPUT" | awk 'NR==2 {gsub(/%/, "", $5); print $5}')
-ROOT_AVAIL=$(echo "$DISK_OUTPUT" | awk 'NR==2 {print $4}')
 echo
 
 # ---- 2. Inode usage ----
@@ -85,35 +122,13 @@ echo "[5/6] Running containers..."
 $SSH_CMD 'docker ps --format "table {{.Names}}\t{{.Status}}" 2>/dev/null' 2>/dev/null || echo "  (no containers running)"
 echo
 
-# ---- 6. Verdicts ----
-echo "=============================================="
-echo "  Verdict"
-echo "=============================================="
-
-if (( ROOT_USAGE >= CRIT_THRESHOLD )); then
-  echo "  STATUS:  CRITICAL  (${ROOT_USAGE}% used)"
-  echo "  ACTION:  ABORT deploy — disk is at or above ${CRIT_THRESHOLD}%"
-  echo "  AVAIL:   ${ROOT_AVAIL} remaining"
-  echo ""
-  echo "  Before deploying, run cleanup:"
-  echo "    $0 --auto-clean"
-  echo ""
-elif (( ROOT_USAGE >= ALERT_THRESHOLD )); then
-  echo "  STATUS:  WARNING   (${ROOT_USAGE}% used)"
-  echo "  ACTION:  Proceed with caution — disk above ${ALERT_THRESHOLD}%"
-  echo "  AVAIL:   ${ROOT_AVAIL} remaining"
-  echo ""
-  echo "  Consider running cleanup first:"
-  echo "    $0 --auto-clean"
-  echo ""
-else
-  echo "  STATUS:  OK        (${ROOT_USAGE}% used)"
-  echo "  AVAIL:   ${ROOT_AVAIL} remaining"
-  echo "  ACTION:  Safe to deploy"
-  echo ""
-fi
+print_verdict
 
 # ---- Auto clean ----
+if $AUTO_CLEAN_IF_NEEDED && (( ROOT_USAGE >= ALERT_THRESHOLD )); then
+  AUTO_CLEAN=true
+fi
+
 if $AUTO_CLEAN; then
   echo "=============================================="
   echo "  Running auto-cleanup..."
@@ -158,10 +173,18 @@ if $AUTO_CLEAN; then
 
   echo ""
   echo "Auto-clean done. Re-check:"
-  $SSH_CMD 'df -h /' 2>/dev/null
+  collect_disk_state
+  echo "$DISK_OUTPUT"
+  echo
+  echo "Final verdict after cleanup:"
+  print_verdict
   echo
 fi
 
 echo "=============================================="
 echo "Done. $(date '+%Y-%m-%d %H:%M:%S')"
 echo "=============================================="
+
+if (( ROOT_USAGE >= CRIT_THRESHOLD )); then
+  exit 2
+fi

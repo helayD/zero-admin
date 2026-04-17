@@ -9,33 +9,34 @@ description: Deploy the zero-admin repository to the private test server at 47.1
 
 Use this skill when the user wants the current `zero-admin` workspace deployed to the private remote environment on `47.107.224.56`.
 
-The deployment flow has exactly **one** publish path: deploy only from a clean, committed, already-pushed git ref.
+The target experience for this skill is **zero-interaction automatic deploy**:
 
-- Before any remote action, confirm the local worktree is clean and the intended branch/tag/commit is already on GitHub.
-- For Codex usage of this skill, do **not** rely on `deploy_remote.sh` auto-commit or auto-publish behavior from a dirty worktree.
-- `--git-ref` is the required deploy variant for this skill because it makes the target ref explicit and reviewable.
+- When the user says "发布到远程/测试环境", assume they want the current workspace published end-to-end unless they explicitly narrow the scope.
+- Complete the normal path automatically: inspect changes, run focused local verification, commit if needed, push, clean disk if needed, deploy, smoke test, and run Story API tests.
+- Do **not** pause for routine confirmations during that path. Only stop on a hard blocker such as failing local tests, failed push, failed cleanup that still leaves disk >= 90%, failed migration, failed build, or failed smoke/API tests.
 
-This keeps every deploy traceable to GitHub and prevents accidental release of uncommitted or implicitly committed local changes.
+The deployment flow still has exactly **one** publish path: GitHub-backed git sync. The server must deploy an explicit git ref, but the skill should prepare that ref automatically when the user wants to deploy current local work.
 
-## Local Git Gate (Pre-Deploy Gate)
+## Automation Defaults
 
-Before running SSH, disk checks, migrations, smoke tests, or the deploy script, inspect the local git state first.
+When the user asks to deploy current work, follow these defaults automatically:
 
-```bash
-git status --short --branch
-```
+1. Inspect `git status --short --branch`.
+2. If the worktree is dirty, run the most relevant local verification that can be inferred from changed files.
+3. If verification passes, auto-commit the current workspace with a concise deploy-oriented commit message.
+4. If the branch is ahead or the commit is new, push it automatically to GitHub.
+5. Resolve the deploy ref from the pushed branch/commit and pass it explicitly to `deploy_remote.sh --git-ref`.
+6. Run disk preflight with automatic cleanup if needed.
+7. Infer a minimal safe deploy scope from changed files; if inference is ambiguous, fall back to `all`.
+8. Auto-include migrations when changed files indicate repo SQL migrations are part of the change set.
 
-Rules:
+No confirmation pause is needed for those defaults.
 
-- If the worktree is dirty: stop immediately, show the user the status, and ask them whether to commit/push first or want help preparing a commit. Do **not** start any remote deploy action yet.
-- If the target ref is not pushed: ask the user to confirm the branch/tag/commit to publish, then push first.
-- Only after the local ref is clean and already available on GitHub may this skill proceed to the remote deploy steps.
-
-## Disk Health Check (Pre-Deploy Gate)
+## Disk Health Check (Automatic Pre-Deploy Gate)
 
 **Server: 47.107.224.56 — After cleanup baseline: 81G / 99G, 86% used, 14 GB free. Baseline is healthy.**
 
-Before any deploy, run the disk check. If disk is above 85%, surface the warning to the user and do not proceed without explicit confirmation.
+Before any deploy, run the disk check. If disk is above 85%, automatically run safe cleanup and re-check before deciding whether to continue.
 
 ```bash
 ssh -o ConnectTimeout=10 root@47.107.224.56 'df -h / && echo "---INODES---" && df -i /'
@@ -59,7 +60,7 @@ ssh -o ConnectTimeout=10 root@47.107.224.56 'df -h / && echo "---INODES---" && d
 | `/var/lib/containerd/` | ~380 MB | Prune orphaned snapshots |
 | `docker system df` | ~500 MB | `docker system prune -f` safe |
 
-### Disk Cleanup Commands (non-destructive, run with confirmation)
+### Disk Cleanup Commands (non-destructive, auto-runnable)
 
 ```bash
 # apt cache
@@ -97,8 +98,8 @@ ssh root@47.107.224.56 'snap list --all | awk "/lxd|core20/ && \$5 ~ /disabled/ 
 - Admin smoke account: `admin / 123456`
 - MySQL backup/apply host on the remote server: `127.0.0.1`
 - Default deploy services: `all`
-- Default deploy source: a clean branch/tag/commit that is already pushed to GitHub
-- Required explicit git ref: `--git-ref <ref>`
+- Default deploy source: current branch HEAD after automatic commit/push when needed
+- Deploy command should still use explicit git ref: `--git-ref <ref>`
 
 ## Service Matrix
 
@@ -117,23 +118,23 @@ The deploy script now understands the real service layout of this repo:
 - `job`
 - `web-admin`
 
-The default deploy scope is the full project. Use `--services <csv>` when you intentionally want a partial rollout.
+The skill should infer the smallest safe scope from changed files first, and only fall back to full-project deployment when the touched area is broad or ambiguous.
 
-## Deploy Pipeline (2 Gates + 8 Steps)
+## Deploy Pipeline (Fully Automatic)
 
-**Step 0 — Local Git Gate (precondition, non-negotiable)**
+**Step 0 — Local Publish Gate**
 
-Run before everything else. If the worktree is dirty or the intended ref is not yet pushed, stop and get user confirmation first.
+Run before everything else. Inspect git state, run focused verification, auto-commit if needed, and push automatically.
 
-**Step 1 — Disk Health Check (precondition, non-negotiable)**
+**Step 1 — Disk Health Gate**
 
-Run only after Step 0 succeeds. Abort deploy if root fs usage > 85% and report the exact usage.
+Run only after Step 0 succeeds. If root fs usage is >= 85%, run safe cleanup automatically and re-check. Continue automatically when post-clean usage is < 90%; abort only when it remains >= 90%.
 
 ```bash
 ssh -o ConnectTimeout=10 root@47.107.224.56 'df -h /'
 ```
 
-If usage > 85%: surface a warning with the exact numbers, reclaim space (see Disk Health Check above), verify again, then proceed only after explicit confirmation.
+If usage > 85%: reclaim space automatically, verify again, and proceed without asking unless the post-clean result is still at or above the hard stop threshold.
 
 2. **Verify SSH** — confirm remote host is reachable
 3. **Prepare** — identify build scope
@@ -146,43 +147,34 @@ If usage > 85%: surface a warning with the exact numbers, reclaim space (see Dis
 
 ## Workflow
 
-1. Inspect changed files and choose a safe deploy scope.
-2. Inspect `git status --short --branch` and stop if the worktree is dirty. Do not start any remote deploy action until the user confirms the commit/push plan.
-3. Push the intended branch/tag/commit to GitHub first, then deploy by explicit `--git-ref`.
-4. Run `deploy_remote.sh` with the right `--git-ref`, `--services`, and optional `--migration` / `--auto-migration`.
-5. Read the script output for:
+1. Inspect changed files and infer the deploy scope plus likely migration/test impact.
+2. Run focused local verification automatically.
+3. Auto-commit and push current branch when local changes are present or the branch is ahead.
+4. Run `check_disk.sh --auto-clean-if-needed`.
+5. Run `deploy_remote.sh` with the resolved `--git-ref`, inferred `--services`, and auto migration flags when applicable.
+6. Read the script output for:
    - deploy source
    - git source/ref used on the server
    - backup path
    - restarted processes
    - smoke results
    - **Story API test results (must be 100% pass)**
-6. If smoke or API tests fail, inspect the failing endpoint or remote process before retrying another rollout.
+7. If smoke or API tests fail, inspect the failing endpoint or remote process and treat the deploy as failed. Report findings instead of asking routine confirmation questions.
 
 ## Recommended Commands
 
-Local git gate (run before every deploy):
+Automatic disk gate:
 
 ```bash
-git status --short --branch
+bash .agents/skills/zero-admin-remote-deploy/scripts/check_disk.sh --auto-clean-if-needed
 ```
 
-Disk health check (run only after the git gate passes):
+Automatic deploy of current branch:
 
 ```bash
-bash .agents/skills/zero-admin-remote-deploy/scripts/check_disk.sh
-```
-
-Auto-clean + re-check:
-
-```bash
-bash .agents/skills/zero-admin-remote-deploy/scripts/check_disk.sh --auto-clean
-```
-
-Push the current branch first:
-
-```bash
-git push origin <branch>
+branch="$(git rev-parse --abbrev-ref HEAD)"
+git push origin "$branch"
+bash .agents/skills/zero-admin-remote-deploy/scripts/deploy_remote.sh --git-ref "$branch"
 ```
 
 Deploy an already-pushed branch, tag, or commit via remote git sync:
@@ -216,7 +208,7 @@ bash .agents/skills/zero-admin-remote-deploy/scripts/deploy_remote.sh \
   --migration script/sql/migration_20260326_deploy_seed.sql
 ```
 
-Deploy with auto-migration (scans root `script/sql/migration_*.sql` only):
+Deploy with auto-migration (recursive under `script/sql/`):
 
 ```bash
 bash .agents/skills/zero-admin-remote-deploy/scripts/deploy_remote.sh \
@@ -259,16 +251,16 @@ python3 .agents/skills/zero-admin-remote-deploy/scripts/smoke_remote.py \
 ## Guardrails
 
 - There is only one deploy path: GitHub-backed git sync. Do not use or introduce local file-copy deployment variants for this skill.
-- Before any remote action, inspect `git status --short --branch`.
-- If the local worktree is dirty, stop and ask the user whether to commit/push first. Do not SSH to the server, do not run disk checks, and do not start the deploy script yet.
-- For this skill, never rely on `deploy_remote.sh` auto-commit or auto-publish behavior from a dirty worktree.
-- Always deploy by explicit `--git-ref`, and that ref must already exist on GitHub.
+- Treat "发布到远程/测试环境" as authorization to execute the full normal deploy path automatically.
+- Do not stop for routine confirmation at local git gate, push, disk cleanup, service-scope inference, or migration auto-discovery.
+- Always ensure any remote deploy still uses an explicit git ref, even when that ref was just prepared automatically from the current branch.
 - The script preserves remote source YAMLs for runtime configs during git sync and does not overwrite target runtime YAMLs if they already exist.
 - The script always creates a timestamped backup under `/root/zero-admin/deploy-backup/<timestamp>`.
 - The script can fetch from a configurable git remote URL. This matters because the remote test machine may not point at the same `origin` as the local workspace.
-- The default behavior is project-wide deployment. Use `--services` only when you intentionally want a partial rollout.
-- `--auto-migration` only scans `script/sql/` at the repo root. Migrations under nested folders such as `script/sql/sms/` are not auto-discovered by that flag.
+- Infer the smallest safe deploy scope when possible; fall back to project-wide deployment when uncertain.
+- `--auto-migration` recursively scans `script/sql/**/migration_*.sql`, so nested domain migrations are eligible for automatic inclusion.
 - If smoke fails after restart, inspect the actual failing endpoint and relevant remote process before doing another rollout.
+- Hard blockers are allowed to stop the flow. Examples: local tests fail, git push fails, disk usage remains >= 90% after auto-clean, migration apply fails, remote build fails, smoke fails, or Story API tests fail.
 
 ## Internal Safeguards (auto-enabled)
 
@@ -285,10 +277,10 @@ If `pgrep` verification fails after `nohup` restart, the script performs a secon
 
 ### scripts/
 
-- `deploy_remote.sh`: main deployment entrypoint with git-based remote sync, service scoping, migration (manual + auto-discovery), target YAML RPC client sync, port mismatch detection, restart fallback, backup, smoke hooks, and Story API test gate. This skill must invoke it only with an already-pushed explicit `--git-ref`.
+- `deploy_remote.sh`: main deployment entrypoint with git-based remote sync, service scoping, migration (manual + auto-discovery), target YAML RPC client sync, port mismatch detection, restart fallback, backup, smoke hooks, and Story API test gate. The skill should prepare the git ref first, then invoke this script with an explicit `--git-ref`.
 - `smoke_remote.py`: admin smoke plus optional front smoke with clearer invalid-response diagnostics.
 - `run_api_tests.sh`: Story API test runner. Auto-discovers test scripts under `script/shell/api-test/<story-id>/test_*.sh`. Maps story prefixes to correct base URLs (4-* → admin, 5-* → front). Requires 100% pass rate.
-- `check_disk.sh`: remote disk health check. Run after the local git gate passes and before every deploy. Exits with warning (85%) or abort (90%). Supports `--auto-clean` to reclaim space (apt clean, docker prune, snap prune, tmp cleanup).
+- `check_disk.sh`: remote disk health check. Run after local publish prep and before every deploy. Supports `--auto-clean-if-needed` for zero-interaction flows and returns non-zero when post-clean disk usage is still at or above the hard stop threshold.
 
 ### Story API Tests (`script/shell/api-test/`)
 
@@ -303,4 +295,4 @@ To add a new story test: create `script/shell/api-test/<story-id>/test_<story-id
 
 ### Migration SQL (`script/sql/`)
 
-Files matching `migration_*.sql` under `script/sql/` are auto-discovered by `--auto-migration`. This scan is not recursive. Naming convention: `migration_<YYYYMMDD>_<description>.sql`.
+Files matching `migration_*.sql` under `script/sql/` are auto-discovered by `--auto-migration`. This scan is recursive. Naming convention: `migration_<YYYYMMDD>_<description>.sql`.

@@ -77,7 +77,7 @@ Options:
   --services <csv|all>         Deploy the given services. Default: all
   --skip-services <csv>        Remove services from the deploy set after --services is applied
   --migration <repo-sql>       Apply a repo SQL migration after backing up the remote DB
-  --auto-migration             Auto-discover and apply all script/sql/migration_*.sql files
+  --auto-migration             Auto-discover and apply all script/sql/**/migration_*.sql files
   --skip-api-test              Skip post-deploy Story API tests
   --api-test                   Force run Story API tests (default: on)
   --stories <csv>              Only run specified story tests, e.g. "4-5,4-6,5-1"
@@ -566,7 +566,7 @@ if [[ "$AUTO_MIGRATION" -eq 1 ]]; then
         [[ "$existing" == "$f" ]] && already=1 && break
       done
       [[ "$already" -eq 0 ]] && MIGRATION_FILES+=("$f")
-    done < <(find "$MIGRATION_SCAN_DIR" -maxdepth 1 -name 'migration_*.sql' -type f | sort)
+    done < <(find "$MIGRATION_SCAN_DIR" -name 'migration_*.sql' -type f | sort)
   fi
 fi
 
