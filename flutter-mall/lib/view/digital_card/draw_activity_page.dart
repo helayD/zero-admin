@@ -646,6 +646,15 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
             style:
                 TextStyle(fontSize: 13, color: Colors.grey[800], height: 1.45),
           ),
+          if (item.assetStatusText.trim().isNotEmpty) ...<Widget>[
+            const SizedBox(height: 6),
+            Text(
+              item.assetNo.trim().isNotEmpty
+                  ? '${item.assetStatusText} · 编号 ${item.assetNo}'
+                  : item.assetStatusText,
+              style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+            ),
+          ],
           const SizedBox(height: 6),
           Text(
             '抽奖次数 ${item.lotteryTimesBefore} -> ${item.lotteryTimesAfter}',

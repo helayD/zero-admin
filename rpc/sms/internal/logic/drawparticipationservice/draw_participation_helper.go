@@ -158,6 +158,10 @@ type drawParticipationRecordRow struct {
 	TraceID             string     `gorm:"column:trace_id"`
 	FailureCode         string     `gorm:"column:failure_code"`
 	FailureReason       string     `gorm:"column:failure_reason"`
+	AssetInstanceID     int64      `gorm:"column:asset_instance_id"`
+	AssetNo             string     `gorm:"column:asset_no"`
+	AssetStatus         string     `gorm:"column:asset_status"`
+	AssetCreatedAt      *time.Time `gorm:"column:asset_created_at"`
 	CreateTime          time.Time  `gorm:"column:create_time"`
 	UpdateTime          *time.Time `gorm:"column:update_time"`
 }
@@ -167,21 +171,25 @@ func (drawParticipationRecordRow) TableName() string {
 }
 
 type drawRecordDetailRow struct {
-	ID                 int64     `gorm:"column:id"`
-	ActivityID         int64     `gorm:"column:activity_id"`
-	RequestID          string    `gorm:"column:request_id"`
-	ResultType         string    `gorm:"column:result_type"`
-	ResultStatus       string    `gorm:"column:result_status"`
-	FailureCode        string    `gorm:"column:failure_code"`
-	FailureReason      string    `gorm:"column:failure_reason"`
-	PoolID             int64     `gorm:"column:pool_id"`
-	TemplateID         int64     `gorm:"column:template_id"`
-	TemplateName       string    `gorm:"column:template_name"`
-	Rarity             string    `gorm:"column:rarity"`
-	ConsumeAmount      int32     `gorm:"column:consume_amount"`
-	LotteryTimesBefore int32     `gorm:"column:lottery_times_before"`
-	LotteryTimesAfter  int32     `gorm:"column:lottery_times_after"`
-	CreateTime         time.Time `gorm:"column:create_time"`
+	ID                 int64      `gorm:"column:id"`
+	ActivityID         int64      `gorm:"column:activity_id"`
+	RequestID          string     `gorm:"column:request_id"`
+	ResultType         string     `gorm:"column:result_type"`
+	ResultStatus       string     `gorm:"column:result_status"`
+	FailureCode        string     `gorm:"column:failure_code"`
+	FailureReason      string     `gorm:"column:failure_reason"`
+	PoolID             int64      `gorm:"column:pool_id"`
+	TemplateID         int64      `gorm:"column:template_id"`
+	TemplateName       string     `gorm:"column:template_name"`
+	Rarity             string     `gorm:"column:rarity"`
+	ConsumeAmount      int32      `gorm:"column:consume_amount"`
+	LotteryTimesBefore int32      `gorm:"column:lottery_times_before"`
+	LotteryTimesAfter  int32      `gorm:"column:lottery_times_after"`
+	AssetInstanceID    int64      `gorm:"column:asset_instance_id"`
+	AssetNo            string     `gorm:"column:asset_no"`
+	AssetStatus        string     `gorm:"column:asset_status"`
+	AssetCreatedAt     *time.Time `gorm:"column:asset_created_at"`
+	CreateTime         time.Time  `gorm:"column:create_time"`
 }
 
 type drawRecentWinRow struct {
@@ -607,6 +615,10 @@ func queryMemberRecordList(ctx context.Context, db *gorm.DB, activityID int64, m
 			r.consume_amount,
 			r.lottery_times_before,
 			r.lottery_times_after,
+			r.asset_instance_id,
+			r.asset_no,
+			r.asset_status,
+			r.asset_created_at,
 			r.create_time`).
 		Joins("LEFT JOIN sms_card_template ct ON ct.id = r.template_id AND ct.is_deleted = 0").
 		Where("r.activity_id = ? AND r.member_id = ? AND r.is_deleted = 0", activityID, memberID).
@@ -645,6 +657,11 @@ func mapDrawRecordDetail(row *drawRecordDetailRow) *smsclient.DrawMemberRecordDa
 		ConsumeAmount:      row.ConsumeAmount,
 		LotteryTimesBefore: row.LotteryTimesBefore,
 		LotteryTimesAfter:  row.LotteryTimesAfter,
+		AssetInstanceId:    row.AssetInstanceID,
+		AssetNo:            row.AssetNo,
+		AssetStatus:        row.AssetStatus,
+		AssetStatusText:    cardAssetStatusText(row.AssetStatus),
+		AssetCreatedAt:     nullableTimeToStr(row.AssetCreatedAt),
 		CreateTime:         time_util.TimeToStr(row.CreateTime),
 	}
 }
@@ -680,6 +697,10 @@ func loadRecordDetailByID(ctx context.Context, db *gorm.DB, id int64) (*smsclien
 			r.consume_amount,
 			r.lottery_times_before,
 			r.lottery_times_after,
+			r.asset_instance_id,
+			r.asset_no,
+			r.asset_status,
+			r.asset_created_at,
 			r.create_time`).
 		Joins("LEFT JOIN sms_card_template ct ON ct.id = r.template_id AND ct.is_deleted = 0").
 		Where("r.id = ?", id).
@@ -836,6 +857,22 @@ func drawResultStatusText(status string) string {
 	default:
 		return "未中奖"
 	}
+}
+
+func cardAssetStatusText(status string) string {
+	switch strings.TrimSpace(status) {
+	case "asset_created":
+		return "资产已创建，链上处理中"
+	default:
+		return ""
+	}
+}
+
+func nullableTimeToStr(value *time.Time) string {
+	if value == nil {
+		return ""
+	}
+	return time_util.TimeToStr(*value)
 }
 
 func memberIdentityStatusText(status string) string {

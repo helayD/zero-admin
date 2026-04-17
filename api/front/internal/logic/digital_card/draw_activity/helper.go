@@ -148,6 +148,11 @@ func mapDrawRecord(item *smsclient.DrawMemberRecordData) types.DrawMemberRecord 
 		ConsumeAmount:      item.ConsumeAmount,
 		LotteryTimesBefore: item.LotteryTimesBefore,
 		LotteryTimesAfter:  item.LotteryTimesAfter,
+		AssetInstanceId:    item.AssetInstanceId,
+		AssetNo:            item.AssetNo,
+		AssetStatus:        item.AssetStatus,
+		AssetStatusText:    item.AssetStatusText,
+		AssetCreatedAt:     item.AssetCreatedAt,
 		CreateTime:         item.CreateTime,
 	}
 }

@@ -47,6 +47,11 @@ type DrawMemberRecord {
 	ConsumeAmount      int32  `json:"consumeAmount"` //消耗次数
 	LotteryTimesBefore int32  `json:"lotteryTimesBefore"` //扣减前次数
 	LotteryTimesAfter  int32  `json:"lotteryTimesAfter"` //扣减后次数
+	AssetInstanceId    int64  `json:"assetInstanceId"` //资产实例ID
+	AssetNo            string `json:"assetNo"` //资产编号
+	AssetStatus        string `json:"assetStatus"` //资产状态
+	AssetStatusText    string `json:"assetStatusText"` //资产状态文案
+	AssetCreatedAt     string `json:"assetCreatedAt"` //资产创建时间
 	CreateTime         string `json:"createTime"` //参与时间
 }
 

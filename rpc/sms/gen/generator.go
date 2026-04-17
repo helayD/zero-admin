@@ -30,6 +30,8 @@ func main() {
 		g.GenerateModel("sms_coupon_type"),
 		g.GenerateModel("sms_draw_activity"),
 		g.GenerateModel("sms_draw_activity_audit"),
+		g.GenerateModel("sms_card_asset_log"),
+		g.GenerateModel("sms_card_instance"),
 		g.GenerateModel("sms_draw_participation_record"),
 		g.GenerateModel("sms_draw_pool"),
 		g.GenerateModel("sms_draw_pool_template"),

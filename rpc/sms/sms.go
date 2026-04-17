@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/feihua/zero-admin/rpc/sms/internal/config"
+	cardassetserviceServer "github.com/feihua/zero-admin/rpc/sms/internal/server/cardassetservice"
 	couponrecordserviceServer "github.com/feihua/zero-admin/rpc/sms/internal/server/couponrecordservice"
 	couponscopeserviceServer "github.com/feihua/zero-admin/rpc/sms/internal/server/couponscopeservice"
 	couponserviceServer "github.com/feihua/zero-admin/rpc/sms/internal/server/couponservice"
@@ -41,6 +42,7 @@ func main() {
 	ctx := svc.NewServiceContext(c)
 
 	s := zrpc.MustNewServer(c.RpcServerConf, func(grpcServer *grpc.Server) {
+		smsclient.RegisterCardAssetServiceServer(grpcServer, cardassetserviceServer.NewCardAssetServiceServer(ctx))
 		smsclient.RegisterCouponRecordServiceServer(grpcServer, couponrecordserviceServer.NewCouponRecordServiceServer(ctx))
 		smsclient.RegisterCouponScopeServiceServer(grpcServer, couponscopeserviceServer.NewCouponScopeServiceServer(ctx))
 		smsclient.RegisterCouponServiceServer(grpcServer, couponserviceServer.NewCouponServiceServer(ctx))

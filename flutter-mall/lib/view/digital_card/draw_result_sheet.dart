@@ -14,6 +14,9 @@ class DrawResultSheet extends StatelessWidget {
   String get _title {
     switch (record.resultStatus) {
       case 'won_pending_asset':
+        if (record.assetStatusText.trim().isNotEmpty) {
+          return record.assetStatusText.trim();
+        }
         return '已中奖待到账';
       case 'rejected_need_real_name':
         return '待实名';
@@ -32,6 +35,12 @@ class DrawResultSheet extends StatelessWidget {
   String get _description {
     if (record.failureReason.trim().isNotEmpty) {
       return record.failureReason.trim();
+    }
+    if (record.assetStatusText.trim().isNotEmpty) {
+      if (record.assetNo.trim().isNotEmpty) {
+        return '你抽中了 ${record.templateName}，${record.assetStatusText}。唯一编号 ${record.assetNo}。';
+      }
+      return '你抽中了 ${record.templateName}，${record.assetStatusText}。';
     }
     if (eligibility.eligibilityMessage.trim().isNotEmpty) {
       return eligibility.eligibilityMessage.trim();
@@ -123,6 +132,21 @@ class DrawResultSheet extends StatelessWidget {
                       '稀有度: ${record.rarity}',
                       style: const TextStyle(color: Colors.white, fontSize: 13),
                     ),
+                  if (record.assetNo.trim().isNotEmpty) ...<Widget>[
+                    const SizedBox(height: 6),
+                    Text(
+                      '唯一编号: ${record.assetNo}',
+                      style: const TextStyle(color: Colors.white, fontSize: 13),
+                    ),
+                  ],
+                  if (record.assetStatusText.trim().isNotEmpty &&
+                      record.assetNo.trim().isEmpty) ...<Widget>[
+                    const SizedBox(height: 6),
+                    Text(
+                      record.assetStatusText,
+                      style: const TextStyle(color: Colors.white, fontSize: 13),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -135,6 +159,13 @@ class DrawResultSheet extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 '时间: ${record.createTime}',
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+            ],
+            if (record.assetCreatedAt.trim().isNotEmpty) ...<Widget>[
+              const SizedBox(height: 4),
+              Text(
+                '建账时间: ${record.assetCreatedAt}',
                 style: TextStyle(fontSize: 12, color: Colors.grey[600]),
               ),
             ],

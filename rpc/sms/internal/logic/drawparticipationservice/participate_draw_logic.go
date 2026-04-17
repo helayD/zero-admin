@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	cardassetservicelogic "github.com/feihua/zero-admin/rpc/sms/internal/logic/cardassetservice"
 	logiccommon "github.com/feihua/zero-admin/rpc/sms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/sms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/sms/smsclient"
@@ -49,6 +50,11 @@ func (l *ParticipateDrawLogic) ParticipateDraw(in *smsclient.ParticipateDrawReq)
 		existing, err := loadRecordByRequest(l.ctx, tx, in.ActivityId, in.MemberId, in.RequestId)
 		switch {
 		case err == nil:
+			if strings.TrimSpace(existing.ResultType) == drawResultTypeWon && strings.TrimSpace(existing.ResultStatus) == drawResultStatusWon {
+				if _, err = cardassetservicelogic.EnsureCardInstanceByParticipationRecord(l.ctx, tx, existing.ID, "system", existing.TraceID); err != nil {
+					return err
+				}
+			}
 			record, detailErr := loadRecordDetailByID(l.ctx, tx, existing.ID)
 			if detailErr != nil {
 				return detailErr
@@ -181,6 +187,11 @@ func (l *ParticipateDrawLogic) ParticipateDraw(in *smsclient.ParticipateDrawReq)
 		recordRow := buildWinningOrNotRecord(activity, in.MemberId, in.RequestId, eligibility, before, after, winner, templateMap)
 		if err = createParticipationRecord(l.ctx, tx, recordRow); err != nil {
 			return err
+		}
+		if strings.TrimSpace(recordRow.ResultType) == drawResultTypeWon && strings.TrimSpace(recordRow.ResultStatus) == drawResultStatusWon {
+			if _, err = cardassetservicelogic.EnsureCardInstanceByParticipationRecord(l.ctx, tx, recordRow.ID, "system", recordRow.TraceID); err != nil {
+				return err
+			}
 		}
 		record, detailErr := loadRecordDetailByID(l.ctx, tx, recordRow.ID)
 		if detailErr != nil {

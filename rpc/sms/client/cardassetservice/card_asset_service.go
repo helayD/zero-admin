@@ -2,7 +2,7 @@
 // goctl 1.9.2
 // Source: sms.proto
 
-package coupontypeservice
+package cardassetservice
 
 import (
 	"context"
@@ -199,64 +199,34 @@ type (
 	UpdateSeckillSessionStatusReq               = smsclient.UpdateSeckillSessionStatusReq
 	UpdateSeckillSessionStatusResp              = smsclient.UpdateSeckillSessionStatusResp
 
-	CouponTypeService interface {
-		// 添加优惠券类型
-		AddCouponType(ctx context.Context, in *AddCouponTypeReq, opts ...grpc.CallOption) (*AddCouponTypeResp, error)
-		// 删除优惠券类型
-		DeleteCouponType(ctx context.Context, in *DeleteCouponTypeReq, opts ...grpc.CallOption) (*DeleteCouponTypeResp, error)
-		// 更新优惠券类型
-		UpdateCouponType(ctx context.Context, in *UpdateCouponTypeReq, opts ...grpc.CallOption) (*UpdateCouponTypeResp, error)
-		// 更新优惠券类型状态
-		UpdateCouponTypeStatus(ctx context.Context, in *UpdateCouponTypeStatusReq, opts ...grpc.CallOption) (*UpdateCouponTypeStatusResp, error)
-		// 查询优惠券类型详情
-		QueryCouponTypeDetail(ctx context.Context, in *QueryCouponTypeDetailReq, opts ...grpc.CallOption) (*QueryCouponTypeDetailResp, error)
-		// 查询优惠券类型列表
-		QueryCouponTypeList(ctx context.Context, in *QueryCouponTypeListReq, opts ...grpc.CallOption) (*QueryCouponTypeListResp, error)
+	CardAssetService interface {
+		EnsureCardInstanceByParticipationRecord(ctx context.Context, in *EnsureCardInstanceByParticipationRecordReq, opts ...grpc.CallOption) (*EnsureCardInstanceByParticipationRecordResp, error)
+		QueryCardInstanceByParticipationRecord(ctx context.Context, in *QueryCardInstanceByParticipationRecordReq, opts ...grpc.CallOption) (*QueryCardInstanceByParticipationRecordResp, error)
+		BackfillWinningCardInstances(ctx context.Context, in *BackfillWinningCardInstancesReq, opts ...grpc.CallOption) (*BackfillWinningCardInstancesResp, error)
 	}
 
-	defaultCouponTypeService struct {
+	defaultCardAssetService struct {
 		cli zrpc.Client
 	}
 )
 
-func NewCouponTypeService(cli zrpc.Client) CouponTypeService {
-	return &defaultCouponTypeService{
+func NewCardAssetService(cli zrpc.Client) CardAssetService {
+	return &defaultCardAssetService{
 		cli: cli,
 	}
 }
 
-// 添加优惠券类型
-func (m *defaultCouponTypeService) AddCouponType(ctx context.Context, in *AddCouponTypeReq, opts ...grpc.CallOption) (*AddCouponTypeResp, error) {
-	client := smsclient.NewCouponTypeServiceClient(m.cli.Conn())
-	return client.AddCouponType(ctx, in, opts...)
+func (m *defaultCardAssetService) EnsureCardInstanceByParticipationRecord(ctx context.Context, in *EnsureCardInstanceByParticipationRecordReq, opts ...grpc.CallOption) (*EnsureCardInstanceByParticipationRecordResp, error) {
+	client := smsclient.NewCardAssetServiceClient(m.cli.Conn())
+	return client.EnsureCardInstanceByParticipationRecord(ctx, in, opts...)
 }
 
-// 删除优惠券类型
-func (m *defaultCouponTypeService) DeleteCouponType(ctx context.Context, in *DeleteCouponTypeReq, opts ...grpc.CallOption) (*DeleteCouponTypeResp, error) {
-	client := smsclient.NewCouponTypeServiceClient(m.cli.Conn())
-	return client.DeleteCouponType(ctx, in, opts...)
+func (m *defaultCardAssetService) QueryCardInstanceByParticipationRecord(ctx context.Context, in *QueryCardInstanceByParticipationRecordReq, opts ...grpc.CallOption) (*QueryCardInstanceByParticipationRecordResp, error) {
+	client := smsclient.NewCardAssetServiceClient(m.cli.Conn())
+	return client.QueryCardInstanceByParticipationRecord(ctx, in, opts...)
 }
 
-// 更新优惠券类型
-func (m *defaultCouponTypeService) UpdateCouponType(ctx context.Context, in *UpdateCouponTypeReq, opts ...grpc.CallOption) (*UpdateCouponTypeResp, error) {
-	client := smsclient.NewCouponTypeServiceClient(m.cli.Conn())
-	return client.UpdateCouponType(ctx, in, opts...)
-}
-
-// 更新优惠券类型状态
-func (m *defaultCouponTypeService) UpdateCouponTypeStatus(ctx context.Context, in *UpdateCouponTypeStatusReq, opts ...grpc.CallOption) (*UpdateCouponTypeStatusResp, error) {
-	client := smsclient.NewCouponTypeServiceClient(m.cli.Conn())
-	return client.UpdateCouponTypeStatus(ctx, in, opts...)
-}
-
-// 查询优惠券类型详情
-func (m *defaultCouponTypeService) QueryCouponTypeDetail(ctx context.Context, in *QueryCouponTypeDetailReq, opts ...grpc.CallOption) (*QueryCouponTypeDetailResp, error) {
-	client := smsclient.NewCouponTypeServiceClient(m.cli.Conn())
-	return client.QueryCouponTypeDetail(ctx, in, opts...)
-}
-
-// 查询优惠券类型列表
-func (m *defaultCouponTypeService) QueryCouponTypeList(ctx context.Context, in *QueryCouponTypeListReq, opts ...grpc.CallOption) (*QueryCouponTypeListResp, error) {
-	client := smsclient.NewCouponTypeServiceClient(m.cli.Conn())
-	return client.QueryCouponTypeList(ctx, in, opts...)
+func (m *defaultCardAssetService) BackfillWinningCardInstances(ctx context.Context, in *BackfillWinningCardInstancesReq, opts ...grpc.CallOption) (*BackfillWinningCardInstancesResp, error) {
+	client := smsclient.NewCardAssetServiceClient(m.cli.Conn())
+	return client.BackfillWinningCardInstances(ctx, in, opts...)
 }

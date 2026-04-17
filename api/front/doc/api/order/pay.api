@@ -21,12 +21,23 @@ type OrderPayQueryReq {
 }
 
 type OrderPayQueryResp {
-	Code        int64  `json:"code"`
-	Message     string `json:"message"`
-	Data        string `json:"data"`
-	OrderStatus int64  `json:"orderStatus"` // 0=待支付 1=已支付 2=已取消
-	PayStatus   int64  `json:"payStatus"` // 0=未支付 1=已支付
-	ExpireTime  int64  `json:"expireTime"` // 剩余支付秒数
+	Code                 int64    `json:"code"`
+	Message              string   `json:"message"`
+	Data                 string   `json:"data"`
+	OrderStatus          int64    `json:"orderStatus"` // 0=待支付 1=已支付 2=已取消
+	PayStatus            int64    `json:"payStatus"` // 0=未支付 1=已支付
+	ExpireTime           int64    `json:"expireTime"` // 剩余支付秒数
+	ConsistencyStage     int      `json:"consistencyStage"` // 一致性阶段
+	ConsistencyStageText string   `json:"consistencyStageText"` // 一致性阶段文案
+	ConsistencyResult    int      `json:"consistencyResult"` // 一致性结果
+	ConsistencyMessage   string   `json:"consistencyMessage"` // 一致性提示
+	LastConsistencyAt    string   `json:"lastConsistencyAt"` // 最近一致性时间
+	PendingActions       int      `json:"pendingActions"` // 待处理动作位掩码
+	PendingActionsText   []string `json:"pendingActionsText"` // 待处理动作文本
+	AftersaleStatus      int32    `json:"aftersaleStatus"` // 售后状态
+	AftersaleStatusText  string   `json:"aftersaleStatusText"` // 售后状态文本
+	ReturnId             int64    `json:"returnId"` // 售后单ID
+	ReturnNo             string   `json:"returnNo"` // 售后单号
 }
 
 @server (
@@ -57,4 +68,3 @@ service front-api {
 	@handler Notify
 	post /notify
 }
-

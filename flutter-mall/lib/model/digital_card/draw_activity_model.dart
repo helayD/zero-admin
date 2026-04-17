@@ -282,6 +282,11 @@ class DrawMemberRecord {
   final int consumeAmount;
   final int lotteryTimesBefore;
   final int lotteryTimesAfter;
+  final int assetInstanceId;
+  final String assetNo;
+  final String assetStatus;
+  final String assetStatusText;
+  final String assetCreatedAt;
   final String createTime;
 
   const DrawMemberRecord({
@@ -300,6 +305,11 @@ class DrawMemberRecord {
     required this.consumeAmount,
     required this.lotteryTimesBefore,
     required this.lotteryTimesAfter,
+    required this.assetInstanceId,
+    required this.assetNo,
+    required this.assetStatus,
+    required this.assetStatusText,
+    required this.assetCreatedAt,
     required this.createTime,
   });
 
@@ -320,6 +330,11 @@ class DrawMemberRecord {
       consumeAmount: _intValue(json['consumeAmount']),
       lotteryTimesBefore: _intValue(json['lotteryTimesBefore']),
       lotteryTimesAfter: _intValue(json['lotteryTimesAfter']),
+      assetInstanceId: _intValue(json['assetInstanceId']),
+      assetNo: json['assetNo']?.toString() ?? '',
+      assetStatus: json['assetStatus']?.toString() ?? '',
+      assetStatusText: json['assetStatusText']?.toString() ?? '',
+      assetCreatedAt: json['assetCreatedAt']?.toString() ?? '',
       createTime: json['createTime']?.toString() ?? '',
     );
   }

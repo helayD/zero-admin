@@ -84,7 +84,8 @@ func newDrawParticipationTestDB(t *testing.T) *gorm.DB {
 			member_id INTEGER PRIMARY KEY,
 			lottery_times INTEGER NOT NULL DEFAULT 0,
 			is_enabled INTEGER NOT NULL DEFAULT 1,
-			nickname TEXT NOT NULL DEFAULT ''
+			nickname TEXT NOT NULL DEFAULT '',
+			update_time DATETIME NULL
 		)`,
 		`CREATE TABLE ums_member_identity (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -114,9 +115,53 @@ func newDrawParticipationTestDB(t *testing.T) *gorm.DB {
 			trace_id TEXT NOT NULL DEFAULT '',
 			failure_code TEXT NOT NULL DEFAULT '',
 			failure_reason TEXT NOT NULL DEFAULT '',
+			asset_instance_id INTEGER NOT NULL DEFAULT 0,
+			asset_no TEXT NOT NULL DEFAULT '',
+			asset_status TEXT NOT NULL DEFAULT '',
+			asset_created_at DATETIME NULL,
 			create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			update_time DATETIME NULL,
 			is_deleted INTEGER NOT NULL DEFAULT 0
+		)`,
+		`CREATE TABLE sms_card_instance (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			platform_id INTEGER NOT NULL DEFAULT 1,
+			tenant_id INTEGER NOT NULL DEFAULT 0,
+			merchant_id INTEGER NOT NULL DEFAULT 0,
+			activity_id INTEGER NOT NULL,
+			member_id INTEGER NOT NULL,
+			participation_record_id INTEGER NOT NULL,
+			request_id TEXT NOT NULL DEFAULT '',
+			trace_id TEXT NOT NULL DEFAULT '',
+			scope TEXT NOT NULL DEFAULT '',
+			pool_id INTEGER NOT NULL DEFAULT 0,
+			template_id INTEGER NOT NULL DEFAULT 0,
+			rarity TEXT NOT NULL DEFAULT '',
+			asset_no TEXT NOT NULL,
+			asset_status TEXT NOT NULL DEFAULT '',
+			mint_status TEXT NOT NULL DEFAULT '',
+			issued_at DATETIME NULL,
+			create_by INTEGER NOT NULL DEFAULT 0,
+			create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			update_by INTEGER NULL,
+			update_time DATETIME NULL,
+			is_deleted INTEGER NOT NULL DEFAULT 0
+		)`,
+		`CREATE UNIQUE INDEX uk_card_instance_participation ON sms_card_instance(participation_record_id, is_deleted)`,
+		`CREATE UNIQUE INDEX uk_card_instance_asset_no ON sms_card_instance(asset_no, is_deleted)`,
+		`CREATE TABLE sms_card_asset_log (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			asset_instance_id INTEGER NOT NULL,
+			participation_record_id INTEGER NOT NULL,
+			from_status TEXT NOT NULL DEFAULT '',
+			to_status TEXT NOT NULL DEFAULT '',
+			operation_type TEXT NOT NULL DEFAULT '',
+			operator_type TEXT NOT NULL DEFAULT '',
+			trace_id TEXT NOT NULL DEFAULT '',
+			reason_code TEXT NOT NULL DEFAULT '',
+			reason_text TEXT NOT NULL DEFAULT '',
+			payload_json TEXT,
+			create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 		)`,
 	}
 	for _, stmt := range stmts {
@@ -246,5 +291,89 @@ func TestParticipateDrawPassesScopeAndReturnsRejectedWhenRuleFails(t *testing.T)
 	}
 	if resp.Record.ConsumeAmount != 0 {
 		t.Fatalf("expected rejected record consume amount 0, got %d", resp.Record.ConsumeAmount)
+	}
+}
+
+func TestParticipateDrawCreatesAssetSnapshotForWinningRecordAndKeepsRequestIdempotent(t *testing.T) {
+	svcCtx := newDrawParticipationSvc(t)
+	now := time.Now()
+	if err := svcCtx.DB.Exec(`
+		INSERT INTO sms_draw_activity
+			(id, activity_code, name, start_time, end_time, real_name_required, consume_amount, platform_id, tenant_id, merchant_id)
+		VALUES
+			(1, 'DRAW-WIN', '抽卡活动', ?, ?, 0, 1, 1, 10, 88)
+	`, now.Add(-time.Hour), now.Add(time.Hour)).Error; err != nil {
+		t.Fatalf("seed activity failed: %v", err)
+	}
+	if err := svcCtx.DB.Exec(`
+		INSERT INTO ums_member_info (member_id, lottery_times, is_enabled, nickname)
+		VALUES (3001, 3, 1, '测试用户')
+	`).Error; err != nil {
+		t.Fatalf("seed member failed: %v", err)
+	}
+	if err := svcCtx.DB.Exec(`
+		INSERT INTO ums_member_identity (member_id, real_name_status)
+		VALUES (3001, 'verified')
+	`).Error; err != nil {
+		t.Fatalf("seed identity failed: %v", err)
+	}
+	if err := svcCtx.DB.Exec(`
+		INSERT INTO sms_draw_pool (id, activity_id, pool_name, probability_rule, sort, status, is_deleted)
+		VALUES (11, 1, 'SSR池', '固定中签', 1, 1, 0)
+	`).Error; err != nil {
+		t.Fatalf("seed pool failed: %v", err)
+	}
+	if err := svcCtx.DB.Exec(`
+		INSERT INTO sms_card_template (id, template_code, template_name, card_face_image, rarity, display_copy, status, is_deleted)
+		VALUES (22, 'CARD-SSR', 'SSR卡', '', 'SSR', '恭喜中签', 1, 0)
+	`).Error; err != nil {
+		t.Fatalf("seed template failed: %v", err)
+	}
+	if err := svcCtx.DB.Exec(`
+		INSERT INTO sms_draw_pool_template
+			(id, activity_id, pool_id, template_id, rarity, probability, sale_limit, remaining_limit, config_limit, status, is_deleted)
+		VALUES
+			(33, 1, 11, 22, 'SSR', 1, 10, 10, 10, 1, 0)
+	`).Error; err != nil {
+		t.Fatalf("seed pool template failed: %v", err)
+	}
+
+	scope := &smsclient.GovernanceScope{
+		ScopeType:  pkgscope.SubjectTypeMerchant,
+		PlatformId: 1,
+		TenantId:   10,
+		MerchantId: 88,
+	}
+	logic := NewParticipateDrawLogic(context.Background(), svcCtx)
+	first, err := logic.ParticipateDraw(&smsclient.ParticipateDrawReq{
+		ActivityId: 1,
+		MemberId:   3001,
+		RequestId:  "req-10-3",
+		Scope:      scope,
+	})
+	if err != nil {
+		t.Fatalf("ParticipateDraw returned error: %v", err)
+	}
+	if first.Record.AssetInstanceId <= 0 {
+		t.Fatalf("expected asset instance id on winning response, got %+v", first.Record)
+	}
+	if first.Record.AssetNo == "" {
+		t.Fatalf("expected asset no on winning response, got %+v", first.Record)
+	}
+	if first.Record.AssetStatus != "asset_created" {
+		t.Fatalf("expected asset_created, got %s", first.Record.AssetStatus)
+	}
+
+	second, err := logic.ParticipateDraw(&smsclient.ParticipateDrawReq{
+		ActivityId: 1,
+		MemberId:   3001,
+		RequestId:  "req-10-3",
+		Scope:      scope,
+	})
+	if err != nil {
+		t.Fatalf("second ParticipateDraw returned error: %v", err)
+	}
+	if first.Record.AssetInstanceId != second.Record.AssetInstanceId || first.Record.AssetNo != second.Record.AssetNo {
+		t.Fatalf("expected repeated request to return same asset snapshot, first=%+v second=%+v", first.Record, second.Record)
 	}
 }

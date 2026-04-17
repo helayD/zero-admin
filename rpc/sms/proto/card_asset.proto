@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+package main;
+
+option go_package = "./proto";
+
+message CardInstanceData {
+  int64 id = 1; // 资产实例ID
+  int64 activity_id = 2; // 活动ID
+  int64 member_id = 3; // 会员ID
+  int64 participation_record_id = 4; // 参与记录ID
+  int64 pool_id = 5; // 卡池ID
+  int64 template_id = 6; // 模板ID
+  string request_id = 7; // 请求ID
+  string trace_id = 8; // 追踪ID
+  string rarity = 9; // 稀有度
+  string asset_no = 10; // 资产编号
+  string asset_status = 11; // 资产状态
+  string asset_status_text = 12; // 资产状态文案
+  string mint_status = 13; // 发放状态
+  string issued_at = 14; // 资产创建时间
+}
+
+message EnsureCardInstanceByParticipationRecordReq {
+  int64 participation_record_id = 1; // 参与记录ID
+  string operator_type = 2; // 操作者类型
+  string trace_id = 3; // 追踪ID
+  GovernanceScope scope = 4; // 治理范围
+}
+
+message EnsureCardInstanceByParticipationRecordResp {
+  CardInstanceData asset = 1; // 资产实例
+}
+
+message QueryCardInstanceByParticipationRecordReq {
+  int64 participation_record_id = 1; // 参与记录ID
+  GovernanceScope scope = 2; // 治理范围
+}
+
+message QueryCardInstanceByParticipationRecordResp {
+  CardInstanceData asset = 1; // 资产实例
+}
+
+message BackfillWinningCardInstancesReq {
+  int64 activity_id = 1; // 活动ID，可选
+  int64 member_id = 2; // 会员ID，可选
+  int32 limit = 3; // 回填上限
+  string operator_type = 4; // 操作者类型
+  string trace_id = 5; // 追踪ID
+  GovernanceScope scope = 6; // 治理范围
+}
+
+message BackfillWinningCardInstancesResp {
+  int32 total_candidates = 1; // 命中候选数
+  int32 processed_count = 2; // 成功处理数
+  repeated CardInstanceData assets = 3; // 已处理资产
+}
+
+service CardAssetService {
+  rpc EnsureCardInstanceByParticipationRecord(EnsureCardInstanceByParticipationRecordReq) returns (EnsureCardInstanceByParticipationRecordResp){}
+  rpc QueryCardInstanceByParticipationRecord(QueryCardInstanceByParticipationRecordReq) returns (QueryCardInstanceByParticipationRecordResp){}
+  rpc BackfillWinningCardInstances(BackfillWinningCardInstancesReq) returns (BackfillWinningCardInstancesResp){}
+}

@@ -55,6 +55,15 @@ make lint      # golangci-lint 检查
 make lint-fix  # 自动修复
 ```
 
+### 强制性约束
+
+```text
+- 禁止使用任何自动生成命令改写项目代码，包括但不限于：goctl、protoc、make gen。
+- 禁止通过生成链覆盖或批量改写 api/*/internal/types、rpc/*/*.proto、rpc/*/smsclient 等文件。
+- 需要修复问题时，必须优先采用手工最小改动；不要把“修改 .api/.proto 后再生成”当作默认方案。
+- 如确需生成类操作，必须先得到用户明确许可；未获许可前一律视为禁止。
+```
+
 ---
 
 ## 代码风格指南

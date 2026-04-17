@@ -48,6 +48,11 @@ message DrawMemberRecordData {
   int32 lottery_times_before = 14; // 扣减前次数
   int32 lottery_times_after = 15; // 扣减后次数
   string create_time = 16; // 参与时间
+  int64 asset_instance_id = 17; // 资产实例ID
+  string asset_no = 18; // 资产编号
+  string asset_status = 19; // 资产状态
+  string asset_status_text = 20; // 资产状态文案
+  string asset_created_at = 21; // 资产创建时间
 }
 
 message QueryDrawActivityLandingReq {

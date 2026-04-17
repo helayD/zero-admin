@@ -125,7 +125,7 @@ development_status:
   epic-10: in-progress
   10-1-抽卡活动-卡池与卡片模板配置: in-progress
   10-2-实名资格校验与消费者抽卡参与: review
-  10-3-卡片实例生成-唯一编号与本地资产台账: backlog
+  10-3-卡片实例生成-唯一编号与本地资产台账: in-progress
   10-4-蚂蚁链-token-发放-回执写回与失败补偿: backlog
   10-5-数字卡片资产展示-审计检索与合规处置: backlog
   epic-10-retrospective: optional

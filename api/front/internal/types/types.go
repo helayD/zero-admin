@@ -624,6 +624,11 @@ type DrawMemberRecord struct {
 	ConsumeAmount      int32  `json:"consumeAmount"`      //消耗次数
 	LotteryTimesBefore int32  `json:"lotteryTimesBefore"` //扣减前次数
 	LotteryTimesAfter  int32  `json:"lotteryTimesAfter"`  //扣减后次数
+	AssetInstanceId    int64  `json:"assetInstanceId"`    //资产实例ID
+	AssetNo            string `json:"assetNo"`            //资产编号
+	AssetStatus        string `json:"assetStatus"`        //资产状态
+	AssetStatusText    string `json:"assetStatusText"`    //资产状态文案
+	AssetCreatedAt     string `json:"assetCreatedAt"`     //资产创建时间
 	CreateTime         string `json:"createTime"`         //参与时间
 }
 
@@ -838,23 +843,6 @@ type LogisticsNode struct {
 	Time        string `json:"time"`        // 时间
 }
 
-type TimelineNode struct {
-	Status string `json:"status"` // completed/current/interrupted
-	Title  string `json:"title"`  // 节点标题
-	Time   string `json:"time"`   // 节点时间
-	Detail string `json:"detail"` // 节点补充说明
-}
-
-type PriceBreakdown struct {
-	OrderAmount     float64 `json:"orderAmount"`     // 商品总额
-	FreightAmount   float64 `json:"freightAmount"`   // 运费
-	PromotionAmount float64 `json:"promotionAmount"` // 促销优惠
-	CouponAmount    float64 `json:"couponAmount"`    // 优惠券优惠
-	PointsAmount    float64 `json:"pointsAmount"`    // 积分抵扣
-	DiscountAmount  float64 `json:"discountAmount"`  // 其他优惠
-	PayAmount       float64 `json:"payAmount"`       // 实付金额
-}
-
 type MemberData struct {
 	Id                 int64   `json:"id"`                 //主键ID
 	MemberId           int64   `json:"memberId"`           //会员ID
@@ -1046,6 +1034,16 @@ type PreviewDrawEligibilityResp struct {
 	Code    string                 `json:"code"`
 	Message string                 `json:"message"`
 	Data    DrawEligibilitySummary `json:"data"`
+}
+
+type PriceBreakdown struct {
+	OrderAmount     float64 `json:"orderAmount"`     // 商品总额
+	FreightAmount   float64 `json:"freightAmount"`   // 运费
+	PromotionAmount float64 `json:"promotionAmount"` // 促销优惠
+	CouponAmount    float64 `json:"couponAmount"`    // 优惠券优惠
+	PointsAmount    float64 `json:"pointsAmount"`    // 积分抵扣
+	DiscountAmount  float64 `json:"discountAmount"`  // 其他优惠
+	PayAmount       float64 `json:"payAmount"`       // 实付金额
 }
 
 type ProductAttributeList struct {
@@ -1361,6 +1359,39 @@ type QueryProductListResp struct {
 	Data    []ProductData `json:"data"`
 }
 
+type SearchReq struct {
+	Keyword    string `form:"keyword,optional" json:"keyword,optional"`             //关键字
+	PageNum    int64  `form:"pageNum,default=1" json:"pageNum"`                     //页码
+	PageSize   int64  `form:"pageSize,default=20" json:"pageSize"`                  //每页数量
+	Sort       int32  `form:"sort,default=0" json:"sort"`                           //排序字段:0->按相关度；1->按新品；2->按销量；3->价格从低到高；4->价格从高到低
+	CategoryId int64  `form:"categoryId,optional" json:"categoryId,optional"`       //商品分类ID
+	BrandId    int64  `form:"brandId,optional" json:"brandId,optional"`             //品牌ID
+}
+
+type ProductItem struct {
+	Id            int64  `json:"id"`            //商品ID
+	Name          string `json:"name"`          //商品名称
+	Brief         string `json:"brief"`         //商品简介
+	Price         string `json:"price"`         //展示价格
+	OriginalPrice int64  `json:"originalPrice"` //原价
+	MainPic       string `json:"mainPic"`       //主图
+	Stock         int    `json:"stock"`         //库存
+	Sales         int    `json:"sales"`         //销量
+	CategoryId    int64  `json:"categoryId"`    //分类ID
+	CategoryName  string `json:"categoryName"`  //分类名称
+	BrandId       int64  `json:"brandId"`       //品牌ID
+	BrandName     string `json:"brandName"`     //品牌名称
+}
+
+type SearchResp struct {
+	Code      int64         `json:"code"`
+	Message   string        `json:"message"`
+	Data      []ProductItem `json:"data"`
+	Total     int64         `json:"total"`              //总数
+	Empty     bool          `json:"empty"`              //是否为空结果
+	EmptyHint string        `json:"emptyHint,optional"` //空结果提示
+}
+
 type QueryReturnReasonListReq struct {
 }
 
@@ -1520,6 +1551,13 @@ type SubmitCommentAppealReq struct {
 type SubmitCommentAppealResp struct {
 	Code    int64  `json:"code"`
 	Message string `json:"message"`
+}
+
+type TimelineNode struct {
+	Status string `json:"status"` // completed/current/interrupted
+	Title  string `json:"title"`  // 节点标题
+	Time   string `json:"time"`   // 节点时间
+	Detail string `json:"detail"` // 节点补充说明
 }
 
 type UpdateAddressStatusReq struct {
