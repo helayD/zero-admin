@@ -712,6 +712,7 @@ for service in "${services[@]}"; do
     )
     rm -rf "$remote_root/web-admin/dist.new"
     cp -a "$build_root/dist" "$remote_root/web-admin/dist.new"
+    rm -rf "$build_root"
     continue
   fi
 
