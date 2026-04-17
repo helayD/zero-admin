@@ -2,16 +2,16 @@ package types
 
 // QueryOperateFunnelDashboardReq 查询经营漏斗看板请求
 type QueryOperateFunnelDashboardReq struct {
-	ScopeType    string `form:"scopeType,optional" json:"scopeType"`
-	PlatformId   int64  `form:"platformId,optional" json:"platformId"`
-	TenantId     int64  `form:"tenantId,optional" json:"tenantId"`
-	MerchantId   int64  `form:"merchantId,optional" json:"merchantId"`
-	StartTime    string `form:"startTime,optional" json:"startTime"`
-	EndTime      string `form:"endTime,optional" json:"endTime"`
-	Channel      string `form:"channel,optional" json:"channel"`
-	ActivityType string `form:"activityType,optional" json:"activityType"`
-	ActivityId   int64  `form:"activityId,optional" json:"activityId"`
-	Bucket       string `form:"bucket,optional" json:"bucket"`
+	ScopeType    string `form:"scopeType,optional" json:"scopeType,optional"`
+	PlatformId   int64  `form:"platformId,optional" json:"platformId,optional"`
+	TenantId     int64  `form:"tenantId,optional" json:"tenantId,optional"`
+	MerchantId   int64  `form:"merchantId,optional" json:"merchantId,optional"`
+	StartTime    string `form:"startTime,optional" json:"startTime,optional"`
+	EndTime      string `form:"endTime,optional" json:"endTime,optional"`
+	Channel      string `form:"channel,optional" json:"channel,optional"`
+	ActivityType string `form:"activityType,optional" json:"activityType,optional"`
+	ActivityId   int64  `form:"activityId,optional" json:"activityId,optional"`
+	Bucket       string `form:"bucket,optional" json:"bucket,optional"`
 }
 
 // OperateFunnelMetricCard 看板指标卡
@@ -125,18 +125,18 @@ type RepeatPurchaseDetailItem struct {
 
 // QueryRepeatPurchaseAnalysisReq 查询复购分析请求
 type QueryRepeatPurchaseAnalysisReq struct {
-	ScopeType    string `form:"scopeType,optional" json:"scopeType"`
-	PlatformId   int64  `form:"platformId,optional" json:"platformId"`
-	TenantId     int64  `form:"tenantId,optional" json:"tenantId"`
-	MerchantId   int64  `form:"merchantId,optional" json:"merchantId"`
-	StartTime    string `form:"startTime,optional" json:"startTime"`
-	EndTime      string `form:"endTime,optional" json:"endTime"`
-	Channel      string `form:"channel,optional" json:"channel"`
-	ActivityType string `form:"activityType,optional" json:"activityType"`
-	ActivityId   int64  `form:"activityId,optional" json:"activityId"`
-	Bucket       string `form:"bucket,optional" json:"bucket"`
-	PageNum      int32  `form:"pageNum,default=1" json:"pageNum"`
-	PageSize     int32  `form:"pageSize,default=20" json:"pageSize"`
+	ScopeType    string `form:"scopeType,optional" json:"scopeType,optional"`
+	PlatformId   int64  `form:"platformId,optional" json:"platformId,optional"`
+	TenantId     int64  `form:"tenantId,optional" json:"tenantId,optional"`
+	MerchantId   int64  `form:"merchantId,optional" json:"merchantId,optional"`
+	StartTime    string `form:"startTime,optional" json:"startTime,optional"`
+	EndTime      string `form:"endTime,optional" json:"endTime,optional"`
+	Channel      string `form:"channel,optional" json:"channel,optional"`
+	ActivityType string `form:"activityType,optional" json:"activityType,optional"`
+	ActivityId   int64  `form:"activityId,optional" json:"activityId,optional"`
+	Bucket       string `form:"bucket,optional" json:"bucket,optional"`
+	PageNum      int32  `form:"pageNum,default=1" json:"pageNum,optional"`
+	PageSize     int32  `form:"pageSize,default=20" json:"pageSize,optional"`
 }
 
 // QueryRepeatPurchaseAnalysisData 复购分析数据
