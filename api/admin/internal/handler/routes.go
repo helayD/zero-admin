@@ -9,7 +9,6 @@ import (
 	cmsprefrence_area "github.com/feihua/zero-admin/api/admin/internal/handler/cms/prefrence_area"
 	cmssubject "github.com/feihua/zero-admin/api/admin/internal/handler/cms/subject"
 	cmssubject_category "github.com/feihua/zero-admin/api/admin/internal/handler/cms/subject_category"
-	omschain_monitor "github.com/feihua/zero-admin/api/admin/internal/handler/oms/chain_monitor"
 	omscompany_address "github.com/feihua/zero-admin/api/admin/internal/handler/oms/company_address"
 	omsorder_delivery "github.com/feihua/zero-admin/api/admin/internal/handler/oms/order_delivery"
 	omsorder_main "github.com/feihua/zero-admin/api/admin/internal/handler/oms/order_main"
@@ -29,12 +28,12 @@ import (
 	smscoupon_record "github.com/feihua/zero-admin/api/admin/internal/handler/sms/coupon_record"
 	smscoupon_scope "github.com/feihua/zero-admin/api/admin/internal/handler/sms/coupon_scope"
 	smscoupon_type "github.com/feihua/zero-admin/api/admin/internal/handler/sms/coupon_type"
+	smsdraw_activity "github.com/feihua/zero-admin/api/admin/internal/handler/sms/draw_activity"
 	smshome_advertise "github.com/feihua/zero-admin/api/admin/internal/handler/sms/home_advertise"
 	smshome_brand "github.com/feihua/zero-admin/api/admin/internal/handler/sms/home_brand"
 	smshome_new_product "github.com/feihua/zero-admin/api/admin/internal/handler/sms/home_new_product"
 	smshome_recommend_product "github.com/feihua/zero-admin/api/admin/internal/handler/sms/home_recommend_product"
 	smshome_recommend_subject "github.com/feihua/zero-admin/api/admin/internal/handler/sms/home_recommend_subject"
-	smsoperate_dashboard "github.com/feihua/zero-admin/api/admin/internal/handler/sms/operate_dashboard"
 	smsseckill_activity "github.com/feihua/zero-admin/api/admin/internal/handler/sms/seckill_activity"
 	smsseckill_product "github.com/feihua/zero-admin/api/admin/internal/handler/sms/seckill_product"
 	smsseckill_reservation "github.com/feihua/zero-admin/api/admin/internal/handler/sms/seckill_reservation"
@@ -284,41 +283,6 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Handler: omsorder_main.QueryOrderMainListHandler(serverCtx),
 				},
 				{
-					Method:  http.MethodGet,
-					Path:    "/queryChainMonitorList",
-					Handler: omschain_monitor.QueryChainMonitorListHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodGet,
-					Path:    "/exportChainMonitorList",
-					Handler: omschain_monitor.ExportChainMonitorListHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodGet,
-					Path:    "/queryChainActions",
-					Handler: omschain_monitor.QueryChainActionsHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodPost,
-					Path:    "/pauseChain",
-					Handler: omschain_monitor.PauseChainHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodPost,
-					Path:    "/retryChain",
-					Handler: omschain_monitor.RetryChainHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodPost,
-					Path:    "/replayChain",
-					Handler: omschain_monitor.ReplayChainHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodPost,
-					Path:    "/escalateChain",
-					Handler: omschain_monitor.EscalateChainHandler(serverCtx),
-				},
-				{
 					Method:  http.MethodPost,
 					Path:    "/updateMoneyInfo",
 					Handler: omsorder_main.UpdateMoneyInfoHandler(serverCtx),
@@ -455,6 +419,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Route{
 				{
 					Method:  http.MethodPost,
+					Path:    "/:id/appeal",
+					Handler: pmscomment.HandleCommentAppealHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
 					Path:    "/:id/audit",
 					Handler: pmscomment.AuditCommentHandler(serverCtx),
 				},
@@ -462,11 +431,6 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Method:  http.MethodPost,
 					Path:    "/:id/restore",
 					Handler: pmscomment.RestoreCommentHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodPost,
-					Path:    "/:id/appeal",
-					Handler: pmscomment.HandleCommentAppealHandler(serverCtx),
 				},
 				{
 					Method:  http.MethodGet,
@@ -975,6 +939,51 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Route{
 				{
 					Method:  http.MethodPost,
+					Path:    "/addDrawActivity",
+					Handler: smsdraw_activity.AddDrawActivityHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/deleteDrawActivity",
+					Handler: smsdraw_activity.DeleteDrawActivityHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/previewDrawActivityPublishReadiness",
+					Handler: smsdraw_activity.PreviewDrawActivityPublishReadinessHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryDrawActivityDetail",
+					Handler: smsdraw_activity.QueryDrawActivityDetailHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryDrawActivityList",
+					Handler: smsdraw_activity.QueryDrawActivityListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/updateDrawActivity",
+					Handler: smsdraw_activity.UpdateDrawActivityHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/updateDrawActivityStatus",
+					Handler: smsdraw_activity.UpdateDrawActivityStatusHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/sms/drawActivity"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.CheckUrl},
+			[]rest.Route{
+				{
+					Method:  http.MethodPost,
 					Path:    "/addHomeAdvertise",
 					Handler: smshome_advertise.AddHomeAdvertiseHandler(serverCtx),
 				},
@@ -1007,31 +1016,6 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		),
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
 		rest.WithPrefix("/api/sms/homeAdvertise"),
-	)
-
-	server.AddRoutes(
-		rest.WithMiddlewares(
-			[]rest.Middleware{serverCtx.CheckUrl},
-			[]rest.Route{
-				{
-					Method:  http.MethodGet,
-					Path:    "/queryOperateFunnelDashboard",
-					Handler: smsoperate_dashboard.QueryOperateFunnelDashboardHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodGet,
-					Path:    "/queryRepeatPurchaseAnalysis",
-					Handler: smsoperate_dashboard.QueryRepeatPurchaseAnalysisHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodGet,
-					Path:    "/exportRepeatPurchaseAnalysis",
-					Handler: smsoperate_dashboard.ExportRepeatPurchaseAnalysisHandler(serverCtx),
-				},
-			}...,
-		),
-		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
-		rest.WithPrefix("/api/sms/operateDashboard"),
 	)
 
 	server.AddRoutes(
@@ -1425,18 +1409,13 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Route{
 				{
 					Method:  http.MethodGet,
-					Path:    "/deleteLoginLog",
-					Handler: syslog.DeleteLoginLogHandler(serverCtx),
+					Path:    "/queryAuditCenterDetail",
+					Handler: syslog.QueryAuditCenterDetailHandler(serverCtx),
 				},
 				{
 					Method:  http.MethodGet,
-					Path:    "/queryLoginLogDetail",
-					Handler: syslog.QueryLoginLogDetailHandler(serverCtx),
-				},
-				{
-					Method:  http.MethodGet,
-					Path:    "/queryLoginLogList",
-					Handler: syslog.QueryLoginLogListHandler(serverCtx),
+					Path:    "/queryAuditCenterList",
+					Handler: syslog.QueryAuditCenterListHandler(serverCtx),
 				},
 			}...,
 		),
@@ -1475,13 +1454,18 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Route{
 				{
 					Method:  http.MethodGet,
-					Path:    "/queryAuditCenterDetail",
-					Handler: syslog.QueryAuditCenterDetailHandler(serverCtx),
+					Path:    "/deleteLoginLog",
+					Handler: syslog.DeleteLoginLogHandler(serverCtx),
 				},
 				{
 					Method:  http.MethodGet,
-					Path:    "/queryAuditCenterList",
-					Handler: syslog.QueryAuditCenterListHandler(serverCtx),
+					Path:    "/queryLoginLogDetail",
+					Handler: syslog.QueryLoginLogDetailHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryLoginLogList",
+					Handler: syslog.QueryLoginLogListHandler(serverCtx),
 				},
 			}...,
 		),

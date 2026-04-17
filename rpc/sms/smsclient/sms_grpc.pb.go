@@ -1284,6 +1284,318 @@ var CouponTypeService_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
+	DrawActivityService_AddDrawActivity_FullMethodName                     = "/smsclient.DrawActivityService/AddDrawActivity"
+	DrawActivityService_UpdateDrawActivity_FullMethodName                  = "/smsclient.DrawActivityService/UpdateDrawActivity"
+	DrawActivityService_DeleteDrawActivity_FullMethodName                  = "/smsclient.DrawActivityService/DeleteDrawActivity"
+	DrawActivityService_UpdateDrawActivityStatus_FullMethodName            = "/smsclient.DrawActivityService/UpdateDrawActivityStatus"
+	DrawActivityService_QueryDrawActivityDetail_FullMethodName             = "/smsclient.DrawActivityService/QueryDrawActivityDetail"
+	DrawActivityService_QueryDrawActivityList_FullMethodName               = "/smsclient.DrawActivityService/QueryDrawActivityList"
+	DrawActivityService_PreviewDrawActivityPublishReadiness_FullMethodName = "/smsclient.DrawActivityService/PreviewDrawActivityPublishReadiness"
+)
+
+// DrawActivityServiceClient is the client API for DrawActivityService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type DrawActivityServiceClient interface {
+	AddDrawActivity(ctx context.Context, in *AddDrawActivityReq, opts ...grpc.CallOption) (*AddDrawActivityResp, error)
+	UpdateDrawActivity(ctx context.Context, in *UpdateDrawActivityReq, opts ...grpc.CallOption) (*UpdateDrawActivityResp, error)
+	DeleteDrawActivity(ctx context.Context, in *DeleteDrawActivityReq, opts ...grpc.CallOption) (*DeleteDrawActivityResp, error)
+	UpdateDrawActivityStatus(ctx context.Context, in *UpdateDrawActivityStatusReq, opts ...grpc.CallOption) (*UpdateDrawActivityStatusResp, error)
+	QueryDrawActivityDetail(ctx context.Context, in *QueryDrawActivityDetailReq, opts ...grpc.CallOption) (*QueryDrawActivityDetailResp, error)
+	QueryDrawActivityList(ctx context.Context, in *QueryDrawActivityListReq, opts ...grpc.CallOption) (*QueryDrawActivityListResp, error)
+	PreviewDrawActivityPublishReadiness(ctx context.Context, in *PreviewDrawActivityPublishReadinessReq, opts ...grpc.CallOption) (*PreviewDrawActivityPublishReadinessResp, error)
+}
+
+type drawActivityServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewDrawActivityServiceClient(cc grpc.ClientConnInterface) DrawActivityServiceClient {
+	return &drawActivityServiceClient{cc}
+}
+
+func (c *drawActivityServiceClient) AddDrawActivity(ctx context.Context, in *AddDrawActivityReq, opts ...grpc.CallOption) (*AddDrawActivityResp, error) {
+	out := new(AddDrawActivityResp)
+	err := c.cc.Invoke(ctx, DrawActivityService_AddDrawActivity_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *drawActivityServiceClient) UpdateDrawActivity(ctx context.Context, in *UpdateDrawActivityReq, opts ...grpc.CallOption) (*UpdateDrawActivityResp, error) {
+	out := new(UpdateDrawActivityResp)
+	err := c.cc.Invoke(ctx, DrawActivityService_UpdateDrawActivity_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *drawActivityServiceClient) DeleteDrawActivity(ctx context.Context, in *DeleteDrawActivityReq, opts ...grpc.CallOption) (*DeleteDrawActivityResp, error) {
+	out := new(DeleteDrawActivityResp)
+	err := c.cc.Invoke(ctx, DrawActivityService_DeleteDrawActivity_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *drawActivityServiceClient) UpdateDrawActivityStatus(ctx context.Context, in *UpdateDrawActivityStatusReq, opts ...grpc.CallOption) (*UpdateDrawActivityStatusResp, error) {
+	out := new(UpdateDrawActivityStatusResp)
+	err := c.cc.Invoke(ctx, DrawActivityService_UpdateDrawActivityStatus_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *drawActivityServiceClient) QueryDrawActivityDetail(ctx context.Context, in *QueryDrawActivityDetailReq, opts ...grpc.CallOption) (*QueryDrawActivityDetailResp, error) {
+	out := new(QueryDrawActivityDetailResp)
+	err := c.cc.Invoke(ctx, DrawActivityService_QueryDrawActivityDetail_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *drawActivityServiceClient) QueryDrawActivityList(ctx context.Context, in *QueryDrawActivityListReq, opts ...grpc.CallOption) (*QueryDrawActivityListResp, error) {
+	out := new(QueryDrawActivityListResp)
+	err := c.cc.Invoke(ctx, DrawActivityService_QueryDrawActivityList_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *drawActivityServiceClient) PreviewDrawActivityPublishReadiness(ctx context.Context, in *PreviewDrawActivityPublishReadinessReq, opts ...grpc.CallOption) (*PreviewDrawActivityPublishReadinessResp, error) {
+	out := new(PreviewDrawActivityPublishReadinessResp)
+	err := c.cc.Invoke(ctx, DrawActivityService_PreviewDrawActivityPublishReadiness_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// DrawActivityServiceServer is the server API for DrawActivityService service.
+// All implementations must embed UnimplementedDrawActivityServiceServer
+// for forward compatibility
+type DrawActivityServiceServer interface {
+	AddDrawActivity(context.Context, *AddDrawActivityReq) (*AddDrawActivityResp, error)
+	UpdateDrawActivity(context.Context, *UpdateDrawActivityReq) (*UpdateDrawActivityResp, error)
+	DeleteDrawActivity(context.Context, *DeleteDrawActivityReq) (*DeleteDrawActivityResp, error)
+	UpdateDrawActivityStatus(context.Context, *UpdateDrawActivityStatusReq) (*UpdateDrawActivityStatusResp, error)
+	QueryDrawActivityDetail(context.Context, *QueryDrawActivityDetailReq) (*QueryDrawActivityDetailResp, error)
+	QueryDrawActivityList(context.Context, *QueryDrawActivityListReq) (*QueryDrawActivityListResp, error)
+	PreviewDrawActivityPublishReadiness(context.Context, *PreviewDrawActivityPublishReadinessReq) (*PreviewDrawActivityPublishReadinessResp, error)
+	mustEmbedUnimplementedDrawActivityServiceServer()
+}
+
+// UnimplementedDrawActivityServiceServer must be embedded to have forward compatible implementations.
+type UnimplementedDrawActivityServiceServer struct {
+}
+
+func (UnimplementedDrawActivityServiceServer) AddDrawActivity(context.Context, *AddDrawActivityReq) (*AddDrawActivityResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddDrawActivity not implemented")
+}
+func (UnimplementedDrawActivityServiceServer) UpdateDrawActivity(context.Context, *UpdateDrawActivityReq) (*UpdateDrawActivityResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateDrawActivity not implemented")
+}
+func (UnimplementedDrawActivityServiceServer) DeleteDrawActivity(context.Context, *DeleteDrawActivityReq) (*DeleteDrawActivityResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteDrawActivity not implemented")
+}
+func (UnimplementedDrawActivityServiceServer) UpdateDrawActivityStatus(context.Context, *UpdateDrawActivityStatusReq) (*UpdateDrawActivityStatusResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateDrawActivityStatus not implemented")
+}
+func (UnimplementedDrawActivityServiceServer) QueryDrawActivityDetail(context.Context, *QueryDrawActivityDetailReq) (*QueryDrawActivityDetailResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QueryDrawActivityDetail not implemented")
+}
+func (UnimplementedDrawActivityServiceServer) QueryDrawActivityList(context.Context, *QueryDrawActivityListReq) (*QueryDrawActivityListResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QueryDrawActivityList not implemented")
+}
+func (UnimplementedDrawActivityServiceServer) PreviewDrawActivityPublishReadiness(context.Context, *PreviewDrawActivityPublishReadinessReq) (*PreviewDrawActivityPublishReadinessResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PreviewDrawActivityPublishReadiness not implemented")
+}
+func (UnimplementedDrawActivityServiceServer) mustEmbedUnimplementedDrawActivityServiceServer() {}
+
+// UnsafeDrawActivityServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to DrawActivityServiceServer will
+// result in compilation errors.
+type UnsafeDrawActivityServiceServer interface {
+	mustEmbedUnimplementedDrawActivityServiceServer()
+}
+
+func RegisterDrawActivityServiceServer(s grpc.ServiceRegistrar, srv DrawActivityServiceServer) {
+	s.RegisterService(&DrawActivityService_ServiceDesc, srv)
+}
+
+func _DrawActivityService_AddDrawActivity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddDrawActivityReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DrawActivityServiceServer).AddDrawActivity(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DrawActivityService_AddDrawActivity_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DrawActivityServiceServer).AddDrawActivity(ctx, req.(*AddDrawActivityReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DrawActivityService_UpdateDrawActivity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateDrawActivityReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DrawActivityServiceServer).UpdateDrawActivity(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DrawActivityService_UpdateDrawActivity_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DrawActivityServiceServer).UpdateDrawActivity(ctx, req.(*UpdateDrawActivityReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DrawActivityService_DeleteDrawActivity_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteDrawActivityReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DrawActivityServiceServer).DeleteDrawActivity(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DrawActivityService_DeleteDrawActivity_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DrawActivityServiceServer).DeleteDrawActivity(ctx, req.(*DeleteDrawActivityReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DrawActivityService_UpdateDrawActivityStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateDrawActivityStatusReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DrawActivityServiceServer).UpdateDrawActivityStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DrawActivityService_UpdateDrawActivityStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DrawActivityServiceServer).UpdateDrawActivityStatus(ctx, req.(*UpdateDrawActivityStatusReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DrawActivityService_QueryDrawActivityDetail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryDrawActivityDetailReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DrawActivityServiceServer).QueryDrawActivityDetail(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DrawActivityService_QueryDrawActivityDetail_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DrawActivityServiceServer).QueryDrawActivityDetail(ctx, req.(*QueryDrawActivityDetailReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DrawActivityService_QueryDrawActivityList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryDrawActivityListReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DrawActivityServiceServer).QueryDrawActivityList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DrawActivityService_QueryDrawActivityList_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DrawActivityServiceServer).QueryDrawActivityList(ctx, req.(*QueryDrawActivityListReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DrawActivityService_PreviewDrawActivityPublishReadiness_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PreviewDrawActivityPublishReadinessReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DrawActivityServiceServer).PreviewDrawActivityPublishReadiness(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DrawActivityService_PreviewDrawActivityPublishReadiness_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DrawActivityServiceServer).PreviewDrawActivityPublishReadiness(ctx, req.(*PreviewDrawActivityPublishReadinessReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// DrawActivityService_ServiceDesc is the grpc.ServiceDesc for DrawActivityService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var DrawActivityService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "smsclient.DrawActivityService",
+	HandlerType: (*DrawActivityServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "AddDrawActivity",
+			Handler:    _DrawActivityService_AddDrawActivity_Handler,
+		},
+		{
+			MethodName: "UpdateDrawActivity",
+			Handler:    _DrawActivityService_UpdateDrawActivity_Handler,
+		},
+		{
+			MethodName: "DeleteDrawActivity",
+			Handler:    _DrawActivityService_DeleteDrawActivity_Handler,
+		},
+		{
+			MethodName: "UpdateDrawActivityStatus",
+			Handler:    _DrawActivityService_UpdateDrawActivityStatus_Handler,
+		},
+		{
+			MethodName: "QueryDrawActivityDetail",
+			Handler:    _DrawActivityService_QueryDrawActivityDetail_Handler,
+		},
+		{
+			MethodName: "QueryDrawActivityList",
+			Handler:    _DrawActivityService_QueryDrawActivityList_Handler,
+		},
+		{
+			MethodName: "PreviewDrawActivityPublishReadiness",
+			Handler:    _DrawActivityService_PreviewDrawActivityPublishReadiness_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "rpc/sms/sms.proto",
+}
+
+const (
 	HomeAdvertiseService_AddHomeAdvertise_FullMethodName          = "/smsclient.HomeAdvertiseService/AddHomeAdvertise"
 	HomeAdvertiseService_DeleteHomeAdvertise_FullMethodName       = "/smsclient.HomeAdvertiseService/DeleteHomeAdvertise"
 	HomeAdvertiseService_UpdateHomeAdvertise_FullMethodName       = "/smsclient.HomeAdvertiseService/UpdateHomeAdvertise"
