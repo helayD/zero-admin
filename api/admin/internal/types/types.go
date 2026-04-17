@@ -99,6 +99,30 @@ type AddDictTypeReq struct {
 	MerchantId int64  `json:"merchantId,optional"` //商户ID
 }
 
+type AddDrawActivityReq struct {
+	DrawGovernanceScopeReq
+	ActivityCode                string                 `json:"activityCode"`                         // 活动编码
+	Name                        string                 `json:"name"`                                 // 活动名称
+	RuleSummary                 string                 `json:"ruleSummary,optional"`                 // 规则摘要
+	StartTime                   string                 `json:"startTime"`                            // 开始时间
+	EndTime                     string                 `json:"endTime"`                              // 结束时间
+	RealNameRequired            int32                  `json:"realNameRequired,default=0"`           // 是否实名要求
+	ParticipantConditionSummary string                 `json:"participantConditionSummary,optional"` // 参与条件摘要
+	ConsumeRuleSummary          string                 `json:"consumeRuleSummary,optional"`          // 消耗规则摘要
+	ProbabilityRule             string                 `json:"probabilityRule,optional"`             // 概率披露方式
+	ComplianceRuleSummary       string                 `json:"complianceRuleSummary,optional"`       // 合规规则摘要
+	CirculationLimitSummary     string                 `json:"circulationLimitSummary,optional"`     // 流转限制摘要
+	ApprovalRecordRef           string                 `json:"approvalRecordRef,optional"`           // 审批记录引用
+	CopyrightStatus             int32                  `json:"copyrightStatus,default=0"`            // 版权状态
+	ContentAuditStatus          int32                  `json:"contentAuditStatus,default=0"`         // 内容审核状态
+	AuditStatus                 int32                  `json:"auditStatus,default=0"`                // 审批状态
+	Status                      int32                  `json:"status,default=0"`                     // 状态
+	IsEnabled                   int32                  `json:"isEnabled,default=1"`                  // 是否启用
+	HomeEntry                   DrawHomeEntryConfig    `json:"homeEntry"`                            // 首页入口配置
+	Templates                   []DrawCardTemplateData `json:"templates,optional"`                   // 卡片模板
+	Pools                       []DrawPoolData         `json:"pools,optional"`                       // 卡池配置
+}
+
 type AddHomeAdvertiseReq struct {
 	Name      string `json:"name"`            //名称
 	Type      int32  `json:"type"`            //轮播位置：0->PC首页轮播；1->app首页轮播
@@ -498,16 +522,6 @@ type AuditCommentReq struct {
 	MerchantId  int64  `json:"merchantId,optional"`
 }
 
-type HandleCommentAppealReq struct {
-	Id           string `path:"id"`
-	AppealStatus int32  `json:"appealStatus"`
-	AppealReply  string `json:"appealReply"`
-	ScopeType    string `json:"scopeType,optional"`
-	PlatformId   int64  `json:"platformId,optional"`
-	TenantId     int64  `json:"tenantId,optional"`
-	MerchantId   int64  `json:"merchantId,optional"`
-}
-
 type AuditTimelineItem struct {
 	SourceType     string `json:"sourceType"`
 	SourceId       int64  `json:"sourceId"`
@@ -728,6 +742,11 @@ type DeleteDictTypeReq struct {
 	Ids []int64 `form:"ids"`
 }
 
+type DeleteDrawActivityReq struct {
+	DrawGovernanceScopeReq
+	Ids []int64 `form:"ids"` // 活动ID
+}
+
 type DeleteHomeAdvertiseReq struct {
 	Ids []int64 `form:"ids"`
 }
@@ -945,6 +964,93 @@ type DeptList struct {
 	Value    string `json:"value"`
 	Title    string `json:"title"`
 	ParentId int64  `json:"parentId"`
+}
+
+type DrawActivityAuditRecord struct {
+	Id             int64  `json:"id"`             // 审计ID
+	OperationType  string `json:"operationType"`  // 操作类型
+	OperatorId     int64  `json:"operatorId"`     // 操作人ID
+	OperatorName   string `json:"operatorName"`   // 操作人
+	ApprovalResult string `json:"approvalResult"` // 审批结果
+	FailureSummary string `json:"failureSummary"` // 失败摘要
+	TraceId        string `json:"traceId"`        // traceId
+	CreateTime     string `json:"createTime"`     // 创建时间
+}
+
+type DrawCardTemplateData struct {
+	Id                      int64  `json:"id,optional"`                      // 模板ID
+	TemplateName            string `json:"templateName"`                     // 模板名称
+	TemplateCode            string `json:"templateCode"`                     // 模板编码
+	CardFaceImage           string `json:"cardFaceImage,optional"`           // 卡面资源
+	CopyrightOwner          string `json:"copyrightOwner,optional"`          // 版权归属
+	CopyrightProofSummary   string `json:"copyrightProofSummary,optional"`   // 版权凭证摘要
+	Rarity                  string `json:"rarity,optional"`                  // 稀有度
+	IssueLimit              int64  `json:"issueLimit"`                       // 发行上限
+	DisplayCopy             string `json:"displayCopy,optional"`             // 展示文案
+	CirculationLimitSummary string `json:"circulationLimitSummary,optional"` // 流转限制
+	DisplayStatus           int32  `json:"displayStatus,default=1"`          // 展示状态
+	ContentAuditStatus      int32  `json:"contentAuditStatus,default=0"`     // 内容审核状态
+	ProviderCode            string `json:"providerCode,optional"`            // 接入方编码
+	CredentialRef           string `json:"credentialRef,optional"`           // 凭证引用
+	Status                  int32  `json:"status,default=0"`                 // 状态
+	AuditStatus             int32  `json:"auditStatus,default=0"`            // 审批状态
+}
+
+type DrawGovernanceScopeReq struct {
+	ScopeType  string `json:"scopeType,optional" form:"scopeType,optional"`   // 主体范围(platform/tenant/merchant)
+	PlatformId int64  `json:"platformId,optional" form:"platformId,optional"` // 平台ID
+	TenantId   int64  `json:"tenantId,optional" form:"tenantId,optional"`     // 租户ID
+	MerchantId int64  `json:"merchantId,optional" form:"merchantId,optional"` // 商户ID
+}
+
+type DrawHomeEntryConfig struct {
+	ShowOnHome         int32  `json:"showOnHome"`                  // 是否首页显著展示
+	HomeEntryTitle     string `json:"homeEntryTitle,optional"`     // 入口标题
+	HomeEntrySubtitle  string `json:"homeEntrySubtitle,optional"`  // 入口副标题
+	HomeEntryImage     string `json:"homeEntryImage,optional"`     // 封面图
+	HomeEntrySort      int32  `json:"homeEntrySort"`               // 排序权重
+	LandingTargetType  string `json:"landingTargetType,optional"`  // 落地目标类型
+	LandingTargetValue string `json:"landingTargetValue,optional"` // 落地目标值
+	IsEnabled          int32  `json:"isEnabled,default=1"`         // 启停状态
+}
+
+type DrawPoolData struct {
+	Id              int64                  `json:"id,optional"`              // 卡池ID
+	PoolName        string                 `json:"poolName"`                 // 卡池名称
+	PoolCode        string                 `json:"poolCode"`                 // 卡池编码
+	ProbabilityRule string                 `json:"probabilityRule,optional"` // 概率规则
+	Sort            int32                  `json:"sort,default=0"`           // 排序
+	Status          int32                  `json:"status,default=0"`         // 状态
+	Templates       []DrawPoolTemplateData `json:"templates,optional"`       // 卡池模板映射
+}
+
+type DrawPoolTemplateData struct {
+	Id             int64   `json:"id,optional"`           // 映射ID
+	TemplateId     int64   `json:"templateId,optional"`   // 模板ID
+	TemplateCode   string  `json:"templateCode,optional"` // 模板编码
+	TemplateName   string  `json:"templateName,optional"` // 模板名称
+	Rarity         string  `json:"rarity,optional"`       // 稀有度
+	Probability    float64 `json:"probability"`           // 概率
+	SaleLimit      int64   `json:"saleLimit"`             // 发售数量
+	RemainingLimit int64   `json:"remainingLimit"`        // 剩余可发数量
+	ConfigLimit    int64   `json:"configLimit"`           // 配置上限
+}
+
+type DrawReadinessItem struct {
+	Code     string `json:"code"`     // 失败项编码
+	Field    string `json:"field"`    // 字段路径
+	Message  string `json:"message"`  // 提示信息
+	Blocking bool   `json:"blocking"` // 是否阻断
+}
+
+type HandleCommentAppealReq struct {
+	Id           string `path:"id"`
+	AppealStatus int32  `json:"appealStatus"`
+	AppealReply  string `json:"appealReply"`
+	ScopeType    string `json:"scopeType,optional"`
+	PlatformId   int64  `json:"platformId,optional"`
+	TenantId     int64  `json:"tenantId,optional"`
+	MerchantId   int64  `json:"merchantId,optional"`
 }
 
 type ListHomeRecommendProductReq struct {
@@ -1266,6 +1372,25 @@ type PostList struct {
 	PostName string `json:"postName"`
 }
 
+type PreviewDrawActivityPublishReadinessData struct {
+	ReadyToPublish   bool                `json:"readyToPublish"`   // 是否可发布
+	PublishReadiness int32               `json:"publishReadiness"` // 可发布状态
+	ReadinessLabel   string              `json:"readinessLabel"`   // 标签
+	Summary          string              `json:"summary"`          // 汇总摘要
+	Items            []DrawReadinessItem `json:"items"`            // 失败项
+}
+
+type PreviewDrawActivityPublishReadinessReq struct {
+	DrawGovernanceScopeReq
+	Id int64 `form:"id"` // 活动ID
+}
+
+type PreviewDrawActivityPublishReadinessResp struct {
+	Code    string                                  `json:"code"`
+	Message string                                  `json:"message"`
+	Data    PreviewDrawActivityPublishReadinessData `json:"data"`
+}
+
 type ProductFullReductionReq struct {
 	Id          int64 `json:"id,optional"` //满减明细ID，更新时可回传
 	FullPrice   int64 `json:"fullPrice"`   //商品满多少
@@ -1578,7 +1703,6 @@ type QueryCouponDetailData struct {
 	UpdateTime      string             `json:"updateTime"`      //更新时间
 	ScopeType       int32              `json:"scopeType"`       //范围类型：0-全场，1-分类，2-商品
 	CouponScopeData []*CouponScopeData `json:"couponScopeData"` //使用范围
-	EffectiveStatus string             `json:"effectiveStatus"` //综合生效状态
 }
 
 type QueryCouponDetailReq struct {
@@ -1596,28 +1720,27 @@ type QueryCouponDetailResp struct {
 }
 
 type QueryCouponListData struct {
-	Id              int64   `json:"id"`              //优惠券ID
-	TypeId          int64   `json:"typeId"`          //优惠券类型ID
-	Name            string  `json:"name"`            //优惠券名称
-	Code            string  `json:"code"`            //优惠券码
-	Amount          float32 `json:"amount"`          //优惠金额/折扣率
-	MinAmount       float32 `json:"minAmount"`       //最低使用金额
-	StartTime       string  `json:"startTime"`       //生效时间
-	EndTime         string  `json:"endTime"`         //失效时间
-	TotalCount      int32   `json:"totalCount"`      //发放总量
-	ReceivedCount   int32   `json:"receivedCount"`   //已领取数量
-	UsedCount       int32   `json:"usedCount"`       //已使用数量
-	PerLimit        int32   `json:"perLimit"`        //每人限领数量
-	Status          int32   `json:"status"`          //状态：0-未开始，1-进行中，2-已结束，3-已取消
-	IsEnabled       int32   `json:"isEnabled"`       //是否启用
-	Description     string  `json:"description"`     //使用说明
-	CreateBy        int64   `json:"createBy"`        //创建人ID
-	CreateTime      string  `json:"createTime"`      //创建时间
-	UpdateBy        int64   `json:"updateBy"`        //更新人ID
-	UpdateTime      string  `json:"updateTime"`      //更新时间
-	ScopeCount      int64   `json:"scopeCount"`      //关联scope数量
-	TypeName        string  `json:"typeName"`        //优惠券类型名称
-	EffectiveStatus string  `json:"effectiveStatus"` //综合生效状态
+	Id            int64   `json:"id"`            //优惠券ID
+	TypeId        int64   `json:"typeId"`        //优惠券类型ID
+	Name          string  `json:"name"`          //优惠券名称
+	Code          string  `json:"code"`          //优惠券码
+	Amount        float32 `json:"amount"`        //优惠金额/折扣率
+	MinAmount     float32 `json:"minAmount"`     //最低使用金额
+	StartTime     string  `json:"startTime"`     //生效时间
+	EndTime       string  `json:"endTime"`       //失效时间
+	TotalCount    int32   `json:"totalCount"`    //发放总量
+	ReceivedCount int32   `json:"receivedCount"` //已领取数量
+	UsedCount     int32   `json:"usedCount"`     //已使用数量
+	PerLimit      int32   `json:"perLimit"`      //每人限领数量
+	Status        int32   `json:"status"`        //状态：0-未开始，1-进行中，2-已结束，3-已取消
+	IsEnabled     int32   `json:"isEnabled"`     //是否启用
+	Description   string  `json:"description"`   //使用说明
+	CreateBy      int64   `json:"createBy"`      //创建人ID
+	CreateTime    string  `json:"createTime"`    //创建时间
+	UpdateBy      int64   `json:"updateBy"`      //更新人ID
+	UpdateTime    string  `json:"updateTime"`    //更新时间
+	ScopeCount    int64   `json:"scopeCount"`    //关联scope数量
+	TypeName      string  `json:"typeName"`      //优惠券类型名称
 }
 
 type QueryCouponListReq struct {
@@ -2019,6 +2142,94 @@ type QueryDictTypeListResp struct {
 	Total    int64                    `json:"total"`
 }
 
+type QueryDrawActivityDetailData struct {
+	Id                          int64                     `json:"id"`                          // 活动ID
+	ActivityCode                string                    `json:"activityCode"`                // 活动编码
+	Name                        string                    `json:"name"`                        // 活动名称
+	RuleSummary                 string                    `json:"ruleSummary"`                 // 规则摘要
+	StartTime                   string                    `json:"startTime"`                   // 开始时间
+	EndTime                     string                    `json:"endTime"`                     // 结束时间
+	RealNameRequired            int32                     `json:"realNameRequired"`            // 是否实名
+	ParticipantConditionSummary string                    `json:"participantConditionSummary"` // 参与条件摘要
+	ConsumeRuleSummary          string                    `json:"consumeRuleSummary"`          // 消耗规则摘要
+	ProbabilityRule             string                    `json:"probabilityRule"`             // 概率披露方式
+	ComplianceRuleSummary       string                    `json:"complianceRuleSummary"`       // 合规规则摘要
+	CirculationLimitSummary     string                    `json:"circulationLimitSummary"`     // 流转限制摘要
+	ApprovalRecordRef           string                    `json:"approvalRecordRef"`           // 审批记录引用
+	CopyrightStatus             int32                     `json:"copyrightStatus"`             // 版权状态
+	ContentAuditStatus          int32                     `json:"contentAuditStatus"`          // 内容审核状态
+	Status                      int32                     `json:"status"`                      // 活动状态
+	AuditStatus                 int32                     `json:"auditStatus"`                 // 审批状态
+	IsEnabled                   int32                     `json:"isEnabled"`                   // 是否启用
+	PublishReadiness            int32                     `json:"publishReadiness"`            // 可发布状态
+	PublishFailureSummary       string                    `json:"publishFailureSummary"`       // 发布失败摘要
+	ScopeType                   string                    `json:"scopeType"`                   // 范围类型
+	PlatformId                  int64                     `json:"platformId"`                  // 平台ID
+	TenantId                    int64                     `json:"tenantId"`                    // 租户ID
+	MerchantId                  int64                     `json:"merchantId"`                  // 商户ID
+	CreateTime                  string                    `json:"createTime"`                  // 创建时间
+	UpdateTime                  string                    `json:"updateTime"`                  // 更新时间
+	CreateBy                    int64                     `json:"createBy"`                    // 创建人
+	UpdateBy                    int64                     `json:"updateBy"`                    // 更新人
+	HomeEntry                   DrawHomeEntryConfig       `json:"homeEntry"`                   // 首页入口配置
+	Templates                   []DrawCardTemplateData    `json:"templates"`                   // 模板列表
+	Pools                       []DrawPoolData            `json:"pools"`                       // 卡池列表
+	ReadinessItems              []DrawReadinessItem       `json:"readinessItems"`              // 预检项
+	Audits                      []DrawActivityAuditRecord `json:"audits"`                      // 审计列表
+}
+
+type QueryDrawActivityDetailReq struct {
+	DrawGovernanceScopeReq
+	Id int64 `form:"id"` // 活动ID
+}
+
+type QueryDrawActivityDetailResp struct {
+	Code    string                      `json:"code"`
+	Message string                      `json:"message"`
+	Data    QueryDrawActivityDetailData `json:"data"`
+}
+
+type QueryDrawActivityListData struct {
+	Id                    int64  `json:"id"`                    // 活动ID
+	ActivityCode          string `json:"activityCode"`          // 活动编码
+	Name                  string `json:"name"`                  // 活动名称
+	StartTime             string `json:"startTime"`             // 开始时间
+	EndTime               string `json:"endTime"`               // 结束时间
+	Status                int32  `json:"status"`                // 状态
+	AuditStatus           int32  `json:"auditStatus"`           // 审批状态
+	IsEnabled             int32  `json:"isEnabled"`             // 是否启用
+	PublishReadiness      int32  `json:"publishReadiness"`      // 可发布状态
+	PublishFailureSummary string `json:"publishFailureSummary"` // 发布失败摘要
+	ScopeType             string `json:"scopeType"`             // 范围类型
+	PlatformId            int64  `json:"platformId"`            // 平台ID
+	TenantId              int64  `json:"tenantId"`              // 租户ID
+	MerchantId            int64  `json:"merchantId"`            // 商户ID
+	UpdateTime            string `json:"updateTime"`            // 更新时间
+	ShowOnHome            int32  `json:"showOnHome"`            // 首页展示
+	HomeEntryTitle        string `json:"homeEntryTitle"`        // 入口标题
+	ReadinessLabel        string `json:"readinessLabel"`        // 可发布标签
+}
+
+type QueryDrawActivityListReq struct {
+	DrawGovernanceScopeReq
+	Current          int32  `form:"current,default=1"`           // 第几页
+	PageSize         int32  `form:"pageSize,default=20"`         // 每页数量
+	Name             string `form:"name,optional"`               // 活动名称
+	Status           int32  `form:"status,default=-1"`           // 活动状态
+	AuditStatus      int32  `form:"auditStatus,default=-1"`      // 审批状态
+	PublishReadiness int32  `form:"publishReadiness,default=-1"` // 可发布状态
+}
+
+type QueryDrawActivityListResp struct {
+	Code     string                      `json:"code"`
+	Message  string                      `json:"message"`
+	Current  int32                       `json:"current"`
+	Data     []QueryDrawActivityListData `json:"data"`
+	PageSize int32                       `json:"pageSize"`
+	Success  bool                        `json:"success"`
+	Total    int64                       `json:"total"`
+}
+
 type QueryHomeAdvertiseDetailData struct {
 	Id         int64  `json:"id"`         //编号
 	Name       string `json:"name"`       //名称
@@ -2047,21 +2258,20 @@ type QueryHomeAdvertiseDetailResp struct {
 }
 
 type QueryHomeAdvertiseListData struct {
-	Id              int64  `json:"id"`              //编号
-	Name            string `json:"name"`            //名称
-	Type            int32  `json:"type"`            //轮播位置：0->PC首页轮播；1->app首页轮播
-	Pic             string `json:"pic"`             //图片地址
-	StartTime       string `json:"startTime"`       //开始时间
-	EndTime         string `json:"endTime"`         //结束时间
-	Status          int32  `json:"status"`          //上下线状态：0->下线；1->上线
-	ClickCount      int32  `json:"clickCount"`      //点击数
-	OrderCount      int32  `json:"orderCount"`      //下单数
-	Url             string `json:"url"`             //链接地址
-	Remark          string `json:"remark"`          //备注
-	Sort            int32  `json:"sort"`            //排序
-	CreateTime      string `json:"createTime"`      //创建时间
-	UpdateTime      string `json:"updateTime"`      //更新时间
-	EffectiveStatus string `json:"effectiveStatus"` //综合生效状态
+	Id         int64  `json:"id"`         //编号
+	Name       string `json:"name"`       //名称
+	Type       int32  `json:"type"`       //轮播位置：0->PC首页轮播；1->app首页轮播
+	Pic        string `json:"pic"`        //图片地址
+	StartTime  string `json:"startTime"`  //开始时间
+	EndTime    string `json:"endTime"`    //结束时间
+	Status     int32  `json:"status"`     //上下线状态：0->下线；1->上线
+	ClickCount int32  `json:"clickCount"` //点击数
+	OrderCount int32  `json:"orderCount"` //下单数
+	Url        string `json:"url"`        //链接地址
+	Remark     string `json:"remark"`     //备注
+	Sort       int32  `json:"sort"`       //排序
+	CreateTime string `json:"createTime"` //创建时间
+	UpdateTime string `json:"updateTime"` //更新时间
 }
 
 type QueryHomeAdvertiseListReq struct {
@@ -2082,167 +2292,6 @@ type QueryHomeAdvertiseListResp struct {
 	PageSize int32                         `json:"pageSize,default=20"`
 	Success  bool                          `json:"success"`
 	Total    int64                         `json:"total"`
-}
-
-type QueryOperateFunnelDashboardReq struct {
-	ScopeType    string `form:"scopeType,optional"`    //查询主体范围(platform/tenant/merchant)
-	PlatformId   int64  `form:"platformId,optional"`   //平台ID
-	TenantId     int64  `form:"tenantId,optional"`     //租户ID
-	MerchantId   int64  `form:"merchantId,optional"`   //商户ID
-	StartTime    string `form:"startTime,optional"`    //开始时间，按 Asia/Shanghai 解析
-	EndTime      string `form:"endTime,optional"`      //结束时间，按 Asia/Shanghai 解析
-	Channel      string `form:"channel,optional"`      //统一渠道(app/pc/h5/mini_program/unknown)
-	ActivityType string `form:"activityType,optional"` //活动类型(home_advertise/coupon/seckill_activity/none)
-	ActivityId   int64  `form:"activityId,optional"`   //活动ID
-	Bucket       string `form:"bucket,optional"`       //时间桶(day/hour)
-}
-
-type OperateFunnelMetricCard struct {
-	Key       string  `json:"key"`       //指标标识
-	Label     string  `json:"label"`     //指标名称
-	Value     int64   `json:"value"`     //指标值
-	Rate      float64 `json:"rate"`      //上一阶段转化率
-	RateLabel string  `json:"rateLabel"` //转化率文案
-}
-
-type OperateFunnelOverview struct {
-	Exposure         int64                     `json:"exposure"`         //曝光数
-	Click            int64                     `json:"click"`            //点击数
-	AddCart          int64                     `json:"addCart"`          //加购数
-	OrderCreated     int64                     `json:"orderCreated"`     //下单数
-	PaySuccess       int64                     `json:"paySuccess"`       //支付数
-	CouponRedeem     int64                     `json:"couponRedeem"`     //优惠券核销数
-	ClickRate        float64                   `json:"clickRate"`        //点击率
-	AddCartRate      float64                   `json:"addCartRate"`      //加购率
-	OrderRate        float64                   `json:"orderRate"`        //下单率
-	PayRate          float64                   `json:"payRate"`          //支付率
-	CouponRedeemRate float64                   `json:"couponRedeemRate"` //核销率
-	Cards            []OperateFunnelMetricCard `json:"cards"`            //概览卡片
-}
-
-type OperateFunnelSeriesPoint struct {
-	BucketLabel      string  `json:"bucketLabel"`      //时间桶标签
-	BucketStart      string  `json:"bucketStart"`      //时间桶开始
-	BucketEnd        string  `json:"bucketEnd"`        //时间桶结束
-	Exposure         int64   `json:"exposure"`         //曝光数
-	Click            int64   `json:"click"`            //点击数
-	AddCart          int64   `json:"addCart"`          //加购数
-	OrderCreated     int64   `json:"orderCreated"`     //下单数
-	PaySuccess       int64   `json:"paySuccess"`       //支付数
-	CouponRedeem     int64   `json:"couponRedeem"`     //优惠券核销数
-	ClickRate        float64 `json:"clickRate"`        //点击率
-	AddCartRate      float64 `json:"addCartRate"`      //加购率
-	OrderRate        float64 `json:"orderRate"`        //下单率
-	PayRate          float64 `json:"payRate"`          //支付率
-	CouponRedeemRate float64 `json:"couponRedeemRate"` //核销率
-}
-
-type OperateFunnelActivityOption struct {
-	ActivityType  string `json:"activityType"`  //活动类型
-	ActivityId    int64  `json:"activityId"`    //活动ID
-	ActivityName  string `json:"activityName"`  //活动名称
-	ActivityLabel string `json:"activityLabel"` //活动展示名
-}
-
-type QueryOperateFunnelDashboardData struct {
-	Overview          OperateFunnelOverview         `json:"overview"`          //总览数据
-	Series            []OperateFunnelSeriesPoint    `json:"series"`            //时间序列
-	ActivityOptions   []OperateFunnelActivityOption `json:"activityOptions"`   //活动选项
-	TrackingStartedAt string                        `json:"trackingStartedAt"` //可信起点
-	PartialMetrics    []string                      `json:"partialMetrics"`    //部分可用指标
-	Bucket            string                        `json:"bucket"`            //实际时间桶
-}
-
-type QueryOperateFunnelDashboardResp struct {
-	Code    string                          `json:"code"`
-	Message string                          `json:"message"`
-	Data    QueryOperateFunnelDashboardData `json:"data"`
-	Success bool                            `json:"success"`
-}
-
-type QueryRepeatPurchaseAnalysisReq struct {
-	ScopeType    string `form:"scopeType,optional"`
-	PlatformId   int64  `form:"platformId,optional"`
-	TenantId     int64  `form:"tenantId,optional"`
-	MerchantId   int64  `form:"merchantId,optional"`
-	StartTime    string `form:"startTime,optional"`
-	EndTime      string `form:"endTime,optional"`
-	Channel      string `form:"channel,optional"`
-	ActivityType string `form:"activityType,optional"`
-	ActivityId   int64  `form:"activityId,optional"`
-	Bucket       string `form:"bucket,optional"`
-	PageNum      int32  `form:"pageNum,optional"`
-	PageSize     int32  `form:"pageSize,optional"`
-}
-
-type ExportRepeatPurchaseAnalysisReq struct {
-	ScopeType    string `form:"scopeType,optional"`
-	PlatformId   int64  `form:"platformId,optional"`
-	TenantId     int64  `form:"tenantId,optional"`
-	MerchantId   int64  `form:"merchantId,optional"`
-	StartTime    string `form:"startTime,optional"`
-	EndTime      string `form:"endTime,optional"`
-	Channel      string `form:"channel,optional"`
-	ActivityType string `form:"activityType,optional"`
-	ActivityId   int64  `form:"activityId,optional"`
-	Bucket       string `form:"bucket,optional"`
-}
-
-type RepeatPurchaseOverview struct {
-	PaidBuyerCount   int64   `json:"paidBuyerCount"`
-	RepeatBuyerCount int64   `json:"repeatBuyerCount"`
-	RepeatRate       float64 `json:"repeatRate"`
-	RepeatOrderCount int64   `json:"repeatOrderCount"`
-	RepeatGmv        float64 `json:"repeatGmv"`
-	AvgDaysToRepeat  float64 `json:"avgDaysToRepeat"`
-}
-
-type RepeatPurchaseTrendPoint struct {
-	BucketLabel      string  `json:"bucketLabel"`
-	BucketStart      string  `json:"bucketStart"`
-	BucketEnd        string  `json:"bucketEnd"`
-	PaidBuyerCount   int64   `json:"paidBuyerCount"`
-	RepeatBuyerCount int64   `json:"repeatBuyerCount"`
-	RepeatRate       float64 `json:"repeatRate"`
-	RepeatOrderCount int64   `json:"repeatOrderCount"`
-	RepeatGmv        float64 `json:"repeatGmv"`
-	AvgDaysToRepeat  float64 `json:"avgDaysToRepeat"`
-}
-
-type RepeatPurchaseDetailItem struct {
-	MemberId            int64   `json:"memberId"`
-	NicknameMasked      string  `json:"nicknameMasked"`
-	MobileMasked        string  `json:"mobileMasked"`
-	FirstValidPayTime   string  `json:"firstValidPayTime"`
-	LatestRepeatPayTime string  `json:"latestRepeatPayTime"`
-	RepeatOrderCount    int64   `json:"repeatOrderCount"`
-	RepeatGmv           float64 `json:"repeatGmv"`
-	LatestChannel       string  `json:"latestChannel"`
-	LatestActivityType  string  `json:"latestActivityType"`
-	LatestActivityId    int64   `json:"latestActivityId"`
-	PlatformId          int64   `json:"platformId"`
-	TenantId            int64   `json:"tenantId"`
-	MerchantId          int64   `json:"merchantId"`
-}
-
-type QueryRepeatPurchaseAnalysisData struct {
-	Overview          RepeatPurchaseOverview        `json:"overview"`
-	Trends            []RepeatPurchaseTrendPoint    `json:"trends"`
-	Details           []RepeatPurchaseDetailItem    `json:"details"`
-	Total             int64                         `json:"total"`
-	PageNum           int32                         `json:"pageNum"`
-	PageSize          int32                         `json:"pageSize"`
-	ActivityOptions   []OperateFunnelActivityOption `json:"activityOptions"`
-	TrackingStartedAt string                        `json:"trackingStartedAt"`
-	PartialMetrics    []string                      `json:"partialMetrics"`
-	Bucket            string                        `json:"bucket"`
-}
-
-type QueryRepeatPurchaseAnalysisResp struct {
-	Code    string                          `json:"code"`
-	Message string                          `json:"message"`
-	Data    QueryRepeatPurchaseAnalysisData `json:"data"`
-	Success bool                            `json:"success"`
 }
 
 type QueryHomeBrandDetailData struct {
@@ -4565,21 +4614,20 @@ type QuerySeckillActivityDetailResp struct {
 }
 
 type QuerySeckillActivityListData struct {
-	Id              int64  `json:"id"`              //编号
-	Name            string `json:"name"`            //活动名称
-	Description     string `json:"description"`     //活动描述
-	StartTime       string `json:"startTime"`       //开始时间
-	EndTime         string `json:"endTime"`         //结束时间
-	Status          int32  `json:"status"`          //状态:0-上线,1-下线
-	IsEnabled       int32  `json:"isEnabled"`       //是否启用
-	CreateBy        int64  `json:"createBy"`        //创建人ID
-	CreateTime      string `json:"createTime"`      //创建时间
-	UpdateBy        int64  `json:"updateBy"`        //更新人ID
-	UpdateTime      string `json:"updateTime"`      //更新时间
-	IsDeleted       int32  `json:"isDeleted"`       //是否删除
-	ProductCount    int64  `json:"productCount"`    //关联已上架秒杀商品数量
-	SessionCount    int64  `json:"sessionCount"`    //关联场次数量
-	EffectiveStatus string `json:"effectiveStatus"` //综合生效状态
+	Id           int64  `json:"id"`           //编号
+	Name         string `json:"name"`         //活动名称
+	Description  string `json:"description"`  //活动描述
+	StartTime    string `json:"startTime"`    //开始时间
+	EndTime      string `json:"endTime"`      //结束时间
+	Status       int32  `json:"status"`       //状态:0-上线,1-下线
+	IsEnabled    int32  `json:"isEnabled"`    //是否启用
+	CreateBy     int64  `json:"createBy"`     //创建人ID
+	CreateTime   string `json:"createTime"`   //创建时间
+	UpdateBy     int64  `json:"updateBy"`     //更新人ID
+	UpdateTime   string `json:"updateTime"`   //更新时间
+	IsDeleted    int32  `json:"isDeleted"`    //是否删除
+	ProductCount int64  `json:"productCount"` //关联已上架秒杀商品数量
+	SessionCount int64  `json:"sessionCount"` //关联场次数量
 }
 
 type QuerySeckillActivityListReq struct {
@@ -5271,6 +5319,17 @@ type UpdateDictTypeReq struct {
 type UpdateDictTypeStatusReq struct {
 	Ids    []int64 `json:"ids"`    //字典id
 	Status int32   `json:"status"` //状态
+}
+
+type UpdateDrawActivityReq struct {
+	AddDrawActivityReq
+	Id int64 `json:"id"` // 活动ID
+}
+
+type UpdateDrawActivityStatusReq struct {
+	DrawGovernanceScopeReq
+	Ids    []int64 `json:"ids"`    // 活动ID
+	Status int32   `json:"status"` // 活动状态
 }
 
 type UpdateHomeAdvertiseReq struct {

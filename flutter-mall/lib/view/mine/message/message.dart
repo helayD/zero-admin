@@ -3,13 +3,18 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mall/config/service_url.dart';
+import 'package:flutter_mall/layout/upgrade_gate_page.dart';
+import 'package:flutter_mall/model/app_recent_context.dart';
+import 'package:flutter_mall/model/app_version_policy.dart';
 import 'package:flutter_mall/model/message_model.dart';
+import 'package:flutter_mall/model/upgrade_gate_context.dart';
 import 'package:flutter_mall/provider/app_lifecycle_provider.dart';
 import 'package:flutter_mall/utils/app_intent_dispatcher.dart';
 import 'package:flutter_mall/utils/app_recovery_router.dart';
 import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/utils/commerce_state_resolver.dart';
 import 'package:flutter_mall/utils/http_util.dart';
+import 'package:flutter_mall/utils/upgrade_gate_service.dart';
 import 'package:flutter_mall/view/mine/login/login.dart';
 import 'package:flutter_mall/widgets/commerce_state_shell.dart';
 import 'package:provider/provider.dart';
@@ -151,6 +156,111 @@ class _MessageState extends State<Message> {
     });
   }
 
+  Future<void> _markMessageReadIfNeeded(
+    MessageData msg, {
+    required bool shouldMarkMessageRead,
+  }) async {
+    if (!shouldMarkMessageRead || msg.status != 0) {
+      return;
+    }
+    final success = await _markAsRead(msg.id);
+    if (success) {
+      _markLocalAsRead(msg.id);
+    }
+  }
+
+  void _showUpgradePolicyUnavailableMessage() {
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('暂时无法确认升级策略，请稍后重试'),
+        backgroundColor: Colors.orange,
+      ),
+    );
+  }
+
+  Future<AppVersionPolicy?> _queryUpgradePolicyForMessage(
+    AppRecentContext intent,
+  ) async {
+    final scene = UpgradeGateService.recoverySceneFor(intent);
+    try {
+      if (intent.isRecallIntent) {
+        return await UpgradeGateService.queryRecallPolicy(intent, scene: scene);
+      }
+      return await UpgradeGateService.queryPolicy(
+        scene: scene,
+        recoveryContext: intent,
+      );
+    } catch (_) {
+      _showUpgradePolicyUnavailableMessage();
+      return null;
+    }
+  }
+
+  Future<void> _restoreMessageTarget(
+    MessageData msg,
+    AppIntentDispatchPlan plan,
+  ) async {
+    final lifecycleProvider = context.read<AppLifecycleProvider>();
+    lifecycleProvider.recordIntentRestored(plan.intent);
+    await AppRecoveryStore.saveActiveIntentCandidate(
+      plan.intent.copyWith(lastValidatedAt: DateTime.now()),
+    );
+    await _markMessageReadIfNeeded(
+      msg,
+      shouldMarkMessageRead: plan.shouldMarkMessageRead,
+    );
+    if (!mounted) return;
+    await AppRecoveryRouter.pushTarget(
+      context,
+      plan.intent,
+      message: plan.message,
+    );
+  }
+
+  Future<void> _openMessageUpgradeGate(
+    MessageData msg,
+    AppIntentDispatchPlan plan,
+    AppVersionPolicy upgradePolicy,
+  ) async {
+    final scene = UpgradeGateService.recoverySceneFor(plan.intent);
+    final pendingUpgrade = PendingUpgradeContext.forRecentContext(
+      scene: scene,
+      recoveryContext: plan.intent,
+      policy: upgradePolicy,
+    );
+    await AppRecoveryStore.savePendingUpgradeContext(pendingUpgrade);
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => UpgradeGatePage(
+          pendingContext: pendingUpgrade,
+          initialPolicy: upgradePolicy,
+          onResolved: (gateContext, pending) async {
+            await _markMessageReadIfNeeded(
+              msg,
+              shouldMarkMessageRead: plan.shouldMarkMessageRead,
+            );
+            await AppRecoveryRouter.replaceWithTarget(
+              gateContext,
+              pending.recoveryContext!,
+              message: pending.recoveryHint.isNotEmpty
+                  ? pending.recoveryHint
+                  : plan.message,
+            );
+          },
+          onContinueLater: upgradePolicy.canContinueLater
+              ? (gateContext, _) async {
+                  Navigator.of(gateContext).pop(false);
+                }
+              : null,
+        ),
+      ),
+    );
+  }
+
   Future<void> _markAllAsRead() async {
     try {
       await HttpUtil.post(markAllReadUrl);
@@ -190,13 +300,6 @@ class _MessageState extends State<Message> {
       hasValidToken: AppRecoveryStore.hasValidToken(),
     );
 
-    if (plan.shouldMarkMessageRead && msg.status == 0) {
-      final success = await _markAsRead(msg.id);
-      if (success) {
-        _markLocalAsRead(msg.id);
-      }
-    }
-
     if (!mounted) return;
 
     switch (plan.action) {
@@ -217,21 +320,24 @@ class _MessageState extends State<Message> {
         await _loadMessages(reset: true);
         return;
       case AppIntentDispatchAction.target:
-        lifecycleProvider.recordIntentRestored(plan.intent);
-        await AppRecoveryStore.saveActiveIntentCandidate(
-          plan.intent.copyWith(lastValidatedAt: DateTime.now()),
-        );
-        if (!mounted) return;
-        await AppRecoveryRouter.pushTarget(
-          context,
-          plan.intent,
-          message: plan.message,
-        );
+        final upgradePolicy = await _queryUpgradePolicyForMessage(plan.intent);
+        if (upgradePolicy == null) {
+          return;
+        }
+        if (upgradePolicy.hasUpgradeGate) {
+          await _openMessageUpgradeGate(msg, plan, upgradePolicy);
+          return;
+        }
+        await _restoreMessageTarget(msg, plan);
         return;
       case AppIntentDispatchAction.fallback:
         lifecycleProvider.recordIntentFallbackUsed(
           plan.intent,
           failureReason: plan.failureReason,
+        );
+        await _markMessageReadIfNeeded(
+          msg,
+          shouldMarkMessageRead: plan.shouldMarkMessageRead,
         );
         if (!mounted) return;
         await AppRecoveryRouter.pushFallback(
@@ -239,6 +345,17 @@ class _MessageState extends State<Message> {
           recentContext: plan.intent,
           message: plan.message,
         );
+        return;
+      case AppIntentDispatchAction.upgradeGate:
+        final upgradePolicy = await _queryUpgradePolicyForMessage(plan.intent);
+        if (upgradePolicy == null) {
+          return;
+        }
+        if (!upgradePolicy.hasUpgradeGate) {
+          await _restoreMessageTarget(msg, plan);
+          return;
+        }
+        await _openMessageUpgradeGate(msg, plan, upgradePolicy);
         return;
     }
   }

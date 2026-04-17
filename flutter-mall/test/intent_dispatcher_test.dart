@@ -1,9 +1,26 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_mall/model/app_recent_context.dart';
+import 'package:flutter_mall/model/app_version_info.dart';
 import 'package:flutter_mall/utils/app_intent_dispatcher.dart';
+import 'package:flutter_mall/utils/app_version_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() {
+    AppVersionService.debugSetCurrentInfo(
+      const AppVersionInfo(
+        version: '1.0.0',
+        buildNumber: '1',
+        platform: 'android',
+        installerStore: '',
+        channel: 'direct',
+        isFallback: false,
+      ),
+    );
+  });
+
+  tearDown(AppVersionService.debugReset);
 
   test('requires login when auth intent has no valid token', () {
     final intent = AppRecentContext.createRecall(
@@ -23,7 +40,7 @@ void main() {
     expect(plan.failureReason, 'login_required');
   });
 
-  test('falls back when min app version is not satisfied', () {
+  test('enters upgrade gate when min app version is not satisfied', () {
     final intent = AppRecentContext.createRecall(
       intentType: 'coupon_center_recall',
       targetType: AppRecentTargetType.couponCenter,
@@ -38,9 +55,10 @@ void main() {
 
     final plan = AppIntentDispatcher.resolve(intent, hasValidToken: true);
 
-    expect(plan.action, AppIntentDispatchAction.fallback);
+    expect(plan.action, AppIntentDispatchAction.upgradeGate);
     expect(plan.failureReason, 'min_version_unmet');
     expect(plan.shouldMarkMessageRead, isTrue);
+    expect(plan.upgradePolicy, isNull);
   });
 
   test('keeps valid product recall on target path', () {

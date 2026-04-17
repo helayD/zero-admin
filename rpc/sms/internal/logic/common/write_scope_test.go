@@ -2,80 +2,80 @@ package common
 
 import (
 	"context"
-	"path/filepath"
+	"fmt"
 	"testing"
 
 	pkgscope "github.com/feihua/zero-admin/pkg/scope"
+	"github.com/feihua/zero-admin/rpc/sms/smsclient"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
-func newSMSWriteScopeDB(t *testing.T) *gorm.DB {
+func newWriteScopeTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 
-	dbPath := filepath.Join(t.TempDir(), "sms-write-scope.db")
-	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("open sqlite failed: %v", err)
 	}
-
-	stmts := []string{
-		`CREATE TABLE sms_coupon (
+	if err := db.Exec(`
+		CREATE TABLE sys_user (
 			id INTEGER PRIMARY KEY,
 			platform_id INTEGER NOT NULL,
 			tenant_id INTEGER NOT NULL,
 			merchant_id INTEGER NOT NULL
-		)`,
-		`CREATE TABLE sys_security_event (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			trace_id TEXT,
-			event_type TEXT,
-			action TEXT,
-			resource_type TEXT,
-			resource_id INTEGER,
-			scope_type TEXT,
-			platform_id INTEGER,
-			tenant_id INTEGER,
-			merchant_id INTEGER,
-			operator_id INTEGER,
-			operator_name TEXT,
-			request_summary TEXT,
-			result TEXT,
-			payload TEXT,
-			created_at DATETIME
-		)`,
+		)
+	`).Error; err != nil {
+		t.Fatalf("create sys_user failed: %v", err)
 	}
-	for _, stmt := range stmts {
-		if err := db.Exec(stmt).Error; err != nil {
-			t.Fatalf("exec schema failed: %v", err)
-		}
+	if err := db.Exec(`
+		INSERT INTO sys_user (id, platform_id, tenant_id, merchant_id) VALUES
+		(1001, 1, 10, 0),
+		(1002, 1, 10, 88)
+	`).Error; err != nil {
+		t.Fatalf("seed sys_user failed: %v", err)
 	}
 
 	return db
 }
 
-func TestEnsureCouponScopeRejectsCrossTenantWrite(t *testing.T) {
-	db := newSMSWriteScopeDB(t)
-	ctx := context.Background()
-	current, err := pkgscope.NormalizeGovernanceScope(pkgscope.SubjectTypeTenant, pkgscope.DefaultPlatformID, 10, 0)
+func TestResolveWriteScopeUsesActorScopeByDefault(t *testing.T) {
+	db := newWriteScopeTestDB(t)
+
+	scope, err := ResolveWriteScope(context.Background(), db, nil, 1002)
 	if err != nil {
-		t.Fatalf("normalize scope failed: %v", err)
+		t.Fatalf("ResolveWriteScope returned error: %v", err)
 	}
+	if scope.ScopeType != pkgscope.SubjectTypeMerchant || scope.TenantID != 10 || scope.MerchantID != 88 {
+		t.Fatalf("unexpected resolved scope: %+v", scope)
+	}
+}
 
-	if err := db.Exec(`INSERT INTO sms_coupon (id, platform_id, tenant_id, merchant_id) VALUES (1,1,20,0)`).Error; err != nil {
-		t.Fatalf("seed coupon failed: %v", err)
-	}
+func TestResolveWriteScopeRejectsTenantExpansion(t *testing.T) {
+	db := newWriteScopeTestDB(t)
 
-	_, err = EnsureCouponScope(ctx, db, current, []int64{1}, "sms.coupon.update", 202, "tester", "update coupon")
-	if err == nil {
-		t.Fatal("expected cross-tenant coupon write to be rejected")
+	_, err := ResolveWriteScope(context.Background(), db, &smsclient.GovernanceScope{
+		ScopeType:  pkgscope.SubjectTypePlatform,
+		PlatformId: 1,
+	}, 1001)
+	if err == nil || err.Error() != "当前主体不允许切换写入范围" {
+		t.Fatalf("expected tenant expansion error, got %v", err)
 	}
+}
 
-	var count int64
-	if err := db.Table("sys_security_event").Count(&count).Error; err != nil {
-		t.Fatalf("count security events failed: %v", err)
+func TestResolveWriteScopeAllowsPlatformActorOverride(t *testing.T) {
+	db := newWriteScopeTestDB(t)
+
+	scope, err := ResolveWriteScope(context.Background(), db, &smsclient.GovernanceScope{
+		ScopeType:  pkgscope.SubjectTypeMerchant,
+		PlatformId: 1,
+		TenantId:   10,
+		MerchantId: 88,
+	}, 0)
+	if err != nil {
+		t.Fatalf("ResolveWriteScope returned error: %v", err)
 	}
-	if count != 1 {
-		t.Fatalf("expected 1 security event, got %d", count)
+	if scope.ScopeType != pkgscope.SubjectTypeMerchant || scope.MerchantID != 88 {
+		t.Fatalf("unexpected resolved scope: %+v", scope)
 	}
 }

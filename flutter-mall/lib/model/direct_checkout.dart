@@ -14,4 +14,12 @@ class DirectCheckoutParams {
         "productSkuId": productSkuId,
         "quantity": quantity,
       };
+
+  factory DirectCheckoutParams.fromJson(Map<String, dynamic> json) {
+    return DirectCheckoutParams(
+      productId: json['productId'] ?? 0,
+      productSkuId: json['productSkuId'] ?? 0,
+      quantity: json['quantity'] ?? 1,
+    );
+  }
 }

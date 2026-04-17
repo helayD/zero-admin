@@ -16,6 +16,7 @@ String proxyImageUrl(String url) {
   if (uri == null || !uri.hasScheme || !uri.hasAuthority) return url;
   return "$imageProxyBase/${uri.scheme}/${uri.host}${uri.path}${uri.hasQuery ? '?${uri.query}' : ''}";
 }
+
 // 首页
 const homeDataUrl = "$baseUrl/api/home/index";
 // 品牌列表
@@ -43,9 +44,11 @@ const generateOrderUrl = "$baseUrl/api/order/generateOrder";
 // 添加商品进购物车
 const cartAddUrl = "$baseUrl/api/order/addCart";
 // 商品列表
-const productListDataUrl = "$baseUrl/api/product/queryProductList?productCategoryId=";
+const productListDataUrl =
+    "$baseUrl/api/product/queryProductList?productCategoryId=";
 // 商品详情
-const productDetailDataUrl = "$baseUrl/api/product/queryProductDetail?productId=";
+const productDetailDataUrl =
+    "$baseUrl/api/product/queryProductDetail?productId=";
 // 通知消息列表（全部）
 const messageListDataUrl = "$baseUrl/api/member/message/list";
 // 标记单条消息已读
@@ -120,6 +123,8 @@ const updateMemberDataUrl = "$baseUrl/api/member/updateMember";
 const orderPayUrl = "$baseUrl/api/order/orderPay";
 // 支付状态查询（Flutter 使用 query 参数：?orderId=xxx）
 const orderPayQueryUrl = "$baseUrl/api/order/orderPayQueryStatus";
+// 统一版本策略
+const appVersionPolicyUrl = "$baseUrl/api/app/version/policy";
 
 // ==================== 商品评价相关（Story 8-2 Review Fix R-3）====================
 // 提交商品评价（注意：路由注册为 /comment/add，而非 /comment/addComment）

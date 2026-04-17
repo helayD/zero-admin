@@ -188,7 +188,7 @@ class _MineState extends State<Mine> {
 
   String _displayName() {
     if (!_isLoggedIn) {
-      return '登录后查看订单与会员权益';
+      return '欢迎登录';
     }
     final String nickname = _memberInfoData?.nickname.trim() ?? '';
     return nickname.isEmpty ? '九克城会员' : nickname;
@@ -196,14 +196,14 @@ class _MineState extends State<Mine> {
 
   String _displayDescription() {
     if (!_isLoggedIn) {
-      return '登录后可同步订单、优惠券、收货地址与消息提醒';
+      return '同步订单、优惠券和收货地址';
     }
 
     final String signature = _memberInfoData?.signature.trim() ?? '';
     if (signature.isNotEmpty) {
       return signature;
     }
-    return '欢迎回来，常用服务和会员资产都汇总在这里';
+    return '订单、资产和常用服务都集中在这里';
   }
 
   String _maskedMobile() {
@@ -216,19 +216,14 @@ class _MineState extends State<Mine> {
 
   List<String> _heroTags() {
     if (!_isLoggedIn || _memberInfoData == null) {
-      return const ['订单同步', '优惠权益', '地址管理'];
+      return const <String>[];
     }
 
-    final List<String> tags = [
+    return <String>[
       'Lv.${_memberInfoData!.levelId} 会员',
-      _maskedMobile(),
       _unreadMessageCount > 0 ? '$_unreadMessageCount 条未读消息' : '消息已读',
+      _maskedMobile(),
     ];
-
-    if (_memberInfoData!.orderCount > 0) {
-      tags.add('累计订单 ${_memberInfoData!.orderCount}');
-    }
-    return tags;
   }
 
   @override
@@ -246,7 +241,7 @@ class _MineState extends State<Mine> {
             ),
             slivers: [
               _buildHeroSection(),
-              _buildMetricsSection(),
+              if (_isLoggedIn) _buildMetricsSection(),
               _buildOrderSection(),
               _buildServiceSection(),
               const SliverToBoxAdapter(
@@ -261,12 +256,13 @@ class _MineState extends State<Mine> {
 
   SliverToBoxAdapter _buildHeroSection() {
     final ThemeData theme = Theme.of(context);
+    final List<String> heroTags = _heroTags();
 
     return SliverToBoxAdapter(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.lg,
-          AppSpacing.md,
+          AppSpacing.sm,
           AppSpacing.lg,
           0,
         ),
@@ -290,28 +286,18 @@ class _MineState extends State<Mine> {
             AppSpacing.lg,
             AppSpacing.lg,
             AppSpacing.lg,
-            AppSpacing.xl,
+            AppSpacing.lg,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: AppSpacing.sm,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      '个人中心',
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                      ),
+                  Text(
+                    '个人中心',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   const Spacer(),
@@ -329,8 +315,9 @@ class _MineState extends State<Mine> {
                   ),
                 ],
               ),
-              const SizedBox(height: AppSpacing.xl),
+              const SizedBox(height: AppSpacing.lg),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _MineAvatar(
                     avatarUrl: _memberInfoData?.avatar ?? '',
@@ -343,18 +330,18 @@ class _MineState extends State<Mine> {
                       children: [
                         Text(
                           _displayName(),
-                          maxLines: 2,
+                          maxLines: _isLoggedIn ? 1 : 2,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.titleLarge?.copyWith(
                             color: Colors.white,
-                            fontSize: 24,
+                            fontSize: _isLoggedIn ? 24 : 22,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
                         const SizedBox(height: AppSpacing.xs),
                         Text(
                           _displayDescription(),
-                          maxLines: 2,
+                          maxLines: _isLoggedIn ? 1 : 2,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: Colors.white.withValues(alpha: 0.92),
@@ -365,39 +352,51 @@ class _MineState extends State<Mine> {
                   ),
                 ],
               ),
+              if (heroTags.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.md),
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.sm,
+                  children: heroTags
+                      .take(2)
+                      .map((tag) => _MineInfoPill(label: tag))
+                      .toList(),
+                ),
+              ],
               const SizedBox(height: AppSpacing.lg),
-              Wrap(
-                spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.sm,
-                children: _heroTags()
-                    .map((tag) => _MineInfoPill(label: tag))
-                    .toList(),
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              Row(
-                children: [
-                  Expanded(
-                    child: _MineHeroButton(
-                      label: _isLoggedIn ? '编辑资料' : '立即登录',
-                      foregroundColor: AppColors.primaryDark,
-                      backgroundColor: Colors.white,
-                      onTap: _openProfile,
+              if (_isLoggedIn)
+                Row(
+                  children: [
+                    Expanded(
+                      child: _MineHeroButton(
+                        label: '我的订单',
+                        foregroundColor: AppColors.primaryDark,
+                        backgroundColor: Colors.white,
+                        onTap: () {
+                          _openOrderList();
+                        },
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: _MineHeroButton(
-                      label: '我的订单',
-                      foregroundColor: Colors.white,
-                      backgroundColor: Colors.white.withValues(alpha: 0.14),
-                      borderColor: Colors.white.withValues(alpha: 0.24),
-                      onTap: () {
-                        _openOrderList();
-                      },
+                    const SizedBox(width: AppSpacing.sm),
+                    SizedBox(
+                      width: 126,
+                      child: _MineHeroButton(
+                        label: '编辑资料',
+                        foregroundColor: Colors.white,
+                        backgroundColor: Colors.white.withValues(alpha: 0.1),
+                        borderColor: Colors.white.withValues(alpha: 0.24),
+                        onTap: _openProfile,
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                )
+              else
+                _MineHeroButton(
+                  label: '立即登录',
+                  foregroundColor: AppColors.primaryDark,
+                  backgroundColor: Colors.white,
+                  onTap: _openProfile,
+                ),
             ],
           ),
         ),
@@ -451,21 +450,24 @@ class _MineState extends State<Mine> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _MineSectionHeader(
+          _MineSectionHeader(
             icon: Icons.dashboard_customize_rounded,
             iconColor: AppColors.primaryDark,
             iconBackground: AppColors.primarySoft,
-            title: '资产概览',
-            subtitle: '把会员资产和常用入口放到一处，查找更直接',
+            title: '我的资产',
+            actionLabel: '查看订单',
+            onActionTap: () {
+              _openOrderList();
+            },
           ),
-          const SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.md),
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: metrics.length,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              childAspectRatio: 1.22,
+              childAspectRatio: 1.68,
               crossAxisSpacing: AppSpacing.md,
               mainAxisSpacing: AppSpacing.md,
             ),
@@ -480,61 +482,84 @@ class _MineState extends State<Mine> {
   }
 
   SliverToBoxAdapter _buildOrderSection() {
-    final List<_MineQuickActionData> actions = [
-      _MineQuickActionData(
-        label: '全部订单',
-        icon: Icons.apps_rounded,
-        accentColor: AppColors.primaryDark,
-        backgroundColor: AppColors.primarySoft,
-        onTap: () {
-          _openOrderList(initialTab: 0);
-        },
-      ),
-      _MineQuickActionData(
-        label: '待支付',
-        icon: Icons.payments_outlined,
-        accentColor: const Color(0xFF2563EB),
-        backgroundColor: const Color(0xFFDBEAFE),
-        onTap: () {
-          _openOrderList(initialTab: 1);
-        },
-      ),
-      _MineQuickActionData(
-        label: '待发货',
-        icon: Icons.inventory_2_outlined,
-        accentColor: AppColors.accent,
-        backgroundColor: AppColors.accentSoft,
-        onTap: () {
-          _openOrderList(initialTab: 2);
-        },
-      ),
-      _MineQuickActionData(
-        label: '已完成',
-        icon: Icons.task_alt_rounded,
-        accentColor: AppColors.success,
-        backgroundColor: const Color(0xFFE9F9F0),
-        onTap: () {
-          _openOrderList(initialTab: 3);
-        },
-      ),
-      _MineQuickActionData(
-        label: '售后服务',
-        icon: Icons.support_agent_rounded,
-        accentColor: const Color(0xFF7C3AED),
-        backgroundColor: const Color(0xFFF3E8FF),
-        onTap: () async {
-          if (!await _ensureLogin()) {
-            return;
-          }
-          if (!mounted) {
-            return;
-          }
-          _showFeatureInProgress('售后服务');
-        },
-      ),
-    ];
+    final List<_MineQuickActionData> actions = _isLoggedIn
+        ? [
+            _MineQuickActionData(
+              label: '全部订单',
+              icon: Icons.apps_rounded,
+              accentColor: AppColors.primaryDark,
+              backgroundColor: AppColors.primarySoft,
+              onTap: () {
+                _openOrderList(initialTab: 0);
+              },
+            ),
+            _MineQuickActionData(
+              label: '待支付',
+              icon: Icons.payments_outlined,
+              accentColor: const Color(0xFF2563EB),
+              backgroundColor: const Color(0xFFDBEAFE),
+              onTap: () {
+                _openOrderList(initialTab: 1);
+              },
+            ),
+            _MineQuickActionData(
+              label: '待发货',
+              icon: Icons.inventory_2_outlined,
+              accentColor: AppColors.accent,
+              backgroundColor: AppColors.accentSoft,
+              onTap: () {
+                _openOrderList(initialTab: 2);
+              },
+            ),
+            _MineQuickActionData(
+              label: '已完成',
+              icon: Icons.task_alt_rounded,
+              accentColor: AppColors.success,
+              backgroundColor: const Color(0xFFE9F9F0),
+              onTap: () {
+                _openOrderList(initialTab: 3);
+              },
+            ),
+          ]
+        : [
+            _MineQuickActionData(
+              label: '订单',
+              icon: Icons.receipt_long_rounded,
+              accentColor: AppColors.primaryDark,
+              backgroundColor: AppColors.primarySoft,
+              onTap: () {
+                _openOrderList(initialTab: 0);
+              },
+            ),
+            _MineQuickActionData(
+              label: '优惠券',
+              icon: Icons.confirmation_number_outlined,
+              accentColor: const Color(0xFF2563EB),
+              backgroundColor: const Color(0xFFDBEAFE),
+              onTap: () {
+                _openProtectedPage(const CouponList());
+              },
+            ),
+            _MineQuickActionData(
+              label: '地址',
+              icon: Icons.location_on_outlined,
+              accentColor: AppColors.accent,
+              backgroundColor: AppColors.accentSoft,
+              onTap: () {
+                _openProtectedPage(const AddressList());
+              },
+            ),
+            _MineQuickActionData(
+              label: '消息',
+              icon: Icons.chat_bubble_outline_rounded,
+              accentColor: AppColors.success,
+              backgroundColor: const Color(0xFFE9F9F0),
+              onTap: _openMessages,
+            ),
+          ];
 
     return _buildSurfaceSection(
+      topPadding: _isLoggedIn ? AppSpacing.lg : AppSpacing.xl,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -542,14 +567,15 @@ class _MineState extends State<Mine> {
             icon: Icons.local_shipping_outlined,
             iconColor: const Color(0xFF2563EB),
             iconBackground: const Color(0xFFDBEAFE),
-            title: '订单与进度',
-            subtitle: '常用订单状态集中展示，减少来回查找',
-            actionLabel: '查看全部',
-            onActionTap: () {
-              _openOrderList();
-            },
+            title: _isLoggedIn ? '订单入口' : '快捷入口',
+            actionLabel: _isLoggedIn ? '查看全部' : null,
+            onActionTap: _isLoggedIn
+                ? () {
+                    _openOrderList();
+                  }
+                : null,
           ),
-          const SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.md),
           Row(
             children: actions
                 .map(
@@ -563,49 +589,6 @@ class _MineState extends State<Mine> {
                 )
                 .toList(),
           ),
-          const SizedBox(height: AppSpacing.lg),
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.surfaceMuted,
-              borderRadius: BorderRadius.circular(AppRadii.lg),
-            ),
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(AppRadii.md),
-                  ),
-                  child: const Icon(
-                    Icons.auto_awesome_rounded,
-                    color: AppColors.primaryDark,
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '订单消息与权益提醒集中可见',
-                        style: Theme.of(context).textTheme.titleSmall,
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        _isLoggedIn
-                            ? '当前有 $_unreadMessageCount 条消息待处理，可从右上角消息中心查看'
-                            : '登录后可查看完整订单提醒、消息通知与售后进度',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
@@ -615,7 +598,6 @@ class _MineState extends State<Mine> {
     final List<_MineServiceData> services = [
       _MineServiceData(
         title: '地址管理',
-        subtitle: '管理常用收货地址与默认地址',
         icon: Icons.location_on_outlined,
         accentColor: AppColors.primaryDark,
         backgroundColor: AppColors.primarySoft,
@@ -625,7 +607,6 @@ class _MineState extends State<Mine> {
       ),
       _MineServiceData(
         title: '我的足迹',
-        subtitle: '回看最近浏览过的商品和内容',
         icon: Icons.history_rounded,
         accentColor: const Color(0xFF2563EB),
         backgroundColor: const Color(0xFFDBEAFE),
@@ -635,7 +616,6 @@ class _MineState extends State<Mine> {
       ),
       _MineServiceData(
         title: '我的关注',
-        subtitle: '关注的品牌和内容统一查看',
         icon: Icons.visibility_outlined,
         accentColor: AppColors.accent,
         backgroundColor: AppColors.accentSoft,
@@ -645,7 +625,6 @@ class _MineState extends State<Mine> {
       ),
       _MineServiceData(
         title: '我的收藏',
-        subtitle: '收藏商品和内容随时回看',
         icon: Icons.bookmark_border_rounded,
         accentColor: const Color(0xFF7C3AED),
         backgroundColor: const Color(0xFFF3E8FF),
@@ -655,7 +634,6 @@ class _MineState extends State<Mine> {
       ),
       _MineServiceData(
         title: '我的评价',
-        subtitle: '查看已发布评价和待评价内容',
         icon: Icons.rate_review_outlined,
         accentColor: AppColors.success,
         backgroundColor: const Color(0xFFE9F9F0),
@@ -664,8 +642,22 @@ class _MineState extends State<Mine> {
         },
       ),
       _MineServiceData(
+        title: '售后服务',
+        icon: Icons.support_agent_rounded,
+        accentColor: const Color(0xFF7C3AED),
+        backgroundColor: const Color(0xFFF3E8FF),
+        onTap: () async {
+          if (!await _ensureLogin()) {
+            return;
+          }
+          if (!mounted) {
+            return;
+          }
+          _showFeatureInProgress('售后服务');
+        },
+      ),
+      _MineServiceData(
         title: '设置',
-        subtitle: '账号偏好、缓存与基础信息管理',
         icon: Icons.settings_outlined,
         accentColor: AppColors.textSecondary,
         backgroundColor: AppColors.surfaceMuted,
@@ -681,10 +673,9 @@ class _MineState extends State<Mine> {
             icon: Icons.widgets_outlined,
             iconColor: Color(0xFF7C3AED),
             iconBackground: Color(0xFFF3E8FF),
-            title: '常用服务',
-            subtitle: '把个人中心高频操作收敛成统一入口列表',
+            title: '更多服务',
           ),
-          const SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.md),
           Container(
             decoration: BoxDecoration(
               color: AppColors.surfaceMuted,
@@ -705,12 +696,15 @@ class _MineState extends State<Mine> {
     );
   }
 
-  SliverToBoxAdapter _buildSurfaceSection({required Widget child}) {
+  SliverToBoxAdapter _buildSurfaceSection({
+    required Widget child,
+    double topPadding = AppSpacing.lg,
+  }) {
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(
+        padding: EdgeInsets.fromLTRB(
           AppSpacing.lg,
-          AppSpacing.xl,
+          topPadding,
           AppSpacing.lg,
           0,
         ),
@@ -727,7 +721,7 @@ class _MineState extends State<Mine> {
               ),
             ],
           ),
-          padding: const EdgeInsets.all(AppSpacing.lg),
+          padding: const EdgeInsets.all(AppSpacing.md),
           child: child,
         ),
       ),
@@ -740,7 +734,6 @@ class _MineSectionHeader extends StatelessWidget {
   final Color iconColor;
   final Color iconBackground;
   final String title;
-  final String subtitle;
   final String? actionLabel;
   final VoidCallback? onActionTap;
 
@@ -749,7 +742,6 @@ class _MineSectionHeader extends StatelessWidget {
     required this.iconColor,
     required this.iconBackground,
     required this.title,
-    required this.subtitle,
     this.actionLabel,
     this.onActionTap,
   });
@@ -761,28 +753,19 @@ class _MineSectionHeader extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 44,
-          height: 44,
+          width: 40,
+          height: 40,
           decoration: BoxDecoration(
             color: iconBackground,
             borderRadius: BorderRadius.circular(AppRadii.md),
           ),
-          child: Icon(icon, color: iconColor, size: 24),
+          child: Icon(icon, color: iconColor, size: 22),
         ),
         const SizedBox(width: AppSpacing.md),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: theme.textTheme.titleMedium),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                subtitle,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
+            children: [Text(title, style: theme.textTheme.titleMedium)],
           ),
         ),
         if (actionLabel != null && onActionTap != null)
@@ -831,8 +814,8 @@ class _MineTopActionButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadii.md),
           onTap: onTap,
           child: SizedBox(
-            width: 44,
-            height: 44,
+            width: 40,
+            height: 40,
             child: Center(child: content),
           ),
         ),
@@ -853,8 +836,8 @@ class _MineAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Widget fallback = Container(
-      width: 76,
-      height: 76,
+      width: 68,
+      height: 68,
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.18),
         shape: BoxShape.circle,
@@ -865,7 +848,7 @@ class _MineAvatar extends StatelessWidget {
       ),
       child: Icon(
         isLoggedIn ? Icons.person_rounded : Icons.login_rounded,
-        size: 34,
+        size: 30,
         color: Colors.white,
       ),
     );
@@ -875,8 +858,8 @@ class _MineAvatar extends StatelessWidget {
     }
 
     return Container(
-      width: 76,
-      height: 76,
+      width: 68,
+      height: 68,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(
@@ -907,7 +890,7 @@ class _MineInfoPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
+        vertical: AppSpacing.xs,
       ),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.16),
@@ -948,7 +931,7 @@ class _MineHeroButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadii.lg),
         onTap: onTap,
         child: Container(
-          height: 48,
+          height: 44,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppRadii.lg),
             border:
@@ -1006,40 +989,42 @@ class _MineMetricTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadii.lg),
           onTap: data.onTap,
           child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
+            padding: const EdgeInsets.all(AppSpacing.sm),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
                   children: [
                     Container(
-                      width: 36,
-                      height: 36,
+                      width: 32,
+                      height: 32,
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.92),
                         borderRadius: BorderRadius.circular(AppRadii.md),
                       ),
-                      child: Icon(data.icon, color: data.accentColor),
+                      child: Icon(data.icon, color: data.accentColor, size: 18),
                     ),
-                    const SizedBox(width: AppSpacing.sm),
                     Expanded(
-                      child: Text(
-                        data.label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          color: AppColors.textPrimary,
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          data.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            color: AppColors.textPrimary,
+                          ),
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.lg),
                 Text(
                   data.value,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleLarge?.copyWith(
+                  style: theme.textTheme.titleMedium?.copyWith(
                     color: AppColors.textPrimary,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1094,19 +1079,19 @@ class _MineQuickActionTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadii.lg),
           onTap: data.onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
             child: Column(
               children: [
                 Container(
-                  width: 52,
-                  height: 52,
+                  width: 48,
+                  height: 48,
                   decoration: BoxDecoration(
                     color: data.backgroundColor,
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Icon(data.icon, color: data.accentColor, size: 26),
+                  child: Icon(data.icon, color: data.accentColor, size: 24),
                 ),
-                const SizedBox(height: AppSpacing.sm),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   data.label,
                   textAlign: TextAlign.center,
@@ -1125,7 +1110,6 @@ class _MineQuickActionTile extends StatelessWidget {
 
 class _MineServiceData {
   final String title;
-  final String subtitle;
   final IconData icon;
   final Color accentColor;
   final Color backgroundColor;
@@ -1133,7 +1117,6 @@ class _MineServiceData {
 
   const _MineServiceData({
     required this.title,
-    required this.subtitle,
     required this.icon,
     required this.accentColor,
     required this.backgroundColor,
@@ -1160,7 +1143,10 @@ class _MineServiceRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadii.lg),
         onTap: data.onTap,
         child: Container(
-          padding: const EdgeInsets.all(AppSpacing.lg),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.md,
+          ),
           decoration: BoxDecoration(
             border: showDivider
                 ? const Border(
@@ -1183,15 +1169,9 @@ class _MineServiceRow extends StatelessWidget {
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(data.title, style: theme.textTheme.titleSmall),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      data.subtitle,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
+                    Text(data.title, style: theme.textTheme.titleSmall)
                   ],
                 ),
               ),

@@ -562,6 +562,259 @@ service CouponTypeService {
 
 
 }
+message DrawHomeEntryConfig {
+  int32 show_on_home = 1; // 是否首页显著展示
+  string home_entry_title = 2; // 入口标题
+  string home_entry_subtitle = 3; // 入口副标题
+  string home_entry_image = 4; // 入口图片
+  int32 home_entry_sort = 5; // 排序权重
+  string landing_target_type = 6; // 落地目标类型
+  string landing_target_value = 7; // 落地目标值
+  int32 is_enabled = 8; // 启停状态
+}
+
+message DrawReadinessItem {
+  string code = 1; // 结构化失败项编码
+  string field = 2; // 字段路径
+  string message = 3; // 错误说明
+  bool blocking = 4; // 是否阻断发布
+}
+
+message DrawCardTemplateData {
+  int64 id = 1; // 模板ID
+  string template_name = 2; // 模板名称
+  string template_code = 3; // 模板编码
+  string card_face_image = 4; // 卡面资源
+  string copyright_owner = 5; // 版权归属
+  string copyright_proof_summary = 6; // 版权凭证摘要
+  string rarity = 7; // 稀有度
+  int64 issue_limit = 8; // 发行上限
+  string display_copy = 9; // 展示文案
+  string circulation_limit_summary = 10; // 流转限制摘要
+  int32 display_status = 11; // 展示状态
+  int32 content_audit_status = 12; // 内容审核状态
+  string provider_code = 13; // 接入方编码
+  string credential_ref = 14; // 凭证引用
+  int32 status = 15; // 状态
+  int32 audit_status = 16; // 审批状态
+}
+
+message DrawPoolTemplateData {
+  int64 id = 1; // 关系ID
+  int64 template_id = 2; // 模板ID
+  string template_code = 3; // 模板编码
+  string template_name = 4; // 模板名称
+  string rarity = 5; // 稀有度
+  double probability = 6; // 概率
+  int64 sale_limit = 7; // 发售数量
+  int64 remaining_limit = 8; // 剩余可发数量
+  int64 config_limit = 9; // 配置上限
+}
+
+message DrawPoolData {
+  int64 id = 1; // 卡池ID
+  string pool_name = 2; // 卡池名称
+  string pool_code = 3; // 卡池编码
+  string probability_rule = 4; // 卡池概率规则
+  int32 sort = 5; // 排序
+  int32 status = 6; // 状态
+  repeated DrawPoolTemplateData templates = 7; // 卡池模板映射
+}
+
+message DrawActivityAuditRecord {
+  int64 id = 1; // 审计ID
+  string operation_type = 2; // 操作类型
+  int64 operator_id = 3; // 操作人ID
+  string operator_name = 4; // 操作人
+  string approval_result = 5; // 审批结果
+  string failure_summary = 6; // 失败摘要
+  string trace_id = 7; // traceId
+  string create_time = 8; // 创建时间
+}
+
+message AddDrawActivityReq {
+  GovernanceScope scope = 1; // 治理范围
+  string activity_code = 2; // 活动编码
+  string name = 3; // 活动名称
+  string rule_summary = 4; // 规则摘要
+  string start_time = 5; // 开始时间
+  string end_time = 6; // 结束时间
+  int32 real_name_required = 7; // 是否实名要求
+  string participant_condition_summary = 8; // 参与条件摘要
+  string consume_rule_summary = 9; // 消耗规则摘要
+  string probability_rule = 10; // 概率披露方式
+  string compliance_rule_summary = 11; // 合规规则摘要
+  string circulation_limit_summary = 12; // 流转限制摘要
+  string approval_record_ref = 13; // 审批记录引用
+  int32 copyright_status = 14; // 版权状态
+  int32 content_audit_status = 15; // 内容审核状态
+  int32 audit_status = 16; // 审批状态
+  int32 status = 17; // 活动状态
+  int32 is_enabled = 18; // 是否启用
+  string operator_name = 19; // 操作人
+  int64 create_by = 20; // 创建人
+  DrawHomeEntryConfig home_entry = 21; // 首页入口配置
+  repeated DrawCardTemplateData templates = 22; // 模板配置
+  repeated DrawPoolData pools = 23; // 卡池配置
+}
+
+message AddDrawActivityResp {
+  int64 id = 1; // 新建活动ID
+}
+
+message UpdateDrawActivityReq {
+  int64 id = 1; // 活动ID
+  GovernanceScope scope = 2; // 治理范围
+  string activity_code = 3; // 活动编码
+  string name = 4; // 活动名称
+  string rule_summary = 5; // 规则摘要
+  string start_time = 6; // 开始时间
+  string end_time = 7; // 结束时间
+  int32 real_name_required = 8; // 是否实名要求
+  string participant_condition_summary = 9; // 参与条件摘要
+  string consume_rule_summary = 10; // 消耗规则摘要
+  string probability_rule = 11; // 概率披露方式
+  string compliance_rule_summary = 12; // 合规规则摘要
+  string circulation_limit_summary = 13; // 流转限制摘要
+  string approval_record_ref = 14; // 审批记录引用
+  int32 copyright_status = 15; // 版权状态
+  int32 content_audit_status = 16; // 内容审核状态
+  int32 audit_status = 17; // 审批状态
+  int32 status = 18; // 活动状态
+  int32 is_enabled = 19; // 是否启用
+  string operator_name = 20; // 操作人
+  int64 update_by = 21; // 更新人
+  DrawHomeEntryConfig home_entry = 22; // 首页入口配置
+  repeated DrawCardTemplateData templates = 23; // 模板配置
+  repeated DrawPoolData pools = 24; // 卡池配置
+}
+
+message UpdateDrawActivityResp {
+  string pong = 1;
+}
+
+message DeleteDrawActivityReq {
+  repeated int64 ids = 1; // 活动ID
+  GovernanceScope scope = 2; // 治理范围
+  int64 update_by = 3; // 更新人
+  string operator_name = 4; // 操作人
+}
+
+message DeleteDrawActivityResp {
+  string pong = 1;
+}
+
+message UpdateDrawActivityStatusReq {
+  repeated int64 ids = 1; // 活动ID
+  int32 status = 2; // 状态
+  GovernanceScope scope = 3; // 治理范围
+  int64 update_by = 4; // 更新人
+  string operator_name = 5; // 操作人
+}
+
+message UpdateDrawActivityStatusResp {
+  string pong = 1;
+}
+
+message QueryDrawActivityDetailReq {
+  int64 id = 1; // 活动ID
+  GovernanceScope scope = 2; // 治理范围
+}
+
+message QueryDrawActivityDetailResp {
+  int64 id = 1; // 活动ID
+  string activity_code = 2; // 活动编码
+  string name = 3; // 活动名称
+  string rule_summary = 4; // 规则摘要
+  string start_time = 5; // 开始时间
+  string end_time = 6; // 结束时间
+  int32 real_name_required = 7; // 是否实名要求
+  string participant_condition_summary = 8; // 参与条件摘要
+  string consume_rule_summary = 9; // 消耗规则摘要
+  string probability_rule = 10; // 概率披露方式
+  string compliance_rule_summary = 11; // 合规规则摘要
+  string circulation_limit_summary = 12; // 流转限制摘要
+  string approval_record_ref = 13; // 审批记录引用
+  int32 copyright_status = 14; // 版权状态
+  int32 content_audit_status = 15; // 内容审核状态
+  int32 status = 16; // 活动状态
+  int32 audit_status = 17; // 审批状态
+  int32 is_enabled = 18; // 是否启用
+  int32 publish_readiness = 19; // 可发布状态
+  string publish_failure_summary = 20; // 发布失败摘要
+  string scope_type = 21; // 范围类型
+  int64 platform_id = 22; // 平台ID
+  int64 tenant_id = 23; // 租户ID
+  int64 merchant_id = 24; // 商户ID
+  string create_time = 25; // 创建时间
+  string update_time = 26; // 更新时间
+  int64 create_by = 27; // 创建人
+  int64 update_by = 28; // 更新人
+  DrawHomeEntryConfig home_entry = 29; // 首页入口配置
+  repeated DrawCardTemplateData templates = 30; // 模板列表
+  repeated DrawPoolData pools = 31; // 卡池列表
+  repeated DrawReadinessItem readiness_items = 32; // 预检结果
+  repeated DrawActivityAuditRecord audits = 33; // 审计记录
+}
+
+message QueryDrawActivityListReq {
+  int32 page_num = 1; // 页码
+  int32 page_size = 2; // 页大小
+  string name = 3; // 活动名称
+  int32 status = 4; // 活动状态
+  int32 audit_status = 5; // 审批状态
+  int32 publish_readiness = 6; // 可发布状态
+  GovernanceScope scope = 7; // 治理范围
+}
+
+message DrawActivityListData {
+  int64 id = 1; // 活动ID
+  string activity_code = 2; // 活动编码
+  string name = 3; // 活动名称
+  string start_time = 4; // 开始时间
+  string end_time = 5; // 结束时间
+  int32 status = 6; // 活动状态
+  int32 audit_status = 7; // 审批状态
+  int32 is_enabled = 8; // 是否启用
+  int32 publish_readiness = 9; // 可发布状态
+  string publish_failure_summary = 10; // 发布失败摘要
+  string scope_type = 11; // 范围类型
+  int64 platform_id = 12; // 平台ID
+  int64 tenant_id = 13; // 租户ID
+  int64 merchant_id = 14; // 商户ID
+  string update_time = 15; // 更新时间
+  int32 show_on_home = 16; // 是否首页展示
+  string home_entry_title = 17; // 首页入口标题
+  string readiness_label = 18; // 可发布标签
+}
+
+message QueryDrawActivityListResp {
+  int64 total = 1; // 总数
+  repeated DrawActivityListData list = 2; // 列表
+}
+
+message PreviewDrawActivityPublishReadinessReq {
+  int64 id = 1; // 活动ID
+  GovernanceScope scope = 2; // 治理范围
+}
+
+message PreviewDrawActivityPublishReadinessResp {
+  bool ready_to_publish = 1; // 是否可发布
+  int32 publish_readiness = 2; // 可发布状态
+  string readiness_label = 3; // 可发布标签
+  string summary = 4; // 汇总摘要
+  repeated DrawReadinessItem items = 5; // 结构化失败项
+}
+
+service DrawActivityService {
+  rpc AddDrawActivity(AddDrawActivityReq) returns (AddDrawActivityResp){}
+  rpc UpdateDrawActivity(UpdateDrawActivityReq) returns (UpdateDrawActivityResp){}
+  rpc DeleteDrawActivity(DeleteDrawActivityReq) returns (DeleteDrawActivityResp){}
+  rpc UpdateDrawActivityStatus(UpdateDrawActivityStatusReq) returns (UpdateDrawActivityStatusResp){}
+  rpc QueryDrawActivityDetail(QueryDrawActivityDetailReq) returns (QueryDrawActivityDetailResp){}
+  rpc QueryDrawActivityList(QueryDrawActivityListReq) returns (QueryDrawActivityListResp){}
+  rpc PreviewDrawActivityPublishReadiness(PreviewDrawActivityPublishReadinessReq) returns (PreviewDrawActivityPublishReadinessResp){}
+}
 message GovernanceScope {
   string scope_type = 1; // 主体范围(platform/tenant/merchant)
   int64 platform_id = 2; // 平台ID

@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_mall/layout/upgrade_gate_page.dart';
 import 'package:flutter_mall/model/app_recent_context.dart';
 import 'package:flutter_mall/model/permission_flow_context.dart';
+import 'package:flutter_mall/model/upgrade_gate_context.dart';
 import 'package:flutter_mall/provider/app_lifecycle_provider.dart';
 import 'package:flutter_mall/utils/app_recovery_store.dart';
+import 'package:flutter_mall/utils/app_version_service.dart';
 import 'package:flutter_mall/utils/permission_broker.dart';
+import 'package:flutter_mall/utils/upgrade_gate_service.dart';
 import 'package:flutter_mall/view/mine/message/message.dart';
 import 'package:flutter_mall/view/mine/profile/profile_edit.dart';
 import 'package:flutter_mall/widgets/permission_prompt_sheet.dart';
@@ -32,12 +36,14 @@ class _SettingsState extends State<Settings> {
   bool _isLoadingNotification = true;
   AppLifecycleProvider? _lifecycleProvider;
   int _lastResumeTick = 0;
+  String _currentVersionLabel = AppVersionService.currentInfo.version;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _refreshNotificationSnapshot();
+      await _refreshVersionLabel();
       await _resumePendingNotificationFlow();
       await AppRecoveryStore.saveRecentContext(
         AppRecentContext.create(
@@ -81,6 +87,16 @@ class _SettingsState extends State<Settings> {
     setState(() {
       _notificationSnapshot = snapshot;
       _isLoadingNotification = false;
+    });
+  }
+
+  Future<void> _refreshVersionLabel() async {
+    final versionInfo = await AppVersionService.getCurrentInfo();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _currentVersionLabel = versionInfo.version;
     });
   }
 
@@ -312,6 +328,45 @@ class _SettingsState extends State<Settings> {
     );
   }
 
+  Future<void> _openUpgradeGate() async {
+    final recoveryContext = AppRecentContext.create(
+      targetType: AppRecentTargetType.settings,
+      source: 'settings_check',
+      requiresAuth: false,
+      fallbackType: AppRecentTargetType.home,
+      fallbackTabIndex: 4,
+    );
+    final policy = await UpgradeGateService.queryPolicy(
+      scene: 'settings_check',
+      recoveryContext: recoveryContext,
+    );
+    if (!mounted) {
+      return;
+    }
+    final pendingUpgrade = PendingUpgradeContext.forRecentContext(
+      scene: 'settings_check',
+      recoveryContext: recoveryContext,
+      policy: policy,
+    );
+    await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => UpgradeGatePage(
+          pendingContext: pendingUpgrade,
+          initialPolicy: policy,
+          autoResolveWhenSatisfied: false,
+          onResolved: (gateContext, _) async {
+            Navigator.of(gateContext).pop(true);
+          },
+          onContinueLater: policy.canContinueLater
+              ? (gateContext, _) async {
+                  Navigator.of(gateContext).pop(false);
+                }
+              : null,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -351,9 +406,10 @@ class _SettingsState extends State<Settings> {
             _buildSettingsTile(title: '关于九克城'),
             _buildSettingsTile(
               title: '检查更新',
-              trailing: const Text(
-                '当前版本 1.0.0',
-                style: TextStyle(fontSize: 12, color: Color(0xFF707070)),
+              onTap: _openUpgradeGate,
+              trailing: Text(
+                '当前版本 $_currentVersionLabel',
+                style: const TextStyle(fontSize: 12, color: Color(0xFF707070)),
               ),
             ),
             const SizedBox(height: 14),

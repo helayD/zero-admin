@@ -1,12 +1,18 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_mall/layout/upgrade_gate_page.dart';
 import 'package:flutter_mall/model/app_recent_context.dart';
+import 'package:flutter_mall/model/app_version_policy.dart';
+import 'package:flutter_mall/model/upgrade_gate_context.dart';
 import 'package:flutter_mall/provider/app_lifecycle_provider.dart';
 import 'package:flutter_mall/utils/app_intent_dispatcher.dart';
 import 'package:flutter_mall/utils/app_recovery_router.dart';
 import 'package:flutter_mall/utils/app_recovery_store.dart';
+import 'package:flutter_mall/utils/upgrade_gate_service.dart';
 import 'package:flutter_mall/view/mine/login/login.dart';
+import 'package:flutter_mall/view/mine/order/order_pay.dart';
+import 'package:flutter_mall/view/mine/order/order_submit.dart';
 import 'package:provider/provider.dart';
 
 typedef RecoveryTargetBuilder = Widget Function(AppRecentContext context);
@@ -119,10 +125,59 @@ class _IntentRecoveryShellState extends State<IntentRecoveryShell> {
           message: result.message,
         );
         return;
+      case _RecoveryAction.upgradeGate:
+        final pendingUpgradeContext = result.pendingUpgradeContext;
+        final upgradePolicy = result.upgradePolicy;
+        if (pendingUpgradeContext == null || upgradePolicy == null) {
+          await AppRecoveryRouter.replaceWithFallback(
+            context,
+            recentContext: result.context,
+            message: '升级门闸上下文缺失，已返回可用页面',
+          );
+          return;
+        }
+        await AppRecoveryStore.savePendingUpgradeContext(pendingUpgradeContext);
+        if (!mounted) {
+          return;
+        }
+        await Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => UpgradeGatePage(
+              pendingContext: pendingUpgradeContext,
+              initialPolicy: upgradePolicy,
+              onResolved: _resumePendingUpgrade,
+              onContinueLater: upgradePolicy.canContinueLater
+                  ? _continuePendingUpgrade
+                  : null,
+            ),
+          ),
+        );
+        return;
     }
   }
 
   Future<_RecoveryDecision> _buildDecision() async {
+    final pendingUpgradeContext = AppRecoveryStore.peekPendingUpgradeContext();
+    if (pendingUpgradeContext != null) {
+      try {
+        final upgradePolicy = await UpgradeGateService.queryPendingPolicy(
+          pendingUpgradeContext,
+        );
+        return _RecoveryDecision.upgradeGate(
+          pendingUpgradeContext,
+          upgradePolicy,
+        );
+      } catch (_) {
+        await AppRecoveryStore.clearPendingUpgradeContext();
+        return _RecoveryDecision.fallback(
+          context: pendingUpgradeContext.recoveryContext ??
+              pendingUpgradeContext.fallbackContext,
+          reason: 'upgrade_policy_unavailable',
+          message: '暂时无法确认升级策略，已返回可用页面',
+        );
+      }
+    }
+
     final pendingIntent = AppRecoveryStore.peekPendingIntent();
     final activeIntentCandidate = AppRecoveryStore.peekActiveIntentCandidate();
     final recentContext = AppRecoveryStore.getRecentContext();
@@ -174,18 +229,134 @@ class _IntentRecoveryShellState extends State<IntentRecoveryShell> {
       candidate,
       hasValidToken: AppRecoveryStore.hasValidToken(),
     );
-    switch (plan.action) {
-      case AppIntentDispatchAction.login:
-        return _RecoveryDecision.login(plan.intent);
-      case AppIntentDispatchAction.target:
-        return _RecoveryDecision.target(plan.intent, message: plan.message);
-      case AppIntentDispatchAction.fallback:
-        return _RecoveryDecision.fallback(
-          context: plan.intent,
-          reason: plan.failureReason,
-          message: plan.message,
-        );
+    try {
+      switch (plan.action) {
+        case AppIntentDispatchAction.login:
+          return _RecoveryDecision.login(plan.intent);
+        case AppIntentDispatchAction.target:
+          final scene = UpgradeGateService.recoverySceneFor(plan.intent);
+          final upgradePolicy = await _queryUpgradePolicyForRecovery(
+            plan.intent,
+            scene: scene,
+          );
+          if (upgradePolicy.hasUpgradeGate) {
+            return _RecoveryDecision.upgradeGate(
+              PendingUpgradeContext.forRecentContext(
+                scene: scene,
+                recoveryContext: plan.intent,
+                policy: upgradePolicy,
+              ),
+              upgradePolicy,
+            );
+          }
+          return _RecoveryDecision.target(plan.intent, message: plan.message);
+        case AppIntentDispatchAction.fallback:
+          return _RecoveryDecision.fallback(
+            context: plan.intent,
+            reason: plan.failureReason,
+            message: plan.message,
+          );
+        case AppIntentDispatchAction.upgradeGate:
+          final scene = UpgradeGateService.recoverySceneFor(plan.intent);
+          final upgradePolicy = await _queryUpgradePolicyForRecovery(
+            plan.intent,
+            scene: scene,
+          );
+          if (!upgradePolicy.hasUpgradeGate) {
+            return _RecoveryDecision.target(plan.intent, message: plan.message);
+          }
+          return _RecoveryDecision.upgradeGate(
+            PendingUpgradeContext.forRecentContext(
+              scene: scene,
+              recoveryContext: plan.intent,
+              policy: upgradePolicy,
+            ),
+            upgradePolicy,
+          );
+      }
+    } on _RecoveryUpgradePolicyUnavailable {
+      return _RecoveryDecision.fallback(
+        context: plan.intent,
+        reason: 'upgrade_policy_unavailable',
+        message: '暂时无法确认升级策略，已返回可用页面',
+      );
     }
+  }
+
+  Future<AppVersionPolicy> _queryUpgradePolicyForRecovery(
+    AppRecentContext context, {
+    required String scene,
+  }) async {
+    try {
+      if (context.isRecallIntent) {
+        return await UpgradeGateService.queryRecallPolicy(
+          context,
+          scene: scene,
+        );
+      }
+      return await UpgradeGateService.queryPolicy(
+        scene: scene,
+        recoveryContext: context,
+      );
+    } catch (_) {
+      throw const _RecoveryUpgradePolicyUnavailable();
+    }
+  }
+
+  Future<void> _resumePendingUpgrade(
+    BuildContext pageContext,
+    PendingUpgradeContext pendingUpgradeContext,
+  ) async {
+    switch (pendingUpgradeContext.targetType) {
+      case UpgradeRecoveryTargetType.recentContext:
+        if (pendingUpgradeContext.recoveryContext == null) {
+          await AppRecoveryRouter.replaceWithFallback(
+            pageContext,
+            recentContext: pendingUpgradeContext.fallbackContext,
+            message: pendingUpgradeContext.recoveryHint,
+          );
+          return;
+        }
+        await AppRecoveryRouter.replaceWithTarget(
+          pageContext,
+          pendingUpgradeContext.recoveryContext!,
+          message: pendingUpgradeContext.recoveryHint,
+        );
+        return;
+      case UpgradeRecoveryTargetType.orderConfirm:
+        await Navigator.of(pageContext).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) =>
+                OrderSubmit(directItem: pendingUpgradeContext.directItem),
+          ),
+        );
+        return;
+      case UpgradeRecoveryTargetType.orderPay:
+        await Navigator.of(pageContext).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => OrderPay(
+              orderId: pendingUpgradeContext.orderId,
+              orderSn: pendingUpgradeContext.orderSn,
+              payType: pendingUpgradeContext.payType,
+              amount: pendingUpgradeContext.payAmount ?? 0,
+            ),
+          ),
+        );
+        return;
+    }
+  }
+
+  Future<void> _continuePendingUpgrade(
+    BuildContext pageContext,
+    PendingUpgradeContext pendingUpgradeContext,
+  ) async {
+    await AppRecoveryStore.clearPendingUpgradeContext();
+    await AppRecoveryRouter.replaceWithFallback(
+      pageContext,
+      recentContext: pendingUpgradeContext.recoveryContext ??
+          pendingUpgradeContext.fallbackContext,
+      message: pendingUpgradeContext.recoveryHint,
+    );
   }
 
   bool _shouldSkipPassiveRecentRestore(AppRecentContext context) {
@@ -214,19 +385,23 @@ class _IntentRecoveryShellState extends State<IntentRecoveryShell> {
   }
 }
 
-enum _RecoveryAction { login, target, fallback }
+enum _RecoveryAction { login, target, fallback, upgradeGate }
 
 class _RecoveryDecision {
   final _RecoveryAction action;
   final AppRecentContext? context;
   final String? reason;
   final String? message;
+  final PendingUpgradeContext? pendingUpgradeContext;
+  final AppVersionPolicy? upgradePolicy;
 
   const _RecoveryDecision._({
     required this.action,
     this.context,
     this.reason,
     this.message,
+    this.pendingUpgradeContext,
+    this.upgradePolicy,
   });
 
   const _RecoveryDecision.login(AppRecentContext context)
@@ -251,4 +426,18 @@ class _RecoveryDecision {
           reason: reason,
           message: message,
         );
+
+  _RecoveryDecision.upgradeGate(
+    PendingUpgradeContext pendingUpgradeContext,
+    AppVersionPolicy upgradePolicy,
+  ) : this._(
+          action: _RecoveryAction.upgradeGate,
+          context: pendingUpgradeContext.recoveryContext,
+          pendingUpgradeContext: pendingUpgradeContext,
+          upgradePolicy: upgradePolicy,
+        );
+}
+
+class _RecoveryUpgradePolicyUnavailable implements Exception {
+  const _RecoveryUpgradePolicyUnavailable();
 }

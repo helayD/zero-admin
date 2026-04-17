@@ -1,4 +1,4 @@
-# generated: 2026-03-21T11:48:30+0800
+# generated: 2026-04-16T21:43:04+0800
 # project: ai_flutter_client
 # project_key: NOKEY
 # tracking_system: file-system
@@ -33,7 +33,7 @@
 # - SM typically creates next story after previous one is "done" to incorporate learnings
 # - Dev moves story to "review", then runs code-review (fresh context, different LLM recommended)
 
-generated: 2026-03-21T11:48:30+0800
+generated: 2026-04-16T21:43:04+0800
 project: ai_flutter_client
 project_key: NOKEY
 tracking_system: file-system
@@ -121,3 +121,11 @@ development_status:
   9-4-场景化权限请求与拒绝后的替代路径: in-progress
   9-5-版本升级闸门与升级后任务恢复: review
   epic-9-retrospective: optional
+
+  epic-10: in-progress
+  10-1-抽卡活动-卡池与卡片模板配置: in-progress
+  10-2-实名资格校验与消费者抽卡参与: ready-for-dev
+  10-3-卡片实例生成-唯一编号与本地资产台账: backlog
+  10-4-蚂蚁链-token-发放-回执写回与失败补偿: backlog
+  10-5-数字卡片资产展示-审计检索与合规处置: backlog
+  epic-10-retrospective: optional

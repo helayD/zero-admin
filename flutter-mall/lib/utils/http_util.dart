@@ -6,6 +6,7 @@ import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mall/config/constant_param.dart';
+import 'package:flutter_mall/utils/app_version_service.dart';
 import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/view/mine/login/login.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -168,10 +169,13 @@ class HttpUtil {
 
   static Future<Map<String, dynamic>> _buildHeaders() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final versionInfo = await AppVersionService.getCurrentInfo();
     final Map<String, dynamic> header = <String, dynamic>{};
     header["Authorization"] = prefs.getString(token) ?? "";
-    header["X-App-Version"] = appVersion;
-    header["X-Client-Platform"] = _currentPlatform();
+    header["X-App-Version"] = versionInfo.version;
+    header["X-Client-Platform"] = versionInfo.platform.isEmpty
+        ? _currentPlatform()
+        : versionInfo.platform;
     header["X-Network-State"] = "unknown";
 
     final currentIntent = AppRecoveryStore.peekCurrentIntentContext();

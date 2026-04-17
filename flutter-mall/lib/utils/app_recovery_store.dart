@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter_mall/config/constant_param.dart';
 import 'package:flutter_mall/model/app_recent_context.dart';
 import 'package:flutter_mall/model/permission_flow_context.dart';
+import 'package:flutter_mall/model/upgrade_gate_context.dart';
 import 'package:flutter_mall/utils/shared_preferences_util.dart';
 
 class AppRecoveryStore {
@@ -14,6 +15,7 @@ class AppRecoveryStore {
   static const String pendingPermissionContextKey =
       'app_pending_permission_context';
   static const String pendingLostMediaKey = 'app_pending_permission_lost_media';
+  static const String pendingUpgradeContextKey = 'app_pending_upgrade_context';
   static const String notificationPreferenceKey =
       'app_notification_preference_enabled';
   static const String commentDraftPrefix = 'app_comment_draft_';
@@ -126,9 +128,36 @@ class AppRecoveryStore {
   }
 
   static AppRecentContext? peekCurrentIntentContext() {
-    return peekPendingIntent() ??
+    final pendingUpgrade = peekPendingUpgradeContext();
+    return pendingUpgrade?.recoveryContext ??
+        peekPendingIntent() ??
         peekActiveIntentCandidate() ??
         getRecentContext();
+  }
+
+  static Future<void> savePendingUpgradeContext(
+    PendingUpgradeContext context,
+  ) async {
+    await SharedPreferencesUtil.saveJsonString(
+      pendingUpgradeContextKey,
+      context.toJson(),
+    );
+  }
+
+  static PendingUpgradeContext? peekPendingUpgradeContext() {
+    return PendingUpgradeContext.tryParse(
+      SharedPreferencesUtil.getJsonString(pendingUpgradeContextKey),
+    );
+  }
+
+  static Future<PendingUpgradeContext?> consumePendingUpgradeContext() async {
+    final context = peekPendingUpgradeContext();
+    await clearPendingUpgradeContext();
+    return context;
+  }
+
+  static Future<void> clearPendingUpgradeContext() async {
+    await SharedPreferencesUtil.remove(pendingUpgradeContextKey);
   }
 
   static Future<void> clearActiveIntentCandidate() async {
@@ -173,6 +202,7 @@ class AppRecoveryStore {
     await clearPendingIntent();
     await clearPendingPermissionContext();
     await clearPendingLostMedia();
+    await clearPendingUpgradeContext();
     await clearActiveIntentCandidate();
     await clearRecentContext();
     await clearNotificationPreference();

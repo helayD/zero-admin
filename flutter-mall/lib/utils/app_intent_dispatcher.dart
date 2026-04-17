@@ -1,10 +1,13 @@
-import 'package:flutter_mall/config/constant_param.dart';
+import 'package:flutter_mall/model/app_version_policy.dart';
 import 'package:flutter_mall/model/app_recent_context.dart';
+import 'package:flutter_mall/utils/app_version_service.dart';
+import 'package:flutter_mall/utils/version_compare.dart';
 
 enum AppIntentDispatchAction {
   login,
   target,
   fallback,
+  upgradeGate,
 }
 
 class AppIntentDispatchPlan {
@@ -13,6 +16,7 @@ class AppIntentDispatchPlan {
   final String? message;
   final String? failureReason;
   final bool shouldMarkMessageRead;
+  final AppVersionPolicy? upgradePolicy;
 
   const AppIntentDispatchPlan({
     required this.action,
@@ -20,6 +24,7 @@ class AppIntentDispatchPlan {
     this.message,
     this.failureReason,
     this.shouldMarkMessageRead = false,
+    this.upgradePolicy,
   });
 }
 
@@ -49,14 +54,14 @@ class AppIntentDispatcher {
     final minVersionFailure = _resolveMinVersionFailure(intent);
     if (minVersionFailure != null) {
       return AppIntentDispatchPlan(
-        action: AppIntentDispatchAction.fallback,
+        action: AppIntentDispatchAction.upgradeGate,
         intent: intent.copyWith(
           blocked: true,
           failureReason: minVersionFailure,
         ),
         message: intent.recoveryHint.isNotEmpty
             ? intent.recoveryHint
-            : '当前版本暂不支持直达该入口，已为你返回可用页面',
+            : '当前版本暂不支持该入口，请先升级后继续',
         failureReason: minVersionFailure,
         shouldMarkMessageRead: true,
       );
@@ -85,38 +90,13 @@ class AppIntentDispatcher {
     if (intent.minAppVersion.trim().isEmpty) {
       return null;
     }
-    if (_compareVersion(appVersion, intent.minAppVersion) >= 0) {
+    if (compareVersion(
+          AppVersionService.currentInfo.version,
+          intent.minAppVersion,
+        ) >=
+        0) {
       return null;
     }
     return 'min_version_unmet';
-  }
-
-  static int _compareVersion(String current, String minimum) {
-    final currentParts = _splitVersion(current);
-    final minimumParts = _splitVersion(minimum);
-    final maxLength = currentParts.length > minimumParts.length
-        ? currentParts.length
-        : minimumParts.length;
-    for (var i = 0; i < maxLength; i++) {
-      final currentValue = i < currentParts.length ? currentParts[i] : 0;
-      final minimumValue = i < minimumParts.length ? minimumParts[i] : 0;
-      if (currentValue > minimumValue) {
-        return 1;
-      }
-      if (currentValue < minimumValue) {
-        return -1;
-      }
-    }
-    return 0;
-  }
-
-  static List<int> _splitVersion(String value) {
-    return value.trim().split('.').where((part) => part.isNotEmpty).map((part) {
-      final match = RegExp(r'^(\d+)').firstMatch(part.trim());
-      if (match == null) {
-        return 0;
-      }
-      return int.tryParse(match.group(1) ?? '0') ?? 0;
-    }).toList();
   }
 }

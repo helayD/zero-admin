@@ -1,10 +1,15 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mall/config/service_url.dart';
+import 'package:flutter_mall/layout/upgrade_gate_page.dart';
+import 'package:flutter_mall/model/app_recent_context.dart';
 import 'package:flutter_mall/model/confirm_order.dart';
 import 'package:flutter_mall/model/direct_checkout.dart';
+import 'package:flutter_mall/model/upgrade_gate_context.dart';
 import 'package:flutter_mall/provider/cart_model.dart';
+import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/utils/http_util.dart';
+import 'package:flutter_mall/utils/upgrade_gate_service.dart';
 import 'package:flutter_mall/widgets/cached_image_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
@@ -80,6 +85,10 @@ class _OrderSubmitState extends State<OrderSubmit> {
 
   /// 加载确认单数据
   void _loadConfirmOrder() async {
+    final ready = await _ensureUpgradeReady();
+    if (!ready || !mounted) {
+      return;
+    }
     try {
       setState(() {
         _loading = true;
@@ -118,6 +127,70 @@ class _OrderSubmitState extends State<OrderSubmit> {
         });
       }
     }
+  }
+
+  AppRecentContext _buildUpgradeFallbackContext() {
+    if (_isDirectBuy && widget.directItem != null) {
+      return AppRecentContext.create(
+        targetType: AppRecentTargetType.productDetail,
+        targetId: widget.directItem!.productId,
+        source: 'order_confirm',
+        requiresAuth: false,
+        fallbackType: AppRecentTargetType.home,
+        fallbackTabIndex: 0,
+      );
+    }
+    return AppRecentContext.create(
+      targetType: AppRecentTargetType.cart,
+      tabIndex: 2,
+      source: 'order_confirm',
+      requiresAuth: true,
+      fallbackType: AppRecentTargetType.home,
+      fallbackTabIndex: 0,
+    );
+  }
+
+  Future<bool> _ensureUpgradeReady() async {
+    final policy = await UpgradeGateService.queryPolicy(
+      scene: 'order_confirm',
+      targetType: _isDirectBuy
+          ? appRecentTargetTypeToValue(AppRecentTargetType.productDetail)
+          : appRecentTargetTypeToValue(AppRecentTargetType.cart),
+      targetId: _isDirectBuy ? widget.directItem?.productId : null,
+    );
+    if (!policy.hasUpgradeGate) {
+      return true;
+    }
+    if (!mounted) {
+      return true;
+    }
+    final navigator = Navigator.of(context);
+    final pendingUpgrade = PendingUpgradeContext.forOrderConfirm(
+      policy: policy,
+      directItem: widget.directItem,
+      fallbackContext: _buildUpgradeFallbackContext(),
+    );
+    await AppRecoveryStore.savePendingUpgradeContext(pendingUpgrade);
+    if (!mounted) {
+      return true;
+    }
+    final result = await navigator.push<bool>(
+      MaterialPageRoute(
+        builder: (_) => UpgradeGatePage(
+          pendingContext: pendingUpgrade,
+          initialPolicy: policy,
+          onResolved: (gateContext, _) async {
+            Navigator.of(gateContext).pop(true);
+          },
+          onContinueLater: policy.canContinueLater
+              ? (gateContext, _) async {
+                  Navigator.of(gateContext).pop(true);
+                }
+              : null,
+        ),
+      ),
+    );
+    return result == true;
   }
 
   /// Task 7: 初始化积分输入

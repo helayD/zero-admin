@@ -38,6 +38,34 @@ class PermissionTelemetrySnapshot {
   });
 }
 
+class UpgradeTelemetrySnapshot {
+  final String eventName;
+  final String scene;
+  final String source;
+  final String intentId;
+  final String targetType;
+  final bool blocking;
+  final String currentVersion;
+  final String requiredVersion;
+  final String platform;
+  final String channel;
+  final DateTime recordedAt;
+
+  const UpgradeTelemetrySnapshot({
+    required this.eventName,
+    required this.scene,
+    required this.source,
+    required this.intentId,
+    required this.targetType,
+    required this.blocking,
+    required this.currentVersion,
+    required this.requiredVersion,
+    required this.platform,
+    required this.channel,
+    required this.recordedAt,
+  });
+}
+
 class AppLifecycleProvider extends ChangeNotifier with WidgetsBindingObserver {
   AppLifecycleState _currentState = AppLifecycleState.resumed;
   AppRecentContext? _pausedCandidate;
@@ -52,6 +80,7 @@ class AppLifecycleProvider extends ChangeNotifier with WidgetsBindingObserver {
   int _intentFallbackUsedCount = 0;
   IntentTelemetrySnapshot? _latestIntentTelemetry;
   PermissionTelemetrySnapshot? _latestPermissionTelemetry;
+  UpgradeTelemetrySnapshot? _latestUpgradeTelemetry;
 
   AppLifecycleState get currentState => _currentState;
 
@@ -79,6 +108,9 @@ class AppLifecycleProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   PermissionTelemetrySnapshot? get latestPermissionTelemetry =>
       _latestPermissionTelemetry;
+
+  UpgradeTelemetrySnapshot? get latestUpgradeTelemetry =>
+      _latestUpgradeTelemetry;
 
   void startObserving() {
     WidgetsBinding.instance.addObserver(this);
@@ -262,6 +294,184 @@ class AppLifecycleProvider extends ChangeNotifier with WidgetsBindingObserver {
       source: source,
       intentId: intentId,
       recoveryId: recoveryId,
+      recordedAt: DateTime.now(),
+    );
+    notifyListeners();
+  }
+
+  void recordUpgradeGateShown({
+    required String scene,
+    required String source,
+    required String intentId,
+    required String targetType,
+    required bool blocking,
+    required String currentVersion,
+    required String requiredVersion,
+    required String platform,
+    required String channel,
+  }) {
+    _recordUpgradeEvent(
+      'upgradeGateShown',
+      scene: scene,
+      source: source,
+      intentId: intentId,
+      targetType: targetType,
+      blocking: blocking,
+      currentVersion: currentVersion,
+      requiredVersion: requiredVersion,
+      platform: platform,
+      channel: channel,
+    );
+  }
+
+  void recordUpgradeGateBlocked({
+    required String scene,
+    required String source,
+    required String intentId,
+    required String targetType,
+    required bool blocking,
+    required String currentVersion,
+    required String requiredVersion,
+    required String platform,
+    required String channel,
+  }) {
+    _recordUpgradeEvent(
+      'upgradeGateBlocked',
+      scene: scene,
+      source: source,
+      intentId: intentId,
+      targetType: targetType,
+      blocking: blocking,
+      currentVersion: currentVersion,
+      requiredVersion: requiredVersion,
+      platform: platform,
+      channel: channel,
+    );
+  }
+
+  void recordUpgradeActionTapped({
+    required String scene,
+    required String source,
+    required String intentId,
+    required String targetType,
+    required bool blocking,
+    required String currentVersion,
+    required String requiredVersion,
+    required String platform,
+    required String channel,
+  }) {
+    _recordUpgradeEvent(
+      'upgradeActionTapped',
+      scene: scene,
+      source: source,
+      intentId: intentId,
+      targetType: targetType,
+      blocking: blocking,
+      currentVersion: currentVersion,
+      requiredVersion: requiredVersion,
+      platform: platform,
+      channel: channel,
+    );
+  }
+
+  void recordUpgradeCompleted({
+    required String scene,
+    required String source,
+    required String intentId,
+    required String targetType,
+    required bool blocking,
+    required String currentVersion,
+    required String requiredVersion,
+    required String platform,
+    required String channel,
+  }) {
+    _recordUpgradeEvent(
+      'upgradeCompleted',
+      scene: scene,
+      source: source,
+      intentId: intentId,
+      targetType: targetType,
+      blocking: blocking,
+      currentVersion: currentVersion,
+      requiredVersion: requiredVersion,
+      platform: platform,
+      channel: channel,
+    );
+  }
+
+  void recordUpgradeRestoreSucceeded({
+    required String scene,
+    required String source,
+    required String intentId,
+    required String targetType,
+    required bool blocking,
+    required String currentVersion,
+    required String requiredVersion,
+    required String platform,
+    required String channel,
+  }) {
+    _recordUpgradeEvent(
+      'upgradeRestoreSucceeded',
+      scene: scene,
+      source: source,
+      intentId: intentId,
+      targetType: targetType,
+      blocking: blocking,
+      currentVersion: currentVersion,
+      requiredVersion: requiredVersion,
+      platform: platform,
+      channel: channel,
+    );
+  }
+
+  void recordUpgradeRestoreFallbackUsed({
+    required String scene,
+    required String source,
+    required String intentId,
+    required String targetType,
+    required bool blocking,
+    required String currentVersion,
+    required String requiredVersion,
+    required String platform,
+    required String channel,
+  }) {
+    _recordUpgradeEvent(
+      'upgradeRestoreFallbackUsed',
+      scene: scene,
+      source: source,
+      intentId: intentId,
+      targetType: targetType,
+      blocking: blocking,
+      currentVersion: currentVersion,
+      requiredVersion: requiredVersion,
+      platform: platform,
+      channel: channel,
+    );
+  }
+
+  void _recordUpgradeEvent(
+    String eventName, {
+    required String scene,
+    required String source,
+    required String intentId,
+    required String targetType,
+    required bool blocking,
+    required String currentVersion,
+    required String requiredVersion,
+    required String platform,
+    required String channel,
+  }) {
+    _latestUpgradeTelemetry = UpgradeTelemetrySnapshot(
+      eventName: eventName,
+      scene: scene,
+      source: source,
+      intentId: intentId,
+      targetType: targetType,
+      blocking: blocking,
+      currentVersion: currentVersion,
+      requiredVersion: requiredVersion,
+      platform: platform,
+      channel: channel,
       recordedAt: DateTime.now(),
     );
     notifyListeners();

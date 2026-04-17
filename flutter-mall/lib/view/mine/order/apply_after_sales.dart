@@ -2,13 +2,16 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_mall/config/service_url.dart';
+import 'package:flutter_mall/layout/upgrade_gate_page.dart';
 import 'package:flutter_mall/model/app_recent_context.dart';
 import 'package:flutter_mall/model/after_sales.dart';
 import 'package:flutter_mall/model/permission_flow_context.dart';
+import 'package:flutter_mall/model/upgrade_gate_context.dart';
 import 'package:flutter_mall/provider/app_lifecycle_provider.dart';
 import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/utils/http_util.dart';
 import 'package:flutter_mall/utils/permission_broker.dart';
+import 'package:flutter_mall/utils/upgrade_gate_service.dart';
 import 'package:flutter_mall/widgets/permission_prompt_sheet.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:provider/provider.dart';
@@ -161,6 +164,10 @@ class ApplyAfterSalesState extends State<ApplyAfterSales> {
 
   // ==================== 加载原因列表 ====================
   Future<void> _loadReasonList() async {
+    final ready = await _ensureUpgradeReady();
+    if (!ready || !mounted) {
+      return;
+    }
     try {
       final data = widget.reasonLoader != null
           ? await widget.reasonLoader!.call()
@@ -195,6 +202,56 @@ class ApplyAfterSalesState extends State<ApplyAfterSales> {
         _errorMessage = '加载失败，请重试';
       });
     }
+  }
+
+  Future<bool> _ensureUpgradeReady() async {
+    final policy = await UpgradeGateService.queryPolicy(
+      scene: 'after_sales_apply',
+      targetType: appRecentTargetTypeToValue(
+        AppRecentTargetType.afterSalesApply,
+      ),
+      targetId: widget.orderId,
+    );
+    if (!policy.hasUpgradeGate) {
+      return true;
+    }
+    if (!mounted) {
+      return true;
+    }
+    final navigator = Navigator.of(context);
+    final pendingUpgrade = PendingUpgradeContext.forRecentContext(
+      scene: 'after_sales_apply',
+      recoveryContext: AppRecentContext.create(
+        targetType: AppRecentTargetType.afterSalesApply,
+        targetId: widget.orderId,
+        source: widget.intentSource ?? 'after_sales_apply',
+        requiresAuth: true,
+        fallbackType: AppRecentTargetType.orderDetail,
+        fallbackTargetId: widget.orderId,
+      ),
+      policy: policy,
+    );
+    await AppRecoveryStore.savePendingUpgradeContext(pendingUpgrade);
+    if (!mounted) {
+      return true;
+    }
+    final result = await navigator.push<bool>(
+      MaterialPageRoute(
+        builder: (_) => UpgradeGatePage(
+          pendingContext: pendingUpgrade,
+          initialPolicy: policy,
+          onResolved: (gateContext, _) async {
+            Navigator.of(gateContext).pop(true);
+          },
+          onContinueLater: policy.canContinueLater
+              ? (gateContext, _) async {
+                  Navigator.of(gateContext).pop(true);
+                }
+              : null,
+        ),
+      ),
+    );
+    return result == true;
   }
 
   Future<ReturnReasonListData> _loadReasonListFromApi() async {

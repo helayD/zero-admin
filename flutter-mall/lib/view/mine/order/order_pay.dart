@@ -9,7 +9,12 @@ import 'package:alipay_kit/alipay_kit.dart';
 import 'package:fluwx/fluwx.dart' as fluwx;
 
 import 'package:flutter_mall/config/service_url.dart';
+import 'package:flutter_mall/layout/upgrade_gate_page.dart';
+import 'package:flutter_mall/model/app_recent_context.dart';
+import 'package:flutter_mall/model/upgrade_gate_context.dart';
+import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/utils/http_util.dart';
+import 'package:flutter_mall/utils/upgrade_gate_service.dart';
 
 ///
 /// 订单支付页面（Story 5.4 重构 + Story 5.5 支付发起）
@@ -58,14 +63,19 @@ class OrderPay extends StatefulWidget {
 enum PayPageState {
   /// 初始态：支付选择
   initial,
+
   /// 加载中：正在发起支付
   loading,
+
   /// 轮询中：等待支付结果
   polling,
+
   /// 支付成功
   success,
+
   /// 支付失败
   failed,
+
   /// 订单已取消 / 超时
   cancelled,
 }
@@ -166,6 +176,10 @@ class _OrderPayState extends State<OrderPay> with WidgetsBindingObserver {
       _showToast("订单信息异常，请返回重新下单");
       return;
     }
+    final allowPay = await _ensureUpgradeReady();
+    if (!allowPay || !mounted) {
+      return;
+    }
 
     setState(() {
       _pageState = PayPageState.loading;
@@ -207,7 +221,6 @@ class _OrderPayState extends State<OrderPay> with WidgetsBindingObserver {
 
       // Task 7.2/7.3: 根据 PayType 调起对应 SDK
       await _invokePaymentSDK(payParams);
-
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -216,6 +229,57 @@ class _OrderPayState extends State<OrderPay> with WidgetsBindingObserver {
         _isPaying = false;
       });
     }
+  }
+
+  Future<bool> _ensureUpgradeReady() async {
+    final policy = await UpgradeGateService.queryPolicy(
+      scene: 'order_pay',
+      targetType: appRecentTargetTypeToValue(AppRecentTargetType.orderDetail),
+      targetId: widget.orderId,
+    );
+    if (!policy.hasUpgradeGate) {
+      return true;
+    }
+    if (!mounted) {
+      return true;
+    }
+    final navigator = Navigator.of(context);
+    final pendingUpgrade = PendingUpgradeContext.forOrderPay(
+      policy: policy,
+      orderId: widget.orderId ?? 0,
+      payAmount: widget.amount,
+      payType: _selectedPayType,
+      orderSn: widget.orderSn ?? '',
+      fallbackContext: AppRecentContext.create(
+        targetType: AppRecentTargetType.orderDetail,
+        targetId: widget.orderId,
+        source: 'order_pay',
+        requiresAuth: true,
+        fallbackType: AppRecentTargetType.orderList,
+        fallbackTabIndex: 1,
+      ),
+    );
+    await AppRecoveryStore.savePendingUpgradeContext(pendingUpgrade);
+    if (!mounted) {
+      return true;
+    }
+    final result = await navigator.push<bool>(
+      MaterialPageRoute(
+        builder: (_) => UpgradeGatePage(
+          pendingContext: pendingUpgrade,
+          initialPolicy: policy,
+          onResolved: (gateContext, _) async {
+            Navigator.of(gateContext).pop(true);
+          },
+          onContinueLater: policy.canContinueLater
+              ? (gateContext, _) async {
+                  Navigator.of(gateContext).pop(true);
+                }
+              : null,
+        ),
+      ),
+    );
+    return result == true;
   }
 
   /// Task 7.2/7.3: 调起支付 SDK
@@ -398,7 +462,8 @@ class _OrderPayState extends State<OrderPay> with WidgetsBindingObserver {
         _pollingTimer?.cancel();
         setState(() {
           _pageState = PayPageState.cancelled;
-          _payErrorMessage = result.message.isNotEmpty ? result.message : '订单已取消';
+          _payErrorMessage =
+              result.message.isNotEmpty ? result.message : '订单已取消';
         });
         break;
       default:
@@ -432,7 +497,8 @@ class _OrderPayState extends State<OrderPay> with WidgetsBindingObserver {
         case 2: // 已取消 / 超时 → Task 9.4
           setState(() {
             _pageState = PayPageState.cancelled;
-            _payErrorMessage = result.message.isNotEmpty ? result.message : '订单已超时取消';
+            _payErrorMessage =
+                result.message.isNotEmpty ? result.message : '订单已超时取消';
           });
           break;
         default:
@@ -469,11 +535,6 @@ class _OrderPayState extends State<OrderPay> with WidgetsBindingObserver {
         }
       });
     });
-  }
-
-  void _stopPolling() {
-    _pollingTimer?.cancel();
-    _countdownTimer?.cancel();
   }
 
   String _formatCountdown(int seconds) {
@@ -598,7 +659,8 @@ class _OrderPayState extends State<OrderPay> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildOrderSummaryCard(Color textPrimary, Color textSecondary, Color themeColor) {
+  Widget _buildOrderSummaryCard(
+      Color textPrimary, Color textSecondary, Color themeColor) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -618,7 +680,10 @@ class _OrderPayState extends State<OrderPay> with WidgetsBindingObserver {
               Expanded(
                 child: Text(
                   '订单号：${widget.orderSn}',
-                  style: TextStyle(fontSize: 13, color: textPrimary, fontWeight: FontWeight.w500),
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: textPrimary,
+                      fontWeight: FontWeight.w500),
                 ),
               ),
             ],
@@ -665,7 +730,8 @@ class _OrderPayState extends State<OrderPay> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildPayTypeSelector(BorderSide border, Color textPrimary, Color textSecondary, Color themeColor) {
+  Widget _buildPayTypeSelector(BorderSide border, Color textPrimary,
+      Color textSecondary, Color themeColor) {
     return Column(
       children: [
         // 微信
@@ -683,9 +749,11 @@ class _OrderPayState extends State<OrderPay> with WidgetsBindingObserver {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('微信支付', style: TextStyle(fontSize: 16, color: textPrimary)),
+                    Text('微信支付',
+                        style: TextStyle(fontSize: 16, color: textPrimary)),
                     const SizedBox(height: 2),
-                    Text('推荐使用微信支付', style: TextStyle(fontSize: 12, color: textSecondary)),
+                    Text('推荐使用微信支付',
+                        style: TextStyle(fontSize: 12, color: textSecondary)),
                   ],
                 ),
               ),
@@ -714,7 +782,8 @@ class _OrderPayState extends State<OrderPay> with WidgetsBindingObserver {
               Image.asset('images/ali_pay.png', height: 27, width: 26),
               const SizedBox(width: 16),
               Expanded(
-                child: Text('支付宝支付', style: TextStyle(fontSize: 16, color: textPrimary)),
+                child: Text('支付宝支付',
+                    style: TextStyle(fontSize: 16, color: textPrimary)),
               ),
               Transform.scale(
                 scale: 1.3,

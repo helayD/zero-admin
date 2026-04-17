@@ -36,6 +36,7 @@ import (
 	"github.com/feihua/zero-admin/rpc/sms/client/couponrecordservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/couponscopeservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/coupontypeservice"
+	"github.com/feihua/zero-admin/rpc/sms/client/drawactivityservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/operatedashboardservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/seckillactivityservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/seckillproductservice"
@@ -154,6 +155,7 @@ type ServiceContext struct {
 	CouponScopeService        couponscopeservice.CouponScopeService
 	CouponService             couponservice.CouponService
 	CouponTypeService         coupontypeservice.CouponTypeService
+	DrawActivityService       drawactivityservice.DrawActivityService
 	HomeAdvertiseService      homeadvertiseservice.HomeAdvertiseService
 	SeckillActivityService    seckillactivityservice.SeckillActivityService
 	SeckillProductService     seckillproductservice.SeckillProductService
@@ -247,6 +249,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		CouponScopeService:        couponscopeservice.NewCouponScopeService(smsClient),
 		CouponService:             couponservice.NewCouponService(smsClient),
 		CouponTypeService:         coupontypeservice.NewCouponTypeService(smsClient),
+		DrawActivityService:       drawactivityservice.NewDrawActivityService(smsClient),
 		HomeAdvertiseService:      homeadvertiseservice.NewHomeAdvertiseService(smsClient),
 		SeckillActivityService:    seckillactivityservice.NewSeckillActivityService(smsClient),
 		SeckillProductService:     seckillproductservice.NewSeckillProductService(smsClient),

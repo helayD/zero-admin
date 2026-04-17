@@ -369,6 +369,12 @@
         path: '/sms/seckillActivity/list',
         component: './sms/SeckillActivity',
       },
+      {
+        name: '抽卡活动',
+        icon: 'table',
+        path: '/sms/digitalCardActivity/list',
+        component: './sms/DigitalCardActivity',
+      },
     ],
   },
   {

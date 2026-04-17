@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_mall/layout/upgrade_gate_page.dart';
 import 'package:flutter_mall/layout/main_tab.dart';
 import 'package:flutter_mall/model/app_recent_context.dart';
+import 'package:flutter_mall/model/app_version_policy.dart';
+import 'package:flutter_mall/model/upgrade_gate_context.dart';
 import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/utils/app_intent_dispatcher.dart';
+import 'package:flutter_mall/utils/upgrade_gate_service.dart';
 import 'package:flutter_mall/view/mine/ping_jia/ping_jia.dart';
 import 'package:flutter_mall/view/category/product/product_detail.dart';
 import 'package:flutter_mall/view/mine/coupon/available_coupon_list.dart';
@@ -204,29 +208,130 @@ class AppRecoveryRouter {
         allowedRecoveryIntent,
         hasValidToken: AppRecoveryStore.hasValidToken(),
       );
-      switch (plan.action) {
-        case AppIntentDispatchAction.target:
-          await navigator.pushReplacement(
-            MaterialPageRoute(
-              builder: (routeContext) {
-                _showMessage(routeContext, plan.message);
-                return buildTarget(plan.intent);
-              },
-            ),
-          );
+      try {
+        switch (plan.action) {
+          case AppIntentDispatchAction.target:
+            final scene = UpgradeGateService.recoverySceneFor(plan.intent);
+            final upgradePolicy = await _queryRecoveryUpgradePolicy(
+              plan.intent,
+              scene: scene,
+            );
+            if (upgradePolicy.hasUpgradeGate) {
+              final pendingUpgrade = PendingUpgradeContext.forRecentContext(
+                scene: scene,
+                recoveryContext: plan.intent,
+                policy: upgradePolicy,
+              );
+              await AppRecoveryStore.savePendingUpgradeContext(pendingUpgrade);
+              await navigator.pushReplacement(
+                MaterialPageRoute(
+                  builder: (_) => UpgradeGatePage(
+                    pendingContext: pendingUpgrade,
+                    initialPolicy: upgradePolicy,
+                    onResolved: (routeContext, pending) async {
+                      await replaceWithTarget(
+                        routeContext,
+                        pending.recoveryContext!,
+                        message: pending.recoveryHint,
+                      );
+                    },
+                    onContinueLater: upgradePolicy.canContinueLater
+                        ? (routeContext, pending) async {
+                            await replaceWithFallback(
+                              routeContext,
+                              recentContext: pending.recoveryContext,
+                              message: pending.recoveryHint,
+                            );
+                          }
+                        : null,
+                  ),
+                ),
+              );
+              return;
+            }
+            await navigator.pushReplacement(
+              MaterialPageRoute(
+                builder: (routeContext) {
+                  _showMessage(routeContext, plan.message);
+                  return buildTarget(plan.intent);
+                },
+              ),
+            );
+            return;
+          case AppIntentDispatchAction.fallback:
+            await navigator.pushReplacement(
+              MaterialPageRoute(
+                builder: (routeContext) {
+                  _showMessage(routeContext, plan.message);
+                  return buildFallback(plan.intent);
+                },
+              ),
+            );
+            return;
+          case AppIntentDispatchAction.login:
+            break;
+          case AppIntentDispatchAction.upgradeGate:
+            final scene = UpgradeGateService.recoverySceneFor(plan.intent);
+            final upgradePolicy = await _queryRecoveryUpgradePolicy(
+              allowedRecoveryIntent,
+              scene: scene,
+            );
+            if (!upgradePolicy.hasUpgradeGate) {
+              await navigator.pushReplacement(
+                MaterialPageRoute(
+                  builder: (routeContext) {
+                    _showMessage(routeContext, plan.message);
+                    return buildTarget(plan.intent);
+                  },
+                ),
+              );
+              return;
+            }
+            final pendingUpgrade = PendingUpgradeContext.forRecentContext(
+              scene: scene,
+              recoveryContext: allowedRecoveryIntent,
+              policy: upgradePolicy,
+            );
+            await AppRecoveryStore.savePendingUpgradeContext(pendingUpgrade);
+            await navigator.pushReplacement(
+              MaterialPageRoute(
+                builder: (_) => UpgradeGatePage(
+                  pendingContext: pendingUpgrade,
+                  initialPolicy: upgradePolicy,
+                  onResolved: (routeContext, pending) async {
+                    await replaceWithTarget(
+                      routeContext,
+                      pending.recoveryContext!,
+                      message: pending.recoveryHint,
+                    );
+                  },
+                  onContinueLater: upgradePolicy.canContinueLater
+                      ? (routeContext, pending) async {
+                          await replaceWithFallback(
+                            routeContext,
+                            recentContext: pending.recoveryContext,
+                            message: pending.recoveryHint,
+                          );
+                        }
+                      : null,
+                ),
+              ),
+            );
+            return;
+        }
+      } catch (_) {
+        if (!navigator.mounted) {
           return;
-        case AppIntentDispatchAction.fallback:
-          await navigator.pushReplacement(
-            MaterialPageRoute(
-              builder: (routeContext) {
-                _showMessage(routeContext, plan.message);
-                return buildFallback(plan.intent);
-              },
-            ),
-          );
-          return;
-        case AppIntentDispatchAction.login:
-          break;
+        }
+        await navigator.pushReplacement(
+          MaterialPageRoute(
+            builder: (routeContext) {
+              _showMessage(routeContext, '暂时无法确认升级策略，已返回可用页面');
+              return buildFallback(allowedRecoveryIntent);
+            },
+          ),
+        );
+        return;
       }
     }
     if (!navigator.mounted) {
@@ -278,5 +383,18 @@ class AppRecoveryRouter {
         SnackBar(content: Text(message)),
       );
     });
+  }
+
+  static Future<AppVersionPolicy> _queryRecoveryUpgradePolicy(
+    AppRecentContext context, {
+    required String scene,
+  }) {
+    if (context.isRecallIntent) {
+      return UpgradeGateService.queryRecallPolicy(context, scene: scene);
+    }
+    return UpgradeGateService.queryPolicy(
+      scene: scene,
+      recoveryContext: context,
+    );
   }
 }
