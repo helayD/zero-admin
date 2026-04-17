@@ -47,8 +47,8 @@ func (l *GenerateConfirmOrderLogic) GenerateConfirmOrder(req *types.GenerateConf
 	}
 	// 1.获取购物车信息或立即购买商品信息
 	var cartPromotionItemList []types.CarItemtPromotionListData
-	if req.DirectItem != nil && req.DirectItem.ProductId > 0 {
-		cartPromotionItemList, err = cart.QueryDirectOrderPromotion(req.DirectItem, l.ctx, l.svcCtx)
+	if req.DirectItem.ProductId > 0 {
+		cartPromotionItemList, err = cart.QueryDirectOrderPromotion(&req.DirectItem, l.ctx, l.svcCtx)
 	} else {
 		cartPromotionItemList, err = cart.QueryCartListPromotion(req.Ids, l.ctx, l.svcCtx)
 	}

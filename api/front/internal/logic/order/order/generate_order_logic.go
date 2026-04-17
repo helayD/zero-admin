@@ -158,10 +158,10 @@ func (l *GenerateOrderLogic) GenerateOrder(req *types.GenerateOrderReq) (*types.
 	}
 
 	// 1.获取购物车及优惠信息 / 立即购买商品信息
-	isDirectBuy := req.DirectItem != nil && req.DirectItem.ProductId > 0
+	isDirectBuy := req.DirectItem.ProductId > 0
 	var cartPromotionItemList []types.CarItemtPromotionListData
 	if isDirectBuy {
-		cartPromotionItemList, err = cart.QueryDirectOrderPromotion(req.DirectItem, l.ctx, l.svcCtx)
+		cartPromotionItemList, err = cart.QueryDirectOrderPromotion(&req.DirectItem, l.ctx, l.svcCtx)
 	} else {
 		cartPromotionItemList, err = cart.QueryCartListPromotion(req.CartIds, l.ctx, l.svcCtx)
 	}

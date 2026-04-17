@@ -97,9 +97,9 @@ func (l *PaymentOperationsUtils) TradeQueryWechat(outTradeNo string) (string, in
 
 // AliPayNotify 支付宝回调通知（Story 5.5: 幂等处理 + Saga补偿）
 // 重构说明（Story 6-5 Task 5）：
-//  - 支付成功：更新 pay_status=1（OrderPaymentService）+ order_status=2（OrderService）
-//  - 新增 AddOrderOperationLog 操作日志（operator_type=2 系统操作）
-//  - 幂等保护：Redis key = "pay:notify:{outTradeNo}"（已实现，保留）
+//   - 支付成功：更新 pay_status=1（OrderPaymentService）+ order_status=2（OrderService）
+//   - 新增 AddOrderOperationLog 操作日志（operator_type=2 系统操作）
+//   - 幂等保护：Redis key = "pay:notify:{outTradeNo}"（已实现，保留）
 func (l *PaymentOperationsUtils) AliPayNotify(writer http.ResponseWriter, request *http.Request) {
 	if err := request.ParseForm(); err != nil {
 		_, _ = writer.Write([]byte("error"))
@@ -163,8 +163,8 @@ func (l *PaymentOperationsUtils) AliPayNotify(writer http.ResponseWriter, reques
 		// Step 4: 写入操作日志（operator_type=2 系统操作，operation_type=2 支付订单）
 		if paymentId > 0 {
 			_, _ = l.svcCtx.OrderOperationLogService.AddOrderOperationLog(l.ctx, &omsclient.AddOrderOperationLogReq{
-				OrderId:      paymentList.List[0].OrderId,
-				OperatorType: order.OperatorTypeSystem, // 2=系统操作
+				OrderId:       paymentList.List[0].OrderId,
+				OperatorType:  order.OperatorTypeSystem, // 2=系统操作
 				OperationType: order.OpPaymentSuccess,   // 2=支付订单
 				OperatorNote:  fmt.Sprintf("支付宝回调支付成功 outTradeNo=%s", outTradeNo),
 			})
@@ -208,9 +208,9 @@ func (l *PaymentOperationsUtils) AliPayNotify(writer http.ResponseWriter, reques
 
 		// 写入操作日志
 		_, _ = l.svcCtx.OrderOperationLogService.AddOrderOperationLog(l.ctx, &omsclient.AddOrderOperationLogReq{
-			OrderId:      paymentList.List[0].OrderId,
-			OperatorType: order.OperatorTypeSystem, // 2=系统操作
-			OperationType: order.OpPaymentFailed,   // 3=支付失败（映射到业务 OpPaymentFailed）
+			OrderId:       paymentList.List[0].OrderId,
+			OperatorType:  order.OperatorTypeSystem, // 2=系统操作
+			OperationType: order.OpPaymentFailed,    // 3=支付失败（映射到业务 OpPaymentFailed）
 			OperatorNote:  fmt.Sprintf("支付宝回调支付失败 outTradeNo=%s", outTradeNo),
 		})
 	}
@@ -238,18 +238,8 @@ func (l *PaymentOperationsUtils) isPayStatusUpdated(outTradeNo string) bool {
 // 微信支付回调通常通过微信支付后台配置的 NotifyURL 推送
 // NOTE: 需在微信支付商户平台配置回调 URL，接入微信支付 APIv3
 func (l *PaymentOperationsUtils) WechatNotify(writer http.ResponseWriter, request *http.Request) {
-	// TODO(5.5): 接入微信支付 APIv3 回调验签和处理
-	// 参考: https://github.com/wechatpay-apiv3/wechatpay-go
-	// 实现步骤:
-	// 1. 从请求 Header 获取 Wechatpay-Signature, Wechatpay-Nonce, Wechatpay-Timestamp
-	// 2. 构造签名串: timestamp + nonce + request_body
-	// 3. 使用平台证书验签
-	// 4. 解析 JSON 请求体获取 transaction_id, out_trade_no, trade_state
-	// 5. trade_state == "SUCCESS" → 更新 OMS 状态（复用 AliPayNotify 逻辑）
-	// 6. 返回 HTTP 200
-
-	l.Logger.Infof("WechatNotify 收到回调")
-	_, _ = writer.Write([]byte("success"))
+	http.Error(writer, "wechat pay callback not configured", http.StatusNotImplemented)
+	l.Logger.Errorf("WechatNotify 尚未接入微信支付 APIv3 回调验签与状态同步")
 }
 
 // UpdatePaidStatus 支付成功后的 Saga 补偿（OMS 状态同步）
@@ -285,17 +275,17 @@ func (l *PaymentOperationsUtils) publishPaySuccessEvent(outTradeNo string, order
 	current := common.ResolveEffectiveGovernanceScope(l.ctx)
 
 	msgEvent := map[string]any{
-		"memberId":   0, // ActorID 在 Consumer 层从 EventPayload.ActorID 获取
-		"orderId":    orderId,
-		"orderNo":    outTradeNo,
+		"memberId":    0, // ActorID 在 Consumer 层从 EventPayload.ActorID 获取
+		"orderId":     orderId,
+		"orderNo":     outTradeNo,
 		"messageType": 2, // 支付消息
-		"title":      "支付成功",
-		"content":    fmt.Sprintf("您的订单（%s）已支付成功，感谢您的购买！", outTradeNo),
-		"linkType":   "order",
-		"linkId":     fmt.Sprintf("%d", orderId),
-		"platformId": current.PlatformID,
-		"tenantId":   current.TenantID,
-		"merchantId": current.MerchantID,
+		"title":       "支付成功",
+		"content":     fmt.Sprintf("您的订单（%s）已支付成功，感谢您的购买！", outTradeNo),
+		"linkType":    "order",
+		"linkId":      fmt.Sprintf("%d", orderId),
+		"platformId":  current.PlatformID,
+		"tenantId":    current.TenantID,
+		"merchantId":  current.MerchantID,
 	}
 
 	body, err := json.Marshal(msgEvent)

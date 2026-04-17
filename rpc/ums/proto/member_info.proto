@@ -34,6 +34,7 @@ message UpdateMemberInfoReq {
   string signature = 5; //个性签名
   int32 gender = 6; //性别：0-未知，1-男，2-女
   string birthday = 7; //生日
+  string password = 8; //密码（前台修改密码使用）
 }
 
 message UpdateMemberInfoResp {

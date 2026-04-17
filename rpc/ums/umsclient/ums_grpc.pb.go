@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.3.0
 // - protoc             v3.19.4
-// source: rpc/ums/ums.proto
+// source: ums.proto
 
 package umsclient
 
@@ -302,7 +302,7 @@ var MemberAddressService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "rpc/ums/ums.proto",
+	Metadata: "ums.proto",
 }
 
 const (
@@ -512,7 +512,7 @@ var MemberBrandAttentionService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "rpc/ums/ums.proto",
+	Metadata: "ums.proto",
 }
 
 const (
@@ -839,7 +839,7 @@ var MemberConsumeSettingService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "rpc/ums/ums.proto",
+	Metadata: "ums.proto",
 }
 
 const (
@@ -1010,7 +1010,7 @@ var MemberGrowthLogService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "rpc/ums/ums.proto",
+	Metadata: "ums.proto",
 }
 
 const (
@@ -1453,7 +1453,7 @@ var MemberInfoService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "rpc/ums/ums.proto",
+	Metadata: "ums.proto",
 }
 
 const (
@@ -1543,7 +1543,7 @@ var MemberIdentityService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "rpc/ums/ums.proto",
+	Metadata: "ums.proto",
 }
 
 const (
@@ -1830,7 +1830,7 @@ var MemberLevelService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "rpc/ums/ums.proto",
+	Metadata: "ums.proto",
 }
 
 const (
@@ -1961,7 +1961,7 @@ var MemberLoginLogService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "rpc/ums/ums.proto",
+	Metadata: "ums.proto",
 }
 
 const (
@@ -2273,7 +2273,7 @@ var MemberMessageService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "rpc/ums/ums.proto",
+	Metadata: "ums.proto",
 }
 
 const (
@@ -2444,7 +2444,7 @@ var MemberPointsLogService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "rpc/ums/ums.proto",
+	Metadata: "ums.proto",
 }
 
 const (
@@ -2576,7 +2576,7 @@ var MemberProductCategoryRelationService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "rpc/ums/ums.proto",
+	Metadata: "ums.proto",
 }
 
 const (
@@ -2786,7 +2786,7 @@ var MemberProductCollectionService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "rpc/ums/ums.proto",
+	Metadata: "ums.proto",
 }
 
 const (
@@ -2996,7 +2996,7 @@ var MemberReadHistoryService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "rpc/ums/ums.proto",
+	Metadata: "ums.proto",
 }
 
 const (
@@ -3284,7 +3284,7 @@ var MemberRuleSettingService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "rpc/ums/ums.proto",
+	Metadata: "ums.proto",
 }
 
 const (
@@ -3454,7 +3454,7 @@ var MemberSignLogService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "rpc/ums/ums.proto",
+	Metadata: "ums.proto",
 }
 
 const (
@@ -3625,7 +3625,7 @@ var MemberStatisticsInfoService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "rpc/ums/ums.proto",
+	Metadata: "ums.proto",
 }
 
 const (
@@ -3912,7 +3912,7 @@ var MemberTagService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "rpc/ums/ums.proto",
+	Metadata: "ums.proto",
 }
 
 const (
@@ -4083,7 +4083,7 @@ var MemberTagRelationService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "rpc/ums/ums.proto",
+	Metadata: "ums.proto",
 }
 
 const (
@@ -4370,7 +4370,7 @@ var MemberTaskService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "rpc/ums/ums.proto",
+	Metadata: "ums.proto",
 }
 
 const (
@@ -4541,5 +4541,5 @@ var MemberTaskRelationService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "rpc/ums/ums.proto",
+	Metadata: "ums.proto",
 }
