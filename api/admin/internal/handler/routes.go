@@ -9,6 +9,7 @@ import (
 	cmsprefrence_area "github.com/feihua/zero-admin/api/admin/internal/handler/cms/prefrence_area"
 	cmssubject "github.com/feihua/zero-admin/api/admin/internal/handler/cms/subject"
 	cmssubject_category "github.com/feihua/zero-admin/api/admin/internal/handler/cms/subject_category"
+	omschain_monitor "github.com/feihua/zero-admin/api/admin/internal/handler/oms/chain_monitor"
 	omscompany_address "github.com/feihua/zero-admin/api/admin/internal/handler/oms/company_address"
 	omsorder_delivery "github.com/feihua/zero-admin/api/admin/internal/handler/oms/order_delivery"
 	omsorder_main "github.com/feihua/zero-admin/api/admin/internal/handler/oms/order_main"
@@ -34,6 +35,7 @@ import (
 	smshome_new_product "github.com/feihua/zero-admin/api/admin/internal/handler/sms/home_new_product"
 	smshome_recommend_product "github.com/feihua/zero-admin/api/admin/internal/handler/sms/home_recommend_product"
 	smshome_recommend_subject "github.com/feihua/zero-admin/api/admin/internal/handler/sms/home_recommend_subject"
+	smsoperate_dashboard "github.com/feihua/zero-admin/api/admin/internal/handler/sms/operate_dashboard"
 	smsseckill_activity "github.com/feihua/zero-admin/api/admin/internal/handler/sms/seckill_activity"
 	smsseckill_product "github.com/feihua/zero-admin/api/admin/internal/handler/sms/seckill_product"
 	smsseckill_reservation "github.com/feihua/zero-admin/api/admin/internal/handler/sms/seckill_reservation"
@@ -259,6 +261,21 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			[]rest.Route{
 				{
 					Method:  http.MethodPost,
+					Path:    "/escalateChain",
+					Handler: omschain_monitor.EscalateChainHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/exportChainMonitorList",
+					Handler: omschain_monitor.ExportChainMonitorListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/pauseChain",
+					Handler: omschain_monitor.PauseChainHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
 					Path:    "/closeOrder",
 					Handler: omsorder_main.CloseOrderHandler(serverCtx),
 				},
@@ -281,6 +298,26 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Method:  http.MethodGet,
 					Path:    "/queryOrderMainList",
 					Handler: omsorder_main.QueryOrderMainListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryChainActions",
+					Handler: omschain_monitor.QueryChainActionsHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryChainMonitorList",
+					Handler: omschain_monitor.QueryChainMonitorListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/replayChain",
+					Handler: omschain_monitor.ReplayChainHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/retryChain",
+					Handler: omschain_monitor.RetryChainHandler(serverCtx),
 				},
 				{
 					Method:  http.MethodPost,
@@ -1181,6 +1218,21 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		),
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
 		rest.WithPrefix("/api/sms/seckillActivity"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.CheckUrl},
+			[]rest.Route{
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryOperateFunnelDashboard",
+					Handler: smsoperate_dashboard.QueryOperateFunnelDashboardHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/sms/operateDashboard"),
 	)
 
 	server.AddRoutes(
