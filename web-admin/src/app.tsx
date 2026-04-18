@@ -1,11 +1,11 @@
-import {Settings as LayoutSettings, MenuDataItem} from '@ant-design/pro-layout';
-import {PageLoading} from '@ant-design/pro-layout';
-import {RunTimeLayoutConfig} from 'umi';
-import {history} from 'umi';
+import React, { useEffect } from 'react';
+import { Settings as LayoutSettings, MenuDataItem, PageLoading } from '@ant-design/pro-layout';
+import { Modal, message, notification } from 'antd';
+import { history, RunTimeLayoutConfig, useLocation } from 'umi';
 import RightContent from '@/components/RightContent';
-import {currentUser as queryCurrentUser} from './services/ant-design-pro/api';
+import { currentUser as queryCurrentUser } from './services/ant-design-pro/api';
 import defaultSettings from '../config/defaultSettings';
-import {tree} from "@/utils/utils";
+import { tree } from '@/utils/utils';
 import {
   SmileOutlined,
   HeartOutlined,
@@ -16,27 +16,107 @@ import {
   DollarCircleOutlined,
   AlertOutlined,
 } from '@ant-design/icons';
-import {RequestConfig,} from "@@/plugin-request/request";
-import {RequestInterceptor, RequestOptionsInit} from 'umi-request';
-import {message, notification} from "antd";
+import { RequestConfig } from '@@/plugin-request/request';
+import { RequestInterceptor, RequestOptionsInit } from 'umi-request';
 
 const IconMap = {
-  SmileOutlined: <SmileOutlined/>,
-  HeartOutlined: <HeartOutlined/>,
-  SettingOutlined: <SettingOutlined/>,
-  DeleteOutlined: <DeleteOutlined/>,
-  FrownOutlined: <FrownOutlined/>,
-  GiftOutlined: <GiftOutlined/>,
-  DollarCircleOutlined: <DollarCircleOutlined/>,
-  AlertOutlined: <AlertOutlined/>,
+  SmileOutlined: <SmileOutlined />,
+  HeartOutlined: <HeartOutlined />,
+  SettingOutlined: <SettingOutlined />,
+  DeleteOutlined: <DeleteOutlined />,
+  FrownOutlined: <FrownOutlined />,
+  GiftOutlined: <GiftOutlined />,
+  DollarCircleOutlined: <DollarCircleOutlined />,
+  AlertOutlined: <AlertOutlined />,
 };
-
 
 const loginPath = '/user/login';
 
+const isVisibleOverlayNode = (selector: string) => {
+  if (typeof document === 'undefined') {
+    return false;
+  }
+
+  return Array.from(document.querySelectorAll<HTMLElement>(selector)).some((node) => {
+    const style = window.getComputedStyle(node);
+    const rect = node.getBoundingClientRect();
+
+    return (
+      style.display !== 'none' &&
+      style.visibility !== 'hidden' &&
+      style.opacity !== '0' &&
+      rect.width > 0 &&
+      rect.height > 0
+    );
+  });
+};
+
+const cleanupOrphanAntdOverlays = () => {
+  if (typeof document === 'undefined') {
+    return;
+  }
+
+  const hasVisibleDialog =
+    isVisibleOverlayNode('.ant-modal-wrap') ||
+    isVisibleOverlayNode('.ant-drawer-content-wrapper') ||
+    isVisibleOverlayNode('.ant-tour');
+
+  if (hasVisibleDialog) {
+    return;
+  }
+
+  const hasResidualOverlay =
+    document.querySelector('.ant-modal-mask, .ant-drawer-mask, .ant-tour-mask, .ant-spin-blur') !==
+      null || document.body.classList.contains('ant-scrolling-effect');
+
+  if (!hasResidualOverlay) {
+    return;
+  }
+
+  Modal.destroyAll();
+
+  document
+    .querySelectorAll(
+      '.ant-modal-root, .ant-modal-mask, .ant-modal-wrap, .ant-drawer-mask, .ant-drawer-content-wrapper, .ant-tour, .ant-tour-mask',
+    )
+    .forEach((node) => node.remove());
+
+  document.querySelectorAll('.ant-spin-blur').forEach((node) => {
+    node.classList.remove('ant-spin-blur');
+  });
+
+  document.body.classList.remove('ant-scrolling-effect');
+  document.body.style.removeProperty('overflow');
+  document.body.style.removeProperty('overflow-x');
+  document.body.style.removeProperty('overflow-y');
+};
+
+const OverlayCleanupGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const location = useLocation();
+
+  useEffect(() => {
+    cleanupOrphanAntdOverlays();
+
+    const fastTimer = window.setTimeout(() => {
+      cleanupOrphanAntdOverlays();
+    }, 200);
+
+    const slowTimer = window.setTimeout(() => {
+      cleanupOrphanAntdOverlays();
+    }, 1200);
+
+    return () => {
+      window.clearTimeout(fastTimer);
+      window.clearTimeout(slowTimer);
+    };
+  }, [location.pathname]);
+
+  return <>{children}</>;
+};
+
 /** 获取用户信息比较慢的时候会展示一个 loading */
 export const initialStateConfig = {
-  loading: <PageLoading/>,
+  loading: <PageLoading />,
 };
 
 /**
@@ -74,34 +154,30 @@ export async function getInitialState(): Promise<{
 }
 
 // ProLayout 支持的api https://procomponents.ant.design/components/layout
-export const layout: RunTimeLayoutConfig = ({initialState, setInitialState}) => {
+export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) => {
   return {
-    rightContentRender: () => <RightContent/>,
+    rightContentRender: () => <RightContent />,
     disableContentMargin: false,
     waterMarkProps: {
       content: initialState?.currentUser?.data.name,
     },
     menuDataRender: () => menuDataRender(),
     onPageChange: () => {
-      const {location} = history;
+      const { location } = history;
       // 如果没有登录，重定向到 login
       if (!initialState?.currentUser && location.pathname !== loginPath) {
         history.push(loginPath);
       }
     },
     menu: {
-      locale: false
+      locale: false,
     },
     menuHeaderRender: undefined,
     // 自定义 403 页面
     // unAccessible: <div>unAccessible</div>,
     // 增加一个 loading 的状态
     childrenRender: (children, props) => {
-      return (
-        <>
-          {children}
-        </>
-      );
+      return <OverlayCleanupGuard>{children}</OverlayCleanupGuard>;
     },
     ...initialState?.settings,
   };
@@ -116,7 +192,7 @@ const menuDataRender: any = () => {
 };
 
 const loopMenuItem = (menus: any[]): MenuDataItem[] =>
-  menus.map(({icon, children, ...item}) => {
+  menus.map(({ icon, children, ...item }) => {
     return {
       ...item,
       icon: icon && IconMap[icon as string],
@@ -147,17 +223,16 @@ const codeMessage = {
  * 异常处理程序
  */
 const errorHandler = (error: any) => {
-  console.log("error：", error)
-  const {response} = error;
+  console.log('error：', error);
+  const { response } = error;
   if (response && response.status) {
     const errorText = codeMessage[response.status] || response.statusText;
-    const {status, url} = response;
+    const { status, url } = response;
 
     notification.error({
       message: `请求错误 ${status}: ${url}`,
       description: errorText,
     });
-
   }
 
   if (!response) {
@@ -171,7 +246,7 @@ const errorHandler = (error: any) => {
 
 // 请求拦截
 const addToken: RequestInterceptor = (url: string, options: RequestOptionsInit) => {
-  const {method, data, params} = options
+  const { method, data, params } = options;
   options.headers = {
     Authorization: 'Bearer ' + localStorage.getItem('token'),
   };
@@ -182,14 +257,14 @@ const addToken: RequestInterceptor = (url: string, options: RequestOptionsInit) 
   //   options.data = data
   // }
 
-  console.log("请求地址：" + method + ': ' + url)
+  console.log('请求地址：' + method + ': ' + url);
   if (JSON.stringify(data) != undefined) {
-    console.log("请求参数：" + JSON.stringify(data))
+    console.log('请求参数：' + JSON.stringify(data));
   }
   if (JSON.stringify(params) != undefined) {
-    console.log("请求参数：" + JSON.stringify(params))
+    console.log('请求参数：' + JSON.stringify(params));
   }
-  return {url, options};
+  return { url, options };
 };
 
 // 响应拦截
@@ -197,7 +272,7 @@ const addToken: RequestInterceptor = (url: string, options: RequestOptionsInit) 
 const res: ResponseInterceptor = async (response: Response) => {
   if (response.status === 401) {
     history.push(loginPath);
-    localStorage.removeItem("token")
+    localStorage.removeItem('token');
     return response;
   }
   const resp = await response.clone().json();
@@ -205,7 +280,7 @@ const res: ResponseInterceptor = async (response: Response) => {
 
   if (resp.code === '111111') {
     message.error(resp.message);
-    return {success: false};
+    return { success: false };
   }
 
   // const {code, success, msg} = resp;
@@ -219,7 +294,7 @@ const res: ResponseInterceptor = async (response: Response) => {
   // }
 
   return response;
-}
+};
 
 export const request: RequestConfig = {
   errorHandler,
