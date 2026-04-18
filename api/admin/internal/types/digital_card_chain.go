@@ -1,24 +1,24 @@
 package types
 
 type QueryDigitalCardChainListReq struct {
-	ScopeType      string `form:"scopeType,optional" json:"scopeType"`
-	PlatformId     int64  `form:"platformId,optional" json:"platformId"`
-	TenantId       int64  `form:"tenantId,optional" json:"tenantId"`
-	MerchantId     int64  `form:"merchantId,optional" json:"merchantId"`
-	PageSize       int    `form:"pageSize,default=20" json:"pageSize"`
-	Current        int    `form:"current,default=1" json:"current"`
-	ActivityId     int64  `form:"activityId,optional" json:"activityId"`
-	ActivityName   string `form:"activityName,optional" json:"activityName"`
-	MemberId       int64  `form:"memberId,optional" json:"memberId"`
-	TemplateId     int64  `form:"templateId,optional" json:"templateId"`
-	AssetNo        string `form:"assetNo,optional" json:"assetNo"`
-	TokenId        string `form:"tokenId,optional" json:"tokenId"`
-	TaskStatus     string `form:"taskStatus,optional" json:"taskStatus"`
-	MintStatus     string `form:"mintStatus,optional" json:"mintStatus"`
-	ChainStatus    string `form:"chainStatus,optional" json:"chainStatus"`
-	ManualRequired int32  `form:"manualRequired,optional" json:"manualRequired"`
-	StartTime      string `form:"startTime,optional" json:"startTime"`
-	EndTime        string `form:"endTime,optional" json:"endTime"`
+	ScopeType      string `form:"scopeType,optional"`
+	PlatformId     int64  `form:"platformId,optional"`
+	TenantId       int64  `form:"tenantId,optional"`
+	MerchantId     int64  `form:"merchantId,optional"`
+	PageSize       int    `form:"pageSize,default=20"`
+	Current        int    `form:"current,default=1"`
+	ActivityId     int64  `form:"activityId,optional"`
+	ActivityName   string `form:"activityName,optional"`
+	MemberId       int64  `form:"memberId,optional"`
+	TemplateId     int64  `form:"templateId,optional"`
+	AssetNo        string `form:"assetNo,optional"`
+	TokenId        string `form:"tokenId,optional"`
+	TaskStatus     string `form:"taskStatus,optional"`
+	MintStatus     string `form:"mintStatus,optional"`
+	ChainStatus    string `form:"chainStatus,optional"`
+	ManualRequired int32  `form:"manualRequired,optional"`
+	StartTime      string `form:"startTime,optional"`
+	EndTime        string `form:"endTime,optional"`
 }
 
 type DigitalCardChainItem struct {
@@ -65,7 +65,7 @@ type QueryDigitalCardChainListResp struct {
 }
 
 type QueryDigitalCardChainDetailReq struct {
-	TaskId int64 `form:"taskId" json:"taskId"`
+	TaskId int64 `form:"taskId"`
 }
 
 type DigitalCardChainLogItem struct {
@@ -119,7 +119,7 @@ type DigitalCardChainActionResp struct {
 }
 
 type QueryDigitalCardChainActionsReq struct {
-	TaskId int64 `form:"taskId" json:"taskId"`
+	TaskId int64 `form:"taskId"`
 }
 
 type QueryDigitalCardChainActionsResp struct {

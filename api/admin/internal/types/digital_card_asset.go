@@ -1,29 +1,36 @@
 package types
 
 type DigitalCardAssetGovernanceScopeReq struct {
-	ScopeType  string `form:"scopeType,optional" json:"scopeType"`
-	PlatformId int64  `form:"platformId,optional" json:"platformId"`
-	TenantId   int64  `form:"tenantId,optional" json:"tenantId"`
-	MerchantId int64  `form:"merchantId,optional" json:"merchantId"`
+	ScopeType  string `form:"scopeType,optional" json:"scopeType,optional"`
+	PlatformId int64  `form:"platformId,optional" json:"platformId,optional"`
+	TenantId   int64  `form:"tenantId,optional" json:"tenantId,optional"`
+	MerchantId int64  `form:"merchantId,optional" json:"merchantId,optional"`
+}
+
+type DigitalCardAssetQueryGovernanceScopeReq struct {
+	ScopeType  string `form:"scopeType,optional"`
+	PlatformId int64  `form:"platformId,optional"`
+	TenantId   int64  `form:"tenantId,optional"`
+	MerchantId int64  `form:"merchantId,optional"`
 }
 
 type QueryDigitalCardAssetListReq struct {
-	DigitalCardAssetGovernanceScopeReq
-	PageSize         int    `form:"pageSize,default=20" json:"pageSize"`
-	Current          int    `form:"current,default=1" json:"current"`
-	ActivityId       int64  `form:"activityId,optional" json:"activityId"`
-	ActivityName     string `form:"activityName,optional" json:"activityName"`
-	MemberId         int64  `form:"memberId,optional" json:"memberId"`
-	TemplateId       int64  `form:"templateId,optional" json:"templateId"`
-	TemplateName     string `form:"templateName,optional" json:"templateName"`
-	AssetNo          string `form:"assetNo,optional" json:"assetNo"`
-	TokenId          string `form:"tokenId,optional" json:"tokenId"`
-	MintStatus       string `form:"mintStatus,optional" json:"mintStatus"`
-	ChainStatus      string `form:"chainStatus,optional" json:"chainStatus"`
-	DisplayStatus    string `form:"displayStatus,optional" json:"displayStatus"`
-	ComplianceStatus string `form:"complianceStatus,optional" json:"complianceStatus"`
-	StartTime        string `form:"startTime,optional" json:"startTime"`
-	EndTime          string `form:"endTime,optional" json:"endTime"`
+	DigitalCardAssetQueryGovernanceScopeReq
+	PageSize         int    `form:"pageSize,default=20"`
+	Current          int    `form:"current,default=1"`
+	ActivityId       int64  `form:"activityId,optional"`
+	ActivityName     string `form:"activityName,optional"`
+	MemberId         int64  `form:"memberId,optional"`
+	TemplateId       int64  `form:"templateId,optional"`
+	TemplateName     string `form:"templateName,optional"`
+	AssetNo          string `form:"assetNo,optional"`
+	TokenId          string `form:"tokenId,optional"`
+	MintStatus       string `form:"mintStatus,optional"`
+	ChainStatus      string `form:"chainStatus,optional"`
+	DisplayStatus    string `form:"displayStatus,optional"`
+	ComplianceStatus string `form:"complianceStatus,optional"`
+	StartTime        string `form:"startTime,optional"`
+	EndTime          string `form:"endTime,optional"`
 }
 
 type DigitalCardAssetItem struct {
@@ -70,7 +77,7 @@ type QueryDigitalCardAssetListResp struct {
 }
 
 type QueryDigitalCardAssetDetailReq struct {
-	AssetInstanceId int64 `form:"assetInstanceId" json:"assetInstanceId"`
+	AssetInstanceId int64 `form:"assetInstanceId"`
 }
 
 type DigitalCardAssetParticipationSummary struct {
@@ -128,7 +135,7 @@ type QueryDigitalCardAssetDetailResp struct {
 }
 
 type QueryDigitalCardAssetLogsReq struct {
-	AssetInstanceId int64 `form:"assetInstanceId" json:"assetInstanceId"`
+	AssetInstanceId int64 `form:"assetInstanceId"`
 }
 
 type QueryDigitalCardAssetLogsResp struct {
