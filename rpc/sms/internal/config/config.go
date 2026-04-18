@@ -17,11 +17,12 @@ type Config struct {
 	}
 
 	AntChain struct {
-		Endpoint       string
-		AppId          string
-		AccessKey      string
-		Secret         string
-		TimeoutSeconds int64
-		Enabled        bool
+		Endpoint        string
+		ReceiptEndpoint string
+		AppId           string
+		AccessKey       string
+		Secret          string
+		TimeoutSeconds  int64
+		Enabled         bool
 	}
 }

@@ -1,0 +1,177 @@
+import "../base/base.api"
+
+info (
+	desc:   "数字卡片资产工作台"
+	author: "Codex"
+)
+
+type (
+	DigitalCardAssetGovernanceScopeReq {
+		ScopeType  string `json:"scopeType,optional" form:"scopeType,optional"` // 主体范围(platform/tenant/merchant)
+		PlatformId int64  `json:"platformId,optional" form:"platformId,optional"` // 平台ID
+		TenantId   int64  `json:"tenantId,optional" form:"tenantId,optional"` // 租户ID
+		MerchantId int64  `json:"merchantId,optional" form:"merchantId,optional"` // 商户ID
+	}
+	QueryDigitalCardAssetListReq {
+		DigitalCardAssetGovernanceScopeReq
+		Current          int32  `form:"current,default=1"` // 页码
+		PageSize         int32  `form:"pageSize,default=20"` // 每页条数
+		ActivityId       int64  `form:"activityId,optional"` // 活动ID
+		ActivityName     string `form:"activityName,optional"` // 活动名称
+		MemberId         int64  `form:"memberId,optional"` // 会员ID
+		TemplateId       int64  `form:"templateId,optional"` // 模板ID
+		TemplateName     string `form:"templateName,optional"` // 模板名称
+		AssetNo          string `form:"assetNo,optional"` // 资产编号
+		TokenId          string `form:"tokenId,optional"` // tokenId
+		MintStatus       string `form:"mintStatus,optional"` // 发放状态
+		ChainStatus      string `form:"chainStatus,optional"` // 链上状态
+		DisplayStatus    string `form:"displayStatus,optional"` // 展示状态
+		ComplianceStatus string `form:"complianceStatus,optional"` // 合规状态
+		StartTime        string `form:"startTime,optional"` // 开始时间
+		EndTime          string `form:"endTime,optional"` // 结束时间
+	}
+	DigitalCardAssetItem {
+		AssetInstanceId       int64  `json:"assetInstanceId"` // 资产实例ID
+		AssetNo               string `json:"assetNo"` // 资产编号
+		MemberId              int64  `json:"memberId"` // 会员ID
+		ActivityId            int64  `json:"activityId"` // 活动ID
+		ActivityName          string `json:"activityName"` // 活动名称
+		TemplateId            int64  `json:"templateId"` // 模板ID
+		TemplateName          string `json:"templateName"` // 模板名称
+		CardFaceImage         string `json:"cardFaceImage"` // 卡面资源
+		Rarity                string `json:"rarity"` // 稀有度
+		TokenId               string `json:"tokenId"` // tokenId
+		MintTaskId            int64  `json:"mintTaskId"` // 发放任务ID
+		MintStatus            string `json:"mintStatus"` // 发放状态
+		MintStatusText        string `json:"mintStatusText"` // 发放状态文案
+		ChainStatus           string `json:"chainStatus"` // 链上状态
+		ChainStatusText       string `json:"chainStatusText"` // 链上状态文案
+		DisplayStatus         string `json:"displayStatus"` // 展示状态
+		DisplayStatusText     string `json:"displayStatusText"` // 展示状态文案
+		ComplianceStatus      string `json:"complianceStatus"` // 合规状态
+		ComplianceStatusText  string `json:"complianceStatusText"` // 合规状态文案
+		TokenStatusText       string `json:"tokenStatusText"` // token 展示文案
+		ComplianceRuleSummary string `json:"complianceRuleSummary"` // 合规摘要
+		LastReceiptSummary    string `json:"lastReceiptSummary"` // 最近回执摘要
+		ObtainedAt            string `json:"obtainedAt"` // 获取时间
+		DisposedAt            string `json:"disposedAt"` // 最近处置时间
+		LatestReasonSummary   string `json:"latestReasonSummary"` // 最近原因摘要
+	}
+	QueryDigitalCardAssetListData {
+		List  []DigitalCardAssetItem `json:"list"` // 列表
+		Total int64                  `json:"total"` // 总数
+	}
+	QueryDigitalCardAssetListResp {
+		Code     string                      `json:"code"`
+		Message  string                      `json:"message"`
+		Data     QueryDigitalCardAssetListData `json:"data"`
+		Current  int32                       `json:"current"`
+		PageSize int32                       `json:"pageSize"`
+		Total    int64                       `json:"total"`
+		Success  bool                        `json:"success"`
+	}
+	QueryDigitalCardAssetDetailReq {
+		AssetInstanceId int64 `form:"assetInstanceId"` // 资产实例ID
+	}
+	DigitalCardAssetParticipationSummary {
+		ParticipationRecordId int64  `json:"participationRecordId"` // 抽卡记录ID
+		RequestId             string `json:"requestId"` // 请求ID
+		ResultType            string `json:"resultType"` // 结果类型
+		ResultStatus          string `json:"resultStatus"` // 结果状态
+		ResultStatusText      string `json:"resultStatusText"` // 结果状态文案
+		FailureReason         string `json:"failureReason"` // 失败原因
+		CreateTime            string `json:"createTime"` // 参与时间
+	}
+	DigitalCardAssetMintTaskSummary {
+		TaskId             int64    `json:"taskId"` // 发放任务ID
+		RequestId          string   `json:"requestId"` // 请求ID
+		TraceId            string   `json:"traceId"` // traceId
+		TaskStatus         string   `json:"taskStatus"` // 任务状态
+		TaskStatusText     string   `json:"taskStatusText"` // 任务状态文案
+		MintStatus         string   `json:"mintStatus"` // 发放状态
+		MintStatusText     string   `json:"mintStatusText"` // 发放状态文案
+		ChainStatus        string   `json:"chainStatus"` // 链上状态
+		ChainStatusText    string   `json:"chainStatusText"` // 链上状态文案
+		ChainTxId          string   `json:"chainTxId"` // 链上交易ID
+		LastReceiptSummary string   `json:"lastReceiptSummary"` // 最近回执摘要
+		AvailableActions   []string `json:"availableActions"` // 可复用链路动作
+	}
+	DigitalCardAssetLogItem {
+		OperationType string `json:"operationType"` // 操作类型
+		OperatorType  string `json:"operatorType"` // 操作者类型
+		FromStatus    string `json:"fromStatus"` // 原状态
+		ToStatus      string `json:"toStatus"` // 新状态
+		ReasonText    string `json:"reasonText"` // 原因
+		TraceId       string `json:"traceId"` // traceId
+		PayloadJson   string `json:"payloadJson"` // 扩展负载
+		CreateTime    string `json:"createTime"` // 创建时间
+	}
+	DigitalCardAssetDetailData {
+		Item                  DigitalCardAssetItem                 `json:"item"` // 资产主体
+		ParticipationSummary  DigitalCardAssetParticipationSummary `json:"participationSummary"` // 抽卡来源摘要
+		MintTaskSummary       DigitalCardAssetMintTaskSummary      `json:"mintTaskSummary"` // 发放任务摘要
+		TraceId               string                               `json:"traceId"` // 最近 traceId
+		RequestId             string                               `json:"requestId"` // 请求ID
+		RuleSnapshotJson      string                               `json:"ruleSnapshotJson"` // 合规快照
+		Logs                  []DigitalCardAssetLogItem            `json:"logs"` // 完整时间线
+		AvailableAssetActions []string                             `json:"availableAssetActions"` // 资产级动作
+	}
+	QueryDigitalCardAssetDetailResp {
+		Code    string                     `json:"code"`
+		Message string                     `json:"message"`
+		Data    DigitalCardAssetDetailData `json:"data"`
+		Success bool                       `json:"success"`
+	}
+	QueryDigitalCardAssetLogsReq {
+		AssetInstanceId int64 `form:"assetInstanceId"` // 资产实例ID
+	}
+	QueryDigitalCardAssetLogsResp {
+		Code    string                    `json:"code"`
+		Message string                    `json:"message"`
+		Logs    []DigitalCardAssetLogItem `json:"logs"` // 审计日志
+		Success bool                      `json:"success"`
+	}
+	DigitalCardAssetActionReq {
+		DigitalCardAssetGovernanceScopeReq
+		AssetInstanceId int64  `json:"assetInstanceId"` // 资产实例ID
+		Reason          string `json:"reason"` // 处置原因
+	}
+	DigitalCardAssetActionResp {
+		Code                 string `json:"code"`
+		Message              string `json:"message"`
+		AssetInstanceId      int64  `json:"assetInstanceId"` // 资产实例ID
+		DisplayStatus        string `json:"displayStatus"` // 展示状态
+		DisplayStatusText    string `json:"displayStatusText"` // 展示状态文案
+		ComplianceStatus     string `json:"complianceStatus"` // 合规状态
+		ComplianceStatusText string `json:"complianceStatusText"` // 合规状态文案
+		Success              bool   `json:"success"`
+	}
+)
+
+@server (
+	jwt:        Auth
+	middleware: CheckUrl
+	group:      sms/digital_card_asset
+	prefix:     /api/sms/digitalCardAsset
+	tags:       "数字卡片资产工作台"
+	authType:   apiKey
+)
+service admin-api {
+	@handler QueryDigitalCardAssetList
+	get /queryDigitalCardAssetList (QueryDigitalCardAssetListReq) returns (QueryDigitalCardAssetListResp)
+
+	@handler QueryDigitalCardAssetDetail
+	get /queryDigitalCardAssetDetail (QueryDigitalCardAssetDetailReq) returns (QueryDigitalCardAssetDetailResp)
+
+	@handler QueryDigitalCardAssetLogs
+	get /queryDigitalCardAssetLogs (QueryDigitalCardAssetLogsReq) returns (QueryDigitalCardAssetLogsResp)
+
+	@handler ReviewDigitalCardAssetCompliance
+	post /reviewDigitalCardAssetCompliance (DigitalCardAssetActionReq) returns (DigitalCardAssetActionResp)
+
+	@handler OfflineDigitalCardAssetDisplay
+	post /offlineDigitalCardAssetDisplay (DigitalCardAssetActionReq) returns (DigitalCardAssetActionResp)
+
+	@handler RecycleDigitalCardAsset
+	post /recycleDigitalCardAsset (DigitalCardAssetActionReq) returns (DigitalCardAssetActionResp)
+}

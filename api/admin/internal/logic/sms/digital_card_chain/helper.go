@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"strconv"
+	"strings"
 	"time"
 
 	admincommon "github.com/feihua/zero-admin/api/admin/internal/common"
@@ -23,6 +24,13 @@ func resolveDigitalCardChainWriteScope(ctx context.Context, requested admincommo
 		return pkgscope.GovernanceScope{}, errorx.NewDefaultError(err.Error())
 	}
 	return current, nil
+}
+
+func validateActionReason(reason string) error {
+	if strings.TrimSpace(reason) == "" {
+		return errorx.NewDefaultError("处置原因不能为空")
+	}
+	return nil
 }
 
 func mapTaskItem(item *digitalcardmint.TaskListItem) *types.DigitalCardChainItem {

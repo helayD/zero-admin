@@ -1,0 +1,94 @@
+info (
+	desc:   "数字卡片资产中心"
+	author: "Codex"
+	email:  "support@openai.com"
+)
+
+type DigitalCardAssetItem {
+	AssetInstanceId       int64  `json:"assetInstanceId"` //资产实例ID
+	AssetNo               string `json:"assetNo"` //资产编号
+	TemplateId            int64  `json:"templateId"` //模板ID
+	TemplateName          string `json:"templateName"` //模板名称
+	CardFaceImage         string `json:"cardFaceImage"` //卡面资源
+	ActivityId            int64  `json:"activityId"` //活动ID
+	ActivityName          string `json:"activityName"` //活动名称
+	Rarity                string `json:"rarity"` //稀有度
+	ObtainedAt            string `json:"obtainedAt"` //获取时间
+	MintStatus            string `json:"mintStatus"` //发放状态
+	MintStatusText        string `json:"mintStatusText"` //发放状态文案
+	ChainStatus           string `json:"chainStatus"` //链上状态
+	ChainStatusText       string `json:"chainStatusText"` //链上状态文案
+	DisplayStatus         string `json:"displayStatus"` //展示状态
+	DisplayStatusText     string `json:"displayStatusText"` //展示状态文案
+	ComplianceStatus      string `json:"complianceStatus"` //合规状态
+	ComplianceStatusText  string `json:"complianceStatusText"` //合规状态文案
+	TokenStatusText       string `json:"tokenStatusText"` //token 展示状态
+	ComplianceRuleSummary string `json:"complianceRuleSummary"` //合规提示摘要
+}
+
+type QueryMyDigitalCardAssetListReq {
+	PageNum  int32 `form:"pageNum,default=1"` //页码
+	PageSize int32 `form:"pageSize,default=20"` //页大小
+}
+
+type QueryMyDigitalCardAssetListData {
+	Total int64                  `json:"total"` //总数
+	List  []DigitalCardAssetItem `json:"list"` //资产列表
+}
+
+type QueryMyDigitalCardAssetListResp {
+	Code    string                        `json:"code"`
+	Message string                        `json:"message"`
+	Data    QueryMyDigitalCardAssetListData `json:"data"`
+}
+
+type QueryMyDigitalCardAssetDetailReq {
+	AssetInstanceId int64 `form:"assetInstanceId"` //资产实例ID
+}
+
+type DigitalCardAssetTimelineItem {
+	OperationType string `json:"operationType"` //动作编码
+	OperationText string `json:"operationText"` //动作文案
+	StatusText    string `json:"statusText"` //状态文案
+	ReasonText    string `json:"reasonText"` //原因摘要
+	CreateTime    string `json:"createTime"` //时间
+}
+
+type DigitalCardAssetDrawSummary {
+	ParticipationRecordId int64  `json:"participationRecordId"` //抽卡记录ID
+	ResultType            string `json:"resultType"` //结果类型
+	ResultStatus          string `json:"resultStatus"` //结果状态
+	ResultStatusText      string `json:"resultStatusText"` //结果状态文案
+	FailureReason         string `json:"failureReason"` //失败原因
+	CreateTime            string `json:"createTime"` //参与时间
+}
+
+type DigitalCardAssetDetailData {
+	Item                DigitalCardAssetItem            `json:"item"` //资产主体
+	TokenIdMasked       string                          `json:"tokenIdMasked"` //脱敏 tokenId
+	LatestStatusSummary string                          `json:"latestStatusSummary"` //最近状态摘要
+	RestrictionReason   string                          `json:"restrictionReason"` //受限原因
+	DrawSummary         DigitalCardAssetDrawSummary     `json:"drawSummary"` //抽卡摘要
+	Timeline            []DigitalCardAssetTimelineItem `json:"timeline"` //状态时间线
+}
+
+type QueryMyDigitalCardAssetDetailResp {
+	Code    string                     `json:"code"`
+	Message string                     `json:"message"`
+	Data    DigitalCardAssetDetailData `json:"data"`
+}
+
+@server (
+	jwt:      Auth
+	group:    digital_card/digital_card_asset
+	prefix:   /api/digitalCard/asset
+	tags:     "数字卡片资产中心"
+	authType: apiKey
+)
+service front-api {
+	@handler QueryMyDigitalCardAssetList
+	get /queryMyDigitalCardAssetList (QueryMyDigitalCardAssetListReq) returns (QueryMyDigitalCardAssetListResp)
+
+	@handler QueryMyDigitalCardAssetDetail
+	get /queryMyDigitalCardAssetDetail (QueryMyDigitalCardAssetDetailReq) returns (QueryMyDigitalCardAssetDetailResp)
+}

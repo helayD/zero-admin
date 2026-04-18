@@ -89,6 +89,9 @@ Redis:
   Address: 127.0.0.1:6379
   Pass: "123456"
 
+Mysql:
+  Datasource: root:12341qweqfsd2356@tcp(127.0.0.1:3306)/gozero?charset=utf8mb4&parseTime=true&loc=Asia%2FShanghai
+
 UpgradePolicy:
   CurrentVersion: "1.0.0"
   MinSupportedVersion: "1.0.0"

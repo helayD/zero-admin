@@ -16,6 +16,7 @@ Rabbitmq:
 
 AntChain:
   Endpoint: ""
+  ReceiptEndpoint: ""
   AppId: ""
   AccessKey: ""
   Secret: ""

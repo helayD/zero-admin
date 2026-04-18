@@ -50,6 +50,10 @@ type Config struct {
 		Pass    string
 	}
 
+	Mysql struct {
+		Datasource string
+	}
+
 	UpgradePolicy struct {
 		CurrentVersion       string
 		MinSupportedVersion  string

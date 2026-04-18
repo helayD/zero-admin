@@ -14,11 +14,16 @@ import (
 
 type Client interface {
 	MintToken(ctx context.Context, req *MintTokenRequest) (*MintTokenResponse, error)
+	QueryMintToken(ctx context.Context, req *QueryMintTokenRequest) (*MintTokenResponse, error)
 }
 
 type disabledClient struct{}
 
 func (disabledClient) MintToken(context.Context, *MintTokenRequest) (*MintTokenResponse, error) {
+	return nil, errors.New("蚂蚁链能力未启用")
+}
+
+func (disabledClient) QueryMintToken(context.Context, *QueryMintTokenRequest) (*MintTokenResponse, error) {
 	return nil, errors.New("蚂蚁链能力未启用")
 }
 
@@ -28,27 +33,50 @@ type httpClient struct {
 }
 
 type mintTokenHTTPPayload struct {
-	AppID          string `json:"appId"`
-	AccessKey      string `json:"accessKey"`
-	Secret         string `json:"secret"`
-	IdempotencyKey string `json:"idempotencyKey"`
-	TaskID         int64  `json:"taskId"`
-	AssetInstanceID int64 `json:"assetInstanceId"`
-	ActivityID     int64  `json:"activityId"`
-	TemplateID     int64  `json:"templateId"`
-	MemberID       int64  `json:"memberId"`
-	RequestID      string `json:"requestId"`
-	TraceID        string `json:"traceId"`
-	AssetNo        string `json:"assetNo"`
-	ScopeType      string `json:"scopeType"`
-	PlatformID     int64  `json:"platformId"`
-	TenantID       int64  `json:"tenantId"`
-	MerchantID     int64  `json:"merchantId"`
+	AppID           string `json:"appId"`
+	AccessKey       string `json:"accessKey"`
+	Secret          string `json:"secret"`
+	IdempotencyKey  string `json:"idempotencyKey"`
+	TaskID          int64  `json:"taskId"`
+	AssetInstanceID int64  `json:"assetInstanceId"`
+	ActivityID      int64  `json:"activityId"`
+	TemplateID      int64  `json:"templateId"`
+	MemberID        int64  `json:"memberId"`
+	RequestID       string `json:"requestId"`
+	TraceID         string `json:"traceId"`
+	AssetNo         string `json:"assetNo"`
+	ScopeType       string `json:"scopeType"`
+	PlatformID      int64  `json:"platformId"`
+	TenantID        int64  `json:"tenantId"`
+	MerchantID      int64  `json:"merchantId"`
+}
+
+type queryMintTokenHTTPPayload struct {
+	AppID           string `json:"appId"`
+	AccessKey       string `json:"accessKey"`
+	Secret          string `json:"secret"`
+	IdempotencyKey  string `json:"idempotencyKey"`
+	TaskID          int64  `json:"taskId"`
+	AssetInstanceID int64  `json:"assetInstanceId"`
+	RequestID       string `json:"requestId"`
+	TraceID         string `json:"traceId"`
 }
 
 type mintTokenHTTPResponse struct {
 	Code           string `json:"code"`
 	Message        string `json:"message"`
+	TokenID        string `json:"tokenId"`
+	ChainTxID      string `json:"chainTxId"`
+	ChainStatus    string `json:"chainStatus"`
+	ReceiptSummary string `json:"receiptSummary"`
+	ReceiptJSON    string `json:"receiptJson"`
+	ConfirmedAt    string `json:"confirmedAt"`
+}
+
+type queryMintTokenHTTPResponse struct {
+	Code           string `json:"code"`
+	Message        string `json:"message"`
+	Found          bool   `json:"found"`
 	TokenID        string `json:"tokenId"`
 	ChainTxID      string `json:"chainTxId"`
 	ChainStatus    string `json:"chainStatus"`
@@ -79,37 +107,102 @@ func (c *httpClient) MintToken(ctx context.Context, req *MintTokenRequest) (*Min
 	}
 
 	payload := mintTokenHTTPPayload{
-		AppID:          strings.TrimSpace(c.cfg.AppID),
-		AccessKey:      strings.TrimSpace(c.cfg.AccessKey),
-		Secret:         strings.TrimSpace(c.cfg.Secret),
-		IdempotencyKey: strings.TrimSpace(req.IdempotencyKey),
-		TaskID:         req.TaskID,
+		AppID:           strings.TrimSpace(c.cfg.AppID),
+		AccessKey:       strings.TrimSpace(c.cfg.AccessKey),
+		Secret:          strings.TrimSpace(c.cfg.Secret),
+		IdempotencyKey:  strings.TrimSpace(req.IdempotencyKey),
+		TaskID:          req.TaskID,
 		AssetInstanceID: req.AssetInstanceID,
-		ActivityID:     req.ActivityID,
-		TemplateID:     req.TemplateID,
-		MemberID:       req.MemberID,
-		RequestID:      strings.TrimSpace(req.RequestID),
-		TraceID:        strings.TrimSpace(req.TraceID),
-		AssetNo:        strings.TrimSpace(req.AssetNo),
-		ScopeType:      strings.TrimSpace(req.ScopeType),
-		PlatformID:     req.PlatformID,
-		TenantID:       req.TenantID,
-		MerchantID:     req.MerchantID,
+		ActivityID:      req.ActivityID,
+		TemplateID:      req.TemplateID,
+		MemberID:        req.MemberID,
+		RequestID:       strings.TrimSpace(req.RequestID),
+		TraceID:         strings.TrimSpace(req.TraceID),
+		AssetNo:         strings.TrimSpace(req.AssetNo),
+		ScopeType:       strings.TrimSpace(req.ScopeType),
+		PlatformID:      req.PlatformID,
+		TenantID:        req.TenantID,
+		MerchantID:      req.MerchantID,
 	}
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return nil, err
 	}
 
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, strings.TrimSpace(c.cfg.Endpoint), bytes.NewReader(body))
+	raw, statusCode, err := c.doJSONRequest(ctx, strings.TrimSpace(c.cfg.Endpoint), body)
 	if err != nil {
 		return nil, err
+	}
+	if statusCode >= http.StatusBadRequest {
+		return nil, fmt.Errorf("蚂蚁链请求失败: http %d %s", statusCode, strings.TrimSpace(string(raw)))
+	}
+	return parseMintTokenResponse(raw)
+}
+
+func (c *httpClient) QueryMintToken(ctx context.Context, req *QueryMintTokenRequest) (*MintTokenResponse, error) {
+	if req == nil {
+		return nil, errors.New("query request 不能为空")
+	}
+
+	payload := queryMintTokenHTTPPayload{
+		AppID:           strings.TrimSpace(c.cfg.AppID),
+		AccessKey:       strings.TrimSpace(c.cfg.AccessKey),
+		Secret:          strings.TrimSpace(c.cfg.Secret),
+		IdempotencyKey:  strings.TrimSpace(req.IdempotencyKey),
+		TaskID:          req.TaskID,
+		AssetInstanceID: req.AssetInstanceID,
+		RequestID:       strings.TrimSpace(req.RequestID),
+		TraceID:         strings.TrimSpace(req.TraceID),
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	raw, statusCode, err := c.doJSONRequest(ctx, c.receiptEndpoint(), body)
+	if err != nil {
+		return nil, err
+	}
+	if statusCode == http.StatusNotFound {
+		return nil, ErrReceiptNotFound
+	}
+	if statusCode >= http.StatusBadRequest {
+		return nil, fmt.Errorf("蚂蚁链回执查询失败: http %d %s", statusCode, strings.TrimSpace(string(raw)))
+	}
+
+	var result queryMintTokenHTTPResponse
+	if err = json.Unmarshal(raw, &result); err != nil {
+		return nil, err
+	}
+	if codeIndicatesNotFound(result.Code) {
+		return nil, ErrReceiptNotFound
+	}
+	if strings.TrimSpace(result.Code) != "" && result.Code != "0" && !strings.EqualFold(result.Code, "success") {
+		return nil, fmt.Errorf("蚂蚁链回执查询失败: %s", firstNonEmpty(result.Message, result.Code))
+	}
+	if !result.Found && strings.TrimSpace(result.TokenID) == "" {
+		return nil, ErrReceiptNotFound
+	}
+	return buildMintTokenResponse(
+		result.TokenID,
+		result.ChainTxID,
+		result.ChainStatus,
+		result.ReceiptSummary,
+		result.ReceiptJSON,
+		result.ConfirmedAt,
+	), nil
+}
+
+func (c *httpClient) doJSONRequest(ctx context.Context, endpoint string, body []byte) ([]byte, int, error) {
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, strings.TrimSpace(endpoint), bytes.NewReader(body))
+	if err != nil {
+		return nil, 0, err
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 
 	resp, err := c.httpClient.Do(httpReq)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer func() {
 		_ = resp.Body.Close()
@@ -117,33 +210,55 @@ func (c *httpClient) MintToken(ctx context.Context, req *MintTokenRequest) (*Min
 
 	raw, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	if resp.StatusCode >= http.StatusBadRequest {
-		return nil, fmt.Errorf("蚂蚁链请求失败: http %d %s", resp.StatusCode, strings.TrimSpace(string(raw)))
-	}
+	return raw, resp.StatusCode, nil
+}
 
+func (c *httpClient) receiptEndpoint() string {
+	return firstNonEmpty(strings.TrimSpace(c.cfg.ReceiptEndpoint), strings.TrimSpace(c.cfg.Endpoint))
+}
+
+func parseMintTokenResponse(raw []byte) (*MintTokenResponse, error) {
 	var result mintTokenHTTPResponse
-	if err = json.Unmarshal(raw, &result); err != nil {
+	if err := json.Unmarshal(raw, &result); err != nil {
 		return nil, err
 	}
 	if strings.TrimSpace(result.Code) != "" && result.Code != "0" && !strings.EqualFold(result.Code, "success") {
 		return nil, fmt.Errorf("蚂蚁链发放失败: %s", firstNonEmpty(result.Message, result.Code))
 	}
+	return buildMintTokenResponse(
+		result.TokenID,
+		result.ChainTxID,
+		result.ChainStatus,
+		result.ReceiptSummary,
+		result.ReceiptJSON,
+		result.ConfirmedAt,
+	), nil
+}
 
+func buildMintTokenResponse(tokenID, chainTxID, chainStatus, receiptSummary, receiptJSON, confirmedAtRaw string) *MintTokenResponse {
 	confirmedAt := time.Now()
-	if parsed, parseErr := time.Parse(time.RFC3339, strings.TrimSpace(result.ConfirmedAt)); parseErr == nil {
+	if parsed, parseErr := time.Parse(time.RFC3339, strings.TrimSpace(confirmedAtRaw)); parseErr == nil {
 		confirmedAt = parsed
 	}
-
 	return &MintTokenResponse{
-		TokenID:        strings.TrimSpace(result.TokenID),
-		ChainTxID:      strings.TrimSpace(result.ChainTxID),
-		ChainStatus:    firstNonEmpty(strings.TrimSpace(result.ChainStatus), "success"),
-		ReceiptSummary: strings.TrimSpace(result.ReceiptSummary),
-		ReceiptJSON:    strings.TrimSpace(result.ReceiptJSON),
+		TokenID:        strings.TrimSpace(tokenID),
+		ChainTxID:      strings.TrimSpace(chainTxID),
+		ChainStatus:    firstNonEmpty(strings.TrimSpace(chainStatus), "success"),
+		ReceiptSummary: strings.TrimSpace(receiptSummary),
+		ReceiptJSON:    strings.TrimSpace(receiptJSON),
 		ConfirmedAt:    confirmedAt,
-	}, nil
+	}
+}
+
+func codeIndicatesNotFound(code string) bool {
+	switch strings.ToLower(strings.TrimSpace(code)) {
+	case "404", "not_found", "receipt_not_found":
+		return true
+	default:
+		return false
+	}
 }
 
 func firstNonEmpty(values ...string) string {
@@ -154,4 +269,3 @@ func firstNonEmpty(values ...string) string {
 	}
 	return ""
 }
-

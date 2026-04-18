@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/feihua/zero-admin/pkg/antchain"
+	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -214,9 +215,12 @@ func (p *countingPublisher) SendMessage(string, string, string, string, []byte) 
 }
 
 type stubAntChainClient struct {
-	response *antchain.MintTokenResponse
-	err      error
-	calls    int
+	response      *antchain.MintTokenResponse
+	err           error
+	calls         int
+	queryResponse *antchain.MintTokenResponse
+	queryErr      error
+	queryCalls    int
 }
 
 func (c *stubAntChainClient) MintToken(context.Context, *antchain.MintTokenRequest) (*antchain.MintTokenResponse, error) {
@@ -228,6 +232,18 @@ func (c *stubAntChainClient) MintToken(context.Context, *antchain.MintTokenReque
 		return nil, errors.New("missing antchain response")
 	}
 	out := *c.response
+	return &out, nil
+}
+
+func (c *stubAntChainClient) QueryMintToken(context.Context, *antchain.QueryMintTokenRequest) (*antchain.MintTokenResponse, error) {
+	c.queryCalls++
+	if c.queryErr != nil {
+		return nil, c.queryErr
+	}
+	if c.queryResponse == nil {
+		return nil, antchain.ErrReceiptNotFound
+	}
+	out := *c.queryResponse
 	return &out, nil
 }
 
@@ -776,5 +792,244 @@ func TestExecuteTaskEscalatesToManualReviewAtRetryLimit(t *testing.T) {
 	}
 	if instance.MintStatus != MintStatusManualReview || instance.ChainStatus != ChainStatusFailed {
 		t.Fatalf("expected instance manual review snapshot, got %+v", instance)
+	}
+}
+
+func TestExecuteTaskRevalidatesPrerequisitesBeforeMint(t *testing.T) {
+	db := newDigitalCardMintTestDB(t)
+	client := &stubAntChainClient{
+		response: &antchain.MintTokenResponse{
+			TokenID:        "token-should-not-mint",
+			ChainTxID:      "tx-should-not-mint",
+			ChainStatus:    ChainStatusSuccess,
+			ReceiptSummary: "unexpected mint",
+			ReceiptJSON:    `{"tokenId":"token-should-not-mint"}`,
+			ConfirmedAt:    time.Date(2026, 4, 18, 13, 0, 0, 0, time.Local),
+		},
+	}
+	service := NewService(db, nil, client)
+
+	var taskID int64
+	if err := db.Transaction(func(tx *gorm.DB) error {
+		task, err := service.EnsureTaskTx(context.Background(), tx, 1, OperatorSystem)
+		if err != nil {
+			return err
+		}
+		taskID = task.ID
+		return nil
+	}); err != nil {
+		t.Fatalf("EnsureTaskTx returned error: %v", err)
+	}
+
+	if err := db.Exec(`UPDATE sms_draw_activity SET status = 0 WHERE id = 2001`).Error; err != nil {
+		t.Fatalf("update activity status failed: %v", err)
+	}
+
+	result, err := service.ExecuteTask(context.Background(), taskID, OperatorJob)
+	if err != nil {
+		t.Fatalf("ExecuteTask returned error: %v", err)
+	}
+	if client.calls != 0 {
+		t.Fatalf("expected no mint call after prerequisite change, got %d", client.calls)
+	}
+	if result.TaskStatus != TaskStatusManualReview || !result.ManualRequired {
+		t.Fatalf("expected manual review result, got %+v", result)
+	}
+
+	var task CardMintTaskRow
+	if err := db.Table(task.TableName()).Where("id = ?", taskID).Take(&task).Error; err != nil {
+		t.Fatalf("load task failed: %v", err)
+	}
+	if task.LastErrorCode != ErrorCodeMintPrerequisiteRejected {
+		t.Fatalf("expected prerequisite rejection code, got %+v", task)
+	}
+}
+
+func TestExecuteTaskReconcilesReceiptBeforeRetryMint(t *testing.T) {
+	db := newDigitalCardMintTestDB(t)
+	now := time.Date(2026, 4, 18, 13, 30, 0, 0, time.Local)
+	client := &stubAntChainClient{
+		queryResponse: &antchain.MintTokenResponse{
+			TokenID:        "token-from-query",
+			ChainTxID:      "tx-from-query",
+			ChainStatus:    ChainStatusSuccess,
+			ReceiptSummary: "queried receipt",
+			ReceiptJSON:    `{"tokenId":"token-from-query","chainTxId":"tx-from-query"}`,
+			ConfirmedAt:    now.Add(-2 * time.Minute),
+		},
+	}
+	service := NewService(db, nil, client)
+	service.Now = func() time.Time { return now }
+
+	var taskID int64
+	if err := db.Transaction(func(tx *gorm.DB) error {
+		task, err := service.EnsureTaskTx(context.Background(), tx, 1, OperatorSystem)
+		if err != nil {
+			return err
+		}
+		taskID = task.ID
+		return nil
+	}); err != nil {
+		t.Fatalf("EnsureTaskTx returned error: %v", err)
+	}
+
+	lastExecuteAt := now.Add(-10 * time.Minute)
+	if err := db.Table(CardMintTaskRow{}.TableName()).
+		Where("id = ?", taskID).
+		Updates(map[string]interface{}{
+			"task_status":       TaskStatusFailed,
+			"mint_status":       MintStatusCompensating,
+			"chain_status":      ChainStatusFailed,
+			"retry_count":       1,
+			"last_error_code":   ErrorCodeMintExecuteFailed,
+			"last_error_reason": "network timeout",
+			"last_execute_at":   lastExecuteAt,
+			"next_retry_at":     now.Add(-1 * time.Minute),
+		}).Error; err != nil {
+		t.Fatalf("prepare failed task failed: %v", err)
+	}
+	if err := db.Table(CardInstanceRow{}.TableName()).
+		Where("id = ?", 1).
+		Updates(map[string]interface{}{
+			"mint_status":  MintStatusCompensating,
+			"chain_status": ChainStatusFailed,
+			"update_time":  lastExecuteAt,
+		}).Error; err != nil {
+		t.Fatalf("prepare instance failed: %v", err)
+	}
+
+	result, err := service.ExecuteTask(context.Background(), taskID, OperatorJob)
+	if err != nil {
+		t.Fatalf("ExecuteTask returned error: %v", err)
+	}
+	if client.queryCalls != 1 {
+		t.Fatalf("expected one query receipt call, got %d", client.queryCalls)
+	}
+	if client.calls != 0 {
+		t.Fatalf("expected no second mint call, got %d", client.calls)
+	}
+	if result.TaskStatus != TaskStatusSucceeded || result.TokenID != "token-from-query" {
+		t.Fatalf("expected queried receipt to finish task, got %+v", result)
+	}
+}
+
+func TestExecuteTaskEscalatesWhenReceiptCannotBeReconciled(t *testing.T) {
+	db := newDigitalCardMintTestDB(t)
+	now := time.Date(2026, 4, 18, 14, 0, 0, 0, time.Local)
+	client := &stubAntChainClient{}
+	service := NewService(db, nil, client)
+	service.Now = func() time.Time { return now }
+
+	var taskID int64
+	if err := db.Transaction(func(tx *gorm.DB) error {
+		task, err := service.EnsureTaskTx(context.Background(), tx, 1, OperatorSystem)
+		if err != nil {
+			return err
+		}
+		taskID = task.ID
+		return nil
+	}); err != nil {
+		t.Fatalf("EnsureTaskTx returned error: %v", err)
+	}
+
+	lastExecuteAt := now.Add(-8 * time.Minute)
+	if err := db.Table(CardMintTaskRow{}.TableName()).
+		Where("id = ?", taskID).
+		Updates(map[string]interface{}{
+			"task_status":     TaskStatusRunning,
+			"mint_status":     MintStatusProcessing,
+			"chain_status":    ChainStatusProcessing,
+			"retry_count":     1,
+			"last_execute_at": lastExecuteAt,
+			"update_time":     lastExecuteAt,
+		}).Error; err != nil {
+		t.Fatalf("prepare running task failed: %v", err)
+	}
+	if err := db.Table(CardInstanceRow{}.TableName()).
+		Where("id = ?", 1).
+		Updates(map[string]interface{}{
+			"mint_status":  MintStatusProcessing,
+			"chain_status": ChainStatusProcessing,
+			"update_time":  lastExecuteAt,
+		}).Error; err != nil {
+		t.Fatalf("prepare running instance failed: %v", err)
+	}
+
+	result, err := service.ExecuteTask(context.Background(), taskID, OperatorJob)
+	if err != nil {
+		t.Fatalf("ExecuteTask returned error: %v", err)
+	}
+	if client.queryCalls != 1 {
+		t.Fatalf("expected one query receipt call, got %d", client.queryCalls)
+	}
+	if client.calls != 0 {
+		t.Fatalf("expected no additional mint call, got %d", client.calls)
+	}
+	if result.TaskStatus != TaskStatusManualReview || !result.ManualRequired {
+		t.Fatalf("expected manual review result, got %+v", result)
+	}
+
+	var task CardMintTaskRow
+	if err := db.Table(task.TableName()).Where("id = ?", taskID).Take(&task).Error; err != nil {
+		t.Fatalf("load task failed: %v", err)
+	}
+	if task.LastErrorCode != ErrorCodeReceiptReconcileRequired {
+		t.Fatalf("expected receipt reconcile required code, got %+v", task)
+	}
+}
+
+func TestRetryTaskReturnsDispatchError(t *testing.T) {
+	db := newDigitalCardMintTestDB(t)
+	service := NewService(db, nil, nil)
+
+	var taskID int64
+	if err := db.Transaction(func(tx *gorm.DB) error {
+		task, err := service.EnsureTaskTx(context.Background(), tx, 1, OperatorSystem)
+		if err != nil {
+			return err
+		}
+		taskID = task.ID
+		return nil
+	}); err != nil {
+		t.Fatalf("EnsureTaskTx returned error: %v", err)
+	}
+
+	currentScope := pkgscope.GovernanceScope{
+		ScopeType:  pkgscope.SubjectTypeMerchant,
+		PlatformID: 1,
+		TenantID:   10,
+		MerchantID: 88,
+	}
+	_, err := service.RetryTask(context.Background(), currentScope, taskID, 9001, "人工补偿")
+	if err == nil || !strings.Contains(err.Error(), "RabbitMQ 未配置") {
+		t.Fatalf("expected dispatch error, got %v", err)
+	}
+}
+
+func TestFreezeTaskRequiresReason(t *testing.T) {
+	db := newDigitalCardMintTestDB(t)
+	service := NewService(db, nil, nil)
+
+	var taskID int64
+	if err := db.Transaction(func(tx *gorm.DB) error {
+		task, err := service.EnsureTaskTx(context.Background(), tx, 1, OperatorSystem)
+		if err != nil {
+			return err
+		}
+		taskID = task.ID
+		return nil
+	}); err != nil {
+		t.Fatalf("EnsureTaskTx returned error: %v", err)
+	}
+
+	currentScope := pkgscope.GovernanceScope{
+		ScopeType:  pkgscope.SubjectTypeMerchant,
+		PlatformID: 1,
+		TenantID:   10,
+		MerchantID: 88,
+	}
+	_, err := service.FreezeTask(context.Background(), currentScope, taskID, 9001, " ")
+	if err == nil || !strings.Contains(err.Error(), "处置原因不能为空") {
+		t.Fatalf("expected empty reason rejection, got %v", err)
 	}
 }

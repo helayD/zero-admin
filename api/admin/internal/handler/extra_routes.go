@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 
+	digitalcardassethandler "github.com/feihua/zero-admin/api/admin/internal/handler/sms/digital_card_asset"
 	digitalcardchainhandler "github.com/feihua/zero-admin/api/admin/internal/handler/sms/digital_card_chain"
 	channelintegrationtemplatehandler "github.com/feihua/zero-admin/api/admin/internal/handler/sys/channel_integration_template"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
@@ -43,6 +44,46 @@ func RegisterExtraHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		),
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
 		rest.WithPrefix("/api/sys/channelIntegrationTemplate"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.CheckUrl},
+			[]rest.Route{
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryDigitalCardAssetList",
+					Handler: digitalcardassethandler.QueryDigitalCardAssetListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryDigitalCardAssetDetail",
+					Handler: digitalcardassethandler.QueryDigitalCardAssetDetailHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryDigitalCardAssetLogs",
+					Handler: digitalcardassethandler.QueryDigitalCardAssetLogsHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/reviewDigitalCardAssetCompliance",
+					Handler: digitalcardassethandler.ReviewDigitalCardAssetComplianceHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/offlineDigitalCardAssetDisplay",
+					Handler: digitalcardassethandler.OfflineDigitalCardAssetDisplayHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/recycleDigitalCardAsset",
+					Handler: digitalcardassethandler.RecycleDigitalCardAssetHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/sms/digitalCardAsset"),
 	)
 
 	server.AddRoutes(

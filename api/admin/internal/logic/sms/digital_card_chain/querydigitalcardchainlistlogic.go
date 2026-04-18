@@ -36,7 +36,7 @@ func (l *QueryDigitalCardChainListLogic) QueryDigitalCardChainList(req *types.Qu
 		return nil, errorx.NewDefaultError(err.Error())
 	}
 
-	total, list, err := l.svcCtx.CardMintService.QueryTaskList(l.ctx, queryScope, digitalcardmint.QueryFilter{
+	total, list, err := l.svcCtx.CardMintAdminService.QueryTaskList(l.ctx, queryScope, digitalcardmint.QueryFilter{
 		PageNum:        int32(req.Current),
 		PageSize:       int32(req.PageSize),
 		ActivityID:     req.ActivityId,

@@ -42,12 +42,13 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		rabbitmq = mq.NewRabbitMQSimple(mqUrl)
 	}
 	antChainClient := antchain.NewClient(antchain.Config{
-		Endpoint:       c.AntChain.Endpoint,
-		AppID:          c.AntChain.AppId,
-		AccessKey:      c.AntChain.AccessKey,
-		Secret:         c.AntChain.Secret,
-		TimeoutSeconds: c.AntChain.TimeoutSeconds,
-		Enabled:        c.AntChain.Enabled,
+		Endpoint:        c.AntChain.Endpoint,
+		ReceiptEndpoint: c.AntChain.ReceiptEndpoint,
+		AppID:           c.AntChain.AppId,
+		AccessKey:       c.AntChain.AccessKey,
+		Secret:          c.AntChain.Secret,
+		TimeoutSeconds:  c.AntChain.TimeoutSeconds,
+		Enabled:         c.AntChain.Enabled,
 	})
 	cardMintService := digitalcardmint.NewService(DB, rabbitmq, antChainClient)
 

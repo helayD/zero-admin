@@ -47,6 +47,13 @@ type mintEligibilitySnapshot struct {
 	RealNameStatus string `json:"realNameStatus"`
 }
 
+type executeSnapshot struct {
+	TaskStatus    string
+	LastErrorCode string
+	LastExecuteAt *time.Time
+	RetryCount    int32
+}
+
 func NewService(db *gorm.DB, mq MQPublisher, client antchain.Client) *Service {
 	return &Service{
 		DB:                 db,
@@ -231,11 +238,19 @@ func (s *Service) DispatchTask(ctx context.Context, taskID int64, reason string)
 	}
 
 	if s.MQ == nil {
-		return s.markDispatchFailure(ctx, task, instance, reason, errors.New("RabbitMQ 未配置"))
+		sendErr := errors.New("RabbitMQ 未配置")
+		if err = s.markDispatchFailure(ctx, task, instance, reason, sendErr); err != nil {
+			return err
+		}
+		return sendErr
 	}
 
 	if err = s.MQ.SendMessage(s.DispatchExchange, s.DispatchType, s.DispatchQueue, s.DispatchRoutingKey, body); err != nil {
-		return s.markDispatchFailure(ctx, task, instance, reason, err)
+		sendErr := err
+		if err = s.markDispatchFailure(ctx, task, instance, reason, sendErr); err != nil {
+			return err
+		}
+		return sendErr
 	}
 
 	nextMintStatus := MintStatusProcessing
@@ -302,6 +317,7 @@ func (s *Service) ExecuteTask(ctx context.Context, taskID int64, operatorType st
 		attempt       int32
 		replayReceipt bool
 		skipExecute   bool
+		snapshot      executeSnapshot
 		err           error
 	)
 	err = s.DB.Transaction(func(tx *gorm.DB) error {
@@ -323,6 +339,12 @@ func (s *Service) ExecuteTask(ctx context.Context, taskID int64, operatorType st
 			return nil
 		}
 
+		snapshot = executeSnapshot{
+			TaskStatus:    task.TaskStatus,
+			LastErrorCode: task.LastErrorCode,
+			LastExecuteAt: cloneTimePointer(task.LastExecuteAt),
+			RetryCount:    task.RetryCount,
+		}
 		replayReceipt = hasReceiptWritebackPending(task)
 		if replayReceipt {
 			attempt = task.RetryCount
@@ -392,13 +414,33 @@ func (s *Service) ExecuteTask(ctx context.Context, taskID int64, operatorType st
 	if replayReceipt {
 		receipt = s.buildReceiptFromTask(task)
 		if receipt == nil {
-			if err = s.transitionFailure(ctx, task, instance, attempt, normalizeOperatorType(operatorType), errors.New("回执补写快照缺失")); err != nil {
+			if err = s.transitionReceiptReconcileRequired(ctx, task, instance, normalizeOperatorType(operatorType), "回执补写快照缺失，无法确认历史执行结果", snapshot); err != nil {
 				return nil, err
 			}
 			task, _ = s.loadTaskByID(ctx, s.DB, task.ID, false)
 			return buildExecuteResult(task), nil
 		}
 	} else {
+		receipt, skipExecute, err = s.reconcilePreviousReceipt(ctx, task, instance, snapshot, normalizeOperatorType(operatorType))
+		if err != nil {
+			return nil, err
+		}
+		if skipExecute {
+			task, _ = s.loadTaskByID(ctx, s.DB, task.ID, false)
+			return buildExecuteResult(task), nil
+		}
+		if receipt == nil {
+			if err = s.validateExecutionPrerequisites(ctx, task, instance); err != nil {
+				if transitionErr := s.transitionPrerequisiteRejected(ctx, task, instance, normalizeOperatorType(operatorType), err); transitionErr != nil {
+					return nil, transitionErr
+				}
+				task, _ = s.loadTaskByID(ctx, s.DB, task.ID, false)
+				return buildExecuteResult(task), nil
+			}
+		}
+		if receipt != nil {
+			goto finalize
+		}
 		if s.AntChain == nil {
 			return nil, errors.New("蚂蚁链客户端未初始化")
 		}
@@ -427,6 +469,7 @@ func (s *Service) ExecuteTask(ctx context.Context, taskID int64, operatorType st
 		}
 	}
 
+finalize:
 	if err = s.transitionSuccess(ctx, task, instance, receipt, normalizeOperatorType(operatorType)); err != nil {
 		if markErr := s.handleSuccessPersistenceFailure(ctx, task, instance, receipt, err); markErr != nil {
 			return nil, markErr
@@ -628,6 +671,10 @@ func (s *Service) QueryAvailableActions(ctx context.Context, currentScope pkgsco
 }
 
 func (s *Service) RetryTask(ctx context.Context, currentScope pkgscope.GovernanceScope, taskID int64, operatorID int64, reason string) (*ActionResult, error) {
+	reason = strings.TrimSpace(reason)
+	if reason == "" {
+		return nil, errors.New("处置原因不能为空")
+	}
 	var (
 		task     *CardMintTaskRow
 		instance *CardInstanceRow
@@ -683,7 +730,7 @@ func (s *Service) RetryTask(ctx context.Context, currentScope pkgscope.Governanc
 			}).Error; err != nil {
 			return err
 		}
-		return s.appendAssetLogTx(ctx, tx, instance, task.MintStatus, MintStatusCompensating, OperationMintRetryRequested, OperatorManual, task.TraceID, "", firstNonEmpty(reason, "人工触发重试"), map[string]interface{}{
+		return s.appendAssetLogTx(ctx, tx, instance, task.MintStatus, MintStatusCompensating, OperationMintRetryRequested, OperatorManual, task.TraceID, "", reason, map[string]interface{}{
 			"taskId": task.ID,
 		})
 	})
@@ -691,7 +738,9 @@ func (s *Service) RetryTask(ctx context.Context, currentScope pkgscope.Governanc
 		return nil, err
 	}
 
-	_ = s.DispatchTask(ctx, taskID, "人工重试触发派发")
+	if err = s.DispatchTask(ctx, taskID, "人工重试触发派发"); err != nil {
+		return nil, err
+	}
 	task, err = s.loadTaskByID(ctx, s.DB, taskID, false)
 	if err != nil {
 		return nil, err
@@ -700,6 +749,10 @@ func (s *Service) RetryTask(ctx context.Context, currentScope pkgscope.Governanc
 }
 
 func (s *Service) FreezeTask(ctx context.Context, currentScope pkgscope.GovernanceScope, taskID int64, operatorID int64, reason string) (*ActionResult, error) {
+	reason = strings.TrimSpace(reason)
+	if reason == "" {
+		return nil, errors.New("处置原因不能为空")
+	}
 	var (
 		task     *CardMintTaskRow
 		instance *CardInstanceRow
@@ -744,7 +797,7 @@ func (s *Service) FreezeTask(ctx context.Context, currentScope pkgscope.Governan
 			}).Error; err != nil {
 			return err
 		}
-		return s.appendAssetLogTx(ctx, tx, instance, task.MintStatus, MintStatusFrozen, OperationMintFrozen, OperatorManual, task.TraceID, "", firstNonEmpty(reason, "人工冻结"), map[string]interface{}{
+		return s.appendAssetLogTx(ctx, tx, instance, task.MintStatus, MintStatusFrozen, OperationMintFrozen, OperatorManual, task.TraceID, "", reason, map[string]interface{}{
 			"taskId": task.ID,
 		})
 	})
@@ -759,6 +812,10 @@ func (s *Service) FreezeTask(ctx context.Context, currentScope pkgscope.Governan
 }
 
 func (s *Service) EscalateTask(ctx context.Context, currentScope pkgscope.GovernanceScope, taskID int64, operatorID int64, reason string) (*ActionResult, error) {
+	reason = strings.TrimSpace(reason)
+	if reason == "" {
+		return nil, errors.New("处置原因不能为空")
+	}
 	var (
 		task     *CardMintTaskRow
 		instance *CardInstanceRow
@@ -785,7 +842,7 @@ func (s *Service) EscalateTask(ctx context.Context, currentScope pkgscope.Govern
 				"task_status":       TaskStatusManualReview,
 				"mint_status":       MintStatusManualReview,
 				"manual_required":   1,
-				"last_error_reason": firstNonEmpty(reason, task.LastErrorReason),
+				"last_error_reason": reason,
 				"update_by":         operatorID,
 				"update_time":       now,
 			}).Error; err != nil {
@@ -800,7 +857,7 @@ func (s *Service) EscalateTask(ctx context.Context, currentScope pkgscope.Govern
 			}).Error; err != nil {
 			return err
 		}
-		return s.appendAssetLogTx(ctx, tx, instance, task.MintStatus, MintStatusManualReview, OperationMintManualReview, OperatorManual, task.TraceID, "", firstNonEmpty(reason, "人工升级复核"), map[string]interface{}{
+		return s.appendAssetLogTx(ctx, tx, instance, task.MintStatus, MintStatusManualReview, OperationMintManualReview, OperatorManual, task.TraceID, "", reason, map[string]interface{}{
 			"taskId": task.ID,
 		})
 	})
@@ -1020,6 +1077,116 @@ func (s *Service) transitionFailure(ctx context.Context, task *CardMintTaskRow, 
 	})
 }
 
+func (s *Service) reconcilePreviousReceipt(ctx context.Context, task *CardMintTaskRow, instance *CardInstanceRow, snapshot executeSnapshot, operatorType string) (*antchain.MintTokenResponse, bool, error) {
+	if !needsReceiptReconcile(snapshot) {
+		return nil, false, nil
+	}
+
+	receipt, err := s.queryExistingReceipt(ctx, task)
+	if err == nil {
+		return receipt, false, nil
+	}
+	if errors.Is(err, antchain.ErrReceiptNotFound) && !requiresStrictReceiptReconcile(snapshot) {
+		return nil, false, nil
+	}
+
+	reason := "历史执行结果待人工对账确认"
+	switch {
+	case errors.Is(err, antchain.ErrReceiptNotFound):
+		reason = "链上未查询到历史回执，当前任务需人工对账确认"
+	case err != nil:
+		reason = fmt.Sprintf("链上回执对账失败：%s", err.Error())
+	}
+	if err = s.transitionReceiptReconcileRequired(ctx, task, instance, operatorType, reason, snapshot); err != nil {
+		return nil, true, err
+	}
+	return nil, true, nil
+}
+
+func (s *Service) queryExistingReceipt(ctx context.Context, task *CardMintTaskRow) (*antchain.MintTokenResponse, error) {
+	if s.AntChain == nil {
+		return nil, errors.New("蚂蚁链客户端未初始化")
+	}
+	if task == nil {
+		return nil, errors.New("任务不能为空")
+	}
+	return s.AntChain.QueryMintToken(ctx, &antchain.QueryMintTokenRequest{
+		IdempotencyKey:  task.IdempotencyKey,
+		TaskID:          task.ID,
+		AssetInstanceID: task.AssetInstanceID,
+		RequestID:       task.RequestID,
+		TraceID:         task.TraceID,
+	})
+}
+
+func (s *Service) validateExecutionPrerequisites(ctx context.Context, task *CardMintTaskRow, instance *CardInstanceRow) error {
+	if task == nil || instance == nil {
+		return errors.New("任务或资产不能为空")
+	}
+	recordID := instance.ParticipationRecordID
+	if recordID <= 0 {
+		recordID = task.ParticipationRecordID
+	}
+	record, err := s.loadParticipationRecord(ctx, s.DB, recordID)
+	if err != nil {
+		return err
+	}
+	return s.validateMintPrerequisites(ctx, s.DB, instance, record)
+}
+
+func (s *Service) transitionReceiptReconcileRequired(ctx context.Context, task *CardMintTaskRow, instance *CardInstanceRow, operatorType string, reason string, snapshot executeSnapshot) error {
+	return s.transitionManualReview(ctx, task, instance, operatorType, ErrorCodeReceiptReconcileRequired, reason, normalizeChainStatus(firstNonEmpty(task.ChainStatus, instance.ChainStatus, ChainStatusUnknown)), map[string]interface{}{
+		"taskId":         task.ID,
+		"previousStatus": snapshot.TaskStatus,
+		"lastErrorCode":  snapshot.LastErrorCode,
+		"lastExecuteAt":  formatTimePtr(snapshot.LastExecuteAt),
+		"retryCount":     snapshot.RetryCount,
+	})
+}
+
+func (s *Service) transitionPrerequisiteRejected(ctx context.Context, task *CardMintTaskRow, instance *CardInstanceRow, operatorType string, cause error) error {
+	return s.transitionManualReview(ctx, task, instance, operatorType, ErrorCodeMintPrerequisiteRejected, cause.Error(), normalizeChainStatus(firstNonEmpty(task.ChainStatus, instance.ChainStatus, ChainStatusUnknown)), map[string]interface{}{
+		"taskId":                task.ID,
+		"activityId":            task.ActivityID,
+		"participationRecordId": task.ParticipationRecordID,
+		"assetInstanceId":       task.AssetInstanceID,
+	})
+}
+
+func (s *Service) transitionManualReview(ctx context.Context, task *CardMintTaskRow, instance *CardInstanceRow, operatorType string, errorCode string, reason string, chainStatus string, payload map[string]interface{}) error {
+	now := s.now()
+	nextChainStatus := normalizeChainStatus(firstNonEmpty(chainStatus, task.ChainStatus, instance.ChainStatus, ChainStatusUnknown))
+	return s.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.WithContext(ctx).
+			Table(task.TableName()).
+			Where("id = ? AND is_deleted = 0", task.ID).
+			Updates(map[string]interface{}{
+				"task_status":       TaskStatusManualReview,
+				"mint_status":       MintStatusManualReview,
+				"chain_status":      nextChainStatus,
+				"last_error_code":   errorCode,
+				"last_error_reason": reason,
+				"manual_required":   1,
+				"next_retry_at":     nil,
+				"last_execute_at":   now,
+				"update_time":       now,
+			}).Error; err != nil {
+			return err
+		}
+		if err := tx.WithContext(ctx).
+			Table(instance.TableName()).
+			Where("id = ? AND is_deleted = 0", instance.ID).
+			Updates(map[string]interface{}{
+				"mint_status":  MintStatusManualReview,
+				"chain_status": nextChainStatus,
+				"update_time":  now,
+			}).Error; err != nil {
+			return err
+		}
+		return s.appendAssetLogTx(ctx, tx, instance, task.MintStatus, MintStatusManualReview, OperationMintManualReview, operatorType, task.TraceID, errorCode, reason, payload)
+	})
+}
+
 func (s *Service) bestEffortMarkWritebackFailure(ctx context.Context, taskID int64, assetInstanceID int64, receipt *antchain.MintTokenResponse, cause error) error {
 	if s.DB == nil {
 		return cause
@@ -1207,6 +1374,28 @@ func hasReceiptWritebackPending(task *CardMintTaskRow) bool {
 	return task != nil &&
 		strings.TrimSpace(task.LastErrorCode) == ErrorCodeReceiptWritebackFailed &&
 		strings.TrimSpace(task.TokenID) != ""
+}
+
+func needsReceiptReconcile(snapshot executeSnapshot) bool {
+	if snapshot.LastExecuteAt != nil && !snapshot.LastExecuteAt.IsZero() {
+		return true
+	}
+	return snapshot.RetryCount > 0 || strings.TrimSpace(snapshot.TaskStatus) == TaskStatusRunning
+}
+
+func requiresStrictReceiptReconcile(snapshot executeSnapshot) bool {
+	status := strings.TrimSpace(snapshot.TaskStatus)
+	if status == TaskStatusRunning || status == TaskStatusDispatched {
+		return true
+	}
+	if snapshot.LastExecuteAt == nil || snapshot.LastExecuteAt.IsZero() {
+		return false
+	}
+	errorCode := strings.TrimSpace(snapshot.LastErrorCode)
+	if errorCode == "" {
+		return true
+	}
+	return errorCode != ErrorCodeMintExecuteFailed && errorCode != ErrorCodeReceiptWritebackFailed
 }
 
 func isTokenBindingConflictError(err error) bool {
@@ -1406,6 +1595,14 @@ func parseMintEligibilitySnapshot(raw string) (*mintEligibilitySnapshot, error) 
 
 func buildIdempotencyKey(assetInstanceID int64) string {
 	return fmt.Sprintf("card-mint:%d", assetInstanceID)
+}
+
+func cloneTimePointer(value *time.Time) *time.Time {
+	if value == nil {
+		return nil
+	}
+	copied := *value
+	return &copied
 }
 
 func normalizeOperatorType(operatorType string) string {

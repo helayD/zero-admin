@@ -10,6 +10,7 @@ import (
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
 	"github.com/feihua/zero-admin/api/admin/internal/types"
 	"github.com/feihua/zero-admin/pkg/digitalcardmint"
+	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/rpc/sys/client/operatelogservice"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
 	"google.golang.org/grpc"
@@ -194,6 +195,54 @@ func newAdminCtx() context.Context {
 	return ctx
 }
 
+type localChainAdminService struct {
+	service *digitalcardmint.Service
+}
+
+func (s *localChainAdminService) QueryTaskList(ctx context.Context, scope pkgscope.GovernanceScope, filter digitalcardmint.QueryFilter, _ ...grpc.CallOption) (int64, []*digitalcardmint.TaskListItem, error) {
+	return s.service.QueryTaskList(ctx, scope, filter)
+}
+
+func (s *localChainAdminService) QueryTaskDetail(ctx context.Context, scope pkgscope.GovernanceScope, taskID int64, _ ...grpc.CallOption) (*digitalcardmint.TaskDetail, error) {
+	return s.service.QueryTaskDetail(ctx, scope, taskID)
+}
+
+func (s *localChainAdminService) QueryAvailableTaskActions(ctx context.Context, scope pkgscope.GovernanceScope, taskID int64, _ ...grpc.CallOption) ([]string, error) {
+	return s.service.QueryAvailableActions(ctx, scope, taskID)
+}
+
+func (s *localChainAdminService) RetryTask(ctx context.Context, scope pkgscope.GovernanceScope, taskID int64, operatorID int64, reason string, _ ...grpc.CallOption) (*digitalcardmint.ActionResult, error) {
+	return s.service.RetryTask(ctx, scope, taskID, operatorID, reason)
+}
+
+func (s *localChainAdminService) FreezeTask(ctx context.Context, scope pkgscope.GovernanceScope, taskID int64, operatorID int64, reason string, _ ...grpc.CallOption) (*digitalcardmint.ActionResult, error) {
+	return s.service.FreezeTask(ctx, scope, taskID, operatorID, reason)
+}
+
+func (s *localChainAdminService) EscalateTask(ctx context.Context, scope pkgscope.GovernanceScope, taskID int64, operatorID int64, reason string, _ ...grpc.CallOption) (*digitalcardmint.ActionResult, error) {
+	return s.service.EscalateTask(ctx, scope, taskID, operatorID, reason)
+}
+
+func (s *localChainAdminService) QueryAssetAuditList(context.Context, pkgscope.GovernanceScope, digitalcardmint.DigitalCardAssetAuditFilter, ...grpc.CallOption) (int64, []digitalcardmint.DigitalCardAssetAuditItem, error) {
+	return 0, nil, nil
+}
+
+func (s *localChainAdminService) QueryAssetAuditDetail(context.Context, pkgscope.GovernanceScope, int64, ...grpc.CallOption) (*digitalcardmint.DigitalCardAssetAuditDetail, error) {
+	return nil, nil
+}
+
+func (s *localChainAdminService) ReviewAssetCompliance(context.Context, pkgscope.GovernanceScope, int64, int64, string, ...grpc.CallOption) (*digitalcardmint.DigitalCardAssetActionResult, error) {
+	return nil, nil
+}
+
+func (s *localChainAdminService) OfflineAssetDisplay(context.Context, pkgscope.GovernanceScope, int64, int64, string, ...grpc.CallOption) (*digitalcardmint.DigitalCardAssetActionResult, error) {
+	return nil, nil
+}
+
+func (s *localChainAdminService) RecycleAsset(context.Context, pkgscope.GovernanceScope, int64, int64, string, ...grpc.CallOption) (*digitalcardmint.DigitalCardAssetActionResult, error) {
+	return nil, nil
+}
+
 func newAdminServiceContext(t *testing.T) (*svc.ServiceContext, int64) {
 	t.Helper()
 
@@ -212,7 +261,7 @@ func newAdminServiceContext(t *testing.T) (*svc.ServiceContext, int64) {
 		t.Fatalf("EnsureTaskTx returned error: %v", err)
 	}
 
-	return &svc.ServiceContext{CardMintService: cardMintService}, taskID
+	return &svc.ServiceContext{CardMintAdminService: &localChainAdminService{service: cardMintService}}, taskID
 }
 
 func TestQueryDigitalCardChainListMapsFields(t *testing.T) {

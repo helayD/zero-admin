@@ -29,7 +29,7 @@ func (l *QueryDigitalCardChainDetailLogic) QueryDigitalCardChainDetail(req *type
 	if err != nil {
 		return nil, errorx.NewDefaultError(err.Error())
 	}
-	detail, err := l.svcCtx.CardMintService.QueryTaskDetail(l.ctx, current, req.TaskId)
+	detail, err := l.svcCtx.CardMintAdminService.QueryTaskDetail(l.ctx, current, req.TaskId)
 	if err != nil {
 		return nil, errorx.NewDefaultError(err.Error())
 	}

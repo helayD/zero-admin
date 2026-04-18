@@ -2,7 +2,9 @@ package svc
 
 import (
 	"fmt"
+
 	"github.com/feihua/zero-admin/api/front/internal/config"
+	"github.com/feihua/zero-admin/pkg/digitalcardmint"
 	"github.com/feihua/zero-admin/pkg/mq"
 	"github.com/feihua/zero-admin/rpc/cms/client/preferredareaproductrelationservice"
 	"github.com/feihua/zero-admin/rpc/cms/client/preferredareaservice"
@@ -53,13 +55,13 @@ import (
 	"github.com/feihua/zero-admin/rpc/sys/client/userservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/memberaddressservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/memberbrandattentionservice"
-	"github.com/feihua/zero-admin/rpc/ums/client/membermessageservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/memberconsumesettingservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/membergrowthlogservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/memberidentityservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/memberinfoservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/memberlevelservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/memberloginlogservice"
+	"github.com/feihua/zero-admin/rpc/ums/client/membermessageservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/memberpointslogservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/memberproductcategoryrelationservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/memberproductcollectionservice"
@@ -73,10 +75,13 @@ import (
 	"github.com/smartwalle/alipay/v3"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/zrpc"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
 type ServiceContext struct {
 	Config config.Config
+	DB     *gorm.DB
 
 	// 会员相关
 	MemberGrowthLogService               membergrowthlogservice.MemberGrowthLogService
@@ -151,7 +156,8 @@ type ServiceContext struct {
 	PreferredAreaService                preferredareaservice.PreferredAreaService
 	PreferredAreaProductRelationService preferredareaproductrelationservice.PreferredAreaProductRelationService
 	// 搜索相关
-	SearchClient search_client.Search
+	SearchClient    search_client.Search
+	CardMintService *digitalcardmint.Service
 
 	AlipayClient *alipay.Client
 
@@ -182,11 +188,24 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	smsClient := zrpc.MustNewClient(c.SmsRpc)
 	cmsClient := zrpc.MustNewClient(c.CmsRpc)
 	searchClient := zrpc.MustNewClient(c.SearchRpc)
+	var db *gorm.DB
+	if c.Mysql.Datasource != "" {
+		dbConn, dbErr := gorm.Open(mysql.Open(c.Mysql.Datasource), &gorm.Config{
+			SkipDefaultTransaction: true,
+			PrepareStmt:            true,
+		})
+		if dbErr != nil {
+			panic(dbErr)
+		}
+		db = dbConn
+	}
 
 	mqUrl := fmt.Sprintf("amqp://%s:%s@%s:%d/", c.Rabbitmq.UserName, c.Rabbitmq.Password, c.Rabbitmq.Host, c.Rabbitmq.Port)
 	rabbitmq := mq.NewRabbitMQSimple(mqUrl)
+	cardMintService := digitalcardmint.NewService(db, rabbitmq, nil)
 	return &ServiceContext{
 		Config:                               c,
+		DB:                                   db,
 		MemberGrowthLogService:               membergrowthlogservice.NewMemberGrowthLogService(umsClient),
 		MemberPointsLogService:               memberpointslogservice.NewMemberPointsLogService(umsClient),
 		MemberConsumeSettingService:          memberconsumesettingservice.NewMemberConsumeSettingService(umsClient),
@@ -258,6 +277,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		PreferredAreaService:                preferredareaservice.NewPreferredAreaService(cmsClient),
 		PreferredAreaProductRelationService: preferredareaproductrelationservice.NewPreferredAreaProductRelationService(cmsClient),
 		SearchClient:                        search_client.NewSearch(searchClient),
+		CardMintService:                     cardMintService,
 
 		AlipayClient: client,
 		RabbitMQ:     rabbitmq,

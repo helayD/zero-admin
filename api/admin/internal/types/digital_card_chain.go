@@ -96,7 +96,7 @@ type QueryDigitalCardChainDetailResp struct {
 
 type RetryDigitalCardChainReq struct {
 	TaskId     int64  `json:"taskId"`
-	Reason     string `json:"reason"`
+	Reason     string `json:"reason" validate:"required"`
 	ScopeType  string `json:"scopeType,optional"`
 	PlatformId int64  `json:"platformId,optional"`
 	TenantId   int64  `json:"tenantId,optional"`

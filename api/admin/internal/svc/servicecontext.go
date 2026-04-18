@@ -1,12 +1,8 @@
 package svc
 
 import (
-	"strconv"
-
 	"github.com/feihua/zero-admin/api/admin/internal/config"
 	"github.com/feihua/zero-admin/api/admin/internal/middleware"
-	"github.com/feihua/zero-admin/pkg/digitalcardmint"
-	"github.com/feihua/zero-admin/pkg/mq"
 	"github.com/feihua/zero-admin/rpc/cms/client/preferredareaproductrelationservice"
 	"github.com/feihua/zero-admin/rpc/cms/client/preferredareaservice"
 	"github.com/feihua/zero-admin/rpc/cms/client/subjectcategoryservice"
@@ -37,6 +33,7 @@ import (
 	"github.com/feihua/zero-admin/rpc/pms/client/productspecvalueservice"
 	"github.com/feihua/zero-admin/rpc/pms/client/productspuservice"
 	"github.com/feihua/zero-admin/rpc/pms/client/productvertifyrecordservice"
+	"github.com/feihua/zero-admin/rpc/sms/client/cardmintadminservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/couponrecordservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/couponscopeservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/coupontypeservice"
@@ -86,17 +83,13 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/rest"
 	"github.com/zeromicro/go-zero/zrpc"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
 )
 
 type ServiceContext struct {
-	Config          config.Config
-	CheckUrl        rest.Middleware
-	AddLog          rest.Middleware
-	DB              *gorm.DB
-	RabbitMQ        *mq.RabbitMQ
-	CardMintService *digitalcardmint.Service
+	Config               config.Config
+	CheckUrl             rest.Middleware
+	AddLog               rest.Middleware
+	CardMintAdminService cardmintadminservice.CardMintAdminService
 	// 会员相关
 	MemberGrowthLogService               membergrowthlogservice.MemberGrowthLogService
 	MemberPointsLogService               memberpointslogservice.MemberPointsLogService
@@ -181,22 +174,6 @@ type ServiceContext struct {
 
 func NewServiceContext(c config.Config) *ServiceContext {
 	newRedis := redis.New(c.Redis.Address, redisConfig(c))
-	var db *gorm.DB
-	if c.Mysql.Datasource != "" {
-		var err error
-		db, err = gorm.Open(mysql.Open(c.Mysql.Datasource), &gorm.Config{
-			SkipDefaultTransaction: true,
-			PrepareStmt:            true,
-		})
-		if err != nil {
-			panic(err)
-		}
-	}
-	var rabbitmq *mq.RabbitMQ
-	if c.Rabbitmq.Host != "" {
-		mqURL := "amqp://" + c.Rabbitmq.UserName + ":" + c.Rabbitmq.Password + "@" + c.Rabbitmq.Host + ":" + intToString(c.Rabbitmq.Port) + "/"
-		rabbitmq = mq.NewRabbitMQSimple(mqURL)
-	}
 	umsClient := zrpc.MustNewClient(c.UmsRpc)
 	sysClient := zrpc.MustNewClient(c.SysRpc)
 	pmsClient := zrpc.MustNewClient(c.PmsRpc)
@@ -204,12 +181,10 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	smsClient := zrpc.MustNewClient(c.SmsRpc)
 	cmsClient := zrpc.MustNewClient(c.CmsRpc)
 	operateLogService := operatelogservice.NewOperateLogService(sysClient)
-	cardMintService := digitalcardmint.NewService(db, rabbitmq, nil)
+	cardMintAdminService := cardmintadminservice.NewCardMintAdminService(smsClient)
 	return &ServiceContext{
 		Config:                               c,
-		DB:                                   db,
-		RabbitMQ:                             rabbitmq,
-		CardMintService:                      cardMintService,
+		CardMintAdminService:                 cardMintAdminService,
 		MemberGrowthLogService:               membergrowthlogservice.NewMemberGrowthLogService(umsClient),
 		MemberPointsLogService:               memberpointslogservice.NewMemberPointsLogService(umsClient),
 		MemberConsumeSettingService:          memberconsumesettingservice.NewMemberConsumeSettingService(umsClient),
@@ -299,8 +274,4 @@ func redisConfig(c config.Config) redis.Option {
 		r.Type = redis.NodeType
 		r.Pass = c.Redis.Pass
 	}
-}
-
-func intToString(value int64) string {
-	return strconv.FormatInt(value, 10)
 }

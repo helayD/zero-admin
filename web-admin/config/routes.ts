@@ -381,6 +381,12 @@
         path: '/sms/digitalCardChain/list',
         component: './sms/DigitalCardChainMonitor',
       },
+      {
+        name: '数字卡片资产',
+        icon: 'table',
+        path: '/sms/digitalCardAsset/list',
+        component: './sms/DigitalCardAssetWorkbench',
+      },
     ],
   },
   {

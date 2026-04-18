@@ -34,11 +34,14 @@ func (l *RetryDigitalCardChainLogic) RetryDigitalCardChain(req *types.RetryDigit
 	if err != nil {
 		return nil, err
 	}
+	if err = validateActionReason(req.Reason); err != nil {
+		return nil, err
+	}
 	operatorId, err := admincommon.GetUserId(l.ctx)
 	if err != nil {
 		return nil, errorx.NewDefaultError("无法获取操作人身份，请重新登录")
 	}
-	result, err := l.svcCtx.CardMintService.RetryTask(l.ctx, writeScope, req.TaskId, operatorId, req.Reason)
+	result, err := l.svcCtx.CardMintAdminService.RetryTask(l.ctx, writeScope, req.TaskId, operatorId, req.Reason)
 	if err != nil {
 		return nil, errorx.NewDefaultError(err.Error())
 	}

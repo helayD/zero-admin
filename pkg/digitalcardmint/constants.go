@@ -47,10 +47,12 @@ const (
 
 	DefaultMaxRetryCount int32 = 3
 
-	ErrorCodeMQDispatchFailed       = "mq_dispatch_failed"
-	ErrorCodeMintExecuteFailed      = "mint_execute_failed"
-	ErrorCodeReceiptWritebackFailed = "receipt_writeback_failed"
-	ErrorCodeTokenBindingConflict   = "token_binding_conflict"
+	ErrorCodeMQDispatchFailed         = "mq_dispatch_failed"
+	ErrorCodeMintExecuteFailed        = "mint_execute_failed"
+	ErrorCodeReceiptWritebackFailed   = "receipt_writeback_failed"
+	ErrorCodeReceiptReconcileRequired = "receipt_reconcile_required"
+	ErrorCodeMintPrerequisiteRejected = "mint_prerequisite_rejected"
+	ErrorCodeTokenBindingConflict     = "token_binding_conflict"
 )
 
 func ResolveAssetStatusText(assetStatus, mintStatus, chainStatus string) string {

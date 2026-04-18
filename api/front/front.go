@@ -37,6 +37,7 @@ func main() {
 	defer server.Stop()
 
 	handler.RegisterHandlers(server, ctx)
+	handler.RegisterExtraHandlers(server, ctx)
 
 	// httpx.SetErrorHandler(func(err error) (int, interface{}) {
 	// 	var e *errorx.CodeError
