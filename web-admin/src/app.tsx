@@ -129,8 +129,6 @@ const OverlayCleanupGuard: React.FC<{ children: React.ReactNode }> = ({ children
     observer.observe(document.body, {
       childList: true,
       subtree: true,
-      attributes: true,
-      attributeFilter: ['class', 'style'],
     });
 
     return () => {
