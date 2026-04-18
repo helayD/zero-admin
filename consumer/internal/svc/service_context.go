@@ -3,11 +3,15 @@ package svc
 import (
 	"context"
 	"fmt"
+
 	"github.com/feihua/zero-admin/consumer/internal/config"
 	"github.com/feihua/zero-admin/consumer/internal/mq/coupon"
+	digitalcardconsumer "github.com/feihua/zero-admin/consumer/internal/mq/digital_card"
 	"github.com/feihua/zero-admin/consumer/internal/mq/member"
 	"github.com/feihua/zero-admin/consumer/internal/mq/order"
 	"github.com/feihua/zero-admin/consumer/internal/mq/product"
+	"github.com/feihua/zero-admin/pkg/antchain"
+	"github.com/feihua/zero-admin/pkg/digitalcardmint"
 	"github.com/feihua/zero-admin/pkg/mq"
 	"github.com/feihua/zero-admin/rpc/oms/client/orderservice"
 	"github.com/feihua/zero-admin/rpc/pms/client/productskuservice"
@@ -23,12 +27,19 @@ import (
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/zrpc"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+	"time"
 )
 
 type ServiceContext struct {
-	Config   config.Config
-	RabbitMQ *mq.RabbitMQ
-	Redis    *redis.Redis
+	Config          config.Config
+	RabbitMQ        *mq.RabbitMQ
+	Redis           *redis.Redis
+	DB              *gorm.DB
+	AntChain        antchain.Client
+	CardMintService *digitalcardmint.Service
 
 	// 会员相关
 	MemberInfoService      memberinfoservice.MemberInfoService
@@ -61,6 +72,28 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	mqUrl := fmt.Sprintf("amqp://%s:%s@%s:%d/", c.Rabbitmq.UserName, c.Rabbitmq.Password, c.Rabbitmq.Host, c.Rabbitmq.Port)
 	rabbitmq := mq.NewRabbitMQSimple(mqUrl)
 
+	var db *gorm.DB
+	if c.Mysql.Datasource != "" {
+		var err error
+		db, err = gorm.Open(mysql.Open(c.Mysql.Datasource), &gorm.Config{
+			SkipDefaultTransaction: true,
+			PrepareStmt:            true,
+			Logger:                 consumerLogConfig(),
+		})
+		if err != nil {
+			panic(err)
+		}
+	}
+	antChainClient := antchain.NewClient(antchain.Config{
+		Endpoint:       c.AntChain.Endpoint,
+		AppID:          c.AntChain.AppId,
+		AccessKey:      c.AntChain.AccessKey,
+		Secret:         c.AntChain.Secret,
+		TimeoutSeconds: c.AntChain.TimeoutSeconds,
+		Enabled:        c.AntChain.Enabled,
+	})
+	cardMintService := digitalcardmint.NewService(db, rabbitmq, antChainClient)
+
 	redisConf := redis.RedisConf{
 		Host: c.Redis.Address,
 		Type: "node",
@@ -81,6 +114,9 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		Config:                 c,
 		RabbitMQ:               rabbitmq,
 		Redis:                  r,
+		DB:                     db,
+		AntChain:               antChainClient,
+		CardMintService:        cardMintService,
 		MemberInfoService:      memberInfoService,
 		MemberGrowthLogService: membergrowthlogservice.NewMemberGrowthLogService(umsClient),
 		MemberPointsLogService: memberpointslogservice.NewMemberPointsLogService(umsClient),
@@ -177,5 +213,29 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		})
 	}()
 
+	go func() {
+		rabbitmq.ConsumeSimpleWithAck(digitalcardmint.EventQueue, func(body []byte) error {
+			return digitalcardconsumer.MintRequested(context.Background(), body, cardMintService)
+		})
+	}()
+
 	return s
+}
+
+type consumerWriter struct{}
+
+func (consumerWriter) Printf(format string, args ...interface{}) {
+	logc.Infof(context.Background(), format, args...)
+}
+
+func consumerLogConfig() logger.Interface {
+	return logger.New(
+		consumerWriter{},
+		logger.Config{
+			SlowThreshold:             200 * time.Millisecond,
+			LogLevel:                  logger.Info,
+			IgnoreRecordNotFoundError: true,
+			Colorful:                  true,
+		},
+	)
 }

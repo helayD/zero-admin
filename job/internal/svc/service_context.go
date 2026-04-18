@@ -2,6 +2,8 @@ package svc
 
 import (
 	"github.com/feihua/zero-admin/job/internal/config"
+	"github.com/feihua/zero-admin/pkg/antchain"
+	"github.com/feihua/zero-admin/pkg/digitalcardmint"
 	"github.com/feihua/zero-admin/rpc/oms/client/orderservice"
 	"github.com/feihua/zero-admin/rpc/oms/client/ordersettingservice"
 	"github.com/feihua/zero-admin/rpc/pms/client/productskuservice"
@@ -9,11 +11,18 @@ import (
 	"github.com/feihua/zero-admin/rpc/ums/client/memberinfoservice"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/zrpc"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+	"time"
 )
 
 type ServiceContext struct {
-	Config config.Config
-	Redis  *redis.Redis
+	Config          config.Config
+	Redis           *redis.Redis
+	DB              *gorm.DB
+	AntChain        antchain.Client
+	CardMintService *digitalcardmint.Service
 
 	UmsRpc              zrpc.RpcClientConf
 	PmsRpc              zrpc.RpcClientConf
@@ -22,7 +31,7 @@ type ServiceContext struct {
 	MemberService       memberinfoservice.MemberInfoService
 	ProductSkuService   productskuservice.ProductSkuService
 	OrderService        orderservice.OrderService
-	OrderSettingService  ordersettingservice.OrderSettingService
+	OrderSettingService ordersettingservice.OrderSettingService
 	CouponRecordService couponrecordservice.CouponRecordService
 }
 
@@ -31,6 +40,29 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	smsClient := zrpc.MustNewClient(c.SmsRpc)
 	omsClient := zrpc.MustNewClient(c.OmsRpc)
 	pmsClient := zrpc.MustNewClient(c.PmsRpc)
+
+	var db *gorm.DB
+	if c.Mysql.Datasource != "" {
+		var err error
+		db, err = gorm.Open(mysql.Open(c.Mysql.Datasource), &gorm.Config{
+			SkipDefaultTransaction: true,
+			PrepareStmt:            true,
+			Logger:                 logger.Default.LogMode(logger.Info),
+		})
+		if err != nil {
+			panic(err)
+		}
+	}
+	antChainClient := antchain.NewClient(antchain.Config{
+		Endpoint:       c.AntChain.Endpoint,
+		AppID:          c.AntChain.AppId,
+		AccessKey:      c.AntChain.AccessKey,
+		Secret:         c.AntChain.Secret,
+		TimeoutSeconds: c.AntChain.TimeoutSeconds,
+		Enabled:        c.AntChain.Enabled,
+	})
+	cardMintService := digitalcardmint.NewService(db, nil, antChainClient)
+	cardMintService.RunningTimeout = 2 * time.Minute
 
 	redisConf := redis.RedisConf{
 		Host: c.Redis.Address,
@@ -49,6 +81,9 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	return &ServiceContext{
 		Config:              c,
 		Redis:               r,
+		DB:                  db,
+		AntChain:            antChainClient,
+		CardMintService:     cardMintService,
 		UmsRpc:              c.UmsRpc,
 		PmsRpc:              c.PmsRpc,
 		OmsRpc:              c.OmsRpc,

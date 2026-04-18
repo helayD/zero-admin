@@ -14,6 +14,14 @@ Rabbitmq:
   UserName: guest
   Password: guest
 
+AntChain:
+  Endpoint: ""
+  AppId: ""
+  AccessKey: ""
+  Secret: ""
+  TimeoutSeconds: 10
+  Enabled: false
+
 Log:
   ServiceName: sms-service
   Stat: false # go-zero 版本 >= 1.5.0 才支持

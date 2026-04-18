@@ -7,6 +7,7 @@ import (
 	"time"
 
 	cardassetservicelogic "github.com/feihua/zero-admin/rpc/sms/internal/logic/cardassetservice"
+	cardminttaskservicelogic "github.com/feihua/zero-admin/rpc/sms/internal/logic/cardminttaskservice"
 	logiccommon "github.com/feihua/zero-admin/rpc/sms/internal/logic/common"
 	"github.com/feihua/zero-admin/rpc/sms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/sms/smsclient"
@@ -46,13 +47,22 @@ func (l *ParticipateDrawLogic) ParticipateDraw(in *smsclient.ParticipateDrawReq)
 	}
 
 	result := &smsclient.ParticipateDrawResp{}
+	dispatchTaskIDs := make(map[int64]struct{})
 	err = l.svcCtx.DB.Transaction(func(tx *gorm.DB) error {
 		existing, err := loadRecordByRequest(l.ctx, tx, in.ActivityId, in.MemberId, in.RequestId)
 		switch {
 		case err == nil:
 			if strings.TrimSpace(existing.ResultType) == drawResultTypeWon && strings.TrimSpace(existing.ResultStatus) == drawResultStatusWon {
-				if _, err = cardassetservicelogic.EnsureCardInstanceByParticipationRecord(l.ctx, tx, existing.ID, "system", existing.TraceID); err != nil {
-					return err
+				asset, ensureErr := cardassetservicelogic.EnsureCardInstanceByParticipationRecord(l.ctx, tx, existing.ID, "system", existing.TraceID)
+				if ensureErr != nil {
+					return ensureErr
+				}
+				taskID, taskErr := cardminttaskservicelogic.EnsureCardMintTaskByAssetInstance(l.ctx, l.svcCtx, tx, asset.ID, "system")
+				if taskErr != nil {
+					return taskErr
+				}
+				if taskID > 0 {
+					dispatchTaskIDs[taskID] = struct{}{}
 				}
 			}
 			record, detailErr := loadRecordDetailByID(l.ctx, tx, existing.ID)
@@ -189,8 +199,16 @@ func (l *ParticipateDrawLogic) ParticipateDraw(in *smsclient.ParticipateDrawReq)
 			return err
 		}
 		if strings.TrimSpace(recordRow.ResultType) == drawResultTypeWon && strings.TrimSpace(recordRow.ResultStatus) == drawResultStatusWon {
-			if _, err = cardassetservicelogic.EnsureCardInstanceByParticipationRecord(l.ctx, tx, recordRow.ID, "system", recordRow.TraceID); err != nil {
-				return err
+			asset, ensureErr := cardassetservicelogic.EnsureCardInstanceByParticipationRecord(l.ctx, tx, recordRow.ID, "system", recordRow.TraceID)
+			if ensureErr != nil {
+				return ensureErr
+			}
+			taskID, taskErr := cardminttaskservicelogic.EnsureCardMintTaskByAssetInstance(l.ctx, l.svcCtx, tx, asset.ID, "system")
+			if taskErr != nil {
+				return taskErr
+			}
+			if taskID > 0 {
+				dispatchTaskIDs[taskID] = struct{}{}
 			}
 		}
 		record, detailErr := loadRecordDetailByID(l.ctx, tx, recordRow.ID)
@@ -206,6 +224,9 @@ func (l *ParticipateDrawLogic) ParticipateDraw(in *smsclient.ParticipateDrawReq)
 	if err != nil {
 		logc.Errorf(l.ctx, "参与抽卡失败,参数:%+v,异常:%s", in, err.Error())
 		return nil, errors.New("参与抽卡失败")
+	}
+	for taskID := range dispatchTaskIDs {
+		cardminttaskservicelogic.DispatchCardMintTask(l.ctx, l.svcCtx, taskID, "抽卡成功后自动派发链上发放任务")
 	}
 
 	return result, nil

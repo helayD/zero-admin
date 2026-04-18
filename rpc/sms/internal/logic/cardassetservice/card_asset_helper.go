@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/feihua/zero-admin/pkg/digitalcardmint"
 	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/pkg/time_util"
 	"github.com/feihua/zero-admin/rpc/sms/smsclient"
@@ -75,6 +76,10 @@ type cardInstanceRow struct {
 	AssetNo               string     `gorm:"column:asset_no"`
 	AssetStatus           string     `gorm:"column:asset_status"`
 	MintStatus            string     `gorm:"column:mint_status"`
+	TokenID               string     `gorm:"column:token_id"`
+	ChainStatus           string     `gorm:"column:chain_status"`
+	LastReceiptAt         *time.Time `gorm:"column:last_receipt_at"`
+	MintTaskID            int64      `gorm:"column:mint_task_id"`
 	IssuedAt              *time.Time `gorm:"column:issued_at"`
 	CreateBy              int64      `gorm:"column:create_by"`
 	CreateTime            *time.Time `gorm:"column:create_time"`
@@ -273,7 +278,7 @@ func buildCardInstanceSnapshot(instance *cardInstanceRow) *CardInstanceSnapshot 
 		Rarity:                instance.Rarity,
 		AssetNo:               instance.AssetNo,
 		AssetStatus:           instance.AssetStatus,
-		AssetStatusText:       cardAssetStatusText(instance.AssetStatus),
+		AssetStatusText:       cardAssetStatusText(instance.AssetStatus, instance.MintStatus, instance.ChainStatus),
 		MintStatus:            instance.MintStatus,
 		IssuedAt:              issuedAt,
 	}
@@ -492,13 +497,8 @@ func normalizeOperatorType(operatorType string) string {
 	}
 }
 
-func cardAssetStatusText(status string) string {
-	switch strings.TrimSpace(status) {
-	case cardAssetStatusCreated:
-		return "资产已创建，链上处理中"
-	default:
-		return "资产处理中"
-	}
+func cardAssetStatusText(status string, mintStatus string, chainStatus string) string {
+	return digitalcardmint.ResolveAssetStatusText(status, mintStatus, chainStatus)
 }
 
 func firstNonEmpty(values ...string) string {

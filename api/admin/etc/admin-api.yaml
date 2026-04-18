@@ -62,6 +62,15 @@ Redis:
   Address: 127.0.0.1:16379
   Pass: "123456"
 
+Mysql:
+  Datasource: root:12341qweqfsd2356@tcp(127.0.0.1:3306)/gozero?charset=utf8mb4&parseTime=true&loc=Asia%2FShanghai
+
+Rabbitmq:
+  Host: 127.0.0.1
+  Port: 5672
+  UserName: guest
+  Password: guest
+
 Swagger:
   IsTest: true
   Path: "/root/zero-admin/api/admin/static"

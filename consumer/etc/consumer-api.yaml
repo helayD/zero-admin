@@ -8,6 +8,17 @@ Rabbitmq:
   UserName: guest
   Password: guest
 
+Mysql:
+  Datasource: root:12341qweqfsd2356@tcp(127.0.0.1:3306)/gozero?charset=utf8mb4&parseTime=true&loc=Asia%2FShanghai
+
+AntChain:
+  Endpoint: ""
+  AppId: ""
+  AccessKey: ""
+  Secret: ""
+  TimeoutSeconds: 10
+  Enabled: false
+
 #会员
 UmsRpc:
   Etcd:

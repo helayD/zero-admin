@@ -15,6 +15,19 @@ type Config struct {
 		Password string
 	}
 
+	Mysql struct {
+		Datasource string
+	}
+
+	AntChain struct {
+		Endpoint       string
+		AppId          string
+		AccessKey      string
+		Secret         string
+		TimeoutSeconds int64
+		Enabled        bool
+	}
+
 	// 会员
 	UmsRpc zrpc.RpcClientConf
 	// 商品

@@ -375,6 +375,12 @@
         path: '/sms/digitalCardActivity/list',
         component: './sms/DigitalCardActivity',
       },
+      {
+        name: '数字卡片链路',
+        icon: 'table',
+        path: '/sms/digitalCardChain/list',
+        component: './sms/DigitalCardChainMonitor',
+      },
     ],
   },
   {

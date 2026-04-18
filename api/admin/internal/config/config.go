@@ -32,6 +32,17 @@ type Config struct {
 		Address string
 		Pass    string
 	}
+
+	Mysql struct {
+		Datasource string
+	}
+
+	Rabbitmq struct {
+		Host     string
+		Port     int64
+		UserName string
+		Password string
+	}
 	Swagger struct {
 		IsTest bool
 		Path   string

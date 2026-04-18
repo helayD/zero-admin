@@ -28,6 +28,8 @@ func (l *JobLogic) Job(req *types.Request) (resp *types.Response, err error) {
 	switch req.Name {
 	case "cancel_timeout_order":
 		l.CancelTimeOutOrderJob()
+	case "handle_card_mint_timeout":
+		l.HandleCardMintTimeout()
 	default:
 		logx.Errorf("unknown job name: %s", req.Name)
 	}
@@ -40,4 +42,8 @@ func (l *JobLogic) Job(req *types.Request) (resp *types.Response, err error) {
 func (l *JobLogic) CancelTimeOutOrderJob() {
 	jobs.CancelTimeOutOrder(l.ctx, l.svcCtx.Redis, l.svcCtx.ProductSkuService, l.svcCtx.OrderService,
 		l.svcCtx.CouponRecordService, l.svcCtx.MemberService, l.svcCtx.OrderSettingService)
+}
+
+func (l *JobLogic) HandleCardMintTimeout() {
+	jobs.HandleCardMintTimeout(l.ctx, l.svcCtx.CardMintService)
 }

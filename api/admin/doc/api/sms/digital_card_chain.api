@@ -1,0 +1,151 @@
+import "../base/base.api"
+
+info (
+	desc:   "数字卡片链路工作台"
+	author: "Codex"
+)
+
+type (
+	DigitalCardChainGovernanceScopeReq {
+		ScopeType  string `json:"scopeType,optional" form:"scopeType,optional"` // 主体范围(platform/tenant/merchant)
+		PlatformId int64  `json:"platformId,optional" form:"platformId,optional"` // 平台ID
+		TenantId   int64  `json:"tenantId,optional" form:"tenantId,optional"` // 租户ID
+		MerchantId int64  `json:"merchantId,optional" form:"merchantId,optional"` // 商户ID
+	}
+	QueryDigitalCardChainListReq {
+		DigitalCardChainGovernanceScopeReq
+		Current        int32  `form:"current,default=1"` // 页码
+		PageSize       int32  `form:"pageSize,default=20"` // 每页条数
+		ActivityId     int64  `form:"activityId,optional"` // 活动ID
+		ActivityName   string `form:"activityName,optional"` // 活动名称
+		MemberId       int64  `form:"memberId,optional"` // 会员ID
+		TemplateId     int64  `form:"templateId,optional"` // 模板ID
+		AssetNo        string `form:"assetNo,optional"` // 资产编号
+		TokenId        string `form:"tokenId,optional"` // 链上 token
+		TaskStatus     string `form:"taskStatus,optional"` // 任务状态
+		MintStatus     string `form:"mintStatus,optional"` // 发放状态
+		ChainStatus    string `form:"chainStatus,optional"` // 链上状态
+		ManualRequired int32  `form:"manualRequired,optional"` // 人工复核筛选
+		StartTime      string `form:"startTime,optional"` // 开始时间
+		EndTime        string `form:"endTime,optional"` // 结束时间
+	}
+	DigitalCardChainItem {
+		TaskId                int64  `json:"taskId"` // 任务ID
+		TraceId               string `json:"traceId"` // traceId
+		AssetInstanceId       int64  `json:"assetInstanceId"` // 资产实例ID
+		AssetNo               string `json:"assetNo"` // 资产编号
+		MemberId              int64  `json:"memberId"` // 会员ID
+		ActivityId            int64  `json:"activityId"` // 活动ID
+		ActivityName          string `json:"activityName"` // 活动名称
+		TemplateId            int64  `json:"templateId"` // 模板ID
+		TemplateName          string `json:"templateName"` // 模板名称
+		TokenId               string `json:"tokenId"` // token 标识
+		TaskStatus            string `json:"taskStatus"` // 任务状态
+		TaskStatusText        string `json:"taskStatusText"` // 任务状态文案
+		MintStatus            string `json:"mintStatus"` // 发放状态
+		MintStatusText        string `json:"mintStatusText"` // 发放状态文案
+		ChainStatus           string `json:"chainStatus"` // 链上状态
+		ChainStatusText       string `json:"chainStatusText"` // 链上状态文案
+		RetryCount            int32  `json:"retryCount"` // 重试次数
+		LastError             string `json:"lastError"` // 最近失败原因
+		LastExecuteAt         string `json:"lastExecuteAt"` // 最近执行时间
+		ManualRequired        bool   `json:"manualRequired"` // 是否人工复核
+		Frozen                bool   `json:"frozen"` // 是否冻结
+		FreezeReason          string `json:"freezeReason"` // 冻结原因
+		LastReceiptSummary    string `json:"lastReceiptSummary"` // 最近回执摘要
+		AssetStatusText       string `json:"assetStatusText"` // 资产阶段文案
+		ParticipationRecordId int64  `json:"participationRecordId"` // 中奖记录ID
+	}
+	QueryDigitalCardChainListData {
+		List  []DigitalCardChainItem `json:"list"` // 列表
+		Total int64                  `json:"total"` // 总数
+	}
+	QueryDigitalCardChainListResp {
+		Code     string                    `json:"code"`
+		Message  string                    `json:"message"`
+		Data     QueryDigitalCardChainListData `json:"data"`
+		Current  int32                     `json:"current"`
+		PageSize int32                     `json:"pageSize"`
+		Total    int64                     `json:"total"`
+		Success  bool                      `json:"success"`
+	}
+	QueryDigitalCardChainDetailReq {
+		TaskId int64 `form:"taskId"` // 任务ID
+	}
+	DigitalCardChainLogItem {
+		OperationType string `json:"operationType"` // 操作类型
+		OperatorType  string `json:"operatorType"` // 操作者类型
+		FromStatus    string `json:"fromStatus"` // 原状态
+		ToStatus      string `json:"toStatus"` // 新状态
+		ReasonText    string `json:"reasonText"` // 原因
+		TraceId       string `json:"traceId"` // traceId
+		PayloadJson   string `json:"payloadJson"` // 扩展负载
+		CreateTime    string `json:"createTime"` // 创建时间
+	}
+	DigitalCardChainDetailData {
+		Item            DigitalCardChainItem      `json:"item"` // 链路主体
+		RequestId       string                    `json:"requestId"` // 请求ID
+		ChainTxId       string                    `json:"chainTxId"` // 链上交易ID
+		LastReceiptJson string                    `json:"lastReceiptJson"` // 最近回执 JSON
+		Logs            []DigitalCardChainLogItem `json:"logs"` // 时间线日志
+	}
+	QueryDigitalCardChainDetailResp {
+		Code    string                     `json:"code"`
+		Message string                     `json:"message"`
+		Data    DigitalCardChainDetailData `json:"data"`
+		Success bool                       `json:"success"`
+	}
+	QueryDigitalCardChainActionsReq {
+		TaskId int64 `form:"taskId"` // 任务ID
+	}
+	QueryDigitalCardChainActionsResp {
+		Code             string   `json:"code"`
+		Message          string   `json:"message"`
+		AvailableActions []string `json:"availableActions"` // 可用动作
+		Success          bool     `json:"success"`
+	}
+	DigitalCardChainActionReq {
+		DigitalCardChainGovernanceScopeReq
+		TaskId int64  `json:"taskId"` // 任务ID
+		Reason string `json:"reason,optional"` // 触发原因
+	}
+	DigitalCardChainActionResp {
+		Code           string `json:"code"`
+		Message        string `json:"message"`
+		TaskStatus     string `json:"taskStatus"` // 任务状态
+		MintStatus     string `json:"mintStatus"` // 发放状态
+		ChainStatus    string `json:"chainStatus"` // 链上状态
+		RetryCount     int32  `json:"retryCount"` // 重试次数
+		ManualRequired bool   `json:"manualRequired"` // 是否人工复核
+		Frozen         bool   `json:"frozen"` // 是否冻结
+		Success        bool   `json:"success"`
+	}
+)
+
+@server (
+	jwt:        Auth
+	middleware: CheckUrl
+	group:      sms/digital_card_chain
+	prefix:     /api/sms/digitalCardChain
+	tags:       "数字卡片链路工作台"
+	authType:   apiKey
+)
+service admin-api {
+	@handler QueryDigitalCardChainList
+	get /queryDigitalCardChainList (QueryDigitalCardChainListReq) returns (QueryDigitalCardChainListResp)
+
+	@handler QueryDigitalCardChainDetail
+	get /queryDigitalCardChainDetail (QueryDigitalCardChainDetailReq) returns (QueryDigitalCardChainDetailResp)
+
+	@handler QueryDigitalCardChainActions
+	get /queryDigitalCardChainActions (QueryDigitalCardChainActionsReq) returns (QueryDigitalCardChainActionsResp)
+
+	@handler RetryDigitalCardChain
+	post /retryDigitalCardChain (DigitalCardChainActionReq) returns (DigitalCardChainActionResp)
+
+	@handler FreezeDigitalCardChain
+	post /freezeDigitalCardChain (DigitalCardChainActionReq) returns (DigitalCardChainActionResp)
+
+	@handler EscalateDigitalCardChain
+	post /escalateDigitalCardChain (DigitalCardChainActionReq) returns (DigitalCardChainActionResp)
+}

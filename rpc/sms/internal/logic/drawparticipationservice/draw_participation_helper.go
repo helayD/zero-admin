@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/feihua/zero-admin/pkg/digitalcardmint"
 	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/pkg/time_util"
 	"github.com/feihua/zero-admin/rpc/sms/smsclient"
@@ -188,6 +189,8 @@ type drawRecordDetailRow struct {
 	AssetInstanceID    int64      `gorm:"column:asset_instance_id"`
 	AssetNo            string     `gorm:"column:asset_no"`
 	AssetStatus        string     `gorm:"column:asset_status"`
+	MintStatus         string     `gorm:"column:mint_status"`
+	ChainStatus        string     `gorm:"column:chain_status"`
 	AssetCreatedAt     *time.Time `gorm:"column:asset_created_at"`
 	CreateTime         time.Time  `gorm:"column:create_time"`
 }
@@ -618,9 +621,12 @@ func queryMemberRecordList(ctx context.Context, db *gorm.DB, activityID int64, m
 			r.asset_instance_id,
 			r.asset_no,
 			r.asset_status,
+			COALESCE(ci.mint_status, '') AS mint_status,
+			COALESCE(ci.chain_status, '') AS chain_status,
 			r.asset_created_at,
 			r.create_time`).
 		Joins("LEFT JOIN sms_card_template ct ON ct.id = r.template_id AND ct.is_deleted = 0").
+		Joins("LEFT JOIN sms_card_instance ci ON ci.id = r.asset_instance_id AND ci.is_deleted = 0").
 		Where("r.activity_id = ? AND r.member_id = ? AND r.is_deleted = 0", activityID, memberID).
 		Order("r.id desc").
 		Offset(int((pageNum - 1) * pageSize)).
@@ -660,7 +666,7 @@ func mapDrawRecordDetail(row *drawRecordDetailRow) *smsclient.DrawMemberRecordDa
 		AssetInstanceId:    row.AssetInstanceID,
 		AssetNo:            row.AssetNo,
 		AssetStatus:        row.AssetStatus,
-		AssetStatusText:    cardAssetStatusText(row.AssetStatus),
+		AssetStatusText:    cardAssetStatusText(row.AssetStatus, row.MintStatus, row.ChainStatus),
 		AssetCreatedAt:     nullableTimeToStr(row.AssetCreatedAt),
 		CreateTime:         time_util.TimeToStr(row.CreateTime),
 	}
@@ -700,9 +706,12 @@ func loadRecordDetailByID(ctx context.Context, db *gorm.DB, id int64) (*smsclien
 			r.asset_instance_id,
 			r.asset_no,
 			r.asset_status,
+			COALESCE(ci.mint_status, '') AS mint_status,
+			COALESCE(ci.chain_status, '') AS chain_status,
 			r.asset_created_at,
 			r.create_time`).
 		Joins("LEFT JOIN sms_card_template ct ON ct.id = r.template_id AND ct.is_deleted = 0").
+		Joins("LEFT JOIN sms_card_instance ci ON ci.id = r.asset_instance_id AND ci.is_deleted = 0").
 		Where("r.id = ?", id).
 		Take(&row).Error
 	if err != nil {
@@ -859,13 +868,8 @@ func drawResultStatusText(status string) string {
 	}
 }
 
-func cardAssetStatusText(status string) string {
-	switch strings.TrimSpace(status) {
-	case "asset_created":
-		return "资产已创建，链上处理中"
-	default:
-		return ""
-	}
+func cardAssetStatusText(status string, mintStatus string, chainStatus string) string {
+	return digitalcardmint.ResolveAssetStatusText(status, mintStatus, chainStatus)
 }
 
 func nullableTimeToStr(value *time.Time) string {
