@@ -83,9 +83,9 @@ const cleanupOrphanAntdOverlays = () => {
   ensureOrphanOverlayCleanupStyle();
 
   const hasVisibleDialog =
-    isVisibleOverlayNode('.ant-modal-wrap') ||
-    isVisibleOverlayNode('.ant-drawer-content-wrapper') ||
-    isVisibleOverlayNode('.ant-tour');
+    isVisibleOverlayNode('.ant-modal-wrap .ant-modal, .ant-modal-wrap .ant-modal-content') ||
+    isVisibleOverlayNode('.ant-drawer-content-wrapper .ant-drawer-content') ||
+    isVisibleOverlayNode('.ant-tour .ant-tour-inner');
 
   if (hasVisibleDialog) {
     document.body.classList.remove(orphanOverlayCleanupClass);
