@@ -1,14 +1,167 @@
-ALTER TABLE `sms_card_instance`
-    ADD COLUMN IF NOT EXISTS `token_id` VARCHAR(128) NOT NULL DEFAULT '' COMMENT '链上 token 标识',
-    ADD COLUMN IF NOT EXISTS `token_id_guard` VARCHAR(128) GENERATED ALWAYS AS (NULLIF(`token_id`, '')) STORED COMMENT '非空 token 唯一约束列',
-    ADD COLUMN IF NOT EXISTS `chain_status` VARCHAR(32) NOT NULL DEFAULT 'unknown' COMMENT '链上状态摘要',
-    ADD COLUMN IF NOT EXISTS `last_receipt_at` DATETIME NULL DEFAULT NULL COMMENT '最近回执时间',
-    ADD COLUMN IF NOT EXISTS `mint_task_id` BIGINT NOT NULL DEFAULT 0 COMMENT '最近发放任务ID';
+SET @db_name := DATABASE();
+SET @skip_ddl := 'SELECT 1';
 
-ALTER TABLE `sms_card_instance`
-    ADD UNIQUE KEY IF NOT EXISTS `uk_card_instance_token_guard` (`token_id_guard`, `is_deleted`),
-    ADD KEY IF NOT EXISTS `idx_card_instance_token` (`token_id`, `is_deleted`),
-    ADD KEY IF NOT EXISTS `idx_card_instance_mint_task` (`mint_task_id`, `is_deleted`);
+SET @ddl := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = @db_name
+              AND TABLE_NAME = 'sms_card_instance'
+              AND COLUMN_NAME = 'token_id'
+        ),
+        @skip_ddl,
+        CONCAT(
+            'ALTER TABLE `sms_card_instance` ',
+            'ADD COLUMN `token_id` VARCHAR(128) NOT NULL DEFAULT ',
+            QUOTE(''),
+            ' COMMENT ',
+            QUOTE('链上 token 标识')
+        )
+    )
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @ddl := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = @db_name
+              AND TABLE_NAME = 'sms_card_instance'
+              AND COLUMN_NAME = 'token_id_guard'
+        ),
+        @skip_ddl,
+        CONCAT(
+            'ALTER TABLE `sms_card_instance` ',
+            'ADD COLUMN `token_id_guard` VARCHAR(128) GENERATED ALWAYS AS (NULLIF(`token_id`, ',
+            QUOTE(''),
+            ')) STORED COMMENT ',
+            QUOTE('非空 token 唯一约束列')
+        )
+    )
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @ddl := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = @db_name
+              AND TABLE_NAME = 'sms_card_instance'
+              AND COLUMN_NAME = 'chain_status'
+        ),
+        @skip_ddl,
+        CONCAT(
+            'ALTER TABLE `sms_card_instance` ',
+            'ADD COLUMN `chain_status` VARCHAR(32) NOT NULL DEFAULT ',
+            QUOTE('unknown'),
+            ' COMMENT ',
+            QUOTE('链上状态摘要')
+        )
+    )
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @ddl := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = @db_name
+              AND TABLE_NAME = 'sms_card_instance'
+              AND COLUMN_NAME = 'last_receipt_at'
+        ),
+        @skip_ddl,
+        CONCAT(
+            'ALTER TABLE `sms_card_instance` ',
+            'ADD COLUMN `last_receipt_at` DATETIME NULL DEFAULT NULL COMMENT ',
+            QUOTE('最近回执时间')
+        )
+    )
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @ddl := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = @db_name
+              AND TABLE_NAME = 'sms_card_instance'
+              AND COLUMN_NAME = 'mint_task_id'
+        ),
+        @skip_ddl,
+        CONCAT(
+            'ALTER TABLE `sms_card_instance` ',
+            'ADD COLUMN `mint_task_id` BIGINT NOT NULL DEFAULT 0 COMMENT ',
+            QUOTE('最近发放任务ID')
+        )
+    )
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @ddl := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.STATISTICS
+            WHERE TABLE_SCHEMA = @db_name
+              AND TABLE_NAME = 'sms_card_instance'
+              AND INDEX_NAME = 'uk_card_instance_token_guard'
+        ),
+        @skip_ddl,
+        'ALTER TABLE `sms_card_instance` ADD UNIQUE KEY `uk_card_instance_token_guard` (`token_id_guard`, `is_deleted`)'
+    )
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @ddl := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.STATISTICS
+            WHERE TABLE_SCHEMA = @db_name
+              AND TABLE_NAME = 'sms_card_instance'
+              AND INDEX_NAME = 'idx_card_instance_token'
+        ),
+        @skip_ddl,
+        'ALTER TABLE `sms_card_instance` ADD KEY `idx_card_instance_token` (`token_id`, `is_deleted`)'
+    )
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @ddl := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.STATISTICS
+            WHERE TABLE_SCHEMA = @db_name
+              AND TABLE_NAME = 'sms_card_instance'
+              AND INDEX_NAME = 'idx_card_instance_mint_task'
+        ),
+        @skip_ddl,
+        'ALTER TABLE `sms_card_instance` ADD KEY `idx_card_instance_mint_task` (`mint_task_id`, `is_deleted`)'
+    )
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 CREATE TABLE IF NOT EXISTS `sms_card_mint_task` (
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '编号',

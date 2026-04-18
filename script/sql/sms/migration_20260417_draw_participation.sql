@@ -1,9 +1,112 @@
-ALTER TABLE `sms_draw_activity`
-    ADD COLUMN IF NOT EXISTS `consume_type` VARCHAR(32) NOT NULL DEFAULT 'lottery_times' COMMENT '消耗类型',
-    ADD COLUMN IF NOT EXISTS `consume_amount` INT NOT NULL DEFAULT 1 COMMENT '单次消耗数量',
-    ADD COLUMN IF NOT EXISTS `quota_per_member` INT NOT NULL DEFAULT 0 COMMENT '单用户总配额,0表示不限',
-    ADD COLUMN IF NOT EXISTS `daily_quota_per_member` INT NOT NULL DEFAULT 0 COMMENT '单用户单日配额,0表示不限',
-    ADD COLUMN IF NOT EXISTS `eligibility_rule_json` JSON NULL COMMENT '机器可读资格规则';
+SET @db_name := DATABASE();
+SET @skip_ddl := 'SELECT 1';
+
+SET @ddl := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = @db_name
+              AND TABLE_NAME = 'sms_draw_activity'
+              AND COLUMN_NAME = 'consume_type'
+        ),
+        @skip_ddl,
+        CONCAT(
+            'ALTER TABLE `sms_draw_activity` ',
+            'ADD COLUMN `consume_type` VARCHAR(32) NOT NULL DEFAULT ',
+            QUOTE('lottery_times'),
+            ' COMMENT ',
+            QUOTE('消耗类型')
+        )
+    )
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @ddl := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = @db_name
+              AND TABLE_NAME = 'sms_draw_activity'
+              AND COLUMN_NAME = 'consume_amount'
+        ),
+        @skip_ddl,
+        CONCAT(
+            'ALTER TABLE `sms_draw_activity` ',
+            'ADD COLUMN `consume_amount` INT NOT NULL DEFAULT 1 COMMENT ',
+            QUOTE('单次消耗数量')
+        )
+    )
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @ddl := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = @db_name
+              AND TABLE_NAME = 'sms_draw_activity'
+              AND COLUMN_NAME = 'quota_per_member'
+        ),
+        @skip_ddl,
+        CONCAT(
+            'ALTER TABLE `sms_draw_activity` ',
+            'ADD COLUMN `quota_per_member` INT NOT NULL DEFAULT 0 COMMENT ',
+            QUOTE('单用户总配额,0表示不限')
+        )
+    )
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @ddl := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = @db_name
+              AND TABLE_NAME = 'sms_draw_activity'
+              AND COLUMN_NAME = 'daily_quota_per_member'
+        ),
+        @skip_ddl,
+        CONCAT(
+            'ALTER TABLE `sms_draw_activity` ',
+            'ADD COLUMN `daily_quota_per_member` INT NOT NULL DEFAULT 0 COMMENT ',
+            QUOTE('单用户单日配额,0表示不限')
+        )
+    )
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @ddl := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = @db_name
+              AND TABLE_NAME = 'sms_draw_activity'
+              AND COLUMN_NAME = 'eligibility_rule_json'
+        ),
+        @skip_ddl,
+        CONCAT(
+            'ALTER TABLE `sms_draw_activity` ',
+            'ADD COLUMN `eligibility_rule_json` JSON NULL COMMENT ',
+            QUOTE('机器可读资格规则')
+        )
+    )
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 CREATE TABLE IF NOT EXISTS `sms_draw_participation_record` (
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '编号',

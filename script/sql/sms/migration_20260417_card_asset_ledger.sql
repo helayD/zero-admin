@@ -1,8 +1,93 @@
-ALTER TABLE `sms_draw_participation_record`
-    ADD COLUMN IF NOT EXISTS `asset_instance_id` BIGINT NOT NULL DEFAULT 0 COMMENT '资产实例ID快照',
-    ADD COLUMN IF NOT EXISTS `asset_no` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '资产编号快照',
-    ADD COLUMN IF NOT EXISTS `asset_status` VARCHAR(32) NOT NULL DEFAULT '' COMMENT '资产状态快照',
-    ADD COLUMN IF NOT EXISTS `asset_created_at` DATETIME NULL DEFAULT NULL COMMENT '资产创建时间快照';
+SET @db_name := DATABASE();
+SET @skip_ddl := 'SELECT 1';
+
+SET @ddl := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = @db_name
+              AND TABLE_NAME = 'sms_draw_participation_record'
+              AND COLUMN_NAME = 'asset_instance_id'
+        ),
+        @skip_ddl,
+        CONCAT(
+            'ALTER TABLE `sms_draw_participation_record` ',
+            'ADD COLUMN `asset_instance_id` BIGINT NOT NULL DEFAULT 0 COMMENT ',
+            QUOTE('资产实例ID快照')
+        )
+    )
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @ddl := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = @db_name
+              AND TABLE_NAME = 'sms_draw_participation_record'
+              AND COLUMN_NAME = 'asset_no'
+        ),
+        @skip_ddl,
+        CONCAT(
+            'ALTER TABLE `sms_draw_participation_record` ',
+            'ADD COLUMN `asset_no` VARCHAR(64) NOT NULL DEFAULT ',
+            QUOTE(''),
+            ' COMMENT ',
+            QUOTE('资产编号快照')
+        )
+    )
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @ddl := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = @db_name
+              AND TABLE_NAME = 'sms_draw_participation_record'
+              AND COLUMN_NAME = 'asset_status'
+        ),
+        @skip_ddl,
+        CONCAT(
+            'ALTER TABLE `sms_draw_participation_record` ',
+            'ADD COLUMN `asset_status` VARCHAR(32) NOT NULL DEFAULT ',
+            QUOTE(''),
+            ' COMMENT ',
+            QUOTE('资产状态快照')
+        )
+    )
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @ddl := (
+    SELECT IF(
+        EXISTS(
+            SELECT 1
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = @db_name
+              AND TABLE_NAME = 'sms_draw_participation_record'
+              AND COLUMN_NAME = 'asset_created_at'
+        ),
+        @skip_ddl,
+        CONCAT(
+            'ALTER TABLE `sms_draw_participation_record` ',
+            'ADD COLUMN `asset_created_at` DATETIME NULL DEFAULT NULL COMMENT ',
+            QUOTE('资产创建时间快照')
+        )
+    )
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 CREATE TABLE IF NOT EXISTS `sms_card_instance` (
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '编号',
