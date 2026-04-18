@@ -104,6 +104,10 @@ class _LoginState extends State<Login> {
           return '登录后将继续完成评价内容。';
         case AppRecentTargetType.settings:
           return '登录后将继续访问账户设置。';
+        case AppRecentTargetType.digitalCardAssetList:
+          return '登录后将继续查看我的数字卡片。';
+        case AppRecentTargetType.digitalCardAssetDetail:
+          return '登录后将继续查看数字卡片详情。';
         case AppRecentTargetType.home:
         case AppRecentTargetType.activity:
         case AppRecentTargetType.subject:

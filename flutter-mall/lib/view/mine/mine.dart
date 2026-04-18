@@ -17,6 +17,7 @@ import 'package:flutter_mall/view/mine/order/order_list.dart';
 import 'package:flutter_mall/view/mine/ping_jia/ping_jia.dart';
 import 'package:flutter_mall/view/mine/profile/profile_edit.dart';
 import 'package:flutter_mall/view/mine/setting/settings.dart';
+import 'package:flutter_mall/view/digital_card/my_digital_card_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 ///
@@ -434,6 +435,19 @@ class _MineState extends State<Mine> {
         },
       ),
       _MineMetricData(
+        label: '数字卡片',
+        value: '查看',
+        subtitle: '到账进度',
+        icon: Icons.style_outlined,
+        accentColor: const Color(0xFF7C3AED),
+        backgroundColor: const Color(0xFFF3E8FF),
+        onTap: () {
+          _openProtectedPage(
+            const MyDigitalCardPage(intentSource: 'mine_asset_metric'),
+          );
+        },
+      ),
+      _MineMetricData(
         label: '订单数',
         value: (_memberInfoData?.orderCount ?? 0).toString(),
         subtitle: '订单进度',
@@ -455,9 +469,11 @@ class _MineState extends State<Mine> {
             iconColor: AppColors.primaryDark,
             iconBackground: AppColors.primarySoft,
             title: '我的资产',
-            actionLabel: '查看订单',
+            actionLabel: '查看卡片',
             onActionTap: () {
-              _openOrderList();
+              _openProtectedPage(
+                const MyDigitalCardPage(intentSource: 'mine_asset_header'),
+              );
             },
           ),
           const SizedBox(height: AppSpacing.md),

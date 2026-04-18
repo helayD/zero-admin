@@ -6,6 +6,8 @@ import 'package:flutter_mall/utils/app_recovery_router.dart';
 import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/utils/shared_preferences_util.dart';
 import 'package:flutter_mall/view/digital_card/draw_activity_page.dart';
+import 'package:flutter_mall/view/digital_card/my_digital_card_page.dart';
+import 'package:flutter_mall/view/digital_card/digital_card_asset_detail_page.dart';
 import 'package:flutter_mall/view/mine/coupon/available_coupon_list.dart';
 import 'package:flutter_mall/view/mine/coupon/coupon_list.dart';
 import 'package:flutter_mall/view/mine/order/order_list.dart';
@@ -144,5 +146,29 @@ void main() {
 
     expect(target, isA<DrawActivityPage>());
     expect((target as DrawActivityPage).activityId, 88);
+  });
+
+  test('digital card asset recovery opens list and detail pages', () {
+    final listTarget = AppRecoveryRouter.buildTarget(
+      AppRecentContext.create(
+        targetType: AppRecentTargetType.digitalCardAssetList,
+        source: 'manual_open',
+        requiresAuth: true,
+        fallbackType: AppRecentTargetType.home,
+      ),
+    );
+    expect(listTarget, isA<MyDigitalCardPage>());
+
+    final detailTarget = AppRecoveryRouter.buildTarget(
+      AppRecentContext.create(
+        targetType: AppRecentTargetType.digitalCardAssetDetail,
+        targetId: 901,
+        source: 'manual_open',
+        requiresAuth: true,
+        fallbackType: AppRecentTargetType.digitalCardAssetList,
+      ),
+    );
+    expect(detailTarget, isA<DigitalCardAssetDetailPage>());
+    expect((detailTarget as DigitalCardAssetDetailPage).assetInstanceId, 901);
   });
 }

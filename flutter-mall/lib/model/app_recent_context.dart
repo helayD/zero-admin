@@ -10,6 +10,8 @@ enum AppRecentTargetType {
   couponCenter,
   afterSalesApply,
   activity,
+  digitalCardAssetList,
+  digitalCardAssetDetail,
   subject,
   preferredArea,
 }
@@ -38,6 +40,10 @@ AppRecentTargetType? appRecentTargetTypeFromValue(String? value) {
       return AppRecentTargetType.afterSalesApply;
     case 'activity':
       return AppRecentTargetType.activity;
+    case 'digital_card_asset_list':
+      return AppRecentTargetType.digitalCardAssetList;
+    case 'digital_card_asset_detail':
+      return AppRecentTargetType.digitalCardAssetDetail;
     case 'subject':
       return AppRecentTargetType.subject;
     case 'preferred_area':
@@ -71,6 +77,10 @@ String appRecentTargetTypeToValue(AppRecentTargetType type) {
       return 'after_sales_apply';
     case AppRecentTargetType.activity:
       return 'activity';
+    case AppRecentTargetType.digitalCardAssetList:
+      return 'digital_card_asset_list';
+    case AppRecentTargetType.digitalCardAssetDetail:
+      return 'digital_card_asset_detail';
     case AppRecentTargetType.subject:
       return 'subject';
     case AppRecentTargetType.preferredArea:
@@ -419,11 +429,13 @@ class AppRecentContext {
       case AppRecentTargetType.settings:
       case AppRecentTargetType.couponList:
       case AppRecentTargetType.couponCenter:
+      case AppRecentTargetType.digitalCardAssetList:
         return targetId == null || targetId > 0;
       case AppRecentTargetType.productDetail:
       case AppRecentTargetType.orderDetail:
       case AppRecentTargetType.commentCompose:
       case AppRecentTargetType.afterSalesApply:
+      case AppRecentTargetType.digitalCardAssetDetail:
         return targetId != null && targetId > 0;
       case AppRecentTargetType.activity:
       case AppRecentTargetType.subject:
@@ -449,6 +461,8 @@ class AppRecentContext {
       case AppRecentTargetType.couponCenter:
       case AppRecentTargetType.afterSalesApply:
       case AppRecentTargetType.activity:
+      case AppRecentTargetType.digitalCardAssetList:
+      case AppRecentTargetType.digitalCardAssetDetail:
       case AppRecentTargetType.subject:
       case AppRecentTargetType.preferredArea:
         return tabIndex == null;
@@ -498,6 +512,8 @@ class AppRecentContext {
       case AppRecentTargetType.settings:
       case AppRecentTargetType.couponList:
       case AppRecentTargetType.couponCenter:
+      case AppRecentTargetType.digitalCardAssetList:
+      case AppRecentTargetType.digitalCardAssetDetail:
       case AppRecentTargetType.activity:
       case AppRecentTargetType.subject:
       case AppRecentTargetType.preferredArea:
@@ -506,6 +522,7 @@ class AppRecentContext {
       case AppRecentTargetType.orderDetail:
       case AppRecentTargetType.commentCompose:
       case AppRecentTargetType.afterSalesApply:
+      case AppRecentTargetType.digitalCardAssetDetail:
         return false;
     }
   }
@@ -537,6 +554,8 @@ class AppRecentContext {
       case AppRecentTargetType.couponCenter:
       case AppRecentTargetType.afterSalesApply:
       case AppRecentTargetType.activity:
+      case AppRecentTargetType.digitalCardAssetList:
+      case AppRecentTargetType.digitalCardAssetDetail:
       case AppRecentTargetType.subject:
       case AppRecentTargetType.preferredArea:
         return false;

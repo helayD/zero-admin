@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mall/model/digital_card/draw_activity_model.dart';
+import 'package:flutter_mall/view/digital_card/digital_card_asset_detail_page.dart';
+import 'package:flutter_mall/view/digital_card/my_digital_card_page.dart';
 
 class DrawResultSheet extends StatelessWidget {
   final DrawMemberRecord record;
@@ -63,6 +65,40 @@ class DrawResultSheet extends StatelessWidget {
       default:
         return const Color(0xFF3E4A59);
     }
+  }
+
+  bool get _canOpenAssetCenter => record.resultStatus == 'won_pending_asset';
+
+  String get _assetActionLabel {
+    if (record.assetInstanceId > 0) {
+      return '查看资产详情';
+    }
+    return '查看我的卡片';
+  }
+
+  Future<void> _openAssetCenter(BuildContext context) async {
+    final NavigatorState rootNavigator =
+        Navigator.of(context, rootNavigator: true);
+    Navigator.of(context).pop();
+    await Future<void>.delayed(Duration.zero);
+    if (record.assetInstanceId > 0) {
+      await rootNavigator.push(
+        MaterialPageRoute(
+          builder: (_) => DigitalCardAssetDetailPage(
+            assetInstanceId: record.assetInstanceId,
+            intentSource: 'draw_result_sheet',
+          ),
+        ),
+      );
+      return;
+    }
+    await rootNavigator.push(
+      MaterialPageRoute(
+        builder: (_) => const MyDigitalCardPage(
+          intentSource: 'draw_result_sheet',
+        ),
+      ),
+    );
   }
 
   @override
@@ -185,6 +221,26 @@ class DrawResultSheet extends StatelessWidget {
                 child: const Text('我知道了'),
               ),
             ),
+            if (_canOpenAssetCenter) ...<Widget>[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () {
+                    _openAssetCenter(context);
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF1F2937),
+                    side: const BorderSide(color: Color(0xFF1F2937)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: Text(_assetActionLabel),
+                ),
+              ),
+            ],
           ],
         ),
       ),

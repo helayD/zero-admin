@@ -121,6 +121,23 @@ void main() {
     expect(AppRecoveryStore.getRecentContext(), isNull);
   });
 
+  test('digital card asset detail without target id is rejected', () {
+    final parsed = AppRecentContext.tryParse({
+      'version': AppRecentContext.currentVersion,
+      'targetType': 'digital_card_asset_detail',
+      'targetId': null,
+      'tabIndex': null,
+      'source': 'manual_open',
+      'requiresAuth': true,
+      'capturedAt': DateTime.now().toIso8601String(),
+      'lastValidatedAt': DateTime.now().toIso8601String(),
+      'fallbackType': 'digital_card_asset_list',
+    });
+
+    expect(parsed, isNotNull);
+    expect(parsed!.validateReason(), 'invalid_target_id');
+  });
+
   test('structured recall payload tolerates polluted zero optional fields', () {
     final context = AppRecentContext.fromRecallPayload({
       'intentType': 'coupon_center_recall',

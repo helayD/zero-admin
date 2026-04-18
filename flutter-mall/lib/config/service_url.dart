@@ -133,6 +133,12 @@ const participateDrawUrl = "$baseUrl/api/digitalCard/participateDraw";
 // 查询我的抽卡记录
 const queryMyDrawRecordListUrl =
     "$baseUrl/api/digitalCard/queryMyDrawRecordList";
+// 查询我的数字卡片资产列表
+const queryMyDigitalCardAssetListUrl =
+    "$baseUrl/api/digitalCard/asset/queryMyDigitalCardAssetList";
+// 查询我的数字卡片资产详情
+const queryMyDigitalCardAssetDetailUrl =
+    "$baseUrl/api/digitalCard/asset/queryMyDigitalCardAssetDetail";
 
 // ==================== 支付相关（Story 5.5 Task 11）====================
 // 发起支付

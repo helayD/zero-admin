@@ -52,6 +52,8 @@ class UpgradeGateService {
       case AppRecentTargetType.couponList:
       case AppRecentTargetType.couponCenter:
       case AppRecentTargetType.activity:
+      case AppRecentTargetType.digitalCardAssetList:
+      case AppRecentTargetType.digitalCardAssetDetail:
       case AppRecentTargetType.subject:
       case AppRecentTargetType.preferredArea:
         return 'app_bootstrap';

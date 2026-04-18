@@ -16,6 +16,8 @@ import 'package:flutter_mall/view/mine/order/order_detail.dart';
 import 'package:flutter_mall/view/mine/order/order_list.dart';
 import 'package:flutter_mall/view/mine/setting/settings.dart';
 import 'package:flutter_mall/view/digital_card/draw_activity_page.dart';
+import 'package:flutter_mall/view/digital_card/my_digital_card_page.dart';
+import 'package:flutter_mall/view/digital_card/digital_card_asset_detail_page.dart';
 
 class AppRecoveryRouter {
   static Widget buildTarget(AppRecentContext context) {
@@ -85,6 +87,17 @@ class AppRecoveryRouter {
           activityId: activityId,
           intentSource: context.source,
         );
+      case AppRecentTargetType.digitalCardAssetList:
+        return MyDigitalCardPage(intentSource: context.source);
+      case AppRecentTargetType.digitalCardAssetDetail:
+        final assetInstanceId = context.targetId;
+        if (assetInstanceId == null || assetInstanceId <= 0) {
+          return buildFallback(context);
+        }
+        return DigitalCardAssetDetailPage(
+          assetInstanceId: assetInstanceId,
+          intentSource: context.source,
+        );
       case AppRecentTargetType.subject:
       case AppRecentTargetType.preferredArea:
         return buildFallback(context);
@@ -126,6 +139,16 @@ class AppRecoveryRouter {
         );
       case AppRecentTargetType.couponCenter:
         return AvailableCouponList(intentSource: context.source);
+      case AppRecentTargetType.digitalCardAssetList:
+        return MyDigitalCardPage(intentSource: context.source);
+      case AppRecentTargetType.digitalCardAssetDetail:
+        if (context.fallbackTargetId != null && context.fallbackTargetId! > 0) {
+          return DigitalCardAssetDetailPage(
+            assetInstanceId: context.fallbackTargetId!,
+            intentSource: context.source,
+          );
+        }
+        return MainTab(intentSource: context.source);
       case AppRecentTargetType.settings:
       case AppRecentTargetType.commentCompose:
       case AppRecentTargetType.productDetail:

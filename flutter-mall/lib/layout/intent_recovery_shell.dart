@@ -373,6 +373,8 @@ class _IntentRecoveryShellState extends State<IntentRecoveryShell> {
       case AppRecentTargetType.commentCompose:
       case AppRecentTargetType.afterSalesApply:
       case AppRecentTargetType.activity:
+      case AppRecentTargetType.digitalCardAssetList:
+      case AppRecentTargetType.digitalCardAssetDetail:
       case AppRecentTargetType.subject:
       case AppRecentTargetType.preferredArea:
         return false;
