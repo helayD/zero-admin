@@ -31,6 +31,8 @@ const IconMap = {
 };
 
 const loginPath = '/user/login';
+const orphanOverlayCleanupClass = 'codex-orphan-overlay-cleanup';
+const orphanOverlayCleanupStyleId = 'codex-orphan-overlay-cleanup-style';
 
 const isVisibleOverlayNode = (selector: string) => {
   if (typeof document === 'undefined') {
@@ -51,10 +53,34 @@ const isVisibleOverlayNode = (selector: string) => {
   });
 };
 
+const ensureOrphanOverlayCleanupStyle = () => {
+  if (typeof document === 'undefined' || document.getElementById(orphanOverlayCleanupStyleId)) {
+    return;
+  }
+
+  const style = document.createElement('style');
+  style.id = orphanOverlayCleanupStyleId;
+  style.textContent = `
+    body.${orphanOverlayCleanupClass} .ant-modal-mask,
+    body.${orphanOverlayCleanupClass} .ant-drawer-mask,
+    body.${orphanOverlayCleanupClass} .ant-tour-mask,
+    body.${orphanOverlayCleanupClass} .ant-modal-wrap,
+    body.${orphanOverlayCleanupClass} .ant-drawer-content-wrapper,
+    body.${orphanOverlayCleanupClass} .ant-tour {
+      pointer-events: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+    }
+  `;
+  document.head.appendChild(style);
+};
+
 const cleanupOrphanAntdOverlays = () => {
   if (typeof document === 'undefined') {
     return;
   }
+
+  ensureOrphanOverlayCleanupStyle();
 
   const hasVisibleDialog =
     isVisibleOverlayNode('.ant-modal-wrap') ||
@@ -62,6 +88,7 @@ const cleanupOrphanAntdOverlays = () => {
     isVisibleOverlayNode('.ant-tour');
 
   if (hasVisibleDialog) {
+    document.body.classList.remove(orphanOverlayCleanupClass);
     return;
   }
 
@@ -70,16 +97,12 @@ const cleanupOrphanAntdOverlays = () => {
       null || document.body.classList.contains('ant-scrolling-effect');
 
   if (!hasResidualOverlay) {
+    document.body.classList.remove(orphanOverlayCleanupClass);
     return;
   }
 
   Modal.destroyAll();
-
-  document
-    .querySelectorAll(
-      '.ant-modal-root, .ant-modal-mask, .ant-modal-wrap, .ant-drawer-mask, .ant-drawer-content-wrapper, .ant-tour, .ant-tour-mask',
-    )
-    .forEach((node) => node.remove());
+  document.body.classList.add(orphanOverlayCleanupClass);
 
   document.querySelectorAll('.ant-spin-blur').forEach((node) => {
     node.classList.remove('ant-spin-blur');
@@ -93,6 +116,27 @@ const cleanupOrphanAntdOverlays = () => {
 
 const OverlayCleanupGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
+
+  useEffect(() => {
+    if (typeof document === 'undefined' || !document.body) {
+      return;
+    }
+
+    const observer = new MutationObserver(() => {
+      cleanupOrphanAntdOverlays();
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class', 'style'],
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     cleanupOrphanAntdOverlays();
