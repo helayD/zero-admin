@@ -48,6 +48,7 @@ func mapAuditItem(item *digitalcardmint.DigitalCardAssetAuditItem) *types.Digita
 		ObtainedAt:            item.ObtainedAt,
 		DisposedAt:            item.DisposedAt,
 		LatestReasonSummary:   item.LatestReasonSummary,
+		ChainType:             item.ChainType,
 	}
 }
 

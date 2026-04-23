@@ -24,6 +24,7 @@ type DigitalCardAssetItem {
 	ComplianceStatusText  string `json:"complianceStatusText"` //合规状态文案
 	TokenStatusText       string `json:"tokenStatusText"` //token 展示状态
 	ComplianceRuleSummary string `json:"complianceRuleSummary"` //合规提示摘要
+	ChainType             string `json:"chainType"` //链类型(antchain/fisco)
 }
 
 type QueryMyDigitalCardAssetListReq {

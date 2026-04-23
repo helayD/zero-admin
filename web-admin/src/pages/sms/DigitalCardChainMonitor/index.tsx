@@ -10,6 +10,7 @@ import type {
 } from './data';
 import {
   CHAIN_STATUS_OPTIONS,
+  CHAIN_TYPE_OPTIONS,
   MANUAL_REQUIRED_OPTIONS,
   MINT_STATUS_OPTIONS,
   TASK_STATUS_OPTIONS,
@@ -216,6 +217,18 @@ const DigitalCardChainMonitor: React.FC = () => {
           {row.chainStatusText || row.chainStatus || '-'}
         </Tag>
       ),
+    },
+    {
+      title: '链类型',
+      dataIndex: 'chainType',
+      width: 100,
+      hideInSearch: true,
+      render: (_, row) => {
+        if (!row.chainType) return '-';
+        const color = row.chainType === 'fisco' ? 'cyan' : row.chainType === 'antchain' ? 'purple' : 'default';
+        const label = CHAIN_TYPE_OPTIONS.find((o) => o.value === row.chainType)?.label || row.chainType;
+        return <Tag color={color}>{label}</Tag>;
+      },
     },
     {
       title: '人工复核',

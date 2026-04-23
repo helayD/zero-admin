@@ -62,6 +62,7 @@ func (l *QueryDigitalCardAssetDetailLogic) QueryDigitalCardAssetDetail(req *type
 				ChainTxId:          detail.MintTaskSummary.ChainTxID,
 				LastReceiptSummary: detail.MintTaskSummary.LastReceiptSummary,
 				AvailableActions:   detail.MintTaskSummary.AvailableActions,
+				ChainType:          detail.MintTaskSummary.ChainType,
 			},
 			TraceId:               detail.TraceID,
 			RequestId:             detail.RequestID,

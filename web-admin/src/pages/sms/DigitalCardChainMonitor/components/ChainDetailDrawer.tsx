@@ -12,6 +12,7 @@ import {
 } from 'antd';
 import { ExclamationCircleOutlined, PauseCircleOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { DigitalCardChainDetailData } from '../data';
+import { CHAIN_TYPE_OPTIONS } from '../data';
 import { getChainStatusColor, getTaskStatusColor } from '../helper';
 
 const { Paragraph, Text } = Typography;
@@ -96,6 +97,13 @@ const ChainDetailDrawer: React.FC<ChainDetailDrawerProps> = ({
               <Tag color={getChainStatusColor(item.chainStatus)}>
                 {item.chainStatusText || item.chainStatus}
               </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="链类型">
+              {item.chainType ? (
+                <Tag color={item.chainType === 'fisco' ? 'cyan' : 'purple'}>
+                  {CHAIN_TYPE_OPTIONS.find((o) => o.value === item.chainType)?.label || item.chainType}
+                </Tag>
+              ) : '-'}
             </Descriptions.Item>
             <Descriptions.Item label="发放状态">
               {item.mintStatusText || item.mintStatus || '-'}

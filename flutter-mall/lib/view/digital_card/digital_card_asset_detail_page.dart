@@ -351,6 +351,8 @@ class _DigitalCardAssetDetailPageState
                 ? detail.item.chainStatus
                 : detail.item.chainStatusText,
           ),
+          if (detail.item.chainType.isNotEmpty)
+            _buildMetaLine('链类型', detail.item.chainType == 'fisco' ? 'FISCO BCOS' : detail.item.chainType == 'antchain' ? 'AntChain' : detail.item.chainType),
           _buildMetaLine(
             '展示状态',
             detail.item.displayStatusText.isEmpty

@@ -8,22 +8,28 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/feihua/zero-admin/pkg/chainclient"
 )
+
+var _ chainclient.ChainClient = (*MockClient)(nil)
 
 type MockClient struct {
 	mu               sync.Mutex
-	responses        map[string]*MintTokenResponse
+	responses        map[string]*chainclient.MintTokenResponse
 	forceErrors      map[string]error
 	forceQueryErrors map[string]error
 }
 
 func NewMockClient() *MockClient {
 	return &MockClient{
-		responses:        make(map[string]*MintTokenResponse),
+		responses:        make(map[string]*chainclient.MintTokenResponse),
 		forceErrors:      make(map[string]error),
 		forceQueryErrors: make(map[string]error),
 	}
 }
+
+func (m *MockClient) ChainType() string { return "antchain-mock" }
 
 func (m *MockClient) SetError(idempotencyKey string, err error) {
 	m.mu.Lock()
@@ -37,7 +43,7 @@ func (m *MockClient) SetQueryError(idempotencyKey string, err error) {
 	m.forceQueryErrors[strings.TrimSpace(idempotencyKey)] = err
 }
 
-func (m *MockClient) MintToken(_ context.Context, req *MintTokenRequest) (*MintTokenResponse, error) {
+func (m *MockClient) MintToken(_ context.Context, req *chainclient.MintTokenRequest) (*chainclient.MintTokenResponse, error) {
 	if req == nil {
 		return nil, errors.New("mint request 不能为空")
 	}
@@ -66,7 +72,7 @@ func (m *MockClient) MintToken(_ context.Context, req *MintTokenRequest) (*MintT
 	}
 	receiptJSON, _ := json.Marshal(receiptPayload)
 	now := time.Now()
-	resp := &MintTokenResponse{
+	resp := &chainclient.MintTokenResponse{
 		TokenID:        fmt.Sprintf("token-%d", req.AssetInstanceID),
 		ChainTxID:      fmt.Sprintf("tx-%d", req.TaskID),
 		ChainStatus:    "success",
@@ -78,7 +84,7 @@ func (m *MockClient) MintToken(_ context.Context, req *MintTokenRequest) (*MintT
 	return cloneMintTokenResponse(resp), nil
 }
 
-func (m *MockClient) QueryMintToken(_ context.Context, req *QueryMintTokenRequest) (*MintTokenResponse, error) {
+func (m *MockClient) QueryMintToken(_ context.Context, req *chainclient.QueryMintTokenRequest) (*chainclient.MintTokenResponse, error) {
 	if req == nil {
 		return nil, errors.New("query request 不能为空")
 	}
@@ -100,7 +106,7 @@ func (m *MockClient) QueryMintToken(_ context.Context, req *QueryMintTokenReques
 	return nil, ErrReceiptNotFound
 }
 
-func cloneMintTokenResponse(in *MintTokenResponse) *MintTokenResponse {
+func cloneMintTokenResponse(in *chainclient.MintTokenResponse) *chainclient.MintTokenResponse {
 	if in == nil {
 		return nil
 	}

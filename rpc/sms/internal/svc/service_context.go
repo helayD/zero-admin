@@ -5,7 +5,9 @@ import (
 	"time"
 
 	"github.com/feihua/zero-admin/pkg/antchain"
+	"github.com/feihua/zero-admin/pkg/chainclient"
 	"github.com/feihua/zero-admin/pkg/digitalcardmint"
+	"github.com/feihua/zero-admin/pkg/fisco"
 	"github.com/feihua/zero-admin/pkg/mq"
 	"github.com/feihua/zero-admin/rpc/sms/gen/query"
 	"github.com/feihua/zero-admin/rpc/sms/internal/config"
@@ -19,7 +21,7 @@ type ServiceContext struct {
 	Config          config.Config
 	DB              *gorm.DB
 	RabbitMQ        *mq.RabbitMQ
-	AntChain        antchain.Client
+	ChainClient     chainclient.ChainClient
 	CardMintService *digitalcardmint.Service
 }
 
@@ -41,24 +43,39 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		mqUrl := fmt.Sprintf("amqp://%s:%s@%s:%d/", c.Rabbitmq.UserName, c.Rabbitmq.Password, c.Rabbitmq.Host, c.Rabbitmq.Port)
 		rabbitmq = mq.NewRabbitMQSimple(mqUrl)
 	}
-	antChainClient := antchain.NewClient(antchain.Config{
-		Endpoint:        c.AntChain.Endpoint,
-		ReceiptEndpoint: c.AntChain.ReceiptEndpoint,
-		AppID:           c.AntChain.AppId,
-		AccessKey:       c.AntChain.AccessKey,
-		Secret:          c.AntChain.Secret,
-		TimeoutSeconds:  c.AntChain.TimeoutSeconds,
-		Enabled:         c.AntChain.Enabled,
-	})
-	cardMintService := digitalcardmint.NewService(DB, rabbitmq, antChainClient)
+	chainClient := buildChainClient(c)
+	cardMintService := digitalcardmint.NewService(DB, rabbitmq, chainClient)
 
 	return &ServiceContext{
 		Config:          c,
 		DB:              DB,
 		RabbitMQ:        rabbitmq,
-		AntChain:        antChainClient,
+		ChainClient:     chainClient,
 		CardMintService: cardMintService,
 	}
+}
+
+func buildChainClient(c config.Config) chainclient.ChainClient {
+	if c.Blockchain.Primary == "antchain" {
+		return antchain.NewClient(antchain.Config{
+			Endpoint:        c.AntChain.Endpoint,
+			ReceiptEndpoint: c.AntChain.ReceiptEndpoint,
+			AppID:           c.AntChain.AppId,
+			AccessKey:       c.AntChain.AccessKey,
+			Secret:          c.AntChain.Secret,
+			TimeoutSeconds:  c.AntChain.TimeoutSeconds,
+			Enabled:         c.AntChain.Enabled,
+		})
+	}
+	return fisco.NewClient(fisco.Config{
+		NodeAddr:       c.Fisco.NodeAddr,
+		GroupID:        c.Fisco.GroupID,
+		ChainID:        c.Fisco.ChainID,
+		ContractAddr:   c.Fisco.ContractAddr,
+		PrivateKey:     c.Fisco.PrivateKey,
+		TimeoutSeconds: c.Fisco.TimeoutSeconds,
+		Enabled:        c.Fisco.Enabled,
+	})
 }
 
 type Writer struct{}

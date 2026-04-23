@@ -1,9 +1,13 @@
 package svc
 
 import (
+	"time"
+
 	"github.com/feihua/zero-admin/job/internal/config"
 	"github.com/feihua/zero-admin/pkg/antchain"
+	"github.com/feihua/zero-admin/pkg/chainclient"
 	"github.com/feihua/zero-admin/pkg/digitalcardmint"
+	"github.com/feihua/zero-admin/pkg/fisco"
 	"github.com/feihua/zero-admin/rpc/oms/client/orderservice"
 	"github.com/feihua/zero-admin/rpc/oms/client/ordersettingservice"
 	"github.com/feihua/zero-admin/rpc/pms/client/productskuservice"
@@ -14,14 +18,13 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"time"
 )
 
 type ServiceContext struct {
 	Config          config.Config
 	Redis           *redis.Redis
 	DB              *gorm.DB
-	AntChain        antchain.Client
+	ChainClient     chainclient.ChainClient
 	CardMintService *digitalcardmint.Service
 
 	UmsRpc              zrpc.RpcClientConf
@@ -53,15 +56,8 @@ func NewServiceContext(c config.Config) *ServiceContext {
 			panic(err)
 		}
 	}
-	antChainClient := antchain.NewClient(antchain.Config{
-		Endpoint:       c.AntChain.Endpoint,
-		AppID:          c.AntChain.AppId,
-		AccessKey:      c.AntChain.AccessKey,
-		Secret:         c.AntChain.Secret,
-		TimeoutSeconds: c.AntChain.TimeoutSeconds,
-		Enabled:        c.AntChain.Enabled,
-	})
-	cardMintService := digitalcardmint.NewService(db, nil, antChainClient)
+	chainClient := buildChainClient(c)
+	cardMintService := digitalcardmint.NewService(db, nil, chainClient)
 	cardMintService.RunningTimeout = 2 * time.Minute
 
 	redisConf := redis.RedisConf{
@@ -82,7 +78,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		Config:              c,
 		Redis:               r,
 		DB:                  db,
-		AntChain:            antChainClient,
+		ChainClient:         chainClient,
 		CardMintService:     cardMintService,
 		UmsRpc:              c.UmsRpc,
 		PmsRpc:              c.PmsRpc,
@@ -94,4 +90,27 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		CouponRecordService: couponRecordService,
 		OrderSettingService: orderSettingService,
 	}
+}
+
+func buildChainClient(c config.Config) chainclient.ChainClient {
+	if c.Blockchain.Primary == "antchain" {
+		return antchain.NewClient(antchain.Config{
+			Endpoint:        c.AntChain.Endpoint,
+			ReceiptEndpoint: c.AntChain.ReceiptEndpoint,
+			AppID:           c.AntChain.AppId,
+			AccessKey:       c.AntChain.AccessKey,
+			Secret:          c.AntChain.Secret,
+			TimeoutSeconds:  c.AntChain.TimeoutSeconds,
+			Enabled:         c.AntChain.Enabled,
+		})
+	}
+	return fisco.NewClient(fisco.Config{
+		NodeAddr:       c.Fisco.NodeAddr,
+		GroupID:        c.Fisco.GroupID,
+		ChainID:        c.Fisco.ChainID,
+		ContractAddr:   c.Fisco.ContractAddr,
+		PrivateKey:     c.Fisco.PrivateKey,
+		TimeoutSeconds: c.Fisco.TimeoutSeconds,
+		Enabled:        c.Fisco.Enabled,
+	})
 }

@@ -55,6 +55,7 @@ func (l *RetryDigitalCardChainLogic) RetryDigitalCardChain(req *types.RetryDigit
 		RetryCount:     result.RetryCount,
 		ManualRequired: result.ManualRequired,
 		Frozen:         result.Frozen,
+		ChainType:      result.ChainType,
 		Success:        true,
 	}, nil
 }

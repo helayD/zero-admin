@@ -25,4 +25,18 @@ type Config struct {
 		TimeoutSeconds  int64
 		Enabled         bool
 	}
+
+	Blockchain struct {
+		Primary string // "fisco" | "antchain"
+	}
+
+	Fisco struct {
+		NodeAddr       string
+		GroupID        int
+		ChainID        int64
+		ContractAddr   string
+		PrivateKey     string
+		TimeoutSeconds int64
+		Enabled        bool
+	}
 }

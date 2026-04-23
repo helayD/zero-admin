@@ -25,6 +25,7 @@ type DigitalCardAssetItem struct {
 	ComplianceStatusText  string `json:"complianceStatusText"`
 	TokenStatusText       string `json:"tokenStatusText"`
 	ComplianceRuleSummary string `json:"complianceRuleSummary"`
+	ChainType             string `json:"chainType"`
 }
 
 type QueryMyDigitalCardAssetListData struct {

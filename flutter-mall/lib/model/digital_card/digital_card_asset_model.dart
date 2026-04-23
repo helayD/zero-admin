@@ -97,6 +97,7 @@ class DigitalCardAssetItem {
   final String complianceStatusText;
   final String tokenStatusText;
   final String complianceRuleSummary;
+  final String chainType;
 
   const DigitalCardAssetItem({
     required this.assetInstanceId,
@@ -118,6 +119,7 @@ class DigitalCardAssetItem {
     required this.complianceStatusText,
     required this.tokenStatusText,
     required this.complianceRuleSummary,
+    required this.chainType,
   });
 
   factory DigitalCardAssetItem.fromJson(Map<String, dynamic> json) {
@@ -141,6 +143,7 @@ class DigitalCardAssetItem {
       complianceStatusText: json['complianceStatusText']?.toString() ?? '',
       tokenStatusText: json['tokenStatusText']?.toString() ?? '',
       complianceRuleSummary: json['complianceRuleSummary']?.toString() ?? '',
+      chainType: json['chainType']?.toString() ?? '',
     );
   }
 

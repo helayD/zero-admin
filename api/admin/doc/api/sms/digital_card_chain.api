@@ -55,6 +55,7 @@ type (
 		LastReceiptSummary    string `json:"lastReceiptSummary"` // 最近回执摘要
 		AssetStatusText       string `json:"assetStatusText"` // 资产阶段文案
 		ParticipationRecordId int64  `json:"participationRecordId"` // 中奖记录ID
+		ChainType             string `json:"chainType"` // 链类型(antchain/fisco)
 	}
 	QueryDigitalCardChainListData {
 		List  []DigitalCardChainItem `json:"list"` // 列表

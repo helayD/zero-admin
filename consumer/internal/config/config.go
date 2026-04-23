@@ -20,10 +20,25 @@ type Config struct {
 	}
 
 	AntChain struct {
-		Endpoint       string
-		AppId          string
-		AccessKey      string
-		Secret         string
+		Endpoint        string
+		ReceiptEndpoint string
+		AppId           string
+		AccessKey       string
+		Secret          string
+		TimeoutSeconds  int64
+		Enabled         bool
+	}
+
+	Blockchain struct {
+		Primary string // "fisco" | "antchain"
+	}
+
+	Fisco struct {
+		NodeAddr       string
+		GroupID        int
+		ChainID        int64
+		ContractAddr   string
+		PrivateKey     string
 		TimeoutSeconds int64
 		Enabled        bool
 	}

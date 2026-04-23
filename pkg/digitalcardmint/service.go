@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/feihua/zero-admin/pkg/antchain"
+	"github.com/feihua/zero-admin/pkg/chainclient"
 	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -21,7 +21,7 @@ type MQPublisher interface {
 type Service struct {
 	DB                 *gorm.DB
 	MQ                 MQPublisher
-	AntChain           antchain.Client
+	Chain              chainclient.ChainClient
 	Now                func() time.Time
 	MaxRetryCount      int32
 	RunningTimeout     time.Duration
@@ -54,11 +54,11 @@ type executeSnapshot struct {
 	RetryCount    int32
 }
 
-func NewService(db *gorm.DB, mq MQPublisher, client antchain.Client) *Service {
+func NewService(db *gorm.DB, mq MQPublisher, client chainclient.ChainClient) *Service {
 	return &Service{
 		DB:                 db,
 		MQ:                 mq,
-		AntChain:           client,
+		Chain:              client,
 		Now:                time.Now,
 		MaxRetryCount:      DefaultMaxRetryCount,
 		RunningTimeout:     2 * time.Minute,
@@ -410,7 +410,7 @@ func (s *Service) ExecuteTask(ctx context.Context, taskID int64, operatorType st
 		return buildExecuteResult(task), nil
 	}
 
-	var receipt *antchain.MintTokenResponse
+	var receipt *chainclient.MintTokenResponse
 	if replayReceipt {
 		receipt = s.buildReceiptFromTask(task)
 		if receipt == nil {
@@ -441,11 +441,11 @@ func (s *Service) ExecuteTask(ctx context.Context, taskID int64, operatorType st
 		if receipt != nil {
 			goto finalize
 		}
-		if s.AntChain == nil {
-			return nil, errors.New("蚂蚁链客户端未初始化")
+		if s.Chain == nil {
+			return nil, errors.New("链客户端未初始化")
 		}
 		var mintErr error
-		receipt, mintErr = s.AntChain.MintToken(ctx, &antchain.MintTokenRequest{
+		receipt, mintErr = s.Chain.MintToken(ctx, &chainclient.MintTokenRequest{
 			IdempotencyKey:  task.IdempotencyKey,
 			TaskID:          task.ID,
 			AssetInstanceID: task.AssetInstanceID,
@@ -600,6 +600,11 @@ func (s *Service) QueryTaskList(ctx context.Context, currentScope pkgscope.Gover
 		result = append(result, &item)
 	}
 
+	chainTypeVal := s.chainType()
+	for _, item := range result {
+		item.ChainType = chainTypeVal
+	}
+
 	return total, result, nil
 }
 
@@ -650,12 +655,15 @@ func (s *Service) QueryTaskDetail(ctx context.Context, currentScope pkgscope.Gov
 	if err != nil {
 		return nil, err
 	}
+	chainTypeVal := s.chainType()
+	item.ChainType = chainTypeVal
 	return &TaskDetail{
 		Item:            item,
 		RequestID:       task.RequestID,
 		ChainTxID:       task.ChainTxID,
 		LastReceiptJSON: task.LastReceiptJSON,
 		Logs:            logs,
+		ChainType:       chainTypeVal,
 	}, nil
 }
 
@@ -745,7 +753,7 @@ func (s *Service) RetryTask(ctx context.Context, currentScope pkgscope.Governanc
 	if err != nil {
 		return nil, err
 	}
-	return buildActionResult(task), nil
+	return buildActionResult(task, s.chainType()), nil
 }
 
 func (s *Service) FreezeTask(ctx context.Context, currentScope pkgscope.GovernanceScope, taskID int64, operatorID int64, reason string) (*ActionResult, error) {
@@ -808,7 +816,7 @@ func (s *Service) FreezeTask(ctx context.Context, currentScope pkgscope.Governan
 	if err != nil {
 		return nil, err
 	}
-	return buildActionResult(task), nil
+	return buildActionResult(task, s.chainType()), nil
 }
 
 func (s *Service) EscalateTask(ctx context.Context, currentScope pkgscope.GovernanceScope, taskID int64, operatorID int64, reason string) (*ActionResult, error) {
@@ -868,7 +876,7 @@ func (s *Service) EscalateTask(ctx context.Context, currentScope pkgscope.Govern
 	if err != nil {
 		return nil, err
 	}
-	return buildActionResult(task), nil
+	return buildActionResult(task, s.chainType()), nil
 }
 
 func (s *Service) ScanDueTasks(ctx context.Context, batchSize int) (*RecoveryStats, error) {
@@ -964,7 +972,7 @@ func (s *Service) markDispatchFailure(ctx context.Context, task *CardMintTaskRow
 	})
 }
 
-func (s *Service) transitionSuccess(ctx context.Context, task *CardMintTaskRow, instance *CardInstanceRow, receipt *antchain.MintTokenResponse, operatorType string) error {
+func (s *Service) transitionSuccess(ctx context.Context, task *CardMintTaskRow, instance *CardInstanceRow, receipt *chainclient.MintTokenResponse, operatorType string) error {
 	if task == nil || instance == nil {
 		return errors.New("任务或资产不能为空")
 	}
@@ -1077,7 +1085,7 @@ func (s *Service) transitionFailure(ctx context.Context, task *CardMintTaskRow, 
 	})
 }
 
-func (s *Service) reconcilePreviousReceipt(ctx context.Context, task *CardMintTaskRow, instance *CardInstanceRow, snapshot executeSnapshot, operatorType string) (*antchain.MintTokenResponse, bool, error) {
+func (s *Service) reconcilePreviousReceipt(ctx context.Context, task *CardMintTaskRow, instance *CardInstanceRow, snapshot executeSnapshot, operatorType string) (*chainclient.MintTokenResponse, bool, error) {
 	if !needsReceiptReconcile(snapshot) {
 		return nil, false, nil
 	}
@@ -1086,13 +1094,13 @@ func (s *Service) reconcilePreviousReceipt(ctx context.Context, task *CardMintTa
 	if err == nil {
 		return receipt, false, nil
 	}
-	if errors.Is(err, antchain.ErrReceiptNotFound) && !requiresStrictReceiptReconcile(snapshot) {
+	if errors.Is(err, chainclient.ErrReceiptNotFound) && !requiresStrictReceiptReconcile(snapshot) {
 		return nil, false, nil
 	}
 
 	reason := "历史执行结果待人工对账确认"
 	switch {
-	case errors.Is(err, antchain.ErrReceiptNotFound):
+	case errors.Is(err, chainclient.ErrReceiptNotFound):
 		reason = "链上未查询到历史回执，当前任务需人工对账确认"
 	case err != nil:
 		reason = fmt.Sprintf("链上回执对账失败：%s", err.Error())
@@ -1103,14 +1111,14 @@ func (s *Service) reconcilePreviousReceipt(ctx context.Context, task *CardMintTa
 	return nil, true, nil
 }
 
-func (s *Service) queryExistingReceipt(ctx context.Context, task *CardMintTaskRow) (*antchain.MintTokenResponse, error) {
-	if s.AntChain == nil {
-		return nil, errors.New("蚂蚁链客户端未初始化")
+func (s *Service) queryExistingReceipt(ctx context.Context, task *CardMintTaskRow) (*chainclient.MintTokenResponse, error) {
+	if s.Chain == nil {
+		return nil, errors.New("链客户端未初始化")
 	}
 	if task == nil {
 		return nil, errors.New("任务不能为空")
 	}
-	return s.AntChain.QueryMintToken(ctx, &antchain.QueryMintTokenRequest{
+	return s.Chain.QueryMintToken(ctx, &chainclient.QueryMintTokenRequest{
 		IdempotencyKey:  task.IdempotencyKey,
 		TaskID:          task.ID,
 		AssetInstanceID: task.AssetInstanceID,
@@ -1187,7 +1195,7 @@ func (s *Service) transitionManualReview(ctx context.Context, task *CardMintTask
 	})
 }
 
-func (s *Service) bestEffortMarkWritebackFailure(ctx context.Context, taskID int64, assetInstanceID int64, receipt *antchain.MintTokenResponse, cause error) error {
+func (s *Service) bestEffortMarkWritebackFailure(ctx context.Context, taskID int64, assetInstanceID int64, receipt *chainclient.MintTokenResponse, cause error) error {
 	if s.DB == nil {
 		return cause
 	}
@@ -1229,14 +1237,14 @@ func (s *Service) bestEffortMarkWritebackFailure(ctx context.Context, taskID int
 	return nil
 }
 
-func (s *Service) handleSuccessPersistenceFailure(ctx context.Context, task *CardMintTaskRow, instance *CardInstanceRow, receipt *antchain.MintTokenResponse, cause error) error {
+func (s *Service) handleSuccessPersistenceFailure(ctx context.Context, task *CardMintTaskRow, instance *CardInstanceRow, receipt *chainclient.MintTokenResponse, cause error) error {
 	if isTokenBindingConflictError(cause) {
 		return s.markTokenBindingConflict(ctx, task.ID, instance.ID, receipt, cause)
 	}
 	return s.bestEffortMarkWritebackFailure(ctx, task.ID, instance.ID, receipt, cause)
 }
 
-func (s *Service) markTokenBindingConflict(ctx context.Context, taskID int64, assetInstanceID int64, receipt *antchain.MintTokenResponse, cause error) error {
+func (s *Service) markTokenBindingConflict(ctx context.Context, taskID int64, assetInstanceID int64, receipt *chainclient.MintTokenResponse, cause error) error {
 	if s.DB == nil || receipt == nil {
 		return cause
 	}
@@ -1273,7 +1281,7 @@ func (s *Service) markTokenBindingConflict(ctx context.Context, taskID int64, as
 	return nil
 }
 
-func (s *Service) buildReceiptFromTask(task *CardMintTaskRow) *antchain.MintTokenResponse {
+func (s *Service) buildReceiptFromTask(task *CardMintTaskRow) *chainclient.MintTokenResponse {
 	if task == nil || strings.TrimSpace(task.TokenID) == "" {
 		return nil
 	}
@@ -1285,7 +1293,7 @@ func (s *Service) buildReceiptFromTask(task *CardMintTaskRow) *antchain.MintToke
 		confirmedAt = *task.UpdateTime
 	}
 
-	return &antchain.MintTokenResponse{
+	return &chainclient.MintTokenResponse{
 		TokenID:        strings.TrimSpace(task.TokenID),
 		ChainTxID:      strings.TrimSpace(task.ChainTxID),
 		ChainStatus:    normalizeChainStatus(firstNonEmpty(task.ChainStatus, ChainStatusSuccess)),
@@ -1843,7 +1851,7 @@ func buildExecuteResult(task *CardMintTaskRow) *ExecuteResult {
 	}
 }
 
-func buildActionResult(task *CardMintTaskRow) *ActionResult {
+func buildActionResult(task *CardMintTaskRow, chainType string) *ActionResult {
 	if task == nil {
 		return &ActionResult{}
 	}
@@ -1856,6 +1864,7 @@ func buildActionResult(task *CardMintTaskRow) *ActionResult {
 		RetryCount:     task.RetryCount,
 		ManualRequired: task.ManualRequired == 1,
 		Frozen:         task.Frozen == 1,
+		ChainType:      chainType,
 	}
 }
 
@@ -1867,6 +1876,13 @@ func maxRetry(taskValue int32, fallback int32) int32 {
 		return fallback
 	}
 	return DefaultMaxRetryCount
+}
+
+func (s *Service) chainType() string {
+	if s.Chain != nil {
+		return s.Chain.ChainType()
+	}
+	return ""
 }
 
 func firstNonEmpty(values ...string) string {

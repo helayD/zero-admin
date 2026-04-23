@@ -26,6 +26,7 @@ export interface DigitalCardChainItem {
   lastReceiptSummary: string;
   assetStatusText: string;
   participationRecordId: number;
+  chainType: string;
 }
 
 export interface DigitalCardChainLogItem {
@@ -45,6 +46,7 @@ export interface DigitalCardChainDetailData {
   chainTxId: string;
   lastReceiptJson: string;
   logs: DigitalCardChainLogItem[];
+  chainType: string;
 }
 
 export interface QueryDigitalCardChainListData {
@@ -85,6 +87,7 @@ export interface DigitalCardChainActionResp {
   retryCount: number;
   manualRequired: boolean;
   frozen: boolean;
+  chainType: string;
   success: boolean;
 }
 
@@ -140,6 +143,11 @@ export const CHAIN_STATUS_OPTIONS = [
   { label: '成功', value: 'success' },
   { label: '失败', value: 'failed' },
   { label: '冻结', value: 'frozen' },
+];
+
+export const CHAIN_TYPE_OPTIONS = [
+  { label: 'AntChain', value: 'antchain' },
+  { label: 'FISCO BCOS', value: 'fisco' },
 ];
 
 export const MANUAL_REQUIRED_OPTIONS = [

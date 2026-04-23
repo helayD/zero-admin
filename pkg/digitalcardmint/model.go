@@ -196,6 +196,7 @@ type TaskListItem struct {
 	LastReceiptSummary    string `json:"lastReceiptSummary"`
 	AssetStatusText       string `json:"assetStatusText"`
 	ParticipationRecordID int64  `json:"participationRecordId"`
+	ChainType             string `json:"chainType"`
 }
 
 type AssetLogItem struct {
@@ -215,6 +216,7 @@ type TaskDetail struct {
 	ChainTxID       string         `json:"chainTxId"`
 	LastReceiptJSON string         `json:"lastReceiptJson"`
 	Logs            []AssetLogItem `json:"logs"`
+	ChainType       string         `json:"chainType"`
 }
 
 type ActionResult struct {
@@ -226,6 +228,7 @@ type ActionResult struct {
 	RetryCount     int32
 	ManualRequired bool
 	Frozen         bool
+	ChainType      string
 }
 
 type ExecuteResult struct {

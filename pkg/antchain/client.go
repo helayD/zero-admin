@@ -10,22 +10,26 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/feihua/zero-admin/pkg/chainclient"
 )
 
-type Client interface {
-	MintToken(ctx context.Context, req *MintTokenRequest) (*MintTokenResponse, error)
-	QueryMintToken(ctx context.Context, req *QueryMintTokenRequest) (*MintTokenResponse, error)
-}
+type Client = chainclient.ChainClient
+
+var _ chainclient.ChainClient = (*httpClient)(nil)
+var _ chainclient.ChainClient = (disabledClient{})
 
 type disabledClient struct{}
 
-func (disabledClient) MintToken(context.Context, *MintTokenRequest) (*MintTokenResponse, error) {
+func (disabledClient) MintToken(context.Context, *chainclient.MintTokenRequest) (*chainclient.MintTokenResponse, error) {
 	return nil, errors.New("蚂蚁链能力未启用")
 }
 
-func (disabledClient) QueryMintToken(context.Context, *QueryMintTokenRequest) (*MintTokenResponse, error) {
+func (disabledClient) QueryMintToken(context.Context, *chainclient.QueryMintTokenRequest) (*chainclient.MintTokenResponse, error) {
 	return nil, errors.New("蚂蚁链能力未启用")
 }
+
+func (disabledClient) ChainType() string { return "antchain" }
 
 type httpClient struct {
 	cfg        Config
@@ -85,7 +89,7 @@ type queryMintTokenHTTPResponse struct {
 	ConfirmedAt    string `json:"confirmedAt"`
 }
 
-func NewClient(cfg Config) Client {
+func NewClient(cfg Config) chainclient.ChainClient {
 	if !cfg.Enabled || strings.TrimSpace(cfg.Endpoint) == "" {
 		return disabledClient{}
 	}
@@ -101,7 +105,9 @@ func NewClient(cfg Config) Client {
 	}
 }
 
-func (c *httpClient) MintToken(ctx context.Context, req *MintTokenRequest) (*MintTokenResponse, error) {
+func (c *httpClient) ChainType() string { return "antchain" }
+
+func (c *httpClient) MintToken(ctx context.Context, req *chainclient.MintTokenRequest) (*chainclient.MintTokenResponse, error) {
 	if req == nil {
 		return nil, errors.New("mint request 不能为空")
 	}
@@ -139,7 +145,7 @@ func (c *httpClient) MintToken(ctx context.Context, req *MintTokenRequest) (*Min
 	return parseMintTokenResponse(raw)
 }
 
-func (c *httpClient) QueryMintToken(ctx context.Context, req *QueryMintTokenRequest) (*MintTokenResponse, error) {
+func (c *httpClient) QueryMintToken(ctx context.Context, req *chainclient.QueryMintTokenRequest) (*chainclient.MintTokenResponse, error) {
 	if req == nil {
 		return nil, errors.New("query request 不能为空")
 	}
@@ -219,7 +225,7 @@ func (c *httpClient) receiptEndpoint() string {
 	return firstNonEmpty(strings.TrimSpace(c.cfg.ReceiptEndpoint), strings.TrimSpace(c.cfg.Endpoint))
 }
 
-func parseMintTokenResponse(raw []byte) (*MintTokenResponse, error) {
+func parseMintTokenResponse(raw []byte) (*chainclient.MintTokenResponse, error) {
 	var result mintTokenHTTPResponse
 	if err := json.Unmarshal(raw, &result); err != nil {
 		return nil, err
@@ -237,12 +243,12 @@ func parseMintTokenResponse(raw []byte) (*MintTokenResponse, error) {
 	), nil
 }
 
-func buildMintTokenResponse(tokenID, chainTxID, chainStatus, receiptSummary, receiptJSON, confirmedAtRaw string) *MintTokenResponse {
+func buildMintTokenResponse(tokenID, chainTxID, chainStatus, receiptSummary, receiptJSON, confirmedAtRaw string) *chainclient.MintTokenResponse {
 	confirmedAt := time.Now()
 	if parsed, parseErr := time.Parse(time.RFC3339, strings.TrimSpace(confirmedAtRaw)); parseErr == nil {
 		confirmedAt = parsed
 	}
-	return &MintTokenResponse{
+	return &chainclient.MintTokenResponse{
 		TokenID:        strings.TrimSpace(tokenID),
 		ChainTxID:      strings.TrimSpace(chainTxID),
 		ChainStatus:    firstNonEmpty(strings.TrimSpace(chainStatus), "success"),

@@ -7,9 +7,22 @@ Mysql:
 
 AntChain:
   Endpoint: ""
+  ReceiptEndpoint: ""
   AppId: ""
   AccessKey: ""
   Secret: ""
+  TimeoutSeconds: 10
+  Enabled: false
+
+Blockchain:
+  Primary: fisco
+
+Fisco:
+  NodeAddr: ""
+  GroupID: 1
+  ChainID: 1
+  ContractAddr: ""
+  PrivateKey: ""
   TimeoutSeconds: 10
   Enabled: false
 

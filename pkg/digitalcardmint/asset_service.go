@@ -37,6 +37,7 @@ type MemberDigitalCardAssetItem struct {
 	ComplianceStatusText  string `json:"complianceStatusText"`
 	TokenStatusText       string `json:"tokenStatusText"`
 	ComplianceRuleSummary string `json:"complianceRuleSummary"`
+	ChainType             string `json:"chainType"`
 }
 
 type MemberDigitalCardAssetTimelineItem struct {
@@ -109,6 +110,7 @@ type DigitalCardAssetAuditItem struct {
 	ObtainedAt            string `json:"obtainedAt"`
 	DisposedAt            string `json:"disposedAt"`
 	LatestReasonSummary   string `json:"latestReasonSummary"`
+	ChainType             string `json:"chainType"`
 }
 
 type DigitalCardAssetAuditParticipationSummary struct {
@@ -134,6 +136,7 @@ type DigitalCardAssetAuditMintTaskSummary struct {
 	ChainTxID          string   `json:"chainTxId"`
 	LastReceiptSummary string   `json:"lastReceiptSummary"`
 	AvailableActions   []string `json:"availableActions"`
+	ChainType          string   `json:"chainType"`
 }
 
 type DigitalCardAssetAuditDetail struct {
@@ -224,9 +227,12 @@ func (s *Service) QueryMemberDigitalCardAssetList(ctx context.Context, currentSc
 		return 0, nil, err
 	}
 
+	chainTypeVal := s.chainType()
 	items := make([]MemberDigitalCardAssetItem, 0, len(rows))
 	for _, row := range rows {
-		items = append(items, buildMemberAssetItem(row))
+		item := buildMemberAssetItem(row)
+		item.ChainType = chainTypeVal
+		items = append(items, item)
 	}
 	return total, items, nil
 }
@@ -252,8 +258,10 @@ func (s *Service) QueryMemberDigitalCardAssetDetail(ctx context.Context, current
 		return nil, err
 	}
 
+	memberItem := buildMemberAssetItem(row)
+	memberItem.ChainType = s.chainType()
 	return &MemberDigitalCardAssetDetail{
-		Item:                buildMemberAssetItem(row),
+		Item:                memberItem,
 		TokenIDMasked:       maskTokenID(row.TokenID),
 		LatestStatusSummary: ResolveAssetStatusText(row.AssetStatus, row.MintStatus, row.ChainStatus),
 		RestrictionReason:   firstNonEmpty(row.ComplianceReason, row.DisplayReason),
@@ -295,9 +303,12 @@ func (s *Service) QueryDigitalCardAssetAuditList(ctx context.Context, currentSco
 		return 0, nil, err
 	}
 
+	chainTypeVal := s.chainType()
 	items := make([]DigitalCardAssetAuditItem, 0, len(rows))
 	for _, row := range rows {
-		items = append(items, buildAuditAssetItem(row))
+		item := buildAuditAssetItem(row)
+		item.ChainType = chainTypeVal
+		items = append(items, item)
 	}
 	return total, items, nil
 }
@@ -330,8 +341,11 @@ func (s *Service) QueryDigitalCardAssetAuditDetail(ctx context.Context, currentS
 		}
 	}
 
+	chainTypeVal := s.chainType()
+	auditItem := buildAuditAssetItem(row)
+	auditItem.ChainType = chainTypeVal
 	return &DigitalCardAssetAuditDetail{
-		Item: buildAuditAssetItem(row),
+		Item: auditItem,
 		ParticipationSummary: DigitalCardAssetAuditParticipationSummary{
 			ParticipationRecordID: row.ParticipationRecordID,
 			RequestID:             row.RequestID,
@@ -354,6 +368,7 @@ func (s *Service) QueryDigitalCardAssetAuditDetail(ctx context.Context, currentS
 			ChainTxID:          row.ChainTxID,
 			LastReceiptSummary: row.LastReceiptSummary,
 			AvailableActions:   chainActions,
+			ChainType:          chainTypeVal,
 		},
 		TraceID:               row.TraceID,
 		RequestID:             row.RequestID,

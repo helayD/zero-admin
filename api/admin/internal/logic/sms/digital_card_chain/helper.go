@@ -63,6 +63,7 @@ func mapTaskItem(item *digitalcardmint.TaskListItem) *types.DigitalCardChainItem
 		LastReceiptSummary:    item.LastReceiptSummary,
 		AssetStatusText:       item.AssetStatusText,
 		ParticipationRecordId: item.ParticipationRecordID,
+		ChainType:             item.ChainType,
 	}
 }
 

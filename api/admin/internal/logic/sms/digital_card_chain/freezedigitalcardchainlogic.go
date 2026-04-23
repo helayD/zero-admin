@@ -55,6 +55,7 @@ func (l *FreezeDigitalCardChainLogic) FreezeDigitalCardChain(req *types.FreezeDi
 		RetryCount:     result.RetryCount,
 		ManualRequired: result.ManualRequired,
 		Frozen:         result.Frozen,
+		ChainType:      result.ChainType,
 		Success:        true,
 	}, nil
 }

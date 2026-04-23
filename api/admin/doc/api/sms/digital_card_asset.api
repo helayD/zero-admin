@@ -56,6 +56,7 @@ type (
 		ObtainedAt            string `json:"obtainedAt"` // 获取时间
 		DisposedAt            string `json:"disposedAt"` // 最近处置时间
 		LatestReasonSummary   string `json:"latestReasonSummary"` // 最近原因摘要
+		ChainType             string `json:"chainType"` // 链类型(antchain/fisco)
 	}
 	QueryDigitalCardAssetListData {
 		List  []DigitalCardAssetItem `json:"list"` // 列表
@@ -95,6 +96,7 @@ type (
 		ChainTxId          string   `json:"chainTxId"` // 链上交易ID
 		LastReceiptSummary string   `json:"lastReceiptSummary"` // 最近回执摘要
 		AvailableActions   []string `json:"availableActions"` // 可复用链路动作
+		ChainType          string   `json:"chainType"` // 链类型(antchain/fisco)
 	}
 	DigitalCardAssetLogItem {
 		OperationType string `json:"operationType"` // 操作类型

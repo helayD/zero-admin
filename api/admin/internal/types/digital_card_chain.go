@@ -47,6 +47,7 @@ type DigitalCardChainItem struct {
 	LastReceiptSummary    string `json:"lastReceiptSummary"`
 	AssetStatusText       string `json:"assetStatusText"`
 	ParticipationRecordId int64  `json:"participationRecordId"`
+	ChainType             string `json:"chainType"`
 }
 
 type QueryDigitalCardChainListData struct {
@@ -85,6 +86,7 @@ type DigitalCardChainDetailData struct {
 	ChainTxId       string                    `json:"chainTxId"`
 	LastReceiptJson string                    `json:"lastReceiptJson"`
 	Logs            []DigitalCardChainLogItem `json:"logs"`
+	ChainType       string                    `json:"chainType"`
 }
 
 type QueryDigitalCardChainDetailResp struct {
@@ -115,6 +117,7 @@ type DigitalCardChainActionResp struct {
 	RetryCount     int32  `json:"retryCount"`
 	ManualRequired bool   `json:"manualRequired"`
 	Frozen         bool   `json:"frozen"`
+	ChainType      string `json:"chainType"`
 	Success        bool   `json:"success"`
 }
 

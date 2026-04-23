@@ -18,6 +18,7 @@ import {
   SendOutlined,
 } from '@ant-design/icons';
 import type { DigitalCardAssetDetailData } from '../data';
+import { CHAIN_TYPE_OPTIONS } from '../data';
 import {
   getChainStatusColor,
   getComplianceStatusColor,
@@ -107,6 +108,13 @@ const AssetDetailDrawer: React.FC<AssetDetailDrawerProps> = ({
               <Tag color={getChainStatusColor(item.chainStatus)}>
                 {item.chainStatusText || item.chainStatus || '-'}
               </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="链类型">
+              {item.chainType ? (
+                <Tag color={item.chainType === 'fisco' ? 'cyan' : 'purple'}>
+                  {CHAIN_TYPE_OPTIONS.find((o) => o.value === item.chainType)?.label || item.chainType}
+                </Tag>
+              ) : '-'}
             </Descriptions.Item>
             <Descriptions.Item label="发放状态">
               {item.mintStatusText || item.mintStatus || '-'}

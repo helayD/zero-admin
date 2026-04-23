@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/feihua/zero-admin/pkg/antchain"
+	"github.com/feihua/zero-admin/pkg/chainclient"
 	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -214,34 +215,36 @@ func (p *countingPublisher) SendMessage(string, string, string, string, []byte) 
 	return nil
 }
 
-type stubAntChainClient struct {
-	response      *antchain.MintTokenResponse
+type stubChainClient struct {
+	response      *chainclient.MintTokenResponse
 	err           error
 	calls         int
-	queryResponse *antchain.MintTokenResponse
+	queryResponse *chainclient.MintTokenResponse
 	queryErr      error
 	queryCalls    int
 }
 
-func (c *stubAntChainClient) MintToken(context.Context, *antchain.MintTokenRequest) (*antchain.MintTokenResponse, error) {
+func (c *stubChainClient) ChainType() string { return "test" }
+
+func (c *stubChainClient) MintToken(context.Context, *chainclient.MintTokenRequest) (*chainclient.MintTokenResponse, error) {
 	c.calls++
 	if c.err != nil {
 		return nil, c.err
 	}
 	if c.response == nil {
-		return nil, errors.New("missing antchain response")
+		return nil, errors.New("missing chain response")
 	}
 	out := *c.response
 	return &out, nil
 }
 
-func (c *stubAntChainClient) QueryMintToken(context.Context, *antchain.QueryMintTokenRequest) (*antchain.MintTokenResponse, error) {
+func (c *stubChainClient) QueryMintToken(context.Context, *chainclient.QueryMintTokenRequest) (*chainclient.MintTokenResponse, error) {
 	c.queryCalls++
 	if c.queryErr != nil {
 		return nil, c.queryErr
 	}
 	if c.queryResponse == nil {
-		return nil, antchain.ErrReceiptNotFound
+		return nil, chainclient.ErrReceiptNotFound
 	}
 	out := *c.queryResponse
 	return &out, nil
@@ -410,8 +413,8 @@ func TestDispatchTaskSkipsTerminalTask(t *testing.T) {
 func TestScanDueTasksReplaysStaleDispatchedTaskWithoutExecuteLease(t *testing.T) {
 	db := newDigitalCardMintTestDB(t)
 	now := time.Date(2026, 4, 18, 11, 45, 0, 0, time.Local)
-	client := &stubAntChainClient{
-		response: &antchain.MintTokenResponse{
+	client := &stubChainClient{
+		response: &chainclient.MintTokenResponse{
 			TokenID:        "token-stale-dispatch",
 			ChainTxID:      "tx-stale-dispatch",
 			ChainStatus:    ChainStatusSuccess,
@@ -482,8 +485,8 @@ func TestScanDueTasksReplaysStaleDispatchedTaskWithoutExecuteLease(t *testing.T)
 func TestExecuteTaskSkipsLeasedRunningTask(t *testing.T) {
 	db := newDigitalCardMintTestDB(t)
 	fixedNow := time.Date(2026, 4, 18, 11, 0, 0, 0, time.Local)
-	client := &stubAntChainClient{
-		response: &antchain.MintTokenResponse{
+	client := &stubChainClient{
+		response: &chainclient.MintTokenResponse{
 			TokenID:        "token-unused",
 			ChainTxID:      "tx-unused",
 			ChainStatus:    ChainStatusSuccess,
@@ -542,8 +545,8 @@ func TestExecuteTaskSkipsLeasedRunningTask(t *testing.T) {
 func TestExecuteTaskMovesToManualReviewWhenTokenAlreadyBound(t *testing.T) {
 	db := newDigitalCardMintTestDB(t)
 	fixedNow := time.Date(2026, 4, 18, 11, 30, 0, 0, time.Local)
-	client := &stubAntChainClient{
-		response: &antchain.MintTokenResponse{
+	client := &stubChainClient{
+		response: &chainclient.MintTokenResponse{
 			TokenID:        "token-conflict",
 			ChainTxID:      "tx-conflict",
 			ChainStatus:    ChainStatusSuccess,
@@ -670,8 +673,8 @@ func TestExecuteTaskSuccessWritesBackTokenAndLogs(t *testing.T) {
 func TestExecuteTaskReplaysStoredReceiptAfterWritebackFailure(t *testing.T) {
 	db := newDigitalCardMintTestDB(t)
 	now := time.Date(2026, 4, 18, 12, 0, 0, 0, time.Local)
-	client := &stubAntChainClient{
-		response: &antchain.MintTokenResponse{
+	client := &stubChainClient{
+		response: &chainclient.MintTokenResponse{
 			TokenID:        "token-recover",
 			ChainTxID:      "tx-recover",
 			ChainStatus:    ChainStatusSuccess,
@@ -797,8 +800,8 @@ func TestExecuteTaskEscalatesToManualReviewAtRetryLimit(t *testing.T) {
 
 func TestExecuteTaskRevalidatesPrerequisitesBeforeMint(t *testing.T) {
 	db := newDigitalCardMintTestDB(t)
-	client := &stubAntChainClient{
-		response: &antchain.MintTokenResponse{
+	client := &stubChainClient{
+		response: &chainclient.MintTokenResponse{
 			TokenID:        "token-should-not-mint",
 			ChainTxID:      "tx-should-not-mint",
 			ChainStatus:    ChainStatusSuccess,
@@ -848,8 +851,8 @@ func TestExecuteTaskRevalidatesPrerequisitesBeforeMint(t *testing.T) {
 func TestExecuteTaskReconcilesReceiptBeforeRetryMint(t *testing.T) {
 	db := newDigitalCardMintTestDB(t)
 	now := time.Date(2026, 4, 18, 13, 30, 0, 0, time.Local)
-	client := &stubAntChainClient{
-		queryResponse: &antchain.MintTokenResponse{
+	client := &stubChainClient{
+		queryResponse: &chainclient.MintTokenResponse{
 			TokenID:        "token-from-query",
 			ChainTxID:      "tx-from-query",
 			ChainStatus:    ChainStatusSuccess,
@@ -916,7 +919,7 @@ func TestExecuteTaskReconcilesReceiptBeforeRetryMint(t *testing.T) {
 func TestExecuteTaskEscalatesWhenReceiptCannotBeReconciled(t *testing.T) {
 	db := newDigitalCardMintTestDB(t)
 	now := time.Date(2026, 4, 18, 14, 0, 0, 0, time.Local)
-	client := &stubAntChainClient{}
+	client := &stubChainClient{}
 	service := NewService(db, nil, client)
 	service.Now = func() time.Time { return now }
 

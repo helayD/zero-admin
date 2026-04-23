@@ -55,6 +55,7 @@ func (l *QueryDigitalCardChainDetailLogic) QueryDigitalCardChainDetail(req *type
 			ChainTxId:       detail.ChainTxID,
 			LastReceiptJson: detail.LastReceiptJSON,
 			Logs:            logs,
+			ChainType:       detail.ChainType,
 		},
 		Success: true,
 	}, nil

@@ -47,6 +47,7 @@ func mapAssetItem(item digitalcardmint.MemberDigitalCardAssetItem) types.Digital
 		ComplianceStatusText:  item.ComplianceStatusText,
 		TokenStatusText:       item.TokenStatusText,
 		ComplianceRuleSummary: item.ComplianceRuleSummary,
+		ChainType:             item.ChainType,
 	}
 }
 

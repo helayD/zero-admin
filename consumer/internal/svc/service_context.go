@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"time"
+
 	"github.com/feihua/zero-admin/consumer/internal/config"
 	"github.com/feihua/zero-admin/consumer/internal/mq/coupon"
 	digitalcardconsumer "github.com/feihua/zero-admin/consumer/internal/mq/digital_card"
@@ -11,7 +13,9 @@ import (
 	"github.com/feihua/zero-admin/consumer/internal/mq/order"
 	"github.com/feihua/zero-admin/consumer/internal/mq/product"
 	"github.com/feihua/zero-admin/pkg/antchain"
+	"github.com/feihua/zero-admin/pkg/chainclient"
 	"github.com/feihua/zero-admin/pkg/digitalcardmint"
+	"github.com/feihua/zero-admin/pkg/fisco"
 	"github.com/feihua/zero-admin/pkg/mq"
 	"github.com/feihua/zero-admin/rpc/oms/client/orderservice"
 	"github.com/feihua/zero-admin/rpc/pms/client/productskuservice"
@@ -30,7 +34,6 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"time"
 )
 
 type ServiceContext struct {
@@ -38,7 +41,7 @@ type ServiceContext struct {
 	RabbitMQ        *mq.RabbitMQ
 	Redis           *redis.Redis
 	DB              *gorm.DB
-	AntChain        antchain.Client
+	ChainClient     chainclient.ChainClient
 	CardMintService *digitalcardmint.Service
 
 	// 会员相关
@@ -84,15 +87,8 @@ func NewServiceContext(c config.Config) *ServiceContext {
 			panic(err)
 		}
 	}
-	antChainClient := antchain.NewClient(antchain.Config{
-		Endpoint:       c.AntChain.Endpoint,
-		AppID:          c.AntChain.AppId,
-		AccessKey:      c.AntChain.AccessKey,
-		Secret:         c.AntChain.Secret,
-		TimeoutSeconds: c.AntChain.TimeoutSeconds,
-		Enabled:        c.AntChain.Enabled,
-	})
-	cardMintService := digitalcardmint.NewService(db, rabbitmq, antChainClient)
+	chainClient := buildChainClient(c)
+	cardMintService := digitalcardmint.NewService(db, rabbitmq, chainClient)
 
 	redisConf := redis.RedisConf{
 		Host: c.Redis.Address,
@@ -115,7 +111,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		RabbitMQ:               rabbitmq,
 		Redis:                  r,
 		DB:                     db,
-		AntChain:               antChainClient,
+		ChainClient:            chainClient,
 		CardMintService:        cardMintService,
 		MemberInfoService:      memberInfoService,
 		MemberGrowthLogService: membergrowthlogservice.NewMemberGrowthLogService(umsClient),
@@ -220,6 +216,29 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	}()
 
 	return s
+}
+
+func buildChainClient(c config.Config) chainclient.ChainClient {
+	if c.Blockchain.Primary == "antchain" {
+		return antchain.NewClient(antchain.Config{
+			Endpoint:        c.AntChain.Endpoint,
+			ReceiptEndpoint: c.AntChain.ReceiptEndpoint,
+			AppID:           c.AntChain.AppId,
+			AccessKey:       c.AntChain.AccessKey,
+			Secret:          c.AntChain.Secret,
+			TimeoutSeconds:  c.AntChain.TimeoutSeconds,
+			Enabled:         c.AntChain.Enabled,
+		})
+	}
+	return fisco.NewClient(fisco.Config{
+		NodeAddr:       c.Fisco.NodeAddr,
+		GroupID:        c.Fisco.GroupID,
+		ChainID:        c.Fisco.ChainID,
+		ContractAddr:   c.Fisco.ContractAddr,
+		PrivateKey:     c.Fisco.PrivateKey,
+		TimeoutSeconds: c.Fisco.TimeoutSeconds,
+		Enabled:        c.Fisco.Enabled,
+	})
 }
 
 type consumerWriter struct{}

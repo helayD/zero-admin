@@ -55,6 +55,7 @@ func (l *EscalateDigitalCardChainLogic) EscalateDigitalCardChain(req *types.Esca
 		RetryCount:     result.RetryCount,
 		ManualRequired: result.ManualRequired,
 		Frozen:         result.Frozen,
+		ChainType:      result.ChainType,
 		Success:        true,
 	}, nil
 }

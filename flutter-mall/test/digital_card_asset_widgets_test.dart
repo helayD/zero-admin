@@ -38,6 +38,7 @@ void main() {
       complianceStatusText: '人工复核中',
       tokenStatusText: '处理中',
       complianceRuleSummary: '合规复核中',
+      chainType: 'antchain',
     );
 
     await tester.pumpWidget(

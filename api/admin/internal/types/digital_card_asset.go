@@ -59,6 +59,7 @@ type DigitalCardAssetItem struct {
 	ObtainedAt            string `json:"obtainedAt"`
 	DisposedAt            string `json:"disposedAt"`
 	LatestReasonSummary   string `json:"latestReasonSummary"`
+	ChainType             string `json:"chainType"`
 }
 
 type QueryDigitalCardAssetListData struct {
@@ -103,6 +104,7 @@ type DigitalCardAssetMintTaskSummary struct {
 	ChainTxId          string   `json:"chainTxId"`
 	LastReceiptSummary string   `json:"lastReceiptSummary"`
 	AvailableActions   []string `json:"availableActions"`
+	ChainType          string   `json:"chainType"`
 }
 
 type DigitalCardAssetLogItem struct {

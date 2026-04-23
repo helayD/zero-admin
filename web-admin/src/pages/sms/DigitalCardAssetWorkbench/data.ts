@@ -26,6 +26,7 @@ export interface DigitalCardAssetItem {
   obtainedAt: string;
   disposedAt: string;
   latestReasonSummary: string;
+  chainType: string;
 }
 
 export interface DigitalCardAssetParticipationSummary {
@@ -51,6 +52,7 @@ export interface DigitalCardAssetMintTaskSummary {
   chainTxId: string;
   lastReceiptSummary: string;
   availableActions: string[];
+  chainType: string;
 }
 
 export interface DigitalCardAssetLogItem {
@@ -156,6 +158,11 @@ export const DISPLAY_STATUS_OPTIONS = [
   { label: '受限展示', value: 'display_hidden' },
   { label: '已下线展示', value: 'display_offlined' },
   { label: '已回收', value: 'display_recycled' },
+];
+
+export const CHAIN_TYPE_OPTIONS = [
+  { label: 'AntChain', value: 'antchain' },
+  { label: 'FISCO BCOS', value: 'fisco' },
 ];
 
 export const COMPLIANCE_STATUS_OPTIONS = [
