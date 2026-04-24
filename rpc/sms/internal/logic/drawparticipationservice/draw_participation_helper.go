@@ -760,6 +760,9 @@ func createParticipationRecord(ctx context.Context, tx *gorm.DB, record *drawPar
 	if record == nil {
 		return errors.New("参与记录不能为空")
 	}
+	if record.CreateTime.IsZero() {
+		record.CreateTime = time.Now()
+	}
 	return tx.WithContext(ctx).Table(record.TableName()).Create(record).Error
 }
 

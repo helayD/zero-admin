@@ -298,6 +298,27 @@ func TestParticipateDrawPassesScopeAndReturnsRejectedWhenRuleFails(t *testing.T)
 	}
 }
 
+func TestCreateParticipationRecordSetsCreateTime(t *testing.T) {
+	db := newDrawParticipationTestDB(t)
+	record := &drawParticipationRecordRow{
+		ActivityID:    1,
+		MemberID:      3001,
+		RequestID:     "req-create-time",
+		ConsumeType:   drawConsumeTypeLottery,
+		ResultType:    drawResultTypeRejected,
+		ResultStatus:  drawResultStatusQuota,
+		FailureCode:   drawEligibilityQuotaExhausted,
+		FailureReason: "剩余抽奖次数不足",
+	}
+
+	if err := createParticipationRecord(context.Background(), db, record); err != nil {
+		t.Fatalf("createParticipationRecord returned error: %v", err)
+	}
+	if record.CreateTime.IsZero() {
+		t.Fatal("expected create time to be set before insert")
+	}
+}
+
 func TestParticipateDrawCreatesAssetSnapshotForWinningRecordAndKeepsRequestIdempotent(t *testing.T) {
 	svcCtx := newDrawParticipationSvc(t)
 	now := time.Now()
