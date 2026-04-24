@@ -168,7 +168,7 @@ INSERT INTO `sms_draw_activity_audit` (
 VALUES
     (
         950001, 910001, 1, 10, 88, 'create', 1, 'admin', 'approved',
-        '实名 + 完成新手任务 + 每次消耗 1 次抽卡次数',
+        '抽卡不限实名 + 完成新手任务 + 每次消耗 1 次抽卡次数；中奖兑卡需实名',
         '禁止集中竞价；禁止连续挂牌；禁止收益承诺',
         '创建活动并提交合规材料', 'trace-seed-activity-001',
         JSON_OBJECT('activityId', 910001, 'action', 'create', 'operator', 'admin'),
