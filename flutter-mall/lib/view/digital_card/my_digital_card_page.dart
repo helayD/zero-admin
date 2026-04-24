@@ -144,7 +144,7 @@ class _MyDigitalCardPageState extends State<MyDigitalCardPage> {
       return _buildStateCard(
         icon: Icons.style_outlined,
         title: '还没有数字卡片',
-        description: '参与抽卡成功后，到账进度、链上状态和受限说明都会集中展示在这里。',
+        description: '参与抽卡成功后，到账进度、发放状态和受限说明都会集中展示在这里。',
         actionLabel: '下拉刷新',
         onTap: _loadAssets,
       );
@@ -201,7 +201,7 @@ class _MyDigitalCardPageState extends State<MyDigitalCardPage> {
           Text(
             restrictedCount > 0
                 ? '$restrictedCount 张处于受限展示或合规复核中，详情页会告诉你当前原因与下一步。'
-                : '到账进度、链上状态和合规提示都以服务端确认为准，不会在本地自行推断。',
+                : '到账进度、发放状态和合规提示都以服务端确认为准，不会在本地自行推断。',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Colors.white.withValues(alpha: 0.82),
                 ),

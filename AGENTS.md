@@ -64,6 +64,26 @@ make lint-fix  # 自动修复
 - 如确需生成类操作，必须先得到用户明确许可；未获许可前一律视为禁止。
 ```
 
+### C 端监管约束（数字藏品）
+
+```text
+Flutter（C 端面向普通用户的 UI）严禁展示任何区块链底层信息。
+禁止在 C 端 UI 上展示以下字段：
+  - chainType（链类型：蚂蚁链 / FISCO BCOS 等）
+  - chainStatus / chainStatusText（链上状态）
+  - chainTxId（链上交易 ID）
+  - tokenId / tokenIdMasked（token 编号）
+  - lastReceiptJson / lastReceiptSummary（链上回执）
+  - 任何包含"蚂蚁链""AntChain""FISCO""区块链""链上""上链""链路"等关键词的文案
+
+C 端只允许展示：卡片编号、模板名、活动名、获取时间、发放状态（mintStatusText）、
+展示状态、合规状态、合规提示摘要。
+如服务端返回的 mintStatusText 等允许字段包含底层链路文案，C 端 UI 必须转成发放/到账/处理结果口径。
+
+B 端（Web Admin）不受此约束，运维人员可以看到完整链信息。
+原因：数字藏品业务监管要求，C 端不得暴露底层区块链实现细节。
+```
+
 ---
 
 ## 代码风格指南

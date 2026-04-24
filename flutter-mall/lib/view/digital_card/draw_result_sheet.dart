@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mall/model/digital_card/draw_activity_model.dart';
+import 'package:flutter_mall/view/digital_card/digital_card_display_text.dart';
 import 'package:flutter_mall/view/digital_card/digital_card_asset_detail_page.dart';
 import 'package:flutter_mall/view/digital_card/my_digital_card_page.dart';
 
@@ -13,11 +14,14 @@ class DrawResultSheet extends StatelessWidget {
     required this.eligibility,
   });
 
+  DigitalCardStatusCopy get _assetStatusCopy =>
+      digitalCardDrawResultCopy(record);
+
   String get _title {
     switch (record.resultStatus) {
       case 'won_pending_asset':
-        if (record.assetStatusText.trim().isNotEmpty) {
-          return record.assetStatusText.trim();
+        if (_assetStatusCopy.label.trim().isNotEmpty) {
+          return _assetStatusCopy.label;
         }
         return '已中奖待到账';
       case 'rejected_need_real_name':
@@ -36,13 +40,13 @@ class DrawResultSheet extends StatelessWidget {
 
   String get _description {
     if (record.failureReason.trim().isNotEmpty) {
-      return record.failureReason.trim();
+      return digitalCardUserFacingText(record.failureReason);
     }
-    if (record.assetStatusText.trim().isNotEmpty) {
+    if (_assetStatusCopy.description.trim().isNotEmpty) {
       if (record.assetNo.trim().isNotEmpty) {
-        return '你抽中了 ${record.templateName}，${record.assetStatusText}。唯一编号 ${record.assetNo}。';
+        return '你抽中了 ${record.templateName}，${_assetStatusCopy.description}唯一编号 ${record.assetNo}。';
       }
-      return '你抽中了 ${record.templateName}，${record.assetStatusText}。';
+      return '你抽中了 ${record.templateName}，${_assetStatusCopy.description}';
     }
     if (eligibility.eligibilityMessage.trim().isNotEmpty) {
       return eligibility.eligibilityMessage.trim();
@@ -175,11 +179,11 @@ class DrawResultSheet extends StatelessWidget {
                       style: const TextStyle(color: Colors.white, fontSize: 13),
                     ),
                   ],
-                  if (record.assetStatusText.trim().isNotEmpty &&
+                  if (_assetStatusCopy.actionHint.trim().isNotEmpty &&
                       record.assetNo.trim().isEmpty) ...<Widget>[
                     const SizedBox(height: 6),
                     Text(
-                      record.assetStatusText,
+                      _assetStatusCopy.actionHint,
                       style: const TextStyle(color: Colors.white, fontSize: 13),
                     ),
                   ],

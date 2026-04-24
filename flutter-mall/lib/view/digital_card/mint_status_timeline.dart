@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mall/model/digital_card/digital_card_asset_model.dart';
 import 'package:flutter_mall/theme/app_theme.dart';
+import 'package:flutter_mall/view/digital_card/digital_card_display_text.dart';
 
 class MintStatusTimeline extends StatelessWidget {
   final List<DigitalCardAssetTimelineItem> timeline;
@@ -55,6 +56,13 @@ class MintStatusTimeline extends StatelessWidget {
           final DigitalCardAssetTimelineItem item = timeline[index];
           final bool isLast = index == timeline.length - 1;
           final Color accentColor = _colorForItem(item);
+          final String operationText = digitalCardUserFacingText(
+            item.operationText.trim().isEmpty
+                ? item.operationType
+                : item.operationText,
+          );
+          final String statusText = digitalCardUserFacingText(item.statusText);
+          final String reasonText = digitalCardUserFacingText(item.reasonText);
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
@@ -84,26 +92,24 @@ class MintStatusTimeline extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
                       Text(
-                        item.operationText.trim().isEmpty
-                            ? item.operationType
-                            : item.operationText,
+                        operationText,
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
                               color: AppColors.textPrimary,
                             ),
                       ),
                       const SizedBox(height: AppSpacing.xs),
-                      if (item.statusText.trim().isNotEmpty)
+                      if (statusText.trim().isNotEmpty)
                         Text(
-                          item.statusText,
+                          statusText,
                           style:
                               Theme.of(context).textTheme.labelMedium?.copyWith(
                                     color: accentColor,
                                   ),
                         ),
-                      if (item.reasonText.trim().isNotEmpty) ...<Widget>[
+                      if (reasonText.trim().isNotEmpty) ...<Widget>[
                         const SizedBox(height: AppSpacing.xs),
                         Text(
-                          item.reasonText,
+                          reasonText,
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                       ],

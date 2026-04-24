@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mall/model/digital_card/digital_card_asset_model.dart';
 import 'package:flutter_mall/theme/app_theme.dart';
 import 'package:flutter_mall/widgets/cached_image_widget.dart';
+import 'package:flutter_mall/view/digital_card/digital_card_display_text.dart';
 
 class DigitalCardAssetTile extends StatelessWidget {
   final DigitalCardAssetItem item;
@@ -24,7 +25,7 @@ class DigitalCardAssetTile extends StatelessWidget {
         item.displayStatus == 'display_offlined') {
       return const Color(0xFFB54708);
     }
-    if (item.chainStatus == 'success') {
+    if (item.mintStatus == 'mint_success') {
       return AppColors.success;
     }
     return const Color(0xFF2563EB);
@@ -33,6 +34,7 @@ class DigitalCardAssetTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color accentColor = _statusColor();
+    final DigitalCardStatusCopy statusCopy = digitalCardAssetPrimaryCopy(item);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -130,20 +132,40 @@ class DigitalCardAssetTile extends StatelessWidget {
                       children: <Widget>[
                         _buildChip(
                           context,
-                          item.mintStatusText.trim().isEmpty
-                              ? item.mintStatus
-                              : item.mintStatusText,
+                          statusCopy.label,
                           accentColor,
                         ),
                         _buildChip(
                           context,
-                          item.tokenStatusText.trim().isEmpty
-                              ? item.chainStatusText
-                              : item.tokenStatusText,
+                          digitalCardDisplayStatusText(
+                            item.displayStatus,
+                            item.displayStatusText,
+                          ),
                           const Color(0xFF2563EB),
                         ),
                       ],
                     ),
+                    const SizedBox(height: AppSpacing.md),
+                    Text(
+                      statusCopy.description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                    ),
+                    if (statusCopy.actionHint.trim().isNotEmpty) ...<Widget>[
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        statusCopy.actionHint,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: accentColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                    ],
                     const SizedBox(height: AppSpacing.md),
                     Text(
                       item.obtainedAt.trim().isEmpty
@@ -151,20 +173,6 @@ class DigitalCardAssetTile extends StatelessWidget {
                           : '获取时间 ${item.obtainedAt}',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
-                    if (item.hasRestriction &&
-                        item.complianceRuleSummary
-                            .trim()
-                            .isNotEmpty) ...<Widget>[
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(
-                        item.complianceRuleSummary,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: const Color(0xFFB54708),
-                            ),
-                      ),
-                    ],
                   ],
                 ),
               ),
