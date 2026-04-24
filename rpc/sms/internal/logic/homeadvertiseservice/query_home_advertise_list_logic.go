@@ -3,6 +3,7 @@ package homeadvertiseservicelogic
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/feihua/zero-admin/pkg/time_util"
@@ -65,23 +66,25 @@ func (l *QueryHomeAdvertiseListLogic) QueryHomeAdvertiseList(in *smsclient.Query
 	var list []*smsclient.HomeAdvertiseListData
 
 	for _, item := range result {
+		url := item.URL
+		if item.ActivityType != "" {
+			url = fmt.Sprintf("app://%s/%d", item.ActivityType, item.ActivityID)
+		}
 		list = append(list, &smsclient.HomeAdvertiseListData{
-			Id:           item.ID,                                 // 编号
-			Name:         item.Name,                               // 名称
-			Type:         item.Type,                               // 轮播位置：0->PC首页轮播；1->app首页轮播
-			Pic:          item.Pic,                                // 图片地址
-			StartTime:    time_util.TimeToStr(item.StartTime),     // 开始时间
-			EndTime:      time_util.TimeToStr(item.EndTime),       // 结束时间
-			Status:       item.Status,                             // 上下线状态：0->下线；1->上线
-			ClickCount:   item.ClickCount,                         // 点击数
-			OrderCount:   item.OrderCount,                         // 下单数
-			Url:          item.URL,                                // 链接地址
-			ActivityType: item.ActivityType,                       // 活动类型
-			ActivityId:   item.ActivityID,                         // 活动ID
-			Remark:       item.Remark,                             // 备注
-			Sort:         item.Sort,                               // 排序
-			CreateTime:   time_util.TimeToStr(item.CreateTime),    // 创建时间
-			UpdateTime:   time_util.TimeToString(item.UpdateTime), // 更新时间
+			Id:         item.ID,                                 // 编号
+			Name:       item.Name,                               // 名称
+			Type:       item.Type,                               // 轮播位置：0->PC首页轮播；1->app首页轮播
+			Pic:        item.Pic,                                // 图片地址
+			StartTime:  time_util.TimeToStr(item.StartTime),     // 开始时间
+			EndTime:    time_util.TimeToStr(item.EndTime),       // 结束时间
+			Status:     item.Status,                             // 上下线状态：0->下线；1->上线
+			ClickCount: item.ClickCount,                         // 点击数
+			OrderCount: item.OrderCount,                         // 下单数
+			Url:        url,                                     // 链接地址（含深链接路由）
+			Remark:     item.Remark,                             // 备注
+			Sort:       item.Sort,                               // 排序
+			CreateTime: time_util.TimeToStr(item.CreateTime),    // 创建时间
+			UpdateTime: time_util.TimeToString(item.UpdateTime), // 更新时间
 		})
 	}
 

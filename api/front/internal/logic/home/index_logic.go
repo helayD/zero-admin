@@ -3,6 +3,7 @@ package home
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -474,13 +475,18 @@ func queryAdvertiseList(l *IndexLogic, currentScope pkgscope.GovernanceScope) []
 				continue // 广告已过期
 			}
 		}
-		activityType := detail.ActivityType
-		if activityType == "" {
-			activityType = operatefunnel.ActivityHomeAdvertise
-		}
-		activityId := detail.ActivityId
-		if activityId <= 0 {
-			activityId = detail.Id
+		url := detail.Url
+		activityType := operatefunnel.ActivityHomeAdvertise
+		activityId := detail.Id
+		if strings.HasPrefix(url, "app://") {
+			trimmed := strings.TrimPrefix(url, "app://")
+			if slashIdx := strings.Index(trimmed, "/"); slashIdx > 0 {
+				activityType = trimmed[:slashIdx]
+				if parsed, parseErr := strconv.ParseInt(trimmed[slashIdx+1:], 10, 64); parseErr == nil && parsed > 0 {
+					activityId = parsed
+				}
+			}
+			url = "" // 深链接不对外暴露原始格式
 		}
 		list = append(list, types.AdvertiseList{
 			Id:           detail.Id,         // 编号
@@ -492,7 +498,7 @@ func queryAdvertiseList(l *IndexLogic, currentScope pkgscope.GovernanceScope) []
 			Status:       detail.Status,     // 上下线状态：0->下线；1->上线
 			ClickCount:   detail.ClickCount, // 点击数
 			OrderCount:   detail.OrderCount, // 下单数
-			Url:          detail.Url,        // 链接地址
+			Url:          url,               // 链接地址
 			ActivityType: activityType,      // 活动类型
 			ActivityId:   activityId,        // 活动ID
 			Remark:       detail.Remark,     // 备注
