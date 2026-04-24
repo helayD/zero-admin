@@ -1530,6 +1530,23 @@ func (s *Service) loadParticipationRecord(ctx context.Context, db *gorm.DB, reco
 	return &row, nil
 }
 
+func (s *Service) loadMemberRealNameStatus(ctx context.Context, db *gorm.DB, memberID int64) (string, error) {
+	var row MemberIdentityRow
+	err := db.WithContext(ctx).
+		Table(row.TableName()).
+		Select("real_name_status").
+		Where("member_id = ? AND is_deleted = 0", memberID).
+		Take(&row).Error
+	switch {
+	case errors.Is(err, gorm.ErrRecordNotFound):
+		return "", nil
+	case err != nil:
+		return "", err
+	default:
+		return strings.TrimSpace(row.RealNameStatus), nil
+	}
+}
+
 func (s *Service) loadDrawActivity(ctx context.Context, db *gorm.DB, activityID int64) (*DrawActivityRow, error) {
 	var row DrawActivityRow
 	if err := db.WithContext(ctx).Table(row.TableName()).Where("id = ? AND is_deleted = 0", activityID).Take(&row).Error; err != nil {
@@ -1580,12 +1597,16 @@ func (s *Service) validateMintPrerequisites(ctx context.Context, tx *gorm.DB, in
 	if activity.RealNameRequired != mintEnabledStatus {
 		return nil
 	}
-	snapshot, err := parseMintEligibilitySnapshot(record.EligibilitySnapshot)
-	if err != nil {
-		return errors.New("实名快照缺失，当前资产不允许发链")
+	memberID := record.MemberID
+	if memberID <= 0 {
+		memberID = instance.MemberID
 	}
-	if strings.TrimSpace(snapshot.RealNameStatus) != mintVerifiedRealNameCode {
-		return errors.New("实名快照未通过，当前资产不允许发链")
+	realNameStatus, err := s.loadMemberRealNameStatus(ctx, tx, memberID)
+	if err != nil {
+		return errors.New("实名状态查询失败，当前资产不允许发放")
+	}
+	if realNameStatus != mintVerifiedRealNameCode {
+		return errors.New("实名未通过，当前资产不允许发放")
 	}
 	return nil
 }

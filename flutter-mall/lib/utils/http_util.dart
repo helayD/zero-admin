@@ -71,7 +71,9 @@ class HttpUtil {
             print("data=${e.response?.data}");
             print("==================================================\n\n\n");
           }
-          if (e.response?.statusCode == 401) {
+          final bool skipAuthRedirect =
+              e.requestOptions.extra['skipAuthRedirect'] == true;
+          if (e.response?.statusCode == 401 && !skipAuthRedirect) {
             if (_isRedirectingToLogin) {
               return handler.next(e);
             }
@@ -110,12 +112,20 @@ class HttpUtil {
   }
 
   // 封装GET请求
-  static Future<Response> get(String path,
-      {Map<String, dynamic>? queryParameters}) async {
+  static Future<Response> get(
+    String path, {
+    Map<String, dynamic>? queryParameters,
+    bool redirectOnUnauthorized = true,
+  }) async {
     Response response = await dio.get(
       path,
       queryParameters: queryParameters,
-      options: Options(headers: await _buildHeaders()),
+      options: Options(
+        headers: await _buildHeaders(),
+        extra: <String, dynamic>{
+          'skipAuthRedirect': !redirectOnUnauthorized,
+        },
+      ),
     );
     return response;
   }

@@ -82,7 +82,8 @@ func (l *QueryDrawActivityLandingLogic) QueryDrawActivityLanding(in *smsclient.Q
 		}
 		identity, err = loadMemberIdentitySnapshot(l.ctx, l.svcCtx.DB, in.MemberId)
 		if err != nil {
-			return nil, logParticipationFailure(l.ctx, "查询实名状态", in, errors.New("查询实名状态失败"))
+			logc.Errorf(l.ctx, "查询实名状态失败,参数:%+v,异常:%s", in, err.Error())
+			identity = defaultMemberIdentitySnapshot(in.MemberId)
 		}
 		totalCount, dailyCount, err = countConsumedRecords(l.ctx, l.svcCtx.DB, activity.ID, in.MemberId)
 		if err != nil {

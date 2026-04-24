@@ -36,6 +36,12 @@ func newDigitalCardMintTestDB(t *testing.T) *gorm.DB {
 			asset_instance_id INTEGER NOT NULL DEFAULT 0,
 			is_deleted INTEGER NOT NULL DEFAULT 0
 		)`,
+		`CREATE TABLE ums_member_identity (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			member_id INTEGER NOT NULL,
+			real_name_status TEXT NOT NULL DEFAULT 'need_real_name',
+			is_deleted INTEGER NOT NULL DEFAULT 0
+		)`,
 		`CREATE TABLE sms_draw_activity (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			name TEXT NOT NULL DEFAULT '',
@@ -172,6 +178,12 @@ func newDigitalCardMintTestDB(t *testing.T) *gorm.DB {
 			(1, 2001, 3001, 11, 21, 'req-1', 'trace-1', '{"realNameStatus":"verified"}', 1, 0)
 	`).Error; err != nil {
 		t.Fatalf("seed participation record failed: %v", err)
+	}
+	if err := db.Exec(`
+		INSERT INTO ums_member_identity (member_id, real_name_status, is_deleted)
+		VALUES (3001, 'verified', 0)
+	`).Error; err != nil {
+		t.Fatalf("seed member identity failed: %v", err)
 	}
 	if err := db.Exec(`
 		INSERT INTO sms_card_instance
@@ -324,14 +336,14 @@ func TestEnsureTaskTxRejectsForbiddenPrerequisites(t *testing.T) {
 			wantErr: "所属模板已隐藏",
 		},
 		{
-			name: "real name snapshot not verified",
+			name: "current real name not verified",
 			prepare: func(db *gorm.DB) error {
 				if err := db.Exec(`UPDATE sms_draw_activity SET real_name_required = 1 WHERE id = 2001`).Error; err != nil {
 					return err
 				}
-				return db.Exec(`UPDATE sms_draw_participation_record SET eligibility_snapshot_json = '{"realNameStatus":"pending"}' WHERE id = 1`).Error
+				return db.Exec(`UPDATE ums_member_identity SET real_name_status = 'pending' WHERE member_id = 3001`).Error
 			},
-			wantErr: "实名快照未通过",
+			wantErr: "实名未通过",
 		},
 	}
 
@@ -354,6 +366,25 @@ func TestEnsureTaskTxRejectsForbiddenPrerequisites(t *testing.T) {
 				t.Fatalf("expected error to contain %q, got %v", tc.wantErr, err)
 			}
 		})
+	}
+}
+
+func TestEnsureTaskTxUsesCurrentRealNameStatus(t *testing.T) {
+	db := newDigitalCardMintTestDB(t)
+	if err := db.Exec(`UPDATE sms_draw_activity SET real_name_required = 1 WHERE id = 2001`).Error; err != nil {
+		t.Fatalf("prepare activity failed: %v", err)
+	}
+	if err := db.Exec(`UPDATE sms_draw_participation_record SET eligibility_snapshot_json = '{"realNameStatus":"pending"}' WHERE id = 1`).Error; err != nil {
+		t.Fatalf("prepare participation snapshot failed: %v", err)
+	}
+
+	service := NewService(db, nil, nil)
+	err := db.Transaction(func(tx *gorm.DB) error {
+		_, ensureErr := service.EnsureTaskTx(context.Background(), tx, 1, OperatorSystem)
+		return ensureErr
+	})
+	if err != nil {
+		t.Fatalf("EnsureTaskTx returned error: %v", err)
 	}
 }
 

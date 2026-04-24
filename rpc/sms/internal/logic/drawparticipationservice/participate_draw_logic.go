@@ -59,9 +59,11 @@ func (l *ParticipateDrawLogic) ParticipateDraw(in *smsclient.ParticipateDrawReq)
 				}
 				taskID, taskErr := cardminttaskservicelogic.EnsureCardMintTaskByAssetInstance(l.ctx, l.svcCtx, tx, asset.ID, "system")
 				if taskErr != nil {
-					return taskErr
-				}
-				if taskID > 0 {
+					if !isMintRealNamePrerequisiteError(taskErr) {
+						return taskErr
+					}
+					logc.Errorf(l.ctx, "抽卡已中奖但兑卡实名校验未通过,assetId:%d,异常:%s", asset.ID, taskErr.Error())
+				} else if taskID > 0 {
 					dispatchTaskIDs[taskID] = struct{}{}
 				}
 			}
@@ -88,7 +90,8 @@ func (l *ParticipateDrawLogic) ParticipateDraw(in *smsclient.ParticipateDrawReq)
 		}
 		identity, err := loadMemberIdentitySnapshot(l.ctx, tx, in.MemberId)
 		if err != nil {
-			return err
+			logc.Errorf(l.ctx, "查询实名状态失败,参数:%+v,异常:%s", in, err.Error())
+			identity = defaultMemberIdentitySnapshot(in.MemberId)
 		}
 		totalCount, dailyCount, err := countConsumedRecords(l.ctx, tx, activity.ID, in.MemberId)
 		if err != nil {
@@ -205,9 +208,11 @@ func (l *ParticipateDrawLogic) ParticipateDraw(in *smsclient.ParticipateDrawReq)
 			}
 			taskID, taskErr := cardminttaskservicelogic.EnsureCardMintTaskByAssetInstance(l.ctx, l.svcCtx, tx, asset.ID, "system")
 			if taskErr != nil {
-				return taskErr
-			}
-			if taskID > 0 {
+				if !isMintRealNamePrerequisiteError(taskErr) {
+					return taskErr
+				}
+				logc.Errorf(l.ctx, "抽卡已中奖但兑卡实名校验未通过,assetId:%d,异常:%s", asset.ID, taskErr.Error())
+			} else if taskID > 0 {
 				dispatchTaskIDs[taskID] = struct{}{}
 			}
 		}
@@ -230,4 +235,8 @@ func (l *ParticipateDrawLogic) ParticipateDraw(in *smsclient.ParticipateDrawReq)
 	}
 
 	return result, nil
+}
+
+func isMintRealNamePrerequisiteError(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "实名")
 }

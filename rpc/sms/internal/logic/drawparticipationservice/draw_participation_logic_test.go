@@ -218,9 +218,9 @@ func TestLoadActivitySnapshotHonorsScope(t *testing.T) {
 	}
 }
 
-func TestBuildEligibilityUsesStructuredRules(t *testing.T) {
+func TestBuildEligibilityDoesNotRequireRealNameForDraw(t *testing.T) {
 	activity := &drawActivitySnapshot{
-		RealNameRequired:    0,
+		RealNameRequired:    1,
 		Status:              1,
 		IsEnabled:           1,
 		ConsumeAmount:       1,
@@ -238,15 +238,15 @@ func TestBuildEligibilityUsesStructuredRules(t *testing.T) {
 		RealNameStatus: "pending",
 	}
 
-	needRealName := buildEligibility(activity, member, identity, 0, 0, true, true)
-	if needRealName.Code != drawEligibilityNeedRealName {
-		t.Fatalf("expected need_real_name, got %s", needRealName.Code)
-	}
-
-	identity.RealNameStatus = "verified"
 	quotaRejected := buildEligibility(activity, member, identity, 0, 0, true, true)
 	if quotaRejected.Code != drawEligibilityQuotaExhausted {
 		t.Fatalf("expected quota_exhausted, got %s", quotaRejected.Code)
+	}
+
+	member.LotteryTimes = 3
+	eligible := buildEligibility(activity, member, identity, 0, 0, true, true)
+	if eligible.Code != drawEligibilityEligible {
+		t.Fatalf("expected eligible without real-name gate, got %s", eligible.Code)
 	}
 }
 
@@ -305,7 +305,7 @@ func TestParticipateDrawCreatesAssetSnapshotForWinningRecordAndKeepsRequestIdemp
 		INSERT INTO sms_draw_activity
 			(id, activity_code, name, start_time, end_time, real_name_required, consume_amount, platform_id, tenant_id, merchant_id)
 		VALUES
-			(1, 'DRAW-WIN', '抽卡活动', ?, ?, 0, 1, 1, 10, 88)
+			(1, 'DRAW-WIN', '抽卡活动', ?, ?, 1, 1, 1, 10, 88)
 	`, now.Add(-time.Hour), now.Add(time.Hour)).Error; err != nil {
 		t.Fatalf("seed activity failed: %v", err)
 	}
@@ -317,7 +317,7 @@ func TestParticipateDrawCreatesAssetSnapshotForWinningRecordAndKeepsRequestIdemp
 	}
 	if err := svcCtx.DB.Exec(`
 		INSERT INTO ums_member_identity (member_id, real_name_status)
-		VALUES (3001, 'verified')
+		VALUES (3001, 'pending')
 	`).Error; err != nil {
 		t.Fatalf("seed identity failed: %v", err)
 	}

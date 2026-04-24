@@ -110,6 +110,15 @@ func (ParticipationRecordRow) TableName() string {
 	return "sms_draw_participation_record"
 }
 
+type MemberIdentityRow struct {
+	MemberID       int64  `gorm:"column:member_id"`
+	RealNameStatus string `gorm:"column:real_name_status"`
+}
+
+func (MemberIdentityRow) TableName() string {
+	return "ums_member_identity"
+}
+
 type DrawActivityRow struct {
 	ID                 int64  `gorm:"column:id"`
 	Name               string `gorm:"column:name"`

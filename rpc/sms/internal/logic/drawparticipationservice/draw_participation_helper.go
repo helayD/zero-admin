@@ -267,14 +267,18 @@ func loadMemberIdentitySnapshot(ctx context.Context, db *gorm.DB, memberID int64
 		Take(&identity).Error
 	switch {
 	case errors.Is(err, gorm.ErrRecordNotFound):
-		return &drawMemberIdentitySnapshot{
-			MemberID:       memberID,
-			RealNameStatus: drawEligibilityNeedRealName,
-		}, nil
+		return defaultMemberIdentitySnapshot(memberID), nil
 	case err != nil:
 		return nil, err
 	default:
 		return &identity, nil
+	}
+}
+
+func defaultMemberIdentitySnapshot(memberID int64) *drawMemberIdentitySnapshot {
+	return &drawMemberIdentitySnapshot{
+		MemberID:       memberID,
+		RealNameStatus: drawEligibilityNeedRealName,
 	}
 }
 
@@ -438,25 +442,11 @@ func buildEligibility(activity *drawActivitySnapshot, member *drawMemberInfoSnap
 		summary.NextAction = drawNextActionRetryLater
 		return summary
 	}
-	if len(rules.RequiredRealNameStatus) > 0 && !containsText(rules.RequiredRealNameStatus, summary.RealNameStatus) {
-		summary.Status = drawEligibilityNeedRealName
-		summary.Code = drawEligibilityNeedRealName
-		summary.Message = "当前实名状态尚未满足活动要求"
-		summary.NextAction = drawNextActionRealName
-		return summary
-	}
 	if rules.MinimumLotteryTimes > 0 && member.LotteryTimes < rules.MinimumLotteryTimes {
 		summary.Status = drawEligibilityQuotaExhausted
 		summary.Code = drawEligibilityQuotaExhausted
 		summary.Message = "当前剩余抽奖次数未达到参与门槛"
 		summary.NextAction = drawNextActionRetryLater
-		return summary
-	}
-	if activity.RealNameRequired == 1 && summary.RealNameStatus != "verified" {
-		summary.Status = drawEligibilityNeedRealName
-		summary.Code = drawEligibilityNeedRealName
-		summary.Message = "完成实名认证后才可参与抽卡"
-		summary.NextAction = drawNextActionRealName
 		return summary
 	}
 

@@ -7,6 +7,7 @@ import 'package:flutter_mall/model/app_recent_context.dart';
 import 'package:flutter_mall/model/digital_card/draw_activity_model.dart';
 import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/utils/http_util.dart';
+import 'package:flutter_mall/view/digital_card/digital_card_display_text.dart';
 import 'package:flutter_mall/view/digital_card/draw_result_sheet.dart';
 import 'package:flutter_mall/view/digital_card/draw_rule_banner.dart';
 import 'package:flutter_mall/view/mine/login/login.dart';
@@ -35,6 +36,7 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
   DrawActivityLandingData? _landing;
   bool _isLoading = true;
   bool _isParticipating = false;
+  bool _useAnonymousLandingOnly = false;
   String? _errorMessage;
 
   AppRecentContext _buildRecoveryContext([String? source]) {
@@ -71,14 +73,22 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
     });
 
     try {
-      final bool hasToken = AppRecoveryStore.hasValidToken();
-      final String path = hasToken
-          ? queryMyDrawActivityLandingUrl
-          : queryDrawActivityLandingUrl;
-      final Response response = await HttpUtil.get(
-        path,
-        queryParameters: <String, dynamic>{'activityId': widget.activityId},
-      );
+      final bool hasToken =
+          !_useAnonymousLandingOnly && AppRecoveryStore.hasValidToken();
+      Response response;
+      try {
+        response = await _requestLanding(withMemberContext: hasToken);
+      } on DioException catch (err) {
+        if (hasToken && _shouldUseAnonymousLandingFallback(err)) {
+          if (err.response?.statusCode == 401) {
+            await AppRecoveryStore.clearAuthToken();
+          }
+          _useAnonymousLandingOnly = true;
+          response = await _requestLanding(withMemberContext: false);
+        } else {
+          rethrow;
+        }
+      }
       final model = drawActivityLandingResponseFromJson(
         jsonEncode(response.data),
       );
@@ -88,8 +98,10 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
 
       if (_shouldTreatAsError(model.code, model.data.activityId)) {
         setState(() {
-          _errorMessage =
-              model.message.trim().isEmpty ? '活动暂时不可用' : model.message;
+          _errorMessage = _safeLandingMessage(
+            model.message,
+            fallback: '活动暂时不可用',
+          );
           _isLoading = false;
           _landing = null;
         });
@@ -102,16 +114,63 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
       });
       await AppRecoveryStore.saveRecentContext(
           _buildRecoveryContext('digital_card_view'));
-    } catch (_) {
+    } catch (err) {
       if (!mounted) {
         return;
       }
       setState(() {
-        _errorMessage = '加载抽卡活动失败，请稍后重试';
+        _errorMessage = _landingErrorMessage(err);
         _landing = null;
         _isLoading = false;
       });
     }
+  }
+
+  Future<Response> _requestLanding({required bool withMemberContext}) {
+    final String path = withMemberContext
+        ? queryMyDrawActivityLandingUrl
+        : queryDrawActivityLandingUrl;
+    return HttpUtil.get(
+      path,
+      queryParameters: <String, dynamic>{'activityId': widget.activityId},
+      redirectOnUnauthorized: !withMemberContext,
+    );
+  }
+
+  String _landingErrorMessage(Object err) {
+    if (err is DioException) {
+      final data = err.response?.data;
+      if (data is Map) {
+        final message = _safeLandingMessage(data['message']?.toString() ?? '');
+        if (message.isNotEmpty) {
+          return message;
+        }
+      }
+      if (data is String) {
+        final message = _safeLandingMessage(data);
+        if (message.isNotEmpty) {
+          return message;
+        }
+      }
+    }
+    return '加载抽卡活动失败，请稍后重试';
+  }
+
+  String _safeLandingMessage(
+    String message, {
+    String fallback = '',
+  }) {
+    final text = digitalCardUserFacingText(message);
+    return text.isEmpty ? fallback : text;
+  }
+
+  bool _shouldUseAnonymousLandingFallback(DioException err) {
+    final statusCode = err.response?.statusCode ?? 0;
+    return statusCode == 400 ||
+        statusCode == 401 ||
+        statusCode == 500 ||
+        statusCode == 502 ||
+        statusCode == 503;
   }
 
   bool _shouldTreatAsError(String code, int activityId) {
@@ -136,13 +195,14 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
         if (!mounted) {
           return;
         }
+        _useAnonymousLandingOnly = false;
         await _loadLanding();
         return;
       case 'need_real_name':
         _showSnackBar(
           landing.identity.credentialRef.trim().isEmpty
-              ? '请先完成实名认证后再参与'
-              : '请先根据实名提示完成认证后再参与',
+              ? '请先完成实名认证后再兑卡'
+              : '请先根据实名提示完成认证后再兑卡',
         );
         return;
       case 'eligible':
@@ -397,10 +457,10 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
               _buildHeroMetric('参与状态', eligibility.eligibilityMessage),
               _buildHeroMetric('剩余次数', '${eligibility.remainingLotteryTimes}'),
               _buildHeroMetric(
-                '实名状态',
+                '兑卡实名',
                 landing.realNameRequired == 1
                     ? landing.identity.realNameStatusText
-                    : '本活动无需实名',
+                    : '无需实名兑卡',
               ),
             ],
           ),
