@@ -235,6 +235,9 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
       if (!mounted) {
         return;
       }
+      final bool requiresRealNameForRedemption =
+          parsed.data.record.resultStatus == 'won_pending_asset' &&
+              landing.identity.realNameStatus.trim() != 'verified';
 
       await showModalBottomSheet<void>(
         context: context,
@@ -246,6 +249,7 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
         builder: (_) => DrawResultSheet(
           record: parsed.data.record,
           eligibility: parsed.data.eligibility,
+          requiresRealNameForRedemption: requiresRealNameForRedemption,
         ),
       );
       await _loadLanding();

@@ -100,4 +100,54 @@ void main() {
     expect(find.text('资产已创建，链上处理中'), findsNothing);
     expect(find.textContaining('唯一编号:'), findsNothing);
   });
+
+  testWidgets('DrawResultSheet 待实名兑卡时不展示到账中口径', (WidgetTester tester) async {
+    const DrawMemberRecord record = DrawMemberRecord(
+      id: 1,
+      activityId: 10,
+      requestId: 'req-widget-3',
+      resultType: 'won',
+      resultStatus: 'won_pending_asset',
+      resultStatusText: '已中奖待到账',
+      failureCode: '',
+      failureReason: '',
+      poolId: 1,
+      templateId: 2,
+      templateName: 'SR 星云狐',
+      rarity: 'SR',
+      consumeAmount: 1,
+      lotteryTimesBefore: 3,
+      lotteryTimesAfter: 2,
+      assetInstanceId: 9003,
+      assetNo: 'CARD202604240001',
+      assetStatus: 'asset_created',
+      assetStatusText: '资产已创建，链上处理中',
+      assetCreatedAt: '2026-04-24 10:00:00',
+      createTime: '2026-04-24 10:00:01',
+    );
+    const DrawEligibilitySummary eligibility = DrawEligibilitySummary(
+      eligibilityStatus: 'eligible',
+      eligibilityCode: 'eligible',
+      eligibilityMessage: '',
+      nextAction: 'none',
+      remainingLotteryTimes: 2,
+    );
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: DrawResultSheet(
+            record: record,
+            eligibility: eligibility,
+            requiresRealNameForRedemption: true,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('待实名兑卡'), findsOneWidget);
+    expect(find.textContaining('完成实名认证后可继续兑卡并发放到我的数字卡片'), findsOneWidget);
+    expect(find.text('到账中'), findsNothing);
+    expect(find.text('资产已创建，链上处理中'), findsNothing);
+  });
 }

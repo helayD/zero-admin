@@ -7,11 +7,13 @@ import 'package:flutter_mall/view/digital_card/my_digital_card_page.dart';
 class DrawResultSheet extends StatelessWidget {
   final DrawMemberRecord record;
   final DrawEligibilitySummary eligibility;
+  final bool requiresRealNameForRedemption;
 
   const DrawResultSheet({
     super.key,
     required this.record,
     required this.eligibility,
+    this.requiresRealNameForRedemption = false,
   });
 
   DigitalCardStatusCopy get _assetStatusCopy =>
@@ -20,6 +22,9 @@ class DrawResultSheet extends StatelessWidget {
   String get _title {
     switch (record.resultStatus) {
       case 'won_pending_asset':
+        if (requiresRealNameForRedemption) {
+          return '待实名兑卡';
+        }
         if (_assetStatusCopy.label.trim().isNotEmpty) {
           return _assetStatusCopy.label;
         }
@@ -41,6 +46,14 @@ class DrawResultSheet extends StatelessWidget {
   String get _description {
     if (record.failureReason.trim().isNotEmpty) {
       return digitalCardUserFacingText(record.failureReason);
+    }
+    if (record.resultStatus == 'won_pending_asset' &&
+        requiresRealNameForRedemption) {
+      final String cardName = record.templateName.trim();
+      final String prefix = cardName.isEmpty ? '你已中奖' : '你抽中了 $cardName';
+      final String suffix =
+          record.assetNo.trim().isEmpty ? '' : '唯一编号 ${record.assetNo}。';
+      return '$prefix，完成实名认证后可继续兑卡并发放到我的数字卡片。$suffix';
     }
     if (_assetStatusCopy.description.trim().isNotEmpty) {
       if (record.assetNo.trim().isNotEmpty) {
