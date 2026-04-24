@@ -299,51 +299,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  int? _resolveAdvertiseActivityId(AdvertiseList advertise) {
-    if (advertise.activityId > 0) {
-      return advertise.activityId;
-    }
-
-    final String raw = advertise.url.trim();
-    if (raw.isEmpty) {
-      return null;
-    }
-
-    final int? directId = int.tryParse(raw);
-    if (directId != null && directId > 0) {
-      return directId;
-    }
-
-    final Uri? uri = Uri.tryParse(raw);
-    if (uri == null) {
-      return null;
-    }
-
-    for (final String key in <String>['activityId', 'activity_id', 'id']) {
-      final int? parsed = int.tryParse(uri.queryParameters[key] ?? '');
-      if (parsed != null && parsed > 0) {
-        return parsed;
-      }
-    }
-
-    for (final String segment in uri.pathSegments.reversed) {
-      final int? parsed = int.tryParse(segment);
-      if (parsed != null && parsed > 0) {
-        return parsed;
-      }
-    }
-
-    return null;
-  }
-
-  Future<void> _openDrawActivity(AdvertiseList advertise) async {
-    final int? activityId = _resolveAdvertiseActivityId(advertise);
-    if (activityId == null || activityId <= 0) {
-      final String activityName = advertise.name.trim();
-      _showFeatureInProgress(activityName.isEmpty ? '活动详情' : activityName);
-      return;
-    }
-
+  Future<void> _onBannerTap(AdvertiseList advertise) async {
     try {
       await HttpUtil.post(
         recordHomeAdvertiseClickUrl,
@@ -357,15 +313,26 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => DrawActivityPage(
-          activityId: activityId,
-          activityTitle: advertise.name.trim(),
-          intentSource: 'home_banner',
+    if (advertise.activityType == 'digital_card_draw') {
+      final int activityId = advertise.activityId;
+      if (activityId <= 0) {
+        _showFeatureInProgress('抽卡活动');
+        return;
+      }
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => DrawActivityPage(
+            activityId: activityId,
+            activityTitle: advertise.name.trim(),
+            intentSource: 'home_banner',
+          ),
         ),
-      ),
-    );
+      );
+      return;
+    }
+
+    final String activityName = advertise.name.trim();
+    _showFeatureInProgress(activityName.isEmpty ? '活动详情' : activityName);
   }
 
   void _openBrandList() {
@@ -676,11 +643,11 @@ class _HomePageState extends State<HomePage> {
                   title: _bannerTitle(advertise),
                   subtitle: _bannerSubtitle(advertise),
                   imageUrl: advertise.pic,
-                  onTap: () => _openDrawActivity(advertise),
+                  onTap: () => _onBannerTap(advertise),
                 );
               },
               onTap: (int index) {
-                _openDrawActivity(advertiseList[index]);
+                _onBannerTap(advertiseList[index]);
               },
             ),
           ),

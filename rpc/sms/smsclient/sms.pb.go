@@ -7,10 +7,11 @@
 package smsclient
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -9571,20 +9572,22 @@ type HomeAdvertiseListData struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Id         int64  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`                                   //编号
-	Name       string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`                                //名称
-	Type       int32  `protobuf:"varint,3,opt,name=type,proto3" json:"type,omitempty"`                               //轮播位置：0->PC首页轮播；1->app首页轮播
-	Pic        string `protobuf:"bytes,4,opt,name=pic,proto3" json:"pic,omitempty"`                                  //图片地址
-	StartTime  string `protobuf:"bytes,5,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`     //开始时间
-	EndTime    string `protobuf:"bytes,6,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`           //结束时间
-	Status     int32  `protobuf:"varint,7,opt,name=status,proto3" json:"status,omitempty"`                           //上下线状态：0->下线；1->上线
-	ClickCount int32  `protobuf:"varint,8,opt,name=click_count,json=clickCount,proto3" json:"click_count,omitempty"` //点击数
-	OrderCount int32  `protobuf:"varint,9,opt,name=order_count,json=orderCount,proto3" json:"order_count,omitempty"` //下单数
-	Url        string `protobuf:"bytes,10,opt,name=url,proto3" json:"url,omitempty"`                                 //链接地址
-	Remark     string `protobuf:"bytes,11,opt,name=remark,proto3" json:"remark,omitempty"`                           //备注
-	Sort       int32  `protobuf:"varint,12,opt,name=sort,proto3" json:"sort,omitempty"`                              //排序
-	CreateTime string `protobuf:"bytes,13,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"` //创建时间
-	UpdateTime string `protobuf:"bytes,14,opt,name=update_time,json=updateTime,proto3" json:"update_time,omitempty"` //更新时间
+	Id           int64  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`                                         //编号
+	Name         string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`                                      //名称
+	Type         int32  `protobuf:"varint,3,opt,name=type,proto3" json:"type,omitempty"`                                     //轮播位置：0->PC首页轮播；1->app首页轮播
+	Pic          string `protobuf:"bytes,4,opt,name=pic,proto3" json:"pic,omitempty"`                                        //图片地址
+	StartTime    string `protobuf:"bytes,5,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`           //开始时间
+	EndTime      string `protobuf:"bytes,6,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`                 //结束时间
+	Status       int32  `protobuf:"varint,7,opt,name=status,proto3" json:"status,omitempty"`                                 //上下线状态：0->下线；1->上线
+	ClickCount   int32  `protobuf:"varint,8,opt,name=click_count,json=clickCount,proto3" json:"click_count,omitempty"`       //点击数
+	OrderCount   int32  `protobuf:"varint,9,opt,name=order_count,json=orderCount,proto3" json:"order_count,omitempty"`       //下单数
+	Url          string `protobuf:"bytes,10,opt,name=url,proto3" json:"url,omitempty"`                                       //链接地址
+	Remark       string `protobuf:"bytes,11,opt,name=remark,proto3" json:"remark,omitempty"`                                 //备注
+	Sort         int32  `protobuf:"varint,12,opt,name=sort,proto3" json:"sort,omitempty"`                                    //排序
+	CreateTime   string `protobuf:"bytes,13,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`       //创建时间
+	UpdateTime   string `protobuf:"bytes,14,opt,name=update_time,json=updateTime,proto3" json:"update_time,omitempty"`       //更新时间
+	ActivityType string `protobuf:"bytes,15,opt,name=activity_type,json=activityType,proto3" json:"activity_type,omitempty"` //活动类型
+	ActivityId   int64  `protobuf:"varint,16,opt,name=activity_id,json=activityId,proto3" json:"activity_id,omitempty"`      //活动ID
 }
 
 func (x *HomeAdvertiseListData) Reset() {
@@ -9715,6 +9718,20 @@ func (x *HomeAdvertiseListData) GetUpdateTime() string {
 		return x.UpdateTime
 	}
 	return ""
+}
+
+func (x *HomeAdvertiseListData) GetActivityType() string {
+	if x != nil {
+		return x.ActivityType
+	}
+	return ""
+}
+
+func (x *HomeAdvertiseListData) GetActivityId() int64 {
+	if x != nil {
+		return x.ActivityId
+	}
+	return 0
 }
 
 type QueryHomeAdvertiseListResp struct {

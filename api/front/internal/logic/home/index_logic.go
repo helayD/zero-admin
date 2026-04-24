@@ -474,22 +474,29 @@ func queryAdvertiseList(l *IndexLogic, currentScope pkgscope.GovernanceScope) []
 				continue // 广告已过期
 			}
 		}
+		activityType := detail.ActivityType
+		if activityType == "" {
+			activityType = operatefunnel.ActivityHomeAdvertise
+		}
+		activityId := detail.ActivityId
+		if activityId <= 0 {
+			activityId = detail.Id
+		}
 		list = append(list, types.AdvertiseList{
-			Id:           detail.Id,                           // 编号
-			Name:         detail.Name,                         // 名称
-			Type:         detail.Type,                         // 轮播位置：0->PC首页轮播；1->app首页轮播
-			Pic:          detail.Pic,                          // 图片地址
-			StartTime:    detail.StartTime,                    // 开始时间
-			EndTime:      detail.EndTime,                      // 结束时间
-			Status:       detail.Status,                       // 上下线状态：0->下线；1->上线
-			ClickCount:   detail.ClickCount,                   // 点击数
-			OrderCount:   detail.OrderCount,                   // 下单数
-			Url:          detail.Url,                          // 链接地址
-			ActivityType: operatefunnel.ActivityHomeAdvertise, // 活动类型
-			ActivityId:   detail.Id,                           // 活动ID
-			Remark:       detail.Remark,                       // 备注
-			Sort:         detail.Sort,                         // 排序
-
+			Id:           detail.Id,         // 编号
+			Name:         detail.Name,       // 名称
+			Type:         detail.Type,       // 轮播位置：0->PC首页轮播；1->app首页轮播
+			Pic:          detail.Pic,        // 图片地址
+			StartTime:    detail.StartTime,  // 开始时间
+			EndTime:      detail.EndTime,    // 结束时间
+			Status:       detail.Status,     // 上下线状态：0->下线；1->上线
+			ClickCount:   detail.ClickCount, // 点击数
+			OrderCount:   detail.OrderCount, // 下单数
+			Url:          detail.Url,        // 链接地址
+			ActivityType: activityType,      // 活动类型
+			ActivityId:   activityId,        // 活动ID
+			Remark:       detail.Remark,     // 备注
+			Sort:         detail.Sort,       // 排序
 		})
 	}
 

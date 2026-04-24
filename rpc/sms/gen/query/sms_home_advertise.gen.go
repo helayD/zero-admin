@@ -38,6 +38,8 @@ func newSmsHomeAdvertise(db *gorm.DB, opts ...gen.DOOption) smsHomeAdvertise {
 	_smsHomeAdvertise.ClickCount = field.NewInt32(tableName, "click_count")
 	_smsHomeAdvertise.OrderCount = field.NewInt32(tableName, "order_count")
 	_smsHomeAdvertise.URL = field.NewString(tableName, "url")
+	_smsHomeAdvertise.ActivityType = field.NewString(tableName, "activity_type")
+	_smsHomeAdvertise.ActivityID = field.NewInt64(tableName, "activity_id")
 	_smsHomeAdvertise.Remark = field.NewString(tableName, "remark")
 	_smsHomeAdvertise.Sort = field.NewInt32(tableName, "sort")
 	_smsHomeAdvertise.CreateTime = field.NewTime(tableName, "create_time")
@@ -53,22 +55,24 @@ func newSmsHomeAdvertise(db *gorm.DB, opts ...gen.DOOption) smsHomeAdvertise {
 type smsHomeAdvertise struct {
 	smsHomeAdvertiseDo smsHomeAdvertiseDo
 
-	ALL        field.Asterisk
-	ID         field.Int64  // 编号
-	Name       field.String // 名称
-	Type       field.Int32  // 轮播位置：0->PC首页轮播；1->app首页轮播
-	Pic        field.String // 图片地址
-	StartTime  field.Time   // 开始时间
-	EndTime    field.Time   // 结束时间
-	Status     field.Int32  // 上下线状态：0->下线；1->上线
-	ClickCount field.Int32  // 点击数
-	OrderCount field.Int32  // 下单数
-	URL        field.String // 链接地址
-	Remark     field.String // 备注
-	Sort       field.Int32  // 排序
-	CreateTime field.Time   // 创建时间
-	UpdateTime field.Time   // 更新时间
-	IsDeleted  field.Int32  // 是否删除
+	ALL          field.Asterisk
+	ID           field.Int64  // 编号
+	Name         field.String // 名称
+	Type         field.Int32  // 轮播位置：0->PC首页轮播；1->app首页轮播
+	Pic          field.String // 图片地址
+	StartTime    field.Time   // 开始时间
+	EndTime      field.Time   // 结束时间
+	Status       field.Int32  // 上下线状态：0->下线；1->上线
+	ClickCount   field.Int32  // 点击数
+	OrderCount   field.Int32  // 下单数
+	URL          field.String // 链接地址
+	ActivityType field.String // 活动类型
+	ActivityID   field.Int64  // 活动ID
+	Remark       field.String // 备注
+	Sort         field.Int32  // 排序
+	CreateTime   field.Time   // 创建时间
+	UpdateTime   field.Time   // 更新时间
+	IsDeleted    field.Int32  // 是否删除
 
 	fieldMap map[string]field.Expr
 }
@@ -95,6 +99,8 @@ func (s *smsHomeAdvertise) updateTableName(table string) *smsHomeAdvertise {
 	s.ClickCount = field.NewInt32(table, "click_count")
 	s.OrderCount = field.NewInt32(table, "order_count")
 	s.URL = field.NewString(table, "url")
+	s.ActivityType = field.NewString(table, "activity_type")
+	s.ActivityID = field.NewInt64(table, "activity_id")
 	s.Remark = field.NewString(table, "remark")
 	s.Sort = field.NewInt32(table, "sort")
 	s.CreateTime = field.NewTime(table, "create_time")
@@ -128,7 +134,7 @@ func (s *smsHomeAdvertise) GetFieldByName(fieldName string) (field.OrderExpr, bo
 }
 
 func (s *smsHomeAdvertise) fillFieldMap() {
-	s.fieldMap = make(map[string]field.Expr, 15)
+	s.fieldMap = make(map[string]field.Expr, 17)
 	s.fieldMap["id"] = s.ID
 	s.fieldMap["name"] = s.Name
 	s.fieldMap["type"] = s.Type
@@ -139,6 +145,8 @@ func (s *smsHomeAdvertise) fillFieldMap() {
 	s.fieldMap["click_count"] = s.ClickCount
 	s.fieldMap["order_count"] = s.OrderCount
 	s.fieldMap["url"] = s.URL
+	s.fieldMap["activity_type"] = s.ActivityType
+	s.fieldMap["activity_id"] = s.ActivityID
 	s.fieldMap["remark"] = s.Remark
 	s.fieldMap["sort"] = s.Sort
 	s.fieldMap["create_time"] = s.CreateTime
