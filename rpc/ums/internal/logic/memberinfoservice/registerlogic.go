@@ -16,6 +16,21 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
+const (
+	memberIdSeqKey = "ums:member_id_seq"
+
+	// syncMemberIDSeqScript keeps the Redis sequence at least as large as
+	// the current max member_id in MySQL before allocating the next id.
+	syncMemberIDSeqScript = `
+local current = redis.call("GET", KEYS[1])
+local floor = tonumber(ARGV[1])
+if current == false or tonumber(current) < floor then
+  redis.call("SET", KEYS[1], floor)
+end
+return redis.call("INCR", KEYS[1])
+`
+)
+
 // RegisterLogic 注册会员信息
 /*
 Author: LiuFeiHua
@@ -76,19 +91,13 @@ func (l *RegisterLogic) Register(in *umsclient.RegisterReq) (*umsclient.Register
 
 func insertMember(in *umsclient.RegisterReq, hashedPassword string, l *RegisterLogic) (int64, error) {
 	// 使用 Redis INCR 生成 member_id，避免并发冲突
-	const memberIdSeqKey = "ums:member_id_seq"
-	rds := l.svcCtx.Redis
-
-	// 初始化序列：用 Setnx 原子操作，避免 TOCTOU 竞态
 	last, dbErr := query.UmsMemberInfo.WithContext(l.ctx).Order(query.UmsMemberInfo.MemberID.Desc()).First()
 	var initVal int64 = 1000
 	if dbErr == nil && last != nil {
 		initVal = last.MemberID
 	}
-	// Setnx 只在 key 不存在时设置，并发安全
-	_, _ = rds.Setnx(memberIdSeqKey, strconv.FormatInt(initVal, 10))
 
-	newMemberId, err := rds.Incr(memberIdSeqKey)
+	newMemberId, err := nextMemberID(l, initVal)
 	if err != nil {
 		return 0, errors.New("生成会员ID失败")
 	}
@@ -108,4 +117,35 @@ func insertMember(in *umsclient.RegisterReq, hashedPassword string, l *RegisterL
 	}
 
 	return member.MemberID, nil
+}
+
+func nextMemberID(l *RegisterLogic, floor int64) (int64, error) {
+	value, err := l.svcCtx.Redis.EvalCtx(l.ctx, syncMemberIDSeqScript, []string{memberIdSeqKey}, floor)
+	if err != nil {
+		return 0, err
+	}
+
+	memberID, ok := redisValueToInt64(value)
+	if !ok {
+		return 0, errors.New("生成会员ID失败")
+	}
+
+	return memberID, nil
+}
+
+func redisValueToInt64(value any) (int64, bool) {
+	switch v := value.(type) {
+	case int:
+		return int64(v), true
+	case int64:
+		return v, true
+	case string:
+		n, err := strconv.ParseInt(v, 10, 64)
+		return n, err == nil
+	case []byte:
+		n, err := strconv.ParseInt(string(v), 10, 64)
+		return n, err == nil
+	default:
+		return 0, false
+	}
 }
