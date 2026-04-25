@@ -26,3 +26,21 @@ func MarkMessageReadHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		}
 	}
 }
+
+func MarkMessageReadByPathHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var pathReq types.MemberMessagePathReq
+		if err := httpx.ParsePath(r, &pathReq); err != nil {
+			httpx.ErrorCtx(r.Context(), w, err)
+			return
+		}
+
+		l := message.NewMarkMessageReadLogic(r.Context(), svcCtx)
+		resp, err := l.MarkMessageRead(&types.MarkMessageReadReq{ID: pathReq.ID})
+		if err != nil {
+			httpx.ErrorCtx(r.Context(), w, err)
+		} else {
+			httpx.OkJsonCtx(r.Context(), w, resp)
+		}
+	}
+}

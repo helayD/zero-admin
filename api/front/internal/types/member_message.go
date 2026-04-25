@@ -58,6 +58,11 @@ type MemberMessageDetailReq struct {
 	ID int64 `path:"id,optional" form:"id,optional" json:"id,optional"`
 }
 
+// MemberMessagePathReq - 消息路径参数请求
+type MemberMessagePathReq struct {
+	ID int64 `path:"id"`
+}
+
 // MemberMessageDetailResp - 消息详情响应
 type MemberMessageDetailResp struct {
 	Code    int64              `json:"code"`

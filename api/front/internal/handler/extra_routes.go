@@ -67,12 +67,12 @@ func RegisterExtraHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			{
 				Method:  http.MethodPost,
 				Path:    "/:id/read",
-				Handler: membermessagehandler.MarkMessageReadHandler(serverCtx),
+				Handler: membermessagehandler.MarkMessageReadByPathHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodDelete,
 				Path:    "/:id",
-				Handler: membermessagehandler.DeleteMessageHandler(serverCtx),
+				Handler: membermessagehandler.DeleteMessageByPathHandler(serverCtx),
 			},
 		},
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),

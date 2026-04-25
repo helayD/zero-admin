@@ -26,3 +26,21 @@ func DeleteMessageHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 		}
 	}
 }
+
+func DeleteMessageByPathHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var pathReq types.MemberMessagePathReq
+		if err := httpx.ParsePath(r, &pathReq); err != nil {
+			httpx.ErrorCtx(r.Context(), w, err)
+			return
+		}
+
+		l := message.NewDeleteMessageLogic(r.Context(), svcCtx)
+		resp, err := l.DeleteMessage(&types.MemberMessageDetailReq{ID: pathReq.ID})
+		if err != nil {
+			httpx.ErrorCtx(r.Context(), w, err)
+		} else {
+			httpx.OkJsonCtx(r.Context(), w, resp)
+		}
+	}
+}
