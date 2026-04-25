@@ -2,8 +2,8 @@ package types
 
 // QueryMemberMessageReq - 查询消息列表
 type QueryMemberMessageReq struct {
-	MessageType int64 `form:"messageType"` // 消息类型（可选）
-	Status      int64 `form:"status"`      // 状态 0:未读 1:已读（可选）
+	MessageType int64 `form:"messageType,optional"` // 消息类型（可选）
+	Status      int64 `form:"status,default=-1"`    // 状态 0:未读 1:已读（可选）
 	PageNum     int64 `form:"pageNum,default=1"`
 	PageSize    int64 `form:"pageSize,default=20"`
 }
@@ -55,7 +55,7 @@ type QueryMemberMessageListResp struct {
 
 // MemberMessageDetailReq - 消息详情请求
 type MemberMessageDetailReq struct {
-	ID int64 `path:"id"`
+	ID int64 `path:"id,optional" form:"id,optional" json:"id,optional"`
 }
 
 // MemberMessageDetailResp - 消息详情响应
@@ -67,7 +67,7 @@ type MemberMessageDetailResp struct {
 
 // MarkMessageReadReq - 标记单条已读请求
 type MarkMessageReadReq struct {
-	ID int64 `path:"id"`
+	ID int64 `path:"id,optional" form:"id,optional" json:"id,optional"`
 }
 
 // BaseResp - 基础响应
