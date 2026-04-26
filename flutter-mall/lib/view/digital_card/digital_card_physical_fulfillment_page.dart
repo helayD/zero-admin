@@ -114,6 +114,49 @@ class _DigitalCardPhysicalFulfillmentPageState
     }
   }
 
+  Future<void> _confirmShippingFee() async {
+    final PhysicalFulfillmentDetailData? detail = _detail;
+    if (detail == null || _isSubmitting) return;
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        title: const Text('支付邮费'),
+        content: Text(
+          detail.shippingFeeAmount > 0
+              ? '确认支付邮费 ￥${(detail.shippingFeeAmount / 100).toStringAsFixed(2)} 吗？'
+              : '确认继续支付邮费吗？',
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('确认'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    setState(() => _isSubmitting = true);
+    try {
+      await HttpUtil.post(
+        confirmPhysicalFulfillmentShippingFeeUrl,
+        data: <String, dynamic>{
+          'fulfillmentId': detail.fulfillmentId,
+          'assetInstanceId': widget.assetInstanceId,
+          'payAmount': detail.shippingFeeAmount,
+          'payChannel': 'app',
+          'paymentNo': 'APP-${DateTime.now().millisecondsSinceEpoch}',
+        },
+      );
+      await _loadDetail();
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
   Future<void> _openAddressSheet() async {
     if (_isSubmitting) return;
     setState(() => _isSubmitting = true);
@@ -238,8 +281,20 @@ class _DigitalCardPhysicalFulfillmentPageState
           _buildMetaLine('活动名称', detail.activityName),
           _buildMetaLine('获取时间', detail.obtainedAt),
           _buildMetaLine('发放状态', detail.mintStatusText),
+          _buildMetaLine('邮费状态', detail.shippingFeeStatusText),
           if (detail.complianceTipSummary.trim().isNotEmpty)
             _buildMetaLine('合规提示', detail.complianceTipSummary),
+          if (!detail.isBlocked && detail.needsShippingFee) ...<Widget>[
+            const SizedBox(height: AppSpacing.md),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _isSubmitting ? null : _confirmShippingFee,
+                icon: const Icon(Icons.payments_outlined),
+                label: const Text('支付邮费'),
+              ),
+            ),
+          ],
         ],
       ),
     );

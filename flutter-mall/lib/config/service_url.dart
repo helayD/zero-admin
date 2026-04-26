@@ -152,12 +152,24 @@ const queryMyDigitalCardAssetListUrl =
 // 查询我的数字卡片资产详情
 const queryMyDigitalCardAssetDetailUrl =
     "$baseUrl/api/digitalCard/asset/queryMyDigitalCardAssetDetail";
+// 识别数字卡片转赠接收人
+const resolveDigitalCardTransferRecipientUrl =
+    "$baseUrl/api/digitalCard/asset/resolveTransferRecipient";
+// 转赠数字卡片
+const transferDigitalCardAssetUrl =
+    "$baseUrl/api/digitalCard/asset/transferDigitalCardAsset";
+// 提交数字卡片提现申请
+const requestDigitalCardWithdrawUrl =
+    "$baseUrl/api/digitalCard/asset/requestDigitalCardWithdraw";
 // 查询我的实体卡履约详情
 const queryMyPhysicalFulfillmentDetailUrl =
     "$baseUrl/api/digitalCard/physicalFulfillment/queryMyPhysicalFulfillmentDetail";
 // 确认实体卡收货地址
 const confirmPhysicalFulfillmentAddressUrl =
     "$baseUrl/api/digitalCard/physicalFulfillment/confirmPhysicalFulfillmentAddress";
+// 确认实体卡邮费支付
+const confirmPhysicalFulfillmentShippingFeeUrl =
+    "$baseUrl/api/digitalCard/physicalFulfillment/confirmPhysicalFulfillmentShippingFee";
 // 确认实体卡签收
 const confirmPhysicalCardReceiptUrl =
     "$baseUrl/api/digitalCard/physicalFulfillment/confirmPhysicalCardReceipt";

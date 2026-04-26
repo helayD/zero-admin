@@ -104,7 +104,7 @@ class DrawResultSheet extends StatelessWidget {
 
   String get _assetActionLabel {
     if (record.assetInstanceId > 0) {
-      return '查看资产详情';
+      return '支付邮费/提现/转赠';
     }
     return '查看我的卡片';
   }

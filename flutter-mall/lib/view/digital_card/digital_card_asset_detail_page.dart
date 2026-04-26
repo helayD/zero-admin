@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_mall/config/service_url.dart';
 import 'package:flutter_mall/model/app_recent_context.dart';
 import 'package:flutter_mall/model/digital_card/digital_card_asset_model.dart';
@@ -13,6 +14,7 @@ import 'package:flutter_mall/view/digital_card/digital_card_physical_fulfillment
 import 'package:flutter_mall/view/digital_card/digital_card_display_text.dart';
 import 'package:flutter_mall/view/digital_card/mint_status_timeline.dart';
 import 'package:flutter_mall/widgets/cached_image_widget.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 typedef DigitalCardAssetDetailFetcher
     = Future<QueryMyDigitalCardAssetDetailResponse> Function(
@@ -41,6 +43,7 @@ class _DigitalCardAssetDetailPageState
     extends State<DigitalCardAssetDetailPage> {
   DigitalCardAssetDetailData? _detail;
   bool _isLoading = true;
+  bool _isActionSubmitting = false;
   String? _errorMessage;
 
   AppRecentContext _buildRecoveryContext([String? source]) {
@@ -111,6 +114,254 @@ class _DigitalCardAssetDetailPageState
     );
     return queryMyDigitalCardAssetDetailResponseFromJson(
       jsonEncode(response.data),
+    );
+  }
+
+  Future<void> _requestWithdraw(DigitalCardAssetItem item) async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        title: const Text('提现'),
+        content: const Text('确认提交这张卡片的提现申请吗？'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('提交'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || _isActionSubmitting) return;
+    setState(() => _isActionSubmitting = true);
+    try {
+      final Response response = await HttpUtil.post(
+        requestDigitalCardWithdrawUrl,
+        data: <String, dynamic>{
+          'assetInstanceId': item.assetInstanceId,
+          'reason': '会员提交提现申请',
+          'requestId': 'withdraw-${DateTime.now().millisecondsSinceEpoch}',
+        },
+      );
+      final Map<String, dynamic> data = _responseData(response.data);
+      if (!mounted) return;
+      _showSnack(data['withdrawText']?.toString() ?? '提现申请已提交');
+      await _loadDetail();
+    } finally {
+      if (mounted) setState(() => _isActionSubmitting = false);
+    }
+  }
+
+  Future<void> _openTransferSheet(DigitalCardAssetItem item) async {
+    final TextEditingController controller = TextEditingController();
+    final BuildContext pageContext = context;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (BuildContext sheetContext) {
+        bool isChecking = false;
+        String? message;
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setSheetState) {
+            Future<void> submit() async {
+              final String mobile = controller.text.trim();
+              if (mobile.isEmpty || isChecking) return;
+              bool transferCompleted = false;
+              setSheetState(() {
+                isChecking = true;
+                message = null;
+              });
+              try {
+                final Map<String, dynamic> recipient =
+                    await _resolveTransferRecipient(item, mobile);
+                final bool canTransfer = recipient['canTransfer'] == true;
+                if (!canTransfer) {
+                  setSheetState(() {
+                    message = recipient['actionHint']?.toString() ??
+                        recipient['recipientStatusText']?.toString() ??
+                        '接收人需先完成注册';
+                  });
+                  await _showRegisterPrompt(recipient);
+                  return;
+                }
+                final bool? confirmed = await showDialog<bool>(
+                  context: sheetContext,
+                  builder: (BuildContext context) => AlertDialog(
+                    title: const Text('确认转赠'),
+                    content: Text(
+                      '确认转赠给 ${recipient['recipientMobileMasked'] ?? mobile} 吗？',
+                    ),
+                    actions: <Widget>[
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('取消'),
+                      ),
+                      FilledButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('确认转赠'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirmed != true) return;
+                await _transferAsset(item, mobile);
+                transferCompleted = true;
+              } catch (_) {
+                setSheetState(() => message = '转赠处理失败，请稍后重试');
+              } finally {
+                if (!transferCompleted) {
+                  setSheetState(() => isChecking = false);
+                }
+              }
+              if (transferCompleted && mounted) {
+                Navigator.pop(sheetContext);
+                _showSnack('转赠成功');
+                Navigator.of(pageContext).pop();
+              }
+            }
+
+            return SafeArea(
+              top: false,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  20,
+                  8,
+                  20,
+                  20 + MediaQuery.of(context).viewInsets.bottom,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text('转赠卡片', style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      '输入接收人的注册手机号。已注册可直接接收，未注册会生成 H5 注册提示页。',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    TextField(
+                      controller: controller,
+                      keyboardType: TextInputType.phone,
+                      maxLength: 11,
+                      decoration: const InputDecoration(
+                        labelText: '接收人手机号',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    if (message != null) ...<Widget>[
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        message!,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppColors.price,
+                            ),
+                      ),
+                    ],
+                    const SizedBox(height: AppSpacing.md),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: isChecking ? null : submit,
+                        icon: isChecking
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.ios_share_outlined),
+                        label: const Text('确认接收人'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+    controller.dispose();
+  }
+
+  Future<Map<String, dynamic>> _resolveTransferRecipient(
+    DigitalCardAssetItem item,
+    String mobile,
+  ) async {
+    final Response response = await HttpUtil.post(
+      resolveDigitalCardTransferRecipientUrl,
+      data: <String, dynamic>{
+        'assetInstanceId': item.assetInstanceId,
+        'recipientMobile': mobile,
+      },
+    );
+    return _responseData(response.data);
+  }
+
+  Future<void> _transferAsset(DigitalCardAssetItem item, String mobile) async {
+    await HttpUtil.post(
+      transferDigitalCardAssetUrl,
+      data: <String, dynamic>{
+        'assetInstanceId': item.assetInstanceId,
+        'recipientMobile': mobile,
+        'requestId': 'transfer-${DateTime.now().millisecondsSinceEpoch}',
+      },
+    );
+  }
+
+  Future<void> _showRegisterPrompt(Map<String, dynamic> recipient) async {
+    final String registerUrl = recipient['registerUrl']?.toString() ?? '';
+    if (registerUrl.trim().isEmpty || !mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (BuildContext context) => AlertDialog(
+        title: const Text('接收人需注册'),
+        content: Text('请将注册页面发给接收人：$registerUrl'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: registerUrl));
+              if (context.mounted) Navigator.pop(context);
+              _showSnack('注册链接已复制');
+            },
+            child: const Text('复制链接'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _openRegisterUrl(registerUrl);
+            },
+            child: const Text('打开页面'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openRegisterUrl(String registerUrl) async {
+    final String normalized =
+        registerUrl.startsWith('http') ? registerUrl : '$baseUrl$registerUrl';
+    final Uri? uri = Uri.tryParse(normalized);
+    if (uri == null) return;
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  Map<String, dynamic> _responseData(dynamic raw) {
+    if (raw is Map && raw['data'] is Map) {
+      return Map<String, dynamic>.from(raw['data'] as Map);
+    }
+    return <String, dynamic>{};
+  }
+
+  void _showSnack(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
     );
   }
 
@@ -201,7 +452,57 @@ class _DigitalCardAssetDetailPageState
             _buildStatusCard(detail, statusCopy),
             const SizedBox(height: AppSpacing.lg),
             _buildPhysicalFulfillmentEntry(detail.item),
+            const SizedBox(height: AppSpacing.lg),
+            _buildAssetActionCard(detail.item),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAssetActionCard(DigitalCardAssetItem item) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text('卡片操作', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            '可支付邮费、提交提现申请，或转赠给已注册用户。',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: <Widget>[
+              FilledButton.icon(
+                onPressed: _isActionSubmitting
+                    ? null
+                    : () => _openPhysicalFulfillment(item),
+                icon: const Icon(Icons.local_shipping_outlined),
+                label: const Text('支付邮费'),
+              ),
+              OutlinedButton.icon(
+                onPressed:
+                    _isActionSubmitting ? null : () => _requestWithdraw(item),
+                icon: const Icon(Icons.account_balance_wallet_outlined),
+                label: const Text('提现'),
+              ),
+              OutlinedButton.icon(
+                onPressed:
+                    _isActionSubmitting ? null : () => _openTransferSheet(item),
+                icon: const Icon(Icons.ios_share_outlined),
+                label: const Text('转赠'),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -239,18 +540,20 @@ class _DigitalCardAssetDetailPageState
           ),
           IconButton(
             tooltip: '查看实体卡进度',
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => DigitalCardPhysicalFulfillmentPage(
-                    assetInstanceId: item.assetInstanceId,
-                  ),
-                ),
-              );
-            },
+            onPressed: () => _openPhysicalFulfillment(item),
             icon: const Icon(Icons.chevron_right_rounded),
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _openPhysicalFulfillment(DigitalCardAssetItem item) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => DigitalCardPhysicalFulfillmentPage(
+          assetInstanceId: item.assetInstanceId,
+        ),
       ),
     );
   }

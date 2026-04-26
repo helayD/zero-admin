@@ -258,6 +258,45 @@ func TestConfirmAddressSnapshotsAndMasksMemberDetail(t *testing.T) {
 	}
 }
 
+func TestConfirmPhysicalFulfillmentShippingFeeMarksMemberDetailPaid(t *testing.T) {
+	db := preparePhysicalFulfillmentTestDB(t)
+	service := NewService(db, nil, nil)
+
+	created, err := service.EnsurePhysicalFulfillmentByAsset(context.Background(), physicalTestScope(), PhysicalFulfillmentInput{AssetInstanceID: 1})
+	if err != nil {
+		t.Fatalf("EnsurePhysicalFulfillmentByAsset returned error: %v", err)
+	}
+	_, err = service.ConfirmPhysicalFulfillmentShippingFee(context.Background(), physicalTestScope(), ConfirmPhysicalFulfillmentShippingFeeInput{
+		FulfillmentID:   created.FulfillmentID,
+		AssetInstanceID: 1,
+		MemberID:        3001,
+		PayAmount:       1200,
+		PayChannel:      "test",
+		PaymentNo:       "PAY-FEE-1",
+	})
+	if err != nil {
+		t.Fatalf("ConfirmPhysicalFulfillmentShippingFee returned error: %v", err)
+	}
+
+	detail, err := service.QueryMemberPhysicalFulfillmentDetail(context.Background(), physicalTestScope(), 3001, 1)
+	if err != nil {
+		t.Fatalf("QueryMemberPhysicalFulfillmentDetail returned error: %v", err)
+	}
+	if detail.ShippingFeeStatus != PhysicalShippingFeeStatusPaid || detail.ShippingFeeAmount != 1200 {
+		t.Fatalf("expected paid shipping fee detail, got %+v", detail)
+	}
+	hasFeeAction := false
+	for _, item := range detail.Timeline {
+		if item.Action == PhysicalActionShippingFeePaid {
+			hasFeeAction = true
+			break
+		}
+	}
+	if !hasFeeAction {
+		t.Fatalf("expected shipping fee action in timeline, got %+v", detail.Timeline)
+	}
+}
+
 func TestPhysicalFulfillmentProductionShipSignExceptionAndReissue(t *testing.T) {
 	db := preparePhysicalFulfillmentTestDB(t)
 	service := NewService(db, nil, nil)

@@ -23,9 +23,35 @@ func RegisterExtraHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Path:    "/queryMyDigitalCardAssetDetail",
 				Handler: digitalcardassethandler.QueryMyDigitalCardAssetDetailHandler(serverCtx),
 			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/resolveTransferRecipient",
+				Handler: digitalcardassethandler.ResolveDigitalCardTransferRecipientHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/transferDigitalCardAsset",
+				Handler: digitalcardassethandler.TransferDigitalCardAssetHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/requestDigitalCardWithdraw",
+				Handler: digitalcardassethandler.RequestDigitalCardWithdrawHandler(serverCtx),
+			},
 		},
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
 		rest.WithPrefix("/api/digitalCard/asset"),
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodGet,
+				Path:    "/digitalCard/register",
+				Handler: digitalcardassethandler.DigitalCardRegisterHintHandler(serverCtx),
+			},
+		},
+		rest.WithPrefix("/h5"),
 	)
 
 	server.AddRoutes(
@@ -44,6 +70,11 @@ func RegisterExtraHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodPost,
 				Path:    "/confirmPhysicalCardReceipt",
 				Handler: physicalfulfillmenthandler.ConfirmPhysicalCardReceiptHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/confirmPhysicalFulfillmentShippingFee",
+				Handler: physicalfulfillmenthandler.ConfirmPhysicalFulfillmentShippingFeeHandler(serverCtx),
 			},
 		},
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),

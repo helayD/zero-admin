@@ -54,6 +54,10 @@ const (
 	PhysicalActionSigned            = "physical_signed"
 	PhysicalActionException         = "physical_exception"
 	PhysicalActionReissueRequested  = "physical_reissue_requested"
+	PhysicalActionShippingFeePaid   = "physical_shipping_fee_paid"
+
+	PhysicalShippingFeeStatusPending = "pending"
+	PhysicalShippingFeeStatusPaid    = "paid"
 
 	PhysicalBlockRealName           = "blocked_real_name"
 	PhysicalBlockDigitalPending     = "blocked_digital_pending"
@@ -194,6 +198,17 @@ type ConfirmPhysicalCardReceiptInput struct {
 	TraceID       string
 }
 
+type ConfirmPhysicalFulfillmentShippingFeeInput struct {
+	FulfillmentID   int64
+	AssetInstanceID int64
+	MemberID        int64
+	PayAmount       int64
+	PayChannel      string
+	PaymentNo       string
+	RequestID       string
+	TraceID         string
+}
+
 type PhysicalFulfillmentExceptionInput struct {
 	FulfillmentID int64
 	OperatorID    int64
@@ -213,6 +228,9 @@ type PhysicalFulfillmentResult struct {
 	ProductionStatusText  string
 	ShippingStatus        string
 	ShippingStatusText    string
+	ShippingFeeStatus     string
+	ShippingFeeStatusText string
+	ShippingFeeAmount     int64
 	BlockedReason         string
 	BlockedReasonText     string
 }
@@ -230,6 +248,9 @@ type MemberPhysicalFulfillmentDetail struct {
 	FulfillmentStatusText string
 	ProductionStatusText  string
 	ShippingStatusText    string
+	ShippingFeeStatus     string
+	ShippingFeeStatusText string
+	ShippingFeeAmount     int64
 	ReceiverNameMasked    string
 	ReceiverPhoneMasked   string
 	AddressSummary        string
@@ -532,6 +553,42 @@ func (s *Service) ConfirmPhysicalCardReceipt(ctx context.Context, currentScope p
 		row.RequestID = firstNonEmpty(input.RequestID, row.RequestID)
 		row.TraceID = firstNonEmpty(input.TraceID, row.TraceID)
 		return fromStatus, PhysicalActionSigned, input.MemberID, firstNonEmpty(input.Reason, "会员确认收货"), nil, nil
+	})
+}
+
+func (s *Service) ConfirmPhysicalFulfillmentShippingFee(ctx context.Context, currentScope pkgscope.GovernanceScope, input ConfirmPhysicalFulfillmentShippingFeeInput) (*PhysicalFulfillmentResult, error) {
+	if input.MemberID <= 0 {
+		return nil, errors.New("会员ID不能为空")
+	}
+	if input.PayAmount < 0 {
+		return nil, errors.New("邮费金额不能小于0")
+	}
+	return s.mutatePhysicalFulfillment(ctx, currentScope, input.FulfillmentID, input.AssetInstanceID, "确认邮费支付", func(tx *gorm.DB, row *PhysicalFulfillmentRow) (string, string, int64, string, map[string]interface{}, error) {
+		if row.MemberID != input.MemberID {
+			return "", "", 0, "", nil, errors.New("无权确认他人的实体卡邮费")
+		}
+		if row.FulfillmentStatus == PhysicalFulfillmentStatusShipped ||
+			row.FulfillmentStatus == PhysicalFulfillmentStatusInTransit ||
+			row.FulfillmentStatus == PhysicalFulfillmentStatusSigned {
+			return "", "", 0, "", nil, errors.New("实体卡已进入配送或签收，不能重复支付邮费")
+		}
+		var paidCount int64
+		if err := tx.WithContext(ctx).
+			Table(PhysicalFulfillmentLogRow{}.TableName()).
+			Where("fulfillment_id = ? AND action = ?", row.ID, PhysicalActionShippingFeePaid).
+			Count(&paidCount).Error; err != nil {
+			return "", "", 0, "", nil, err
+		}
+		if paidCount > 0 {
+			return row.FulfillmentStatus, "", input.MemberID, "邮费已支付", nil, nil
+		}
+		row.RequestID = firstNonEmpty(input.RequestID, row.RequestID)
+		row.TraceID = firstNonEmpty(input.TraceID, row.TraceID)
+		return row.FulfillmentStatus, PhysicalActionShippingFeePaid, input.MemberID, "确认邮费支付", map[string]interface{}{
+			"payAmount":  input.PayAmount,
+			"payChannel": strings.TrimSpace(input.PayChannel),
+			"paymentNo":  strings.TrimSpace(input.PaymentNo),
+		}, nil
 	})
 }
 
@@ -915,6 +972,8 @@ func buildPhysicalFulfillmentResult(row *PhysicalFulfillmentRow) *PhysicalFulfil
 		ProductionStatusText:  physicalProductionStatusText(row.ProductionStatus),
 		ShippingStatus:        row.ShippingStatus,
 		ShippingStatusText:    physicalShippingStatusText(row.ShippingStatus),
+		ShippingFeeStatus:     PhysicalShippingFeeStatusPending,
+		ShippingFeeStatusText: physicalShippingFeeStatusText(PhysicalShippingFeeStatusPending),
 	}
 }
 
@@ -925,6 +984,7 @@ func buildMemberPhysicalFulfillmentDetail(row physicalFulfillmentDetailRow, logs
 		row.ReceiverDistrict,
 		row.ReceiverAddress,
 	}, ""))
+	feeStatus, feeStatusText, feeAmount := resolveShippingFeeSnapshot(logs)
 	return &MemberPhysicalFulfillmentDetail{
 		FulfillmentID:         row.ID,
 		FulfillmentNo:         row.FulfillmentNo,
@@ -938,6 +998,9 @@ func buildMemberPhysicalFulfillmentDetail(row physicalFulfillmentDetailRow, logs
 		FulfillmentStatusText: physicalFulfillmentStatusText(row.FulfillmentStatus),
 		ProductionStatusText:  physicalProductionStatusText(row.ProductionStatus),
 		ShippingStatusText:    physicalShippingStatusText(row.ShippingStatus),
+		ShippingFeeStatus:     feeStatus,
+		ShippingFeeStatusText: feeStatusText,
+		ShippingFeeAmount:     feeAmount,
 		ReceiverNameMasked:    maskReceiverName(row.ReceiverName),
 		ReceiverPhoneMasked:   maskReceiverPhone(row.ReceiverPhone),
 		AddressSummary:        addressSummary,
@@ -1158,6 +1221,15 @@ func physicalShippingStatusText(status string) string {
 	}
 }
 
+func physicalShippingFeeStatusText(status string) string {
+	switch strings.TrimSpace(status) {
+	case PhysicalShippingFeeStatusPaid:
+		return "邮费已支付"
+	default:
+		return "待支付邮费"
+	}
+}
+
 func physicalActionText(action string) string {
 	switch strings.TrimSpace(action) {
 	case PhysicalActionCreated:
@@ -1174,9 +1246,33 @@ func physicalActionText(action string) string {
 		return "标记异常"
 	case PhysicalActionReissueRequested:
 		return "发起补发"
+	case PhysicalActionShippingFeePaid:
+		return "支付邮费"
+	case OperationAssetTransferred:
+		return "卡片转赠"
 	default:
 		return strings.TrimSpace(action)
 	}
+}
+
+func resolveShippingFeeSnapshot(logs []PhysicalFulfillmentLogRow) (string, string, int64) {
+	status := PhysicalShippingFeeStatusPending
+	text := physicalShippingFeeStatusText(status)
+	var amount int64
+	for _, item := range logs {
+		if strings.TrimSpace(item.Action) != PhysicalActionShippingFeePaid {
+			continue
+		}
+		status = PhysicalShippingFeeStatusPaid
+		text = physicalShippingFeeStatusText(status)
+		var payload struct {
+			PayAmount int64 `json:"payAmount"`
+		}
+		if strings.TrimSpace(item.PayloadJSON) != "" && json.Unmarshal([]byte(item.PayloadJSON), &payload) == nil {
+			amount = payload.PayAmount
+		}
+	}
+	return status, text, amount
 }
 
 func maskReceiverName(name string) string {

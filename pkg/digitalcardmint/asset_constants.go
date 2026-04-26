@@ -14,12 +14,14 @@ const (
 	ComplianceStatusRecycleRequested = "compliance_recycle_requested"
 	ComplianceStatusRecycled         = "compliance_recycled"
 
-	OperationAssetDisplayHidden    = "asset_display_hidden"
-	OperationAssetDisplayRestored  = "asset_display_restored"
-	OperationAssetComplianceReview = "asset_compliance_review"
-	OperationAssetOfflined         = "asset_offlined"
-	OperationAssetRecycleRequested = "asset_recycle_requested"
-	OperationAssetRecycled         = "asset_recycled"
+	OperationAssetDisplayHidden     = "asset_display_hidden"
+	OperationAssetDisplayRestored   = "asset_display_restored"
+	OperationAssetComplianceReview  = "asset_compliance_review"
+	OperationAssetOfflined          = "asset_offlined"
+	OperationAssetRecycleRequested  = "asset_recycle_requested"
+	OperationAssetRecycled          = "asset_recycled"
+	OperationAssetTransferred       = "asset_transferred"
+	OperationAssetWithdrawRequested = "asset_withdraw_requested"
 )
 
 func displayStatusText(status string) string {
@@ -97,6 +99,10 @@ func assetLogOperationText(operationType string) string {
 		return "发起回收处置"
 	case OperationAssetRecycled:
 		return "资产已回收"
+	case OperationAssetTransferred:
+		return "卡片已转赠"
+	case OperationAssetWithdrawRequested:
+		return "提现申请已提交"
 	default:
 		return strings.TrimSpace(operationType)
 	}

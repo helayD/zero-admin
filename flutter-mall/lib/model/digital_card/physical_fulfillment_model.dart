@@ -41,6 +41,9 @@ class PhysicalFulfillmentDetailData {
   final String fulfillmentStatusText;
   final String productionStatusText;
   final String shippingStatusText;
+  final String shippingFeeStatus;
+  final String shippingFeeStatusText;
+  final int shippingFeeAmount;
   final String receiverNameMasked;
   final String receiverPhoneMasked;
   final String addressSummary;
@@ -64,6 +67,9 @@ class PhysicalFulfillmentDetailData {
     required this.fulfillmentStatusText,
     required this.productionStatusText,
     required this.shippingStatusText,
+    required this.shippingFeeStatus,
+    required this.shippingFeeStatusText,
+    required this.shippingFeeAmount,
     required this.receiverNameMasked,
     required this.receiverPhoneMasked,
     required this.addressSummary,
@@ -89,6 +95,9 @@ class PhysicalFulfillmentDetailData {
       fulfillmentStatusText: json['fulfillmentStatusText']?.toString() ?? '',
       productionStatusText: json['productionStatusText']?.toString() ?? '',
       shippingStatusText: json['shippingStatusText']?.toString() ?? '',
+      shippingFeeStatus: json['shippingFeeStatus']?.toString() ?? '',
+      shippingFeeStatusText: json['shippingFeeStatusText']?.toString() ?? '',
+      shippingFeeAmount: _intValue(json['shippingFeeAmount']),
       receiverNameMasked: json['receiverNameMasked']?.toString() ?? '',
       receiverPhoneMasked: json['receiverPhoneMasked']?.toString() ?? '',
       addressSummary: json['addressSummary']?.toString() ?? '',
@@ -105,6 +114,7 @@ class PhysicalFulfillmentDetailData {
   }
 
   bool get needsAddress => fulfillmentStatus == 'pending_address';
+  bool get needsShippingFee => shippingFeeStatus != 'paid';
   bool get canConfirmReceipt =>
       fulfillmentStatus == 'shipped' || fulfillmentStatus == 'in_transit';
   bool get isBlocked => blockedReason.trim().isNotEmpty;

@@ -14,6 +14,14 @@ type ConfirmPhysicalCardReceiptReq struct {
 	Reason        string `json:"reason,optional"`
 }
 
+type ConfirmPhysicalFulfillmentShippingFeeReq struct {
+	FulfillmentId   int64  `json:"fulfillmentId,optional"`
+	AssetInstanceId int64  `json:"assetInstanceId"`
+	PayAmount       int64  `json:"payAmount,optional"`
+	PayChannel      string `json:"payChannel,optional"`
+	PaymentNo       string `json:"paymentNo,optional"`
+}
+
 type PhysicalFulfillmentTimelineItem struct {
 	Action     string `json:"action"`
 	ActionText string `json:"actionText"`
@@ -35,6 +43,9 @@ type PhysicalFulfillmentDetailData struct {
 	FulfillmentStatusText string                            `json:"fulfillmentStatusText"`
 	ProductionStatusText  string                            `json:"productionStatusText"`
 	ShippingStatusText    string                            `json:"shippingStatusText"`
+	ShippingFeeStatus     string                            `json:"shippingFeeStatus"`
+	ShippingFeeStatusText string                            `json:"shippingFeeStatusText"`
+	ShippingFeeAmount     int64                             `json:"shippingFeeAmount"`
 	ReceiverNameMasked    string                            `json:"receiverNameMasked"`
 	ReceiverPhoneMasked   string                            `json:"receiverPhoneMasked"`
 	AddressSummary        string                            `json:"addressSummary"`
@@ -59,6 +70,12 @@ type ConfirmPhysicalFulfillmentAddressResp struct {
 }
 
 type ConfirmPhysicalCardReceiptResp struct {
+	Code    string                        `json:"code"`
+	Message string                        `json:"message"`
+	Data    PhysicalFulfillmentDetailData `json:"data"`
+}
+
+type ConfirmPhysicalFulfillmentShippingFeeResp struct {
 	Code    string                        `json:"code"`
 	Message string                        `json:"message"`
 	Data    PhysicalFulfillmentDetailData `json:"data"`
