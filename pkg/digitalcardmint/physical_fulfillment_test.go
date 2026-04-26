@@ -187,6 +187,9 @@ func TestEnsurePhysicalFulfillmentBlocksDigitalPendingAndRealName(t *testing.T) 
 	if result.BlockedReason != PhysicalBlockDigitalPending {
 		t.Fatalf("expected digital pending block, got %+v", result)
 	}
+	if result.FulfillmentStatus != PhysicalFulfillmentStatusPendingDigitalConfirmation || result.FulfillmentStatusText == "" {
+		t.Fatalf("expected pending digital status text for blocked asset, got %+v", result)
+	}
 
 	if err := db.Table(CardInstanceRow{}.TableName()).
 		Where("id = 1").
@@ -209,6 +212,9 @@ func TestEnsurePhysicalFulfillmentBlocksDigitalPendingAndRealName(t *testing.T) 
 	}
 	if result.BlockedReason != PhysicalBlockRealName {
 		t.Fatalf("expected real name block, got %+v", result)
+	}
+	if result.FulfillmentStatus != PhysicalFulfillmentStatusPendingRealName || result.FulfillmentStatusText == "" {
+		t.Fatalf("expected pending real name status text for blocked asset, got %+v", result)
 	}
 
 	var count int64

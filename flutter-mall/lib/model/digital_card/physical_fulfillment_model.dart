@@ -114,7 +114,7 @@ class PhysicalFulfillmentDetailData {
   }
 
   bool get needsAddress => fulfillmentStatus == 'pending_address';
-  bool get needsShippingFee => shippingFeeStatus != 'paid';
+  bool get needsShippingFee => !isBlocked && shippingFeeStatus != 'paid';
   bool get canConfirmReceipt =>
       fulfillmentStatus == 'shipped' || fulfillmentStatus == 'in_transit';
   bool get isBlocked => blockedReason.trim().isNotEmpty;

@@ -58,3 +58,35 @@ func TestMapPhysicalDetailDoesNotExposeChainFields(t *testing.T) {
 		}
 	}
 }
+
+func TestMapPhysicalDetailBlockedKeepsAssetSummary(t *testing.T) {
+	data := mapPhysicalDetail(nil, &digitalcardmint.PhysicalFulfillmentResult{
+		AssetInstanceID:       970009,
+		FulfillmentStatus:     digitalcardmint.PhysicalFulfillmentStatusPendingDigitalConfirmation,
+		FulfillmentStatusText: "待权益确认",
+		ShippingFeeStatus:     digitalcardmint.PhysicalShippingFeeStatusPending,
+		ShippingFeeStatusText: "待发放后确认",
+		BlockedReason:         digitalcardmint.PhysicalBlockDigitalPending,
+		BlockedReasonText:     "待完成权益确认后制作",
+	}, 970009, &digitalcardmint.MemberDigitalCardAssetDetail{
+		Item: digitalcardmint.MemberDigitalCardAssetItem{
+			AssetInstanceID:       970009,
+			AssetNo:               "CARD20260426085756FB38DA19",
+			TemplateName:          "SR 星云狐",
+			ActivityName:          "2026 春季限定数字卡片抽卡",
+			ObtainedAt:            "2026-04-26 08:57:56",
+			MintStatusText:        "待发放",
+			ComplianceRuleSummary: "默认禁止收益承诺",
+		},
+	})
+
+	if data.AssetNo == "" || data.TemplateName == "" || data.MintStatusText == "" {
+		t.Fatalf("blocked physical detail lost asset summary: %+v", data)
+	}
+	if data.BlockedReasonText != "待完成权益确认后制作" {
+		t.Fatalf("unexpected blocked reason text: %s", data.BlockedReasonText)
+	}
+	if data.ShippingFeeStatusText != "待发放后确认" {
+		t.Fatalf("unexpected shipping fee status text: %s", data.ShippingFeeStatusText)
+	}
+}

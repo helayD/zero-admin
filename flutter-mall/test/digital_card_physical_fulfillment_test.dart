@@ -114,6 +114,56 @@ void main() {
     expect(find.textContaining('token'), findsNothing);
   });
 
+  testWidgets('实体卡履约页阻塞态展示卡片摘要而非空白', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: DigitalCardPhysicalFulfillmentPage(
+          assetInstanceId: 970009,
+          fetchDetail: (_) async =>
+              const QueryMyPhysicalFulfillmentDetailResponse(
+            code: 'SUCCESS',
+            message: 'success',
+            data: PhysicalFulfillmentDetailData(
+              fulfillmentId: 0,
+              fulfillmentNo: '',
+              assetInstanceId: 970009,
+              assetNo: 'CARD20260426085756FB38DA19',
+              templateName: 'SR 星云狐',
+              activityName: '2026 春季限定数字卡片抽卡',
+              obtainedAt: '2026-04-26 08:57:56',
+              mintStatusText: '待发放',
+              fulfillmentStatus: 'pending_digital_confirmation',
+              fulfillmentStatusText: '待权益确认',
+              productionStatusText: '',
+              shippingStatusText: '',
+              shippingFeeStatus: 'pending',
+              shippingFeeStatusText: '待发放后确认',
+              shippingFeeAmount: 0,
+              receiverNameMasked: '',
+              receiverPhoneMasked: '',
+              addressSummary: '',
+              carrierName: '',
+              trackingNo: '',
+              complianceTipSummary: '默认禁止收益承诺',
+              blockedReason: 'blocked_digital_pending',
+              blockedReasonText: '待完成权益确认后制作',
+              timeline: <PhysicalFulfillmentTimelineItem>[],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('SR 星云狐'), findsOneWidget);
+    expect(find.text('CARD20260426085756FB38DA19'), findsOneWidget);
+    expect(find.text('待发放'), findsOneWidget);
+    expect(find.text('待发放后确认'), findsOneWidget);
+    expect(find.text('待完成权益确认后制作'), findsOneWidget);
+    expect(find.text('支付邮费'), findsNothing);
+  });
+
   testWidgets('PhysicalFulfillmentTimeline 展示空态与时间线',
       (WidgetTester tester) async {
     await tester.pumpWidget(

@@ -26,15 +26,22 @@ func physicalServiceError(ctx context.Context, action string, payload interface{
 	return errorx.NewDefaultError(err.Error())
 }
 
-func mapPhysicalDetail(detail *digitalcardmint.MemberPhysicalFulfillmentDetail, blocked *digitalcardmint.PhysicalFulfillmentResult, assetInstanceID int64) types.PhysicalFulfillmentDetailData {
+func mapPhysicalDetail(detail *digitalcardmint.MemberPhysicalFulfillmentDetail, blocked *digitalcardmint.PhysicalFulfillmentResult, assetInstanceID int64, assetDetails ...*digitalcardmint.MemberDigitalCardAssetDetail) types.PhysicalFulfillmentDetailData {
 	if blocked != nil && blocked.BlockedReason != "" {
+		asset := firstAssetDetail(assetDetails...)
 		return types.PhysicalFulfillmentDetailData{
 			AssetInstanceId:       assetInstanceID,
+			AssetNo:               asset.Item.AssetNo,
+			TemplateName:          asset.Item.TemplateName,
+			ActivityName:          asset.Item.ActivityName,
+			ObtainedAt:            asset.Item.ObtainedAt,
+			MintStatusText:        asset.Item.MintStatusText,
 			FulfillmentStatus:     blocked.FulfillmentStatus,
 			FulfillmentStatusText: blocked.FulfillmentStatusText,
 			ShippingFeeStatus:     blocked.ShippingFeeStatus,
 			ShippingFeeStatusText: blocked.ShippingFeeStatusText,
 			ShippingFeeAmount:     blocked.ShippingFeeAmount,
+			ComplianceTipSummary:  asset.Item.ComplianceRuleSummary,
 			BlockedReason:         blocked.BlockedReason,
 			BlockedReasonText:     blocked.BlockedReasonText,
 			Timeline:              []types.PhysicalFulfillmentTimelineItem{},
@@ -70,6 +77,15 @@ func mapPhysicalDetail(detail *digitalcardmint.MemberPhysicalFulfillmentDetail, 
 		ComplianceTipSummary:  detail.ComplianceTipSummary,
 		Timeline:              mapPhysicalTimeline(detail.Timeline),
 	}
+}
+
+func firstAssetDetail(items ...*digitalcardmint.MemberDigitalCardAssetDetail) *digitalcardmint.MemberDigitalCardAssetDetail {
+	for _, item := range items {
+		if item != nil {
+			return item
+		}
+	}
+	return &digitalcardmint.MemberDigitalCardAssetDetail{}
 }
 
 func mapPhysicalTimeline(items []digitalcardmint.PhysicalFulfillmentTimelineItem) []types.PhysicalFulfillmentTimelineItem {

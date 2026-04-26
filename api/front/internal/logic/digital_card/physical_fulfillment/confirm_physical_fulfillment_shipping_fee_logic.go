@@ -29,6 +29,10 @@ func (l *ConfirmPhysicalFulfillmentShippingFeeLogic) ConfirmPhysicalFulfillmentS
 		return nil, err
 	}
 	scope := currentGovernanceScope(l.ctx)
+	assetDetail, assetErr := l.svcCtx.CardMintService.QueryMemberDigitalCardAssetDetail(l.ctx, scope, memberID, req.AssetInstanceId)
+	if assetErr != nil {
+		return nil, physicalServiceError(l.ctx, "查询实体卡资产摘要", req, assetErr)
+	}
 	ensured, err := l.svcCtx.CardMintService.EnsurePhysicalFulfillmentByAsset(l.ctx, scope, digitalcardmint.PhysicalFulfillmentInput{
 		AssetInstanceID: req.AssetInstanceId,
 		OperatorType:    digitalcardmint.OperatorSystem,
@@ -40,7 +44,7 @@ func (l *ConfirmPhysicalFulfillmentShippingFeeLogic) ConfirmPhysicalFulfillmentS
 		return &types.ConfirmPhysicalFulfillmentShippingFeeResp{
 			Code:    physicalCodeSuccess,
 			Message: "实体卡暂不可支付邮费",
-			Data:    mapPhysicalDetail(nil, ensured, req.AssetInstanceId),
+			Data:    mapPhysicalDetail(nil, ensured, req.AssetInstanceId, assetDetail),
 		}, nil
 	}
 	_, err = l.svcCtx.CardMintService.ConfirmPhysicalFulfillmentShippingFee(l.ctx, scope, digitalcardmint.ConfirmPhysicalFulfillmentShippingFeeInput{

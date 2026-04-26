@@ -241,6 +241,19 @@ void main() {
     expect(find.text('无需重复操作，稍后刷新查看结果。'), findsWidgets);
     expect(find.text('受限展示'), findsWidgets);
     expect(find.text('到账进度'), findsOneWidget);
+    await tester.drag(find.byType(ListView), const Offset(0, -900));
+    await tester.pumpAndSettle();
+    expect(find.text('待发放完成后，可支付邮费、提交提现申请或转赠给已注册用户。'), findsOneWidget);
+    final Finder payButtonFinder = find.widgetWithText(FilledButton, '支付邮费');
+    final Finder withdrawButtonFinder =
+        find.widgetWithText(OutlinedButton, '提现');
+    final Finder transferButtonFinder =
+        find.widgetWithText(OutlinedButton, '转赠');
+    expect(tester.widget<FilledButton>(payButtonFinder).onPressed, isNull);
+    expect(
+        tester.widget<OutlinedButton>(withdrawButtonFinder).onPressed, isNull);
+    expect(
+        tester.widget<OutlinedButton>(transferButtonFinder).onPressed, isNull);
     expect(find.textContaining('链上'), findsNothing);
     expect(find.textContaining('token'), findsNothing);
     expect(find.textContaining('AntChain'), findsNothing);

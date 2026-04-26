@@ -353,10 +353,15 @@ func (s *Service) EnsurePhysicalFulfillmentByAsset(ctx context.Context, currentS
 			return err
 		}
 		if blockReason != "" {
+			fulfillmentStatus := physicalFulfillmentStatusForBlockReason(blockReason)
 			result = &PhysicalFulfillmentResult{
-				AssetInstanceID:   input.AssetInstanceID,
-				BlockedReason:     blockReason,
-				BlockedReasonText: blockText,
+				AssetInstanceID:       input.AssetInstanceID,
+				FulfillmentStatus:     fulfillmentStatus,
+				FulfillmentStatusText: physicalFulfillmentStatusText(fulfillmentStatus),
+				ShippingFeeStatus:     PhysicalShippingFeeStatusPending,
+				ShippingFeeStatusText: "待发放后确认",
+				BlockedReason:         blockReason,
+				BlockedReasonText:     blockText,
 			}
 			return nil
 		}
@@ -857,6 +862,15 @@ func (s *Service) physicalFulfillmentBlockReason(ctx context.Context, tx *gorm.D
 		}
 	}
 	return "", "", nil
+}
+
+func physicalFulfillmentStatusForBlockReason(reason string) string {
+	switch strings.TrimSpace(reason) {
+	case PhysicalBlockRealName:
+		return PhysicalFulfillmentStatusPendingRealName
+	default:
+		return PhysicalFulfillmentStatusPendingDigitalConfirmation
+	}
 }
 
 func (s *Service) loadPhysicalFulfillmentByAsset(ctx context.Context, tx *gorm.DB, assetInstanceID int64, forUpdate bool) (*PhysicalFulfillmentRow, error) {

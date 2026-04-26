@@ -44,6 +44,10 @@ func (l *QueryMyPhysicalFulfillmentDetailLogic) QueryMyPhysicalFulfillmentDetail
 		return nil, physicalServiceError(l.ctx, "查询实体卡履约详情", req, err)
 	}
 
+	assetDetail, assetErr := l.svcCtx.CardMintService.QueryMemberDigitalCardAssetDetail(l.ctx, scope, memberID, req.AssetInstanceId)
+	if assetErr != nil {
+		return nil, physicalServiceError(l.ctx, "查询实体卡资产摘要", req, assetErr)
+	}
 	ensured, ensureErr := l.svcCtx.CardMintService.EnsurePhysicalFulfillmentByAsset(l.ctx, scope, digitalcardmint.PhysicalFulfillmentInput{
 		AssetInstanceID: req.AssetInstanceId,
 		OperatorType:    digitalcardmint.OperatorSystem,
@@ -55,7 +59,7 @@ func (l *QueryMyPhysicalFulfillmentDetailLogic) QueryMyPhysicalFulfillmentDetail
 		return &types.QueryMyPhysicalFulfillmentDetailResp{
 			Code:    physicalCodeSuccess,
 			Message: "查询实体卡履约详情成功",
-			Data:    mapPhysicalDetail(nil, ensured, req.AssetInstanceId),
+			Data:    mapPhysicalDetail(nil, ensured, req.AssetInstanceId, assetDetail),
 		}, nil
 	}
 

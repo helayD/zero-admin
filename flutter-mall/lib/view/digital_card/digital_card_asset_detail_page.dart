@@ -461,6 +461,7 @@ class _DigitalCardAssetDetailPageState
   }
 
   Widget _buildAssetActionCard(DigitalCardAssetItem item) {
+    final bool actionsAvailable = item.mintStatus == 'mint_success';
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
@@ -474,7 +475,9 @@ class _DigitalCardAssetDetailPageState
           Text('卡片操作', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            '可支付邮费、提交提现申请，或转赠给已注册用户。',
+            actionsAvailable
+                ? '可支付邮费、提交提现申请，或转赠给已注册用户。'
+                : '待发放完成后，可支付邮费、提交提现申请或转赠给已注册用户。',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: AppSpacing.md),
@@ -483,21 +486,23 @@ class _DigitalCardAssetDetailPageState
             runSpacing: AppSpacing.sm,
             children: <Widget>[
               FilledButton.icon(
-                onPressed: _isActionSubmitting
+                onPressed: _isActionSubmitting || !actionsAvailable
                     ? null
                     : () => _openPhysicalFulfillment(item),
                 icon: const Icon(Icons.local_shipping_outlined),
                 label: const Text('支付邮费'),
               ),
               OutlinedButton.icon(
-                onPressed:
-                    _isActionSubmitting ? null : () => _requestWithdraw(item),
+                onPressed: _isActionSubmitting || !actionsAvailable
+                    ? null
+                    : () => _requestWithdraw(item),
                 icon: const Icon(Icons.account_balance_wallet_outlined),
                 label: const Text('提现'),
               ),
               OutlinedButton.icon(
-                onPressed:
-                    _isActionSubmitting ? null : () => _openTransferSheet(item),
+                onPressed: _isActionSubmitting || !actionsAvailable
+                    ? null
+                    : () => _openTransferSheet(item),
                 icon: const Icon(Icons.ios_share_outlined),
                 label: const Text('转赠'),
               ),
