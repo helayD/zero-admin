@@ -122,6 +122,9 @@ func (s *OrderStatusService) UpdateOrderStatus(req *UpdateOrderStatusReq) (*Upda
 
 	// 8. 记录幂等键
 	s.setIdempotentKey(req.OrderId, req.Action)
+	if req.Action == OpConfirmReceive && newStatus == OrderStatusCompleted {
+		grantOrderCompletedLotteryTimes(s.ctx, s.svcCtx.DB, req.MemberId, req.OrderId)
+	}
 
 	return &UpdateOrderStatusResp{
 		Code:      0,

@@ -92,6 +92,9 @@ func (l *LoginLogic) Login(in *umsclient.LoginReq) (*umsclient.LoginResp, error)
 		logc.Errorf(l.ctx, "添加会员登录日志失败,参数：%+v,异常:%s", log, err.Error())
 		// 为了兼容，这里不返回错误
 	}
+	if err = grantDailyLoginLotteryTimes(l.ctx, l.svcCtx.DB, member.MemberID, time.Now()); err != nil {
+		logc.Errorf(l.ctx, "每日登录赠送抽卡次数失败,memberId:%d,异常:%s", member.MemberID, err.Error())
+	}
 
 	// 3.返回数据
 	accessExpire := l.svcCtx.Config.JWT.AccessExpire

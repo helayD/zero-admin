@@ -83,11 +83,12 @@ func (l *ConfirmReceiveOrderLogic) ConfirmReceiveOrder(req *types.ConfirmReceive
 
 	// Task 4.1 新增：写入操作日志（operator_type=1 用户操作，operation_type=4 确认收货）
 	_, _ = l.svcCtx.OrderOperationLogService.AddOrderOperationLog(l.ctx, &omsclient.AddOrderOperationLogReq{
-		OrderId:      req.OrderId,
-		OperatorType: OperatorTypeUser, // 1=用户操作
-		OperationType: OpConfirmReceive,  // 4=确认收货
+		OrderId:       req.OrderId,
+		OperatorType:  OperatorTypeUser, // 1=用户操作
+		OperationType: OpConfirmReceive, // 4=确认收货
 		OperatorNote:  "用户确认收货",
 	})
+	grantOrderCompletedLotteryTimes(l.ctx, l.svcCtx.DB, memberId, req.OrderId)
 
 	return &types.ConfirmReceiveOrderResp{
 		Code:    0,
