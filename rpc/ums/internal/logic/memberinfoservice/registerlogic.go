@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strconv"
+	"time"
 
 	"github.com/feihua/zero-admin/rpc/ums/gen/model"
 	"github.com/feihua/zero-admin/rpc/ums/gen/query"
@@ -76,6 +77,9 @@ func (l *RegisterLogic) Register(in *umsclient.RegisterReq) (*umsclient.Register
 	if err != nil {
 		logc.Errorf(l.ctx, "新增会员失败,手机号:%s,异常:%s", in.Mobile, err.Error())
 		return nil, errors.New("新增会员失败")
+	}
+	if err = grantDailyLoginLotteryTimes(l.ctx, l.svcCtx.DB, id, time.Now()); err != nil {
+		logc.Errorf(l.ctx, "注册后赠送每日抽卡次数失败,memberId:%d,异常:%s", id, err.Error())
 	}
 	token, err := createJwtToken(secret, in.Nickname, in.Mobile, accessExpire, id)
 
