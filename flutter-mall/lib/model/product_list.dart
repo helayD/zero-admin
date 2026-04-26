@@ -4,9 +4,11 @@
 
 import 'dart:convert';
 
-ProductListModel productListModelFromJson(String str) => ProductListModel.fromJson(json.decode(str));
+ProductListModel productListModelFromJson(String str) =>
+    ProductListModel.fromJson(json.decode(str));
 
-String productListModelToJson(ProductListModel data) => json.encode(data.toJson());
+String productListModelToJson(ProductListModel data) =>
+    json.encode(data.toJson());
 
 class ProductListModel {
   int code;
@@ -19,17 +21,24 @@ class ProductListModel {
     required this.data,
   });
 
-  factory ProductListModel.fromJson(Map<String, dynamic> json) => ProductListModel(
-    code: json["code"],
-    message: json["message"],
-    data: List<ProductListData>.from(json["data"].map((x) => ProductListData.fromJson(x))),
-  );
+  factory ProductListModel.fromJson(Map<String, dynamic> json) {
+    final dynamic rawData = json["data"];
+    return ProductListModel(
+      code: json["code"],
+      message: json["message"],
+      data: rawData is List
+          ? List<ProductListData>.from(
+              rawData.map((x) => ProductListData.fromJson(x)),
+            )
+          : <ProductListData>[],
+    );
+  }
 
   Map<String, dynamic> toJson() => {
-    "code": code,
-    "message": message,
-    "data": List<dynamic>.from(data.map((x) => x.toJson())),
-  };
+        "code": code,
+        "message": message,
+        "data": List<dynamic>.from(data.map((x) => x.toJson())),
+      };
 }
 
 class ProductListData {
@@ -97,69 +106,70 @@ class ProductListData {
     required this.detailMobileHtml,
   });
 
-  factory ProductListData.fromJson(Map<String, dynamic> json) => ProductListData(
-    id: json["id"],
-    name: json["name"],
-    productSn: json["productSn"],
-    categoryId: json["categoryId"],
-    categoryIds: json["categoryIds"],
-    categoryName: json["categoryName"],
-    brandId: json["brandId"],
-    brandName: json["brandName"],
-    unit: json["unit"],
-    weight: json["weight"]?.toDouble(),
-    keywords: json["keywords"],
-    albumPics: json["albumPics"],
-    mainPic: json["mainPic"],
-    price: json["price"],
-    priceRange: json["priceRange"],
-    publishStatus: json["publishStatus"],
-    newStatus: json["newStatus"],
-    recommendStatus: json["recommendStatus"],
-    verifyStatus: json["verifyStatus"],
-    previewStatus: json["previewStatus"],
-    sort: json["sort"],
-    newStatusSort: json["newStatusSort"],
-    recommendStatusSort: json["recommendStatusSort"],
-    sales: json["sales"],
-    stock: json["stock"],
-    lowStock: json["lowStock"],
-    promotionType: json["promotionType"],
-    subTitle: json["subTitle"],
-    detailHtml: json["detailHtml"],
-    detailMobileHtml: json["detailMobileHtml"],
-  );
+  factory ProductListData.fromJson(Map<String, dynamic> json) =>
+      ProductListData(
+        id: json["id"],
+        name: json["name"],
+        productSn: json["productSn"],
+        categoryId: json["categoryId"],
+        categoryIds: json["categoryIds"],
+        categoryName: json["categoryName"],
+        brandId: json["brandId"],
+        brandName: json["brandName"],
+        unit: json["unit"],
+        weight: json["weight"]?.toDouble(),
+        keywords: json["keywords"],
+        albumPics: json["albumPics"],
+        mainPic: json["mainPic"],
+        price: json["price"],
+        priceRange: json["priceRange"],
+        publishStatus: json["publishStatus"],
+        newStatus: json["newStatus"],
+        recommendStatus: json["recommendStatus"],
+        verifyStatus: json["verifyStatus"],
+        previewStatus: json["previewStatus"],
+        sort: json["sort"],
+        newStatusSort: json["newStatusSort"],
+        recommendStatusSort: json["recommendStatusSort"],
+        sales: json["sales"],
+        stock: json["stock"],
+        lowStock: json["lowStock"],
+        promotionType: json["promotionType"],
+        subTitle: json["subTitle"],
+        detailHtml: json["detailHtml"],
+        detailMobileHtml: json["detailMobileHtml"],
+      );
 
   Map<String, dynamic> toJson() => {
-    "id": id,
-    "name": name,
-    "productSn": productSn,
-    "categoryId": categoryId,
-    "categoryIds": categoryIds,
-    "categoryName": categoryName,
-    "brandId": brandId,
-    "brandName": brandName,
-    "unit": unit,
-    "weight": weight,
-    "keywords": keywords,
-    "albumPics": albumPics,
-    "mainPic": mainPic,
-    "price": price,
-    "priceRange": priceRange,
-    "publishStatus": publishStatus,
-    "newStatus": newStatus,
-    "recommendStatus": recommendStatus,
-    "verifyStatus": verifyStatus,
-    "previewStatus": previewStatus,
-    "sort": sort,
-    "newStatusSort": newStatusSort,
-    "recommendStatusSort": recommendStatusSort,
-    "sales": sales,
-    "stock": stock,
-    "lowStock": lowStock,
-    "promotionType": promotionType,
-    "subTitle": subTitle,
-    "detailHtml": detailHtml,
-    "detailMobileHtml": detailMobileHtml,
-  };
+        "id": id,
+        "name": name,
+        "productSn": productSn,
+        "categoryId": categoryId,
+        "categoryIds": categoryIds,
+        "categoryName": categoryName,
+        "brandId": brandId,
+        "brandName": brandName,
+        "unit": unit,
+        "weight": weight,
+        "keywords": keywords,
+        "albumPics": albumPics,
+        "mainPic": mainPic,
+        "price": price,
+        "priceRange": priceRange,
+        "publishStatus": publishStatus,
+        "newStatus": newStatus,
+        "recommendStatus": recommendStatus,
+        "verifyStatus": verifyStatus,
+        "previewStatus": previewStatus,
+        "sort": sort,
+        "newStatusSort": newStatusSort,
+        "recommendStatusSort": recommendStatusSort,
+        "sales": sales,
+        "stock": stock,
+        "lowStock": lowStock,
+        "promotionType": promotionType,
+        "subTitle": subTitle,
+        "detailHtml": detailHtml,
+        "detailMobileHtml": detailMobileHtml,
+      };
 }

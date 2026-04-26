@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_mall/config/constant_param.dart';
@@ -22,17 +21,11 @@ class AppRecoveryStore {
   static const String afterSalesDraftPrefix = 'app_after_sales_draft_';
 
   static Future<void> saveRecentContext(AppRecentContext context) async {
-    final normalized = _attachCurrentMember(context);
-    if (!normalized.isRecoverable) {
-      return;
-    }
-    await SharedPreferencesUtil.saveJsonString(
-        recentContextKey, normalized.toJson());
-    await clearActiveIntentCandidate();
+    await clearRecentContext();
   }
 
   static AppRecentContext? getRecentContext() {
-    return _loadContext(recentContextKey, clearOnMismatch: true);
+    return null;
   }
 
   static Future<void> clearRecentContext() async {
@@ -40,16 +33,11 @@ class AppRecoveryStore {
   }
 
   static Future<void> savePendingIntent(AppRecentContext context) async {
-    final normalized = _attachCurrentMember(context);
-    if (!normalized.isRecoverable) {
-      return;
-    }
-    await SharedPreferencesUtil.saveJsonString(
-        pendingIntentKey, normalized.toJson());
+    await clearPendingIntent();
   }
 
   static AppRecentContext? peekPendingIntent() {
-    return _loadContext(pendingIntentKey, clearOnMismatch: true);
+    return null;
   }
 
   static Future<AppRecentContext?> consumePendingIntent() async {
@@ -115,39 +103,25 @@ class AppRecoveryStore {
 
   static Future<void> saveActiveIntentCandidate(
       AppRecentContext context) async {
-    final normalized = _attachCurrentMember(context);
-    if (!normalized.isRecoverable) {
-      return;
-    }
-    await SharedPreferencesUtil.saveJsonString(
-        activeIntentCandidateKey, normalized.toJson());
+    await clearActiveIntentCandidate();
   }
 
   static AppRecentContext? peekActiveIntentCandidate() {
-    return _loadContext(activeIntentCandidateKey, clearOnMismatch: true);
+    return null;
   }
 
   static AppRecentContext? peekCurrentIntentContext() {
-    final pendingUpgrade = peekPendingUpgradeContext();
-    return pendingUpgrade?.recoveryContext ??
-        peekPendingIntent() ??
-        peekActiveIntentCandidate() ??
-        getRecentContext();
+    return null;
   }
 
   static Future<void> savePendingUpgradeContext(
     PendingUpgradeContext context,
   ) async {
-    await SharedPreferencesUtil.saveJsonString(
-      pendingUpgradeContextKey,
-      context.toJson(),
-    );
+    await clearPendingUpgradeContext();
   }
 
   static PendingUpgradeContext? peekPendingUpgradeContext() {
-    return PendingUpgradeContext.tryParse(
-      SharedPreferencesUtil.getJsonString(pendingUpgradeContextKey),
-    );
+    return null;
   }
 
   static Future<PendingUpgradeContext?> consumePendingUpgradeContext() async {
@@ -199,16 +173,20 @@ class AppRecoveryStore {
   }
 
   static Future<void> clearRecoveryState() async {
-    await clearPendingIntent();
+    await clearPageRecoveryState();
     await clearPendingPermissionContext();
     await clearPendingLostMedia();
-    await clearPendingUpgradeContext();
-    await clearActiveIntentCandidate();
-    await clearRecentContext();
     await clearNotificationPreference();
     await _clearEntriesWithPrefixes(
       const <String>[commentDraftPrefix, afterSalesDraftPrefix],
     );
+  }
+
+  static Future<void> clearPageRecoveryState() async {
+    await clearPendingIntent();
+    await clearPendingUpgradeContext();
+    await clearActiveIntentCandidate();
+    await clearRecentContext();
   }
 
   static Future<void> saveNotificationPreferenceEnabled(bool value) async {
@@ -340,34 +318,6 @@ class AppRecoveryStore {
     } catch (_) {
       return null;
     }
-  }
-
-  static AppRecentContext? _loadContext(String key,
-      {required bool clearOnMismatch}) {
-    final raw = SharedPreferencesUtil.getJsonString(key);
-    final context = AppRecentContext.tryParse(raw);
-    if (context == null || !context.isRecoverable) {
-      return null;
-    }
-    if (!isContextAllowedForCurrentMember(context)) {
-      if (clearOnMismatch) {
-        unawaited(SharedPreferencesUtil.remove(key));
-      }
-      return null;
-    }
-    return context;
-  }
-
-  static AppRecentContext _attachCurrentMember(AppRecentContext context) {
-    if (!context.requiresAuth ||
-        (context.ownerMemberId != null && context.ownerMemberId! > 0)) {
-      return context;
-    }
-    final currentMemberId = getCurrentMemberId();
-    if (currentMemberId == null || currentMemberId <= 0) {
-      return context;
-    }
-    return context.copyWith(ownerMemberId: currentMemberId);
   }
 
   static bool _matchesContext(

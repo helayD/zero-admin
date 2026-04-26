@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_mall/model/app_recent_context.dart';
 import 'package:flutter_mall/model/after_sales.dart';
+import 'package:flutter_mall/model/app_version_info.dart';
+import 'package:flutter_mall/model/app_version_policy.dart';
 import 'package:flutter_mall/model/permission_flow_context.dart';
 import 'package:flutter_mall/provider/app_lifecycle_provider.dart';
 import 'package:flutter_mall/utils/app_recovery_store.dart';
+import 'package:flutter_mall/utils/app_version_service.dart';
 import 'package:flutter_mall/utils/permission_broker.dart';
 import 'package:flutter_mall/utils/shared_preferences_util.dart';
+import 'package:flutter_mall/utils/upgrade_gate_service.dart';
 import 'package:flutter_mall/view/mine/order/apply_after_sales.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -14,9 +17,50 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  Future<void> pumpFrame(WidgetTester tester) async {
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+  }
+
+  Future<void> pumpUntilFound(
+    WidgetTester tester,
+    Finder finder, {
+    int maxFrames = 12,
+  }) async {
+    for (var i = 0; i < maxFrames; i++) {
+      await pumpFrame(tester);
+      if (finder.evaluate().isNotEmpty) {
+        return;
+      }
+    }
+  }
+
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     await SharedPreferencesUtil.init();
+    AppVersionService.debugSetCurrentInfo(
+      const AppVersionInfo(
+        version: '1.0.0',
+        buildNumber: '1',
+        platform: 'android',
+        installerStore: '',
+        channel: 'direct',
+        isFallback: false,
+      ),
+    );
+    UpgradeGateService.debugSetPolicyFetcher((query) async {
+      return AppVersionPolicy.none(
+        versionInfo: query.versionInfo,
+        scene: query.scene,
+        targetType: query.targetType,
+        targetId: query.targetId,
+      );
+    });
+  });
+
+  tearDown(() {
+    AppVersionService.debugReset();
+    UpgradeGateService.debugReset();
   });
 
   testWidgets('after sales keeps form content and falls back to gallery',
@@ -59,7 +103,7 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await pumpUntilFound(tester, find.byType(TextFormField));
 
     await tester.enterText(
       find.byType(TextFormField).first,
@@ -68,13 +112,13 @@ void main() {
 
     await tester.ensureVisible(find.byIcon(Icons.add_a_photo).first);
     await tester.tap(find.byIcon(Icons.add_a_photo).first);
-    await tester.pumpAndSettle();
+    await pumpFrame(tester);
     await tester.tap(find.text('拍照'));
-    await tester.pumpAndSettle();
+    await pumpFrame(tester);
     await tester.tap(find.text('继续授权'));
-    await tester.pumpAndSettle();
+    await pumpFrame(tester);
     await tester.tap(find.text('改用相册'));
-    await tester.pumpAndSettle();
+    await pumpFrame(tester);
 
     expect(find.text('这是保留下来的售后描述内容'), findsOneWidget);
     expect(find.text('1/3'), findsOneWidget);
@@ -125,16 +169,13 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await pumpUntilFound(tester, find.text('提交申请'));
 
-    expect(
-      AppRecoveryStore.getRecentContext()?.targetType,
-      AppRecentTargetType.afterSalesApply,
-    );
+    expect(AppRecoveryStore.getRecentContext(), isNull);
     expect(AppRecoveryStore.getAfterSalesDraft(3001), isNotNull);
 
     await tester.tap(find.text('提交申请'));
-    await tester.pumpAndSettle();
+    await pumpFrame(tester);
 
     expect(AppRecoveryStore.getAfterSalesDraft(3001), isNull);
     expect(AppRecoveryStore.getRecentContext(), isNull);

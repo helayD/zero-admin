@@ -35,6 +35,9 @@ func NewAddAddressLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AddAdd
 
 // AddAddress 添加会员收货地址
 func (l *AddAddressLogic) AddAddress(req *types.AddressReq) (resp *types.AddressResp, err error) {
+	if err = normalizeAndValidateAddressReq(req, false); err != nil {
+		return nil, err
+	}
 	memberId, err := common.GetMemberId(l.ctx)
 	if err != nil {
 		return nil, err

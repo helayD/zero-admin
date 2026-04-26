@@ -181,12 +181,6 @@ class _MineState extends State<Mine> {
     await _checkLoginAndLoadData();
   }
 
-  void _showFeatureInProgress(String label) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$label 功能建设中，后续会接入完整流程')),
-    );
-  }
-
   String _displayName() {
     if (!_isLoggedIn) {
       return '欢迎登录';
@@ -663,13 +657,7 @@ class _MineState extends State<Mine> {
         accentColor: const Color(0xFF7C3AED),
         backgroundColor: const Color(0xFFF3E8FF),
         onTap: () async {
-          if (!await _ensureLogin()) {
-            return;
-          }
-          if (!mounted) {
-            return;
-          }
-          _showFeatureInProgress('售后服务');
+          await _openOrderList(initialTab: 5);
         },
       ),
       _MineServiceData(

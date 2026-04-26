@@ -1,9 +1,9 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_mall/config/service_url.dart';
+import 'package:flutter_mall/model/address_list.dart';
 import 'package:flutter_mall/utils/http_util.dart';
-
-import '../../../model/address_list.dart';
+import 'package:flutter_mall/view/mine/address/address_region_picker.dart';
 
 ///
 /// 地址编辑页面（新增/编辑双模式）
@@ -13,30 +13,44 @@ import '../../../model/address_list.dart';
 ///
 class AddressEdit extends StatefulWidget {
   final AddressListData? addressData;
+  final bool initialDefault;
 
-  const AddressEdit({super.key, this.addressData});
+  const AddressEdit({
+    super.key,
+    this.addressData,
+    this.initialDefault = false,
+  });
 
   @override
   State<AddressEdit> createState() => _AddressEditState();
 }
 
 class _AddressEditState extends State<AddressEdit> {
+  static final RegExp _phoneRegExp = RegExp(r'^1[3-9]\d{9}$');
+  static final RegExp _postalCodeRegExp = RegExp(r'^\d{6}$');
+
+  static const Color _themeColor = Color(0xFFFA436A);
+  static const Color _pageBg = Color(0xFFF7F7F7);
+  static const Color _textPrimary = Color(0xFF303133);
+  static const Color _textHint = Color(0xFF909399);
+
   final _formKey = GlobalKey<FormState>();
 
-  late TextEditingController _nameController;
-  late TextEditingController _phoneController;
-  late TextEditingController _provinceController;
-  late TextEditingController _cityController;
-  late TextEditingController _districtController;
-  late TextEditingController _detailAddressController;
-  late TextEditingController _postalCodeController;
+  late final TextEditingController _nameController;
+  late final TextEditingController _phoneController;
+  late final TextEditingController _detailAddressController;
+  late final TextEditingController _postalCodeController;
 
-  final List<String> _tagOptions = ['家', '公司', '学校', '其他'];
+  final List<String> _tagOptions = const ['家', '公司', '学校', '父母家', '其他'];
   late String _selectedTag;
   late bool _isDefault;
+  AddressRegionSelection? _regionSelection;
+  String? _regionError;
   bool _isSubmitting = false;
+  bool _submittedOnce = false;
 
   bool get _isEditMode => widget.addressData != null;
+  bool get _hasCompleteRegion => _regionSelection?.isComplete ?? false;
 
   @override
   void initState() {
@@ -44,285 +58,205 @@ class _AddressEditState extends State<AddressEdit> {
     final data = widget.addressData;
     _nameController = TextEditingController(text: data?.receiverName ?? '');
     _phoneController = TextEditingController(text: data?.receiverPhone ?? '');
-    _provinceController = TextEditingController(text: data?.province ?? '');
-    _cityController = TextEditingController(text: data?.city ?? '');
-    _districtController = TextEditingController(text: data?.district ?? '');
+    final initialRegion = AddressRegionSelection.fromNames(
+      provinceName: data?.province ?? '',
+      cityName: data?.city ?? '',
+      districtName: data?.district ?? '',
+    );
+    _regionSelection = initialRegion.displayText.isEmpty ? null : initialRegion;
     _detailAddressController =
         TextEditingController(text: data?.detailAddress ?? '');
-    _postalCodeController =
-        TextEditingController(text: data?.postalCode ?? '');
-    _selectedTag = (data?.tag != null && data!.tag.isNotEmpty) ? data.tag : '家';
-    _isDefault = data?.isDefault == 1;
+    _postalCodeController = TextEditingController(text: data?.postalCode ?? '');
+    _selectedTag = _tagOptions.contains(data?.tag) ? data!.tag : '家';
+    _isDefault =
+        data?.isDefault == 1 || (!_isEditMode && widget.initialDefault);
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
-    _provinceController.dispose();
-    _cityController.dispose();
-    _districtController.dispose();
     _detailAddressController.dispose();
     _postalCodeController.dispose();
     super.dispose();
   }
 
   Future<void> _submitForm() async {
-    if (!_formKey.currentState!.validate()) return;
-    if (_isSubmitting) return;
-
+    FocusScope.of(context).unfocus();
     setState(() {
-      _isSubmitting = true;
+      _submittedOnce = true;
+      _regionError = _hasCompleteRegion ? null : '请选择省、市、区县';
     });
 
-    try {
-      Map<String, dynamic> requestMap = {
-        "receiverName": _nameController.text.trim(),
-        "receiverPhone": _phoneController.text.trim(),
-        "province": _provinceController.text.trim(),
-        "city": _cityController.text.trim(),
-        "district": _districtController.text.trim(),
-        "detailAddress": _detailAddressController.text.trim(),
-        "postalCode": _postalCodeController.text.trim(),
-        "tag": _selectedTag,
-        "isDefault": _isDefault ? 1 : 0,
-      };
+    if (!_formKey.currentState!.validate() ||
+        !_hasCompleteRegion ||
+        _isSubmitting) {
+      return;
+    }
 
-      Response result;
-      if (_isEditMode) {
-        requestMap["id"] = widget.addressData!.id;
-        result = await HttpUtil.post(updateAddressDataUrl, data: requestMap);
-      } else {
-        result = await HttpUtil.post(addAddressDataUrl, data: requestMap);
-      }
+    setState(() => _isSubmitting = true);
+    final region = _regionSelection!;
+
+    final requestMap = <String, dynamic>{
+      'receiverName': _nameController.text.trim(),
+      'receiverPhone': _phoneController.text.trim(),
+      'province': region.provinceName.trim(),
+      'city': region.cityName.trim(),
+      'district': region.districtName.trim(),
+      'detailAddress': _detailAddressController.text.trim(),
+      'postalCode': _postalCodeController.text.trim(),
+      'tag': _selectedTag,
+      'isDefault': _isDefault ? 1 : 0,
+    };
+
+    try {
+      final result = _isEditMode
+          ? await HttpUtil.post(
+              updateAddressDataUrl,
+              data: <String, dynamic>{
+                ...requestMap,
+                'id': widget.addressData!.id,
+              },
+            )
+          : await HttpUtil.post(addAddressDataUrl, data: requestMap);
 
       if (!mounted) return;
-
-      if (result.data["code"] == 0) {
+      if (result.data is Map && result.data['code'] == 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_isEditMode ? '地址已保存' : '地址已新增')),
+        );
         Navigator.pop(context, true);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result.data["message"] ?? "保存失败")),
-        );
+        _showError(result.data?['message']?.toString() ?? '保存失败');
       }
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("网络请求失败: $e")),
-      );
+      _showError('网络请求失败，请稍后重试');
     } finally {
       if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-        });
+        setState(() => _isSubmitting = false);
       }
     }
   }
 
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final themeColor =
-        Color(int.parse('fa436a', radix: 16)).withAlpha(255);
-    final bgColor =
-        Color(int.parse('f5f5f5', radix: 16)).withAlpha(255);
-
     return Scaffold(
+      backgroundColor: _pageBg,
       appBar: AppBar(
         backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
         title: Text(
-          _isEditMode ? "编辑收货地址" : "新增收货地址",
-          style: const TextStyle(fontSize: 16, color: Colors.black),
+          _isEditMode ? '编辑收货地址' : '新增收货地址',
+          style: const TextStyle(
+            fontSize: 18,
+            color: Colors.black,
+            fontWeight: FontWeight.w700,
+          ),
         ),
         centerTitle: true,
       ),
-      body: Container(
-        color: bgColor,
+      body: SafeArea(
         child: Form(
           key: _formKey,
-          child: ListView(
+          autovalidateMode: _submittedOnce
+              ? AutovalidateMode.onUserInteraction
+              : AutovalidateMode.disabled,
+          child: Column(
             children: [
-              _buildTextField(
-                controller: _nameController,
-                label: "收件人姓名",
-                maxLength: 20,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return "请输入收件人姓名";
-                  }
-                  return null;
-                },
-              ),
-              _buildTextField(
-                controller: _phoneController,
-                label: "手机号码",
-                keyboardType: TextInputType.phone,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return "请输入手机号码";
-                  }
-                  if (!RegExp(r'^1[3-9]\d{9}$').hasMatch(value.trim())) {
-                    return "请输入正确的11位手机号码";
-                  }
-                  return null;
-                },
-              ),
-              _buildTextField(
-                controller: _provinceController,
-                label: "省份",
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return "请输入省份";
-                  }
-                  return null;
-                },
-              ),
-              _buildTextField(
-                controller: _cityController,
-                label: "城市",
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return "请输入城市";
-                  }
-                  return null;
-                },
-              ),
-              _buildTextField(
-                controller: _districtController,
-                label: "区县",
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return "请输入区县";
-                  }
-                  return null;
-                },
-              ),
-              _buildTextField(
-                controller: _detailAddressController,
-                label: "详细地址",
-                maxLength: 100,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return "请输入详细地址";
-                  }
-                  return null;
-                },
-              ),
-              _buildTextField(
-                controller: _postalCodeController,
-                label: "邮政编码（选填）",
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value != null &&
-                      value.trim().isNotEmpty &&
-                      !RegExp(r'^\d{6}$').hasMatch(value.trim())) {
-                    return "邮政编码需为6位数字";
-                  }
-                  return null;
-                },
-              ),
-              // 地址标签
-              Container(
-                color: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 18),
                   children: [
-                    Text(
-                      "地址标签",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Color(int.parse('909399', radix: 16))
-                            .withAlpha(255),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      children: _tagOptions.map((tag) {
-                        final isSelected = _selectedTag == tag;
-                        return ChoiceChip(
-                          label: Text(tag),
-                          selected: isSelected,
-                          selectedColor: themeColor.withAlpha(50),
-                          onSelected: (selected) {
-                            if (selected) {
-                              setState(() {
-                                _selectedTag = tag;
-                              });
+                    _buildSection(
+                      children: [
+                        _buildTextField(
+                          controller: _nameController,
+                          label: '收件人',
+                          hintText: '请输入收件人姓名',
+                          icon: Icons.person_outline_rounded,
+                          maxLength: 20,
+                          textInputAction: TextInputAction.next,
+                          validator: (value) => _required(value, '请输入收件人姓名'),
+                        ),
+                        _buildTextField(
+                          controller: _phoneController,
+                          label: '手机号码',
+                          hintText: '请输入 11 位手机号',
+                          icon: Icons.phone_iphone_rounded,
+                          keyboardType: TextInputType.phone,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                            LengthLimitingTextInputFormatter(11),
+                          ],
+                          textInputAction: TextInputAction.next,
+                          validator: (value) {
+                            final phone = value?.trim() ?? '';
+                            if (phone.isEmpty) return '请输入手机号码';
+                            if (!_phoneRegExp.hasMatch(phone)) {
+                              return '请输入正确的 11 位手机号码';
                             }
+                            return null;
                           },
-                        );
-                      }).toList(),
+                        ),
+                      ],
                     ),
+                    const SizedBox(height: 10),
+                    _buildSection(
+                      children: [
+                        _buildRegionSelector(),
+                        _buildTextField(
+                          controller: _detailAddressController,
+                          label: '详细地址',
+                          hintText: '街道、门牌号等',
+                          icon: Icons.home_work_outlined,
+                          maxLength: 100,
+                          minLines: 1,
+                          maxLines: 3,
+                          textInputAction: TextInputAction.newline,
+                          validator: (value) {
+                            final text = value?.trim() ?? '';
+                            if (text.isEmpty) return '请输入详细地址';
+                            if (text.length < 4) return '详细地址不能少于 4 个字';
+                            return null;
+                          },
+                        ),
+                        _buildTextField(
+                          controller: _postalCodeController,
+                          label: '邮政编码',
+                          hintText: '选填',
+                          icon: Icons.markunread_mailbox_outlined,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                            LengthLimitingTextInputFormatter(6),
+                          ],
+                          validator: (value) {
+                            final code = value?.trim() ?? '';
+                            if (code.isNotEmpty &&
+                                !_postalCodeRegExp.hasMatch(code)) {
+                              return '邮政编码需为 6 位数字';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    _buildTagSection(),
+                    const SizedBox(height: 10),
+                    _buildDefaultSwitch(),
                   ],
                 ),
               ),
-              // 设为默认
-              Container(
-                color: Colors.white,
-                margin: const EdgeInsets.only(top: 8, bottom: 20),
-                padding:
-                    const EdgeInsets.symmetric(vertical: 7, horizontal: 15),
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 1,
-                      child: Text(
-                        "设为默认",
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: Color(int.parse('303133', radix: 16))
-                              .withAlpha(255),
-                        ),
-                      ),
-                    ),
-                    Switch(
-                      value: _isDefault,
-                      materialTapTargetSize:
-                          MaterialTapTargetSize.shrinkWrap,
-                      onChanged: (value) {
-                        setState(() {
-                          _isDefault = value;
-                        });
-                      },
-                      activeColor: Colors.white,
-                      activeTrackColor: themeColor,
-                    ),
-                  ],
-                ),
-              ),
-              // 提交按钮
-              InkWell(
-                onTap: _isSubmitting ? null : _submitForm,
-                child: Container(
-                  alignment: Alignment.center,
-                  width: MediaQuery.of(context).size.width,
-                  height: 40,
-                  margin: const EdgeInsets.all(15),
-                  decoration: BoxDecoration(
-                    color: _isSubmitting
-                        ? themeColor.withAlpha(128)
-                        : themeColor,
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                  child: _isSubmitting
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : const Text(
-                          '保存',
-                          style:
-                              TextStyle(color: Colors.white, fontSize: 16),
-                        ),
-                ),
-              ),
+              _buildSubmitButton(),
             ],
           ),
         ),
@@ -330,32 +264,234 @@ class _AddressEditState extends State<AddressEdit> {
     );
   }
 
+  Widget _buildSection({required List<Widget> children}) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 4, 14, 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(children: children),
+    );
+  }
+
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
+    required String hintText,
+    required IconData icon,
     int? maxLength,
+    int minLines = 1,
+    int maxLines = 1,
     TextInputType? keyboardType,
+    TextInputAction? textInputAction,
+    List<TextInputFormatter>? inputFormatters,
     String? Function(String?)? validator,
   }) {
-    final border = BorderSide(
-      width: 1,
-      color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
+    return TextFormField(
+      controller: controller,
+      maxLength: maxLength,
+      minLines: minLines,
+      maxLines: maxLines,
+      keyboardType: keyboardType,
+      textInputAction: textInputAction,
+      inputFormatters: inputFormatters,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hintText,
+        prefixIcon: Icon(icon, color: _textHint),
+        border: InputBorder.none,
+        counterText: '',
+      ),
+      validator: validator,
     );
-    return Container(
-      decoration:
-          BoxDecoration(color: Colors.white, border: Border(bottom: border)),
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
-      child: TextFormField(
-        controller: controller,
-        maxLength: maxLength,
-        keyboardType: keyboardType,
-        decoration: InputDecoration(
-          labelText: label,
-          border: InputBorder.none,
-          counterText: '',
+  }
+
+  Widget _buildRegionSelector() {
+    final regionText = _regionSelection?.displayText ?? '';
+    final hasValue = regionText.isNotEmpty;
+    final showError = _regionError != null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: _openRegionPicker,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              children: [
+                const SizedBox(
+                  width: 48,
+                  child: Icon(Icons.place_outlined, color: _textHint),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '所在地区',
+                        style: TextStyle(fontSize: 12, color: _textHint),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        hasValue ? regionText : '请选择省、市、区县',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: hasValue ? _textPrimary : _textHint,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: Color(0xFFC0C4CC),
+                ),
+              ],
+            ),
+          ),
         ),
-        validator: validator,
+        if (showError)
+          Padding(
+            padding: const EdgeInsets.only(left: 48, bottom: 8),
+            child: Text(
+              _regionError!,
+              style: const TextStyle(fontSize: 12, color: Colors.redAccent),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _openRegionPicker() async {
+    final selection = await showAddressRegionPicker(
+      context: context,
+      initialSelection: _regionSelection,
+    );
+    if (!mounted || selection == null) return;
+    setState(() {
+      _regionSelection = selection;
+      _regionError = null;
+    });
+  }
+
+  Widget _buildTagSection() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '地址标签',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: _textPrimary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _tagOptions.map((tag) {
+              final isSelected = _selectedTag == tag;
+              return ChoiceChip(
+                label: Text(tag),
+                selected: isSelected,
+                selectedColor: const Color(0xFFFFEDF2),
+                checkmarkColor: _themeColor,
+                labelStyle: TextStyle(
+                  color: isSelected ? _themeColor : _textPrimary,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                ),
+                side: BorderSide(
+                  color: isSelected
+                      ? const Color(0xFFFFB3C5)
+                      : const Color(0xFFE4E7ED),
+                ),
+                onSelected: (_) => setState(() => _selectedTag = tag),
+              );
+            }).toList(),
+          ),
+        ],
       ),
     );
+  }
+
+  Widget _buildDefaultSwitch() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: SwitchListTile(
+        value: _isDefault,
+        activeThumbColor: _themeColor,
+        contentPadding: EdgeInsets.zero,
+        title: const Text(
+          '设为默认地址',
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: _textPrimary,
+          ),
+        ),
+        subtitle: const Text(
+          '下单时优先使用该地址',
+          style: TextStyle(fontSize: 13, color: _textHint),
+        ),
+        onChanged: (value) => setState(() => _isDefault = value),
+      ),
+    );
+  }
+
+  Widget _buildSubmitButton() {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+      child: SizedBox(
+        width: double.infinity,
+        height: 52,
+        child: ElevatedButton(
+          onPressed: _isSubmitting ? null : _submitForm,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _themeColor,
+            foregroundColor: Colors.white,
+            disabledBackgroundColor: _themeColor.withAlpha(120),
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            textStyle: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          child: _isSubmitting
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.2,
+                    color: Colors.white,
+                  ),
+                )
+              : Text(_isEditMode ? '保存地址' : '新增地址'),
+        ),
+      ),
+    );
+  }
+
+  String? _required(String? value, String message) {
+    return (value?.trim() ?? '').isEmpty ? message : null;
   }
 }

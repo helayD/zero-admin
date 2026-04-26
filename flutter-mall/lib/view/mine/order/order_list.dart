@@ -30,7 +30,7 @@ class OrderList extends StatefulWidget {
 }
 
 class _OrderListState extends State<OrderList> {
-  final List<String> _orderStatus = ['全部', '待支付', '待发货', '已完成', '已取消'];
+  final List<String> _orderStatus = ['全部', '待支付', '待发货', '已完成', '已取消', '售后'];
 
   /// 每个 tab 的数据独立管理
   final Map<int, List<OrderListData>> _orderDataCache = {};
@@ -92,7 +92,8 @@ class _OrderListState extends State<OrderList> {
   }
 
   /// 查询订单列表（Story 6-1 Task 5.1/5.2/5.5/5.6）
-  Future<void> _queryOrderList(int tab, {bool refresh = false, bool loadMore = false}) async {
+  Future<void> _queryOrderList(int tab,
+      {bool refresh = false, bool loadMore = false}) async {
     final page = refresh ? 1 : _getCurrentPage() + 1;
 
     // 缓存加载状态
@@ -164,7 +165,7 @@ class _OrderListState extends State<OrderList> {
           backgroundColor: Colors.white,
           elevation: 0,
           bottom: TabBar(
-            isScrollable: false,
+            isScrollable: true,
             indicatorColor: const Color(0xFFFA436A),
             labelColor: const Color(0xFFFA436A),
             unselectedLabelColor: const Color(0xFF606266),

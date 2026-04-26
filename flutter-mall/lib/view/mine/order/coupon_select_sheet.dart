@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mall/model/confirm_order.dart';
+import 'package:flutter_mall/theme/app_theme.dart';
 
 /// 优惠券选择底部弹窗（Story 5-3 Task 6）
 class CouponSelectSheet extends StatefulWidget {
@@ -42,49 +43,60 @@ class _CouponSelectSheetState extends State<CouponSelectSheet>
 
   @override
   Widget build(BuildContext context) {
-    final themeColor =
-        Color(int.parse('fa436a', radix: 16)).withAlpha(255);
     return Container(
-      height: MediaQuery.of(context).size.height * 0.7,
+      height: MediaQuery.of(context).size.height * 0.72,
       decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+        color: AppColors.background,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.xxl)),
       ),
       child: Column(
         children: [
-          // 顶部栏
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
+          SizedBox(
+            width: double.infinity,
+            height: 64,
+            child: Stack(
+              alignment: Alignment.center,
               children: [
-                const Expanded(
-                  child: Text(
-                    "选择优惠券",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                const Text(
+                  "选择优惠券",
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.of(context).pop(),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
+                Positioned(
+                  top: AppSpacing.sm,
+                  right: AppSpacing.sm,
+                  child: IconButton(
+                    icon: const Icon(Icons.close),
+                    color: AppColors.textPrimary,
+                    iconSize: 24,
+                    onPressed: () => Navigator.of(context).pop(),
+                    tooltip: "关闭",
+                  ),
                 ),
               ],
             ),
           ),
           const Divider(height: 1),
-          // Tab 切换
           Container(
-            color: Colors.white,
+            color: AppColors.surface,
             child: TabBar(
               controller: _tabController,
-              indicatorColor: themeColor,
-              labelColor: themeColor,
-              unselectedLabelColor: Colors.grey,
+              indicatorColor: AppColors.price,
+              indicatorSize: TabBarIndicatorSize.label,
+              indicatorWeight: 3,
+              labelColor: AppColors.price,
+              labelStyle: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
+              unselectedLabelColor: AppColors.textHint,
+              unselectedLabelStyle: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
               tabs: [
                 Tab(text: "可用优惠券（${widget.enableList.length}）"),
                 Tab(text: "不可用（${widget.disableList.length}）"),
@@ -92,7 +104,6 @@ class _CouponSelectSheetState extends State<CouponSelectSheet>
             ),
           ),
           const Divider(height: 1),
-          // 内容区
           Expanded(
             child: TabBarView(
               controller: _tabController,
@@ -102,21 +113,23 @@ class _CouponSelectSheetState extends State<CouponSelectSheet>
               ],
             ),
           ),
-          // 底部按钮
           Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withAlpha(51),
-                  blurRadius: 8,
-                  offset: const Offset(0, -2),
-                ),
-              ],
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.md,
+              AppSpacing.lg,
+              AppSpacing.md,
+            ),
+            decoration: const BoxDecoration(
+              color: AppColors.surface,
+              border: Border(
+                top: BorderSide(color: AppColors.border, width: 1),
+              ),
             ),
             child: SafeArea(
+              top: false,
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   if (_selected != null)
                     Expanded(
@@ -126,18 +139,21 @@ class _CouponSelectSheetState extends State<CouponSelectSheet>
                         children: [
                           Text(
                             _selected!.name,
-                            style: TextStyle(
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
                               fontSize: 14,
-                              color: themeColor,
+                              color: AppColors.textPrimary,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
+                          const SizedBox(height: 2),
                           Text(
                             "-￥${_selected!.amount.toStringAsFixed(2)}",
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 16,
-                              color: themeColor,
-                              fontWeight: FontWeight.bold,
+                              color: AppColors.price,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ],
@@ -147,21 +163,34 @@ class _CouponSelectSheetState extends State<CouponSelectSheet>
                     const Expanded(
                       child: Text(
                         "暂不选择优惠券",
-                        style: TextStyle(fontSize: 14, color: Colors.grey),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textHint,
+                        ),
                       ),
                     ),
-                  const SizedBox(width: 12),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: themeColor,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(100, 44),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(22),
+                  const SizedBox(width: AppSpacing.md),
+                  SizedBox(
+                    width: 132,
+                    height: 48,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                      ),
+                      onPressed: _onConfirm,
+                      child: const Text(
+                        "确定",
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
-                    onPressed: _onConfirm,
-                    child: const Text("确定", style: TextStyle(fontSize: 15)),
                   ),
                 ],
               ),
@@ -172,28 +201,40 @@ class _CouponSelectSheetState extends State<CouponSelectSheet>
     );
   }
 
-  Widget _buildCouponList(List<ConfirmCouponData> coupons, {required bool enabled}) {
+  Widget _buildCouponList(
+    List<ConfirmCouponData> coupons, {
+    required bool enabled,
+  }) {
     if (coupons.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.local_offer_outlined,
               size: 48,
-              color: Colors.grey.shade300,
+              color: AppColors.border,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             Text(
-              enabled ? "暂无可用优惠券" : "暂无可用优惠券",
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade400),
+              enabled ? "暂无可用优惠券" : "暂无不可用优惠券",
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.textHint,
+              ),
             ),
           ],
         ),
       );
     }
+
     return ListView.builder(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.md,
+        AppSpacing.lg,
+      ),
       itemCount: coupons.length,
       itemBuilder: (context, index) {
         final coupon = coupons[index];
@@ -230,110 +271,134 @@ class _CouponCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final themeColor =
-        Color(int.parse('fa436a', radix: 16)).withAlpha(255);
-    final greyColor = Color(int.parse('909399', radix: 16)).withAlpha(255);
-    final disabledColor = Colors.grey.shade300;
+    final amountColor = enabled ? AppColors.price : AppColors.textHint;
+    final titleColor = enabled ? AppColors.textPrimary : AppColors.textHint;
+    final subColor = enabled ? AppColors.textHint : AppColors.border;
+    final borderColor = isSelected ? AppColors.primary : AppColors.border;
 
     return Opacity(
-      opacity: enabled ? 1.0 : 0.5,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: isSelected ? themeColor : (enabled ? Colors.grey.shade200 : Colors.grey.shade300),
-              width: isSelected ? 2 : 1,
-            ),
+      opacity: enabled ? 1.0 : 0.72,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: AppSpacing.md),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+          border: Border.all(
+            color: borderColor,
+            width: isSelected ? 1.5 : 1,
           ),
-          child: Row(
-            children: [
-              // 金额区
-              Container(
-                width: 90,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                decoration: BoxDecoration(
-                  color: enabled
-                      ? themeColor.withAlpha(25)
-                      : Colors.grey.shade100,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(7),
-                    bottomLeft: Radius.circular(7),
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      "￥${coupon.amount.toStringAsFixed(2)}",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: enabled ? themeColor : disabledColor,
-                      ),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    width: 112,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                      vertical: AppSpacing.md,
                     ),
-                    Text(
-                      "满${coupon.minAmount.toStringAsFixed(0)}可用",
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: enabled ? greyColor : disabledColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // 信息区
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        coupon.name,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: enabled ? Colors.black87 : disabledColor,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        "有效期至 ${coupon.endTime}",
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: enabled ? greyColor : disabledColor,
-                        ),
-                      ),
-                      if (!enabled && coupon.disableReason.isNotEmpty) ...[
-                        const SizedBox(height: 3),
+                    color: enabled
+                        ? AppColors.price.withValues(alpha: 0.08)
+                        : AppColors.surfaceMuted,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
                         Text(
-                          coupon.disableReason,
+                          "￥${coupon.amount.toStringAsFixed(2)}",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 19,
+                            height: 1.1,
+                            fontWeight: FontWeight.w800,
+                            color: amountColor,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          "满${coupon.minAmount.toStringAsFixed(0)}可用",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 11,
-                            color: Colors.orange.shade700,
+                            color: subColor,
                           ),
                         ),
                       ],
-                    ],
+                    ),
                   ),
-                ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg,
+                        vertical: AppSpacing.md,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            coupon.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 14,
+                              height: 1.3,
+                              fontWeight: FontWeight.w600,
+                              color: titleColor,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            "有效期至 ${coupon.endTime}",
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: subColor,
+                            ),
+                          ),
+                          if (!enabled && coupon.disableReason.isNotEmpty) ...[
+                            const SizedBox(height: AppSpacing.xs),
+                            Text(
+                              coupon.disableReason,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.accent,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 52,
+                    child: Center(
+                      child: enabled
+                          ? Icon(
+                              isSelected
+                                  ? Icons.check_circle
+                                  : Icons.circle_outlined,
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : AppColors.border,
+                              size: 24,
+                            )
+                          : const SizedBox.shrink(),
+                    ),
+                  ),
+                ],
               ),
-              // 选中标识
-              if (enabled)
-                Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: Icon(
-                    isSelected ? Icons.check_circle : Icons.circle_outlined,
-                    color: isSelected ? themeColor : Colors.grey.shade300,
-                    size: 22,
-                  ),
-                ),
-            ],
+            ),
           ),
         ),
       ),

@@ -128,4 +128,5 @@ development_status:
   10-3-卡片实例生成-唯一编号与本地资产台账: in-progress
   10-4-蚂蚁链-token-发放-回执写回与失败补偿: review
   10-5-数字卡片资产展示-审计检索与合规处置: review
+  10-6-实体卡制作-物流履约与签收闭环: in-progress
   epic-10-retrospective: optional

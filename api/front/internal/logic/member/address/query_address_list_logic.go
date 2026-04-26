@@ -51,7 +51,7 @@ func (l *QueryAddressListLogic) QueryAddressList(req *types.QueryAddressListReq)
 		return nil, errorx.NewDefaultError(s.Message())
 	}
 
-	var list []*types.QueryAddressDetailData
+	list := make([]*types.QueryAddressDetailData, 0, len(result.List))
 
 	for _, detail := range result.List {
 		list = append(list, &types.QueryAddressDetailData{

@@ -200,6 +200,7 @@ func (l *GenerateOrderLogic) GenerateOrder(req *types.GenerateOrderReq) (*types.
 		skuTotalAmt := int64(item.Price) * int64(item.Quantity)
 		itemPromoAmt := item.ReduceAmount
 		orderItem := &omsclient.OrderItemData{
+			Id:              item.Id,
 			SkuId:           item.ProductSkuId,
 			SkuName:         item.ProductName,
 			SkuPic:          item.ProductPic,

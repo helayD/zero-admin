@@ -2,13 +2,16 @@ package orderservicelogic
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
 
 	"github.com/feihua/zero-admin/pkg/operatefunnel"
+	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/rpc/oms/gen/model"
-	"github.com/feihua/zero-admin/rpc/oms/gen/query"
 	"github.com/feihua/zero-admin/rpc/oms/internal/logic/common"
 	"github.com/zeromicro/go-zero/core/logc"
+	"gorm.io/gorm"
 
 	"github.com/feihua/zero-admin/rpc/oms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/oms/omsclient"
@@ -32,8 +35,6 @@ func NewAddOrderLogic(ctx context.Context, svcCtx *svc.ServiceContext) *AddOrder
 
 // AddOrder 添加订单(app)
 func (l *AddOrderLogic) AddOrder(in *omsclient.AddOrderReq) (*omsclient.AddOrderResp, error) {
-	q := query.OmsOrderMain
-
 	item := &model.OmsOrderMain{
 		OrderNo:         in.OrderNo,                  // 订单编号
 		UserID:          in.UserId,                   // 用户ID
@@ -50,29 +51,12 @@ func (l *AddOrderLogic) AddOrder(in *omsclient.AddOrderReq) (*omsclient.AddOrder
 		Remark:          in.Remark,                   // 订单备注
 	}
 
-	err := q.WithContext(l.ctx).Create(item)
-	if err != nil {
-		logc.Errorf(l.ctx, "添加订单失败,参数:%+v,异常:%s", item, err.Error())
-		return nil, fmt.Errorf("添加订单失败")
-	}
-
-	if err = l.svcCtx.DB.WithContext(l.ctx).
-		Table("oms_order_main").
-		Where("id = ?", item.ID).
-		Updates(map[string]interface{}{
-			"activity_type": operatefunnel.NormalizeActivityType(in.ActivityType),
-			"activity_id":   in.ActivityId,
-		}).Error; err != nil {
-		logc.Errorf(l.ctx, "更新订单活动归因失败,orderId:%d,异常:%s", item.ID, err.Error())
-		return nil, fmt.Errorf("更新订单活动归因失败")
-	}
-
 	var orderItems []*model.OmsOrderItem
-	var ids []int64
+	var cartItemIds []int64
 	for _, data := range in.OrderItemData {
 		item1 := &model.OmsOrderItem{
 			OrderID:         item.ID,                       // 订单ID
-			OrderNo:         data.OrderNo,                  // 订单编号
+			OrderNo:         item.OrderNo,                  // 订单编号
 			OrderItemStatus: 1,                             // 订单商品状态：1-正常,2-退货申请中,3-已退货,4-已拒绝
 			SkuID:           data.SkuId,                    // 商品SKU ID
 			SkuName:         data.SkuName,                  // 商品名称
@@ -89,26 +73,65 @@ func (l *AddOrderLogic) AddOrder(in *omsclient.AddOrderReq) (*omsclient.AddOrder
 		}
 
 		orderItems = append(orderItems, item1)
-		ids = append(ids, data.SkuId)
+		// 创建订单时 OrderItemData.Id 携带购物车项 ID；立即购买场景为 0，不清理购物车。
+		if data.Id > 0 {
+			cartItemIds = append(cartItemIds, data.Id)
+		}
 
 	}
-	err = query.OmsOrderItem.WithContext(l.ctx).CreateInBatches(orderItems, len(orderItems))
-	if err != nil {
-		logc.Errorf(l.ctx, "添加订单商品失败,参数:%+v,异常:%s", orderItems, err.Error())
-		return nil, fmt.Errorf("添加订单商品失败")
+
+	if len(orderItems) == 0 {
+		return nil, errors.New("订单商品不能为空")
 	}
 
-	_, err = query.OmsCartItem.WithContext(l.ctx).Where(q.ID.In(ids...)).Delete()
+	err := l.svcCtx.DB.WithContext(l.ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(item).Error; err != nil {
+			logc.Errorf(l.ctx, "添加订单失败,参数:%+v,异常:%s", item, err.Error())
+			return fmt.Errorf("添加订单失败")
+		}
 
+		if err := tx.Table("oms_order_main").
+			Where("id = ?", item.ID).
+			Updates(map[string]interface{}{
+				"activity_type": operatefunnel.NormalizeActivityType(in.ActivityType),
+				"activity_id":   in.ActivityId,
+			}).Error; err != nil {
+			logc.Errorf(l.ctx, "更新订单活动归因失败,orderId:%d,异常:%s", item.ID, err.Error())
+			return fmt.Errorf("更新订单活动归因失败")
+		}
+
+		for _, orderItem := range orderItems {
+			orderItem.OrderID = item.ID
+		}
+
+		if err := tx.CreateInBatches(orderItems, len(orderItems)).Error; err != nil {
+			logc.Errorf(l.ctx, "添加订单商品失败,参数:%+v,异常:%s", orderItems, err.Error())
+			return fmt.Errorf("添加订单商品失败")
+		}
+
+		if len(cartItemIds) > 0 {
+			err := tx.Table("oms_cart_item").
+				Where("id IN ? AND member_id = ?", cartItemIds, in.UserId).
+				Updates(map[string]interface{}{
+					"delete_status": 1,
+					"update_time":   time.Now(),
+				}).Error
+			if err != nil {
+				logc.Errorf(l.ctx, "删除购物车失败,参数:%+v,异常:%s", in, err.Error())
+				return fmt.Errorf("删除购物车失败")
+			}
+		}
+
+		return nil
+	})
 	if err != nil {
-		logc.Errorf(l.ctx, "删除购物车失败,参数:%+v,异常:%s", in, err.Error())
-		return nil, fmt.Errorf("删除购物车失败")
+		return nil, err
 	}
 
 	currentScope, err := common.ResolveActorScope(l.ctx, l.svcCtx.DB, in.UserId)
 	if err != nil {
-		logc.Errorf(l.ctx, "解析用户作用域失败,userId:%d,异常:%s", in.UserId, err.Error())
-		return nil, fmt.Errorf("解析用户作用域失败")
+		logc.Errorf(l.ctx, "解析用户作用域失败,userId:%d,使用默认平台级作用域,异常:%s", in.UserId, err.Error())
+		currentScope, _ = pkgscope.NormalizeGovernanceScope(pkgscope.SubjectTypePlatform, pkgscope.DefaultPlatformID, 0, 0)
 	}
 
 	sendOrderEvent(l.ctx, l.svcCtx, "order.create.queue", "order.created.key", "order.created", "", item.ID, currentScope, in.UserId, map[string]interface{}{
@@ -116,5 +139,5 @@ func (l *AddOrderLogic) AddOrder(in *omsclient.AddOrderReq) (*omsclient.AddOrder
 		"totalAmount": item.TotalAmount,
 	})
 
-	return &omsclient.AddOrderResp{}, nil
+	return &omsclient.AddOrderResp{Id: item.ID}, nil
 }

@@ -33,7 +33,7 @@ Fisco:
   ContractAddr: ""
   PrivateKey: ""
   TimeoutSeconds: 10
-  Enabled: false
+  Enabled: true
 
 Log:
   ServiceName: sms-service

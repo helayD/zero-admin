@@ -60,6 +60,8 @@ type CardInstanceRow struct {
 	MintStatus            string     `gorm:"column:mint_status"`
 	TokenID               string     `gorm:"column:token_id"`
 	ChainStatus           string     `gorm:"column:chain_status"`
+	DisplayStatus         string     `gorm:"column:display_status"`
+	ComplianceStatus      string     `gorm:"column:compliance_status"`
 	LastReceiptAt         *time.Time `gorm:"column:last_receipt_at"`
 	MintTaskID            int64      `gorm:"column:mint_task_id"`
 	IssuedAt              *time.Time `gorm:"column:issued_at"`

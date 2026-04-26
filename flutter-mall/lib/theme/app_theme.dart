@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  static const Color primary = Color(0xFFD63A61);
-  static const Color primaryDark = Color(0xFFB4234B);
-  static const Color primarySoft = Color(0xFFFFEDF1);
-  static const Color accent = Color(0xFFF59E0B);
+  static const Color primary = Color(0xFF1C1917);
+  static const Color primaryDark = Color(0xFF0C0A09);
+  static const Color primarySoft = Color(0xFFF1F3F5);
+  static const Color accent = Color(0xFFB7791F);
   static const Color accentSoft = Color(0xFFFFF4DB);
-  static const Color background = Color(0xFFF7F8FA);
+  static const Color background = Color(0xFFF6F7F4);
   static const Color surface = Colors.white;
-  static const Color surfaceMuted = Color(0xFFF4F5F7);
-  static const Color border = Color(0xFFE5E7EB);
-  static const Color textPrimary = Color(0xFF1F2937);
-  static const Color textSecondary = Color(0xFF475467);
-  static const Color textHint = Color(0xFF667085);
-  static const Color success = Color(0xFF12B76A);
+  static const Color surfaceMuted = Color(0xFFF3F5F2);
+  static const Color border = Color(0xFFE4E7E0);
+  static const Color textPrimary = Color(0xFF161616);
+  static const Color textSecondary = Color(0xFF525866);
+  static const Color textHint = Color(0xFF7D8592);
+  static const Color success = Color(0xFF0F8A5F);
+  static const Color price = Color(0xFFC2410C);
 }
 
 class AppSpacing {
@@ -26,11 +27,11 @@ class AppSpacing {
 }
 
 class AppRadii {
-  static const double sm = 12;
-  static const double md = 16;
-  static const double lg = 20;
-  static const double xl = 24;
-  static const double xxl = 28;
+  static const double sm = 6;
+  static const double md = 8;
+  static const double lg = 10;
+  static const double xl = 12;
+  static const double xxl = 16;
 }
 
 class AppTheme {
@@ -138,7 +139,7 @@ class AppTheme {
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: AppColors.surface,
-        selectedItemColor: AppColors.primary,
+        selectedItemColor: AppColors.accent,
         unselectedItemColor: AppColors.textHint,
         selectedLabelStyle: TextStyle(
           fontSize: 12,

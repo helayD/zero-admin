@@ -59,6 +59,11 @@ func sendOrderEvent(ctx context.Context, svcCtx *svc.ServiceContext, queue, rout
 		return
 	}
 
+	if svcCtx.RabbitMQ == nil {
+		logc.Infof(ctx, "RabbitMQ未配置，跳过订单事件发送,action:%s,orderId:%d", action, orderID)
+		return
+	}
+
 	if err := svcCtx.RabbitMQ.SendMessage("order.event.exchange", "direct", queue, routingKey, body); err != nil {
 		logc.Errorf(ctx, "发送订单异步消息失败,action:%s,orderId:%d,scope:%+v,异常:%s", action, orderID, current, err.Error())
 	}

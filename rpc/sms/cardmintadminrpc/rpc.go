@@ -14,17 +14,24 @@ import (
 const (
 	ServiceName = "sms.CardMintAdminService"
 
-	MethodQueryTaskList             = "/" + ServiceName + "/QueryTaskList"
-	MethodQueryTaskDetail           = "/" + ServiceName + "/QueryTaskDetail"
-	MethodQueryAvailableTaskActions = "/" + ServiceName + "/QueryAvailableTaskActions"
-	MethodRetryTask                 = "/" + ServiceName + "/RetryTask"
-	MethodFreezeTask                = "/" + ServiceName + "/FreezeTask"
-	MethodEscalateTask              = "/" + ServiceName + "/EscalateTask"
-	MethodQueryAssetAuditList       = "/" + ServiceName + "/QueryAssetAuditList"
-	MethodQueryAssetAuditDetail     = "/" + ServiceName + "/QueryAssetAuditDetail"
-	MethodReviewAssetCompliance     = "/" + ServiceName + "/ReviewAssetCompliance"
-	MethodOfflineAssetDisplay       = "/" + ServiceName + "/OfflineAssetDisplay"
-	MethodRecycleAsset              = "/" + ServiceName + "/RecycleAsset"
+	MethodQueryTaskList                      = "/" + ServiceName + "/QueryTaskList"
+	MethodQueryTaskDetail                    = "/" + ServiceName + "/QueryTaskDetail"
+	MethodQueryAvailableTaskActions          = "/" + ServiceName + "/QueryAvailableTaskActions"
+	MethodRetryTask                          = "/" + ServiceName + "/RetryTask"
+	MethodFreezeTask                         = "/" + ServiceName + "/FreezeTask"
+	MethodEscalateTask                       = "/" + ServiceName + "/EscalateTask"
+	MethodQueryAssetAuditList                = "/" + ServiceName + "/QueryAssetAuditList"
+	MethodQueryAssetAuditDetail              = "/" + ServiceName + "/QueryAssetAuditDetail"
+	MethodReviewAssetCompliance              = "/" + ServiceName + "/ReviewAssetCompliance"
+	MethodOfflineAssetDisplay                = "/" + ServiceName + "/OfflineAssetDisplay"
+	MethodRecycleAsset                       = "/" + ServiceName + "/RecycleAsset"
+	MethodQueryPhysicalFulfillmentList       = "/" + ServiceName + "/QueryPhysicalFulfillmentList"
+	MethodQueryPhysicalFulfillmentDetail     = "/" + ServiceName + "/QueryPhysicalFulfillmentDetail"
+	MethodEnsurePhysicalFulfillment          = "/" + ServiceName + "/EnsurePhysicalFulfillment"
+	MethodUpdatePhysicalCardProductionStatus = "/" + ServiceName + "/UpdatePhysicalCardProductionStatus"
+	MethodShipPhysicalCard                   = "/" + ServiceName + "/ShipPhysicalCard"
+	MethodMarkPhysicalFulfillmentException   = "/" + ServiceName + "/MarkPhysicalFulfillmentException"
+	MethodRequestPhysicalCardReissue         = "/" + ServiceName + "/RequestPhysicalCardReissue"
 )
 
 type (
@@ -96,6 +103,49 @@ type (
 	AssetActionResponse struct {
 		Result *digitalcardmint.DigitalCardAssetActionResult `json:"result"`
 	}
+
+	QueryPhysicalFulfillmentListRequest struct {
+		Scope  pkgscope.GovernanceScope                  `json:"scope"`
+		Filter digitalcardmint.PhysicalFulfillmentFilter `json:"filter"`
+	}
+
+	QueryPhysicalFulfillmentListResponse struct {
+		Total int64                                     `json:"total"`
+		List  []digitalcardmint.PhysicalFulfillmentItem `json:"list"`
+	}
+
+	QueryPhysicalFulfillmentDetailRequest struct {
+		Scope         pkgscope.GovernanceScope `json:"scope"`
+		FulfillmentID int64                    `json:"fulfillmentId"`
+	}
+
+	QueryPhysicalFulfillmentDetailResponse struct {
+		Detail *digitalcardmint.PhysicalFulfillmentAdminDetail `json:"detail"`
+	}
+
+	EnsurePhysicalFulfillmentRequest struct {
+		Scope pkgscope.GovernanceScope                 `json:"scope"`
+		Input digitalcardmint.PhysicalFulfillmentInput `json:"input"`
+	}
+
+	PhysicalFulfillmentResultResponse struct {
+		Result *digitalcardmint.PhysicalFulfillmentResult `json:"result"`
+	}
+
+	UpdatePhysicalCardProductionStatusRequest struct {
+		Scope pkgscope.GovernanceScope                                `json:"scope"`
+		Input digitalcardmint.UpdatePhysicalCardProductionStatusInput `json:"input"`
+	}
+
+	ShipPhysicalCardRequest struct {
+		Scope pkgscope.GovernanceScope              `json:"scope"`
+		Input digitalcardmint.ShipPhysicalCardInput `json:"input"`
+	}
+
+	PhysicalFulfillmentExceptionRequest struct {
+		Scope pkgscope.GovernanceScope                          `json:"scope"`
+		Input digitalcardmint.PhysicalFulfillmentExceptionInput `json:"input"`
+	}
 )
 
 type CardMintAdminServiceServer interface {
@@ -110,6 +160,13 @@ type CardMintAdminServiceServer interface {
 	ReviewAssetCompliance(context.Context, *structpb.Struct) (*structpb.Struct, error)
 	OfflineAssetDisplay(context.Context, *structpb.Struct) (*structpb.Struct, error)
 	RecycleAsset(context.Context, *structpb.Struct) (*structpb.Struct, error)
+	QueryPhysicalFulfillmentList(context.Context, *structpb.Struct) (*structpb.Struct, error)
+	QueryPhysicalFulfillmentDetail(context.Context, *structpb.Struct) (*structpb.Struct, error)
+	EnsurePhysicalFulfillment(context.Context, *structpb.Struct) (*structpb.Struct, error)
+	UpdatePhysicalCardProductionStatus(context.Context, *structpb.Struct) (*structpb.Struct, error)
+	ShipPhysicalCard(context.Context, *structpb.Struct) (*structpb.Struct, error)
+	MarkPhysicalFulfillmentException(context.Context, *structpb.Struct) (*structpb.Struct, error)
+	RequestPhysicalCardReissue(context.Context, *structpb.Struct) (*structpb.Struct, error)
 }
 
 func RegisterCardMintAdminServiceServer(registrar grpc.ServiceRegistrar, server CardMintAdminServiceServer) {
@@ -153,6 +210,27 @@ var CardMintAdminServiceDesc = grpc.ServiceDesc{
 		{MethodName: "RecycleAsset", Handler: buildUnaryHandler(func(s CardMintAdminServiceServer, ctx context.Context, in *structpb.Struct) (*structpb.Struct, error) {
 			return s.RecycleAsset(ctx, in)
 		}, MethodRecycleAsset)},
+		{MethodName: "QueryPhysicalFulfillmentList", Handler: buildUnaryHandler(func(s CardMintAdminServiceServer, ctx context.Context, in *structpb.Struct) (*structpb.Struct, error) {
+			return s.QueryPhysicalFulfillmentList(ctx, in)
+		}, MethodQueryPhysicalFulfillmentList)},
+		{MethodName: "QueryPhysicalFulfillmentDetail", Handler: buildUnaryHandler(func(s CardMintAdminServiceServer, ctx context.Context, in *structpb.Struct) (*structpb.Struct, error) {
+			return s.QueryPhysicalFulfillmentDetail(ctx, in)
+		}, MethodQueryPhysicalFulfillmentDetail)},
+		{MethodName: "EnsurePhysicalFulfillment", Handler: buildUnaryHandler(func(s CardMintAdminServiceServer, ctx context.Context, in *structpb.Struct) (*structpb.Struct, error) {
+			return s.EnsurePhysicalFulfillment(ctx, in)
+		}, MethodEnsurePhysicalFulfillment)},
+		{MethodName: "UpdatePhysicalCardProductionStatus", Handler: buildUnaryHandler(func(s CardMintAdminServiceServer, ctx context.Context, in *structpb.Struct) (*structpb.Struct, error) {
+			return s.UpdatePhysicalCardProductionStatus(ctx, in)
+		}, MethodUpdatePhysicalCardProductionStatus)},
+		{MethodName: "ShipPhysicalCard", Handler: buildUnaryHandler(func(s CardMintAdminServiceServer, ctx context.Context, in *structpb.Struct) (*structpb.Struct, error) {
+			return s.ShipPhysicalCard(ctx, in)
+		}, MethodShipPhysicalCard)},
+		{MethodName: "MarkPhysicalFulfillmentException", Handler: buildUnaryHandler(func(s CardMintAdminServiceServer, ctx context.Context, in *structpb.Struct) (*structpb.Struct, error) {
+			return s.MarkPhysicalFulfillmentException(ctx, in)
+		}, MethodMarkPhysicalFulfillmentException)},
+		{MethodName: "RequestPhysicalCardReissue", Handler: buildUnaryHandler(func(s CardMintAdminServiceServer, ctx context.Context, in *structpb.Struct) (*structpb.Struct, error) {
+			return s.RequestPhysicalCardReissue(ctx, in)
+		}, MethodRequestPhysicalCardReissue)},
 	},
 }
 

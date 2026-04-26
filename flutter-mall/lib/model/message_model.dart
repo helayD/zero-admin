@@ -7,11 +7,17 @@ class MessageModel {
   final int code;
   final String? message;
   final List<MessageData> data;
+  final int total;
+  final int pageNum;
+  final int pageSize;
 
   MessageModel({
     required this.code,
     this.message,
     required this.data,
+    this.total = 0,
+    this.pageNum = 1,
+    this.pageSize = 20,
   });
 
   factory MessageModel.fromJson(Map<String, dynamic> json) {
@@ -22,6 +28,34 @@ class MessageModel {
               ?.map((e) => MessageData.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
+      total: _parseInt(json['total']),
+      pageNum: _parseInt(json['pageNum'], fallback: 1),
+      pageSize: _parseInt(json['pageSize'], fallback: 20),
+    );
+  }
+}
+
+class MessageDetailModel {
+  final int code;
+  final String? message;
+  final MessageData? data;
+
+  MessageDetailModel({
+    required this.code,
+    this.message,
+    this.data,
+  });
+
+  factory MessageDetailModel.fromJson(Map<String, dynamic> json) {
+    final rawData = json['data'];
+    return MessageDetailModel(
+      code: json['code'] ?? 0,
+      message: json['message'],
+      data: rawData is Map<String, dynamic>
+          ? MessageData.fromJson(rawData)
+          : rawData is Map
+              ? MessageData.fromJson(Map<String, dynamic>.from(rawData))
+              : null,
     );
   }
 }
@@ -418,7 +452,17 @@ class UnreadCountModel {
     return UnreadCountModel(
       code: json['code'] ?? 0,
       message: json['message'],
-      unreadCount: json['unreadCount'] ?? 0,
+      unreadCount: _parseInt(json['unreadCount']),
     );
   }
+}
+
+int _parseInt(dynamic value, {int fallback = 0}) {
+  if (value is int) {
+    return value;
+  }
+  if (value is num) {
+    return value.toInt();
+  }
+  return int.tryParse(value?.toString() ?? '') ?? fallback;
 }

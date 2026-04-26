@@ -7,6 +7,7 @@ import 'package:flutter_mall/config/constant_param.dart';
 import 'package:flutter_mall/model/app_recent_context.dart';
 import 'package:flutter_mall/model/coupon_model.dart' as coupon_model;
 import 'package:flutter_mall/model/direct_checkout.dart';
+import 'package:flutter_mall/theme/app_theme.dart';
 import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/utils/shared_preferences_util.dart';
 import 'package:flutter_mall/config/service_url.dart';
@@ -155,22 +156,26 @@ class _ProductDetailState extends State<ProductDetail> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        title: const Text("详情展示"),
-        titleTextStyle: const TextStyle(fontSize: 16, color: Colors.black),
+        backgroundColor: AppColors.surface,
+        surfaceTintColor: AppColors.surface,
+        elevation: 0,
+        title: const Text("商品详情"),
+        titleTextStyle: const TextStyle(
+          fontSize: 16,
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.w600,
+        ),
         centerTitle: true,
       ),
-      body: Stack(
-        children: [
-          Container(
-            color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
-            width: MediaQuery.of(context).size.width,
-            child: buildPageBody(context),
-          ),
-          if (!loading && product != null) buildFooter(context),
-        ],
+      body: Container(
+        color: AppColors.background,
+        width: MediaQuery.of(context).size.width,
+        child: buildPageBody(context),
       ),
+      bottomNavigationBar:
+          !loading && product != null ? buildFooter(context) : null,
     );
   }
 
@@ -182,6 +187,7 @@ class _ProductDetailState extends State<ProductDetail> {
       return buildUnavailableState(context);
     }
     return ListView(
+      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
       children: [
         buildProductPic(),
         buildProductBaseInfo(),
@@ -194,8 +200,51 @@ class _ProductDetailState extends State<ProductDetail> {
     );
   }
 
+  BoxDecoration _cardDecoration({Color color = AppColors.surface}) {
+    return BoxDecoration(
+      color: color,
+      borderRadius: BorderRadius.circular(AppRadii.lg),
+      border: Border.all(color: AppColors.border.withValues(alpha: 0.78)),
+    );
+  }
+
+  Widget _sectionCard({
+    required Widget child,
+    EdgeInsetsGeometry margin = const EdgeInsets.fromLTRB(
+      AppSpacing.md,
+      AppSpacing.md,
+      AppSpacing.md,
+      0,
+    ),
+    EdgeInsetsGeometry padding = const EdgeInsets.all(AppSpacing.lg),
+    Color color = AppColors.surface,
+  }) {
+    return Container(
+      margin: margin,
+      padding: padding,
+      decoration: _cardDecoration(color: color),
+      child: child,
+    );
+  }
+
+  Widget _statTile(String label, String value) {
+    return Expanded(
+      child: Text(
+        "$label $value",
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          fontSize: 12,
+          color: AppColors.textHint,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
   // 商品图片
-  SizedBox buildProductPic() {
+  Widget buildProductPic() {
     List<String> list = [];
     if (product != null) {
       list = product!.albumPics.split(",");
@@ -205,120 +254,134 @@ class _ProductDetailState extends State<ProductDetail> {
       }
     }
 
-    return SizedBox(
-      height: 360,
-      child: Swiper(
-        itemBuilder: (BuildContext context, int index) {
-          return CachedImageWidget(
-            double.infinity,
-            double.infinity,
-            list[index],
-            fit: BoxFit.cover,
-          );
-        },
-        autoplay: true,
-        itemCount: list.length,
-        pagination: const SwiperPagination(),
-        viewportFraction: 0.8,
-        scale: 0.8,
+    return AspectRatio(
+      aspectRatio: 1,
+      child: Container(
+        clipBehavior: Clip.antiAlias,
+        decoration: const BoxDecoration(color: AppColors.surface),
+        child: Swiper(
+          itemBuilder: (BuildContext context, int index) {
+            return CachedImageWidget(
+              double.infinity,
+              double.infinity,
+              list[index],
+              fit: BoxFit.cover,
+            );
+          },
+          autoplay: list.length > 1,
+          itemCount: list.length,
+          pagination: SwiperPagination(
+            builder: DotSwiperPaginationBuilder(
+              activeColor: AppColors.primary,
+              color: AppColors.border,
+              activeSize: 7,
+              size: 7,
+              space: 4,
+            ),
+          ),
+        ),
       ),
     );
   }
 
   // 商品基本信息
-  Container buildProductBaseInfo() {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.all(15),
+  Widget buildProductBaseInfo() {
+    final priceText = selectedSku != null
+        ? '${selectedSku!.price}'
+        : product!.price.toString();
+    final salesText =
+        '${selectedSku != null ? selectedSku!.sales : product!.sales}';
+    final stockText =
+        '${selectedSku != null ? selectedSku!.stock : product!.stock}';
+
+    return _sectionCard(
+      margin: const EdgeInsets.only(top: AppSpacing.sm),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              const Text(
+                "¥",
+                style: TextStyle(
+                  fontSize: 16,
+                  color: AppColors.price,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              Text(
+                priceText,
+                style: const TextStyle(
+                  fontSize: 30,
+                  height: 1,
+                  color: AppColors.price,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              if (selectedSku == null && product!.priceRange.contains('-'))
+                Padding(
+                  padding: const EdgeInsets.only(
+                    left: AppSpacing.sm,
+                    bottom: 2,
+                  ),
+                  child: Text(
+                    product!.priceRange,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textHint,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
           Text(
             product!.name,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 16,
-              color: Color(int.parse('303133', radix: 16)).withAlpha(255),
+              height: 1.35,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textPrimary,
             ),
           ),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             product!.subTitle,
-            style: TextStyle(
-              fontSize: 14,
-              color: Color(int.parse('909399', radix: 16)).withAlpha(255),
+            style: const TextStyle(
+              fontSize: 13,
+              height: 1.4,
+              color: AppColors.textSecondary,
             ),
           ),
           if (!visibility.purchasable && visibility.reasonMessage.isNotEmpty)
             Container(
-              margin: const EdgeInsets.only(top: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              margin: const EdgeInsets.only(top: AppSpacing.md),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.xs,
+              ),
               decoration: BoxDecoration(
-                color: Color(int.parse('fff5f5', radix: 16)).withAlpha(255),
-                borderRadius: const BorderRadius.all(Radius.circular(20)),
+                color: AppColors.price.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(AppRadii.sm),
               ),
               child: Text(
                 visibility.reasonMessage,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 12,
-                  color: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
+                  color: AppColors.price,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
-          SizedBox(
-            height: 32,
-            child: Row(
-              children: [
-                Text(
-                  "¥",
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
-                  ),
-                ),
-                Text(
-                  selectedSku != null
-                      ? '${selectedSku!.price}'
-                      : product!.price.toString(),
-                  style: TextStyle(
-                    fontSize: 17,
-                    color: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
-                  ),
-                ),
-                if (selectedSku == null && product!.priceRange.contains('-'))
-                  Text(
-                    " (${product!.priceRange})",
-                    style: TextStyle(
-                      fontSize: 13,
-                      color:
-                          Color(int.parse('909399', radix: 16)).withAlpha(255),
-                    ),
-                  ),
-              ],
-            ),
-          ),
+          const SizedBox(height: AppSpacing.md),
+          const Divider(height: 1),
+          const SizedBox(height: AppSpacing.sm),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                "销量: ${selectedSku != null ? selectedSku!.sales : product!.sales}",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(int.parse('909399', radix: 16)).withAlpha(255),
-                ),
-              ),
-              Text(
-                "库存: ${selectedSku != null ? selectedSku!.stock : product!.stock}",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(int.parse('909399', radix: 16)).withAlpha(255),
-                ),
-              ),
-              Text(
-                "浏览量: 768",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(int.parse('909399', radix: 16)).withAlpha(255),
-                ),
-              ),
+              _statTile('销量', salesText),
+              _statTile('库存', stockText),
+              _statTile('浏览', '768'),
             ],
           ),
         ],
@@ -327,56 +390,59 @@ class _ProductDetailState extends State<ProductDetail> {
   }
 
   // 分享
-  Container buildProductShare() {
-    // var border = BorderSide(width: 1, color: Color(int.parse('fa436a', radix: 16)).withAlpha(255));
-    var boxDecoration = BoxDecoration(
-      border: Border.all(
-        width: 1,
-        color: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
+  Widget buildProductShare() {
+    return _sectionCard(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
       ),
-      borderRadius: const BorderRadius.all(Radius.circular(5)),
-    );
-    return Container(
-      height: 40,
-      margin: const EdgeInsets.symmetric(horizontal: 15),
       child: Row(
         children: [
           Container(
-            decoration: boxDecoration,
-            child: Row(
-              children: [
-                Image.asset("images/five.png", height: 16, width: 17),
-                Text(
-                  "返",
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
-                  ),
-                ),
-              ],
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: 3,
             ),
-          ),
-          Expanded(
-            child: Text(
-              " 该商品分享可领49减10红包",
+            decoration: BoxDecoration(
+              color: AppColors.price.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(AppRadii.sm),
+            ),
+            child: const Text(
+              "返券",
               style: TextStyle(
-                fontSize: 14,
-                color: Color(int.parse('606266', radix: 16)).withAlpha(255),
+                fontSize: 12,
+                color: AppColors.price,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
-          Text(
-            "立即分享",
-            style: TextStyle(
-              fontSize: 14,
-              color: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
+          const SizedBox(width: AppSpacing.sm),
+          const Expanded(
+            child: Text(
+              "分享商品可领 49 减 10 红包",
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
-          Image.asset(
-            "images/right_arrow1.png",
-            height: 13,
-            width: 13,
-            color: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
+          const SizedBox(width: AppSpacing.sm),
+          const Text(
+            "立即分享",
+            style: TextStyle(
+              fontSize: 13,
+              color: AppColors.accent,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(width: 2),
+          const Icon(
+            Icons.chevron_right,
+            size: 20,
+            color: AppColors.accent,
           ),
         ],
       ),
@@ -384,69 +450,82 @@ class _ProductDetailState extends State<ProductDetail> {
   }
 
   // 商品属性和规格
-  Container buildAttributesInfo(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(15),
-      color: Colors.white,
+  Widget buildAttributesInfo(BuildContext context) {
+    return _sectionCard(
+      padding: EdgeInsets.zero,
       child: Column(
         children: [
           buildTxt("购买类型", _selectedSkuSummary(), 1, context),
           buildTxt("商品参数", "查看", 2, context),
-          buildTxt("优惠券   ", _couponSummary(), 3, context),
+          buildTxt("优惠券", _couponSummary(), 3, context),
           buildTxt("促销活动", _promotionSummary(), 4, context),
-          buildTxt("商家服务", "无忧退货 · 快速退款 · 免费包邮 ·", 5, context),
+          buildTxt("商家服务", "无忧退货 · 快速退款 · 免费包邮", 5, context),
         ],
       ),
     );
   }
 
-  InkWell buildTxt(String title, String value, int flag, BuildContext context) {
-    var border = BorderSide(
-      width: 1,
-      color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
-    );
-    var boxDecoration = BoxDecoration(border: Border(bottom: border));
-    return InkWell(
-      onTap: () {
-        _openBottomSheetWithInfo(context, title);
-      },
-      child: Container(
-        decoration: boxDecoration,
-        height: 47,
-        child: Row(
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 14,
-                color: Color(int.parse('606266', radix: 16)).withAlpha(255),
+  Widget buildTxt(String title, String value, int flag, BuildContext context) {
+    final bool highlight = flag == 3;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          _openBottomSheetWithInfo(context, title);
+        },
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 56),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.md,
+          ),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                color: flag == 5 ? Colors.transparent : AppColors.border,
               ),
             ),
-            const SizedBox(width: 20),
-            Expanded(
-              child: Text(
-                value,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(
-                    int.parse(flag == 3 ? 'fa436a' : "303133", radix: 16),
-                  ).withAlpha(255),
+          ),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 68,
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ),
-            ),
-            Image.asset("images/right_arrow1.png", height: 13, width: 13),
-          ],
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: highlight ? AppColors.price : AppColors.textPrimary,
+                    fontWeight: highlight ? FontWeight.w700 : FontWeight.w600,
+                  ),
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right,
+                size: 20,
+                color: AppColors.textHint,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   // 评价信息
-  Container buildPinJiaInfo() {
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.all(15),
-      margin: const EdgeInsets.only(top: 8),
+  Widget buildPinJiaInfo() {
+    return _sectionCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -454,61 +533,66 @@ class _ProductDetailState extends State<ProductDetail> {
             height: 40,
             child: Row(
               children: [
-                Text(
+                const Text(
                   "评价",
                   style: TextStyle(
                     fontSize: 15,
-                    color: Color(int.parse('303133', radix: 16)).withAlpha(255),
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
                   ),
                 ),
-                Expanded(
+                const SizedBox(width: AppSpacing.xs),
+                const Expanded(
                   child: Text(
                     "(86)",
                     style: TextStyle(
                       fontSize: 14,
-                      color: Color(
-                        int.parse('909399', radix: 16),
-                      ).withAlpha(255),
+                      color: AppColors.textHint,
                     ),
                   ),
                 ),
-                Text(
+                const Text(
                   "好评率 100% ",
                   style: TextStyle(
                     fontSize: 14,
-                    color: Color(int.parse('909399', radix: 16)).withAlpha(255),
+                    color: AppColors.textHint,
                   ),
                 ),
-                Image.asset("images/right_arrow1.png", height: 15, width: 15),
+                const Icon(
+                  Icons.chevron_right,
+                  size: 20,
+                  color: AppColors.textHint,
+                ),
               ],
             ),
           ),
           Text(
             "koobe",
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 14,
-              color: Color(int.parse('606266', radix: 16)).withAlpha(255),
-              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w700,
             ),
           ),
           Container(
-            margin: const EdgeInsets.symmetric(vertical: 10),
-            child: Text(
+            margin: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+            child: const Text(
               "商品收到了，79元两件，质量不错，试了一下有点瘦，但是加个外罩很漂亮，我很喜欢",
               style: TextStyle(
                 fontSize: 14,
-                color: Color(int.parse('303133', radix: 16)).withAlpha(255),
+                height: 1.45,
+                color: AppColors.textPrimary,
               ),
             ),
           ),
-          Row(
+          const Row(
             children: [
               Expanded(
                 child: Text(
                   "购买类型：XL 红色",
                   style: TextStyle(
                     fontSize: 14,
-                    color: Color(int.parse('909399', radix: 16)).withAlpha(255),
+                    color: AppColors.textHint,
                   ),
                 ),
               ),
@@ -516,7 +600,7 @@ class _ProductDetailState extends State<ProductDetail> {
                 "2019-04-01 19:21",
                 style: TextStyle(
                   fontSize: 14,
-                  color: Color(int.parse('909399', radix: 16)).withAlpha(255),
+                  color: AppColors.textHint,
                 ),
               ),
             ],
@@ -527,51 +611,63 @@ class _ProductDetailState extends State<ProductDetail> {
   }
 
   // 品牌信息
-  Container buildBrandInfo() {
-    return Container(
-      width: MediaQuery.of(context).size.width,
-      color: Colors.white,
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      padding: const EdgeInsets.symmetric(vertical: 25, horizontal: 25),
+  Widget buildBrandInfo() {
+    return _sectionCard(
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            height: 40,
-            child: Text(
-              "品牌信息",
-              style: TextStyle(
-                fontSize: 15,
-                color: Color(int.parse('303133', radix: 16)).withAlpha(255),
-              ),
+          const Text(
+            "品牌信息",
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
             ),
           ),
+          const SizedBox(height: AppSpacing.md),
           Row(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              CachedImageWidget(105, 35, brand.logo, fit: BoxFit.contain),
-              const SizedBox(width: 20),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    brand.name,
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Color(
-                        int.parse('303133', radix: 16),
-                      ).withAlpha(255),
+              Container(
+                width: 112,
+                height: 46,
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceMuted,
+                  borderRadius: BorderRadius.circular(AppRadii.md),
+                ),
+                child: CachedImageWidget(
+                  96,
+                  30,
+                  brand.logo,
+                  fit: BoxFit.contain,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      brand.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
                     ),
-                  ),
-                  Text(
-                    "品牌首字母：${brand.firstLetter}",
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Color(
-                        int.parse('909399', radix: 16),
-                      ).withAlpha(255),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      "品牌首字母：${brand.firstLetter}",
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textHint,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
@@ -581,7 +677,7 @@ class _ProductDetailState extends State<ProductDetail> {
   }
 
   // 图文详情
-  Column buildImageDetailInfo() {
+  Widget buildImageDetailInfo() {
     List<String> imageUrls = [];
     final detailContent =
         product?.detailMobileHtml ?? product?.detailHtml ?? '';
@@ -599,29 +695,26 @@ class _ProductDetailState extends State<ProductDetail> {
     if (imageUrls.isEmpty) {
       return Column(
         children: [
-          Container(
-            width: MediaQuery.of(context).size.width,
-            alignment: Alignment.center,
-            height: 40,
-            color: Colors.white,
-            child: Text(
-              "图文详情",
-              style: TextStyle(
-                fontSize: 15,
-                color: Color(int.parse('303133', radix: 16)).withAlpha(255),
-              ),
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(20),
-            color: Colors.white,
-            alignment: Alignment.center,
-            child: Text(
-              '暂无图文详情',
-              style: TextStyle(
-                fontSize: 14,
-                color: Color(int.parse('909399', radix: 16)).withAlpha(255),
-              ),
+          _sectionCard(
+            child: Column(
+              children: const [
+                Text(
+                  "图文详情",
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                SizedBox(height: AppSpacing.md),
+                Text(
+                  '暂无图文详情',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textHint,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -630,30 +723,43 @@ class _ProductDetailState extends State<ProductDetail> {
 
     return Column(
       children: [
-        Container(
-          width: MediaQuery.of(context).size.width,
-          alignment: Alignment.center,
-          height: 40,
-          color: Colors.white,
-          child: Text(
-            "图文详情",
-            style: TextStyle(
-              fontSize: 15,
-              color: Color(int.parse('303133', radix: 16)).withAlpha(255),
+        _sectionCard(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.md,
+          ),
+          child: const Center(
+            child: Text(
+              "图文详情",
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
             ),
           ),
         ),
-        Column(
-          children: imageUrls.map((url) {
-            return Image.network(kIsWeb ? proxyImageUrl(url) : url);
-          }).toList(),
+        Container(
+          margin: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.md,
+            AppSpacing.lg,
+            0,
+          ),
+          clipBehavior: Clip.antiAlias,
+          decoration: _cardDecoration(),
+          child: Column(
+            children: imageUrls.map((url) {
+              return Image.network(kIsWeb ? proxyImageUrl(url) : url);
+            }).toList(),
+          ),
         ),
       ],
     );
   }
 
   // 底部悬浮
-  Positioned buildFooter(BuildContext context) {
+  Widget buildFooter(BuildContext context) {
     final bool spuDisabled = !visibility.purchasable;
     final SkuStockList? resolvedSku =
         selectedSku ?? (skuStockList.length == 1 ? skuStockList.first : null);
@@ -671,127 +777,114 @@ class _ProductDetailState extends State<ProductDetail> {
             ? resolvedSku!.purchaseReasonLabel
             : '暂不可购买');
 
-    return Positioned(
-      bottom: 0,
-      width: MediaQuery.of(context).size.width,
-      child: SafeArea(
-        top: false,
-        child: Container(
-          height: 74,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-                color: Colors.black.withAlpha(18),
-              ),
-            ],
+    return SafeArea(
+      top: false,
+      child: Container(
+        height: 64,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: 8,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          border: const Border(
+            top: BorderSide(
+              color: AppColors.border,
+              width: 1,
+            ),
           ),
-          child: Row(
-            children: [
-              Expanded(
-                flex: 4,
-                child: Row(
-                  children: [
-                    buildImage("images/home.png", "首页"),
-                    buildImage("images/cart.png", "购物车"),
-                  ],
-                ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              flex: 4,
+              child: Row(
+                children: [
+                  buildImage(Icons.home_outlined, "首页"),
+                  buildImage(Icons.shopping_cart_outlined, "购物车"),
+                ],
               ),
-              Expanded(
-                flex: 6,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: disabled || isAddingNow
-                            ? null
-                            : needSelectSku
-                                ? () =>
-                                    _openBottomSheetWithInfo(context, "购买类型")
-                                : () => _addCart(product!),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          foregroundColor: Color(int.parse('fa436a', radix: 16))
-                              .withAlpha(255),
-                          side: BorderSide(
-                            color: (disabled && !needSelectSku)
-                                ? Color(int.parse('dcdfe6', radix: 16))
-                                    .withAlpha(255)
-                                : Color(int.parse('fa436a', radix: 16))
-                                    .withAlpha(255),
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(24),
-                          ),
+            ),
+            Expanded(
+              flex: 6,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: disabled || isAddingNow
+                          ? null
+                          : needSelectSku
+                              ? () => _openBottomSheetWithInfo(context, "购买类型")
+                              : () => _addCart(product!),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 11),
+                        foregroundColor: AppColors.primary,
+                        side: BorderSide(
+                          color: (disabled && !needSelectSku)
+                              ? AppColors.border
+                              : AppColors.primary,
                         ),
-                        child: isAddingNow
-                            ? SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Color(int.parse('fa436a', radix: 16))
-                                        .withAlpha(255),
-                                  ),
-                                ),
-                              )
-                            : Text(
-                                disabled && !needSelectSku
-                                    ? disabledLabel
-                                    : '加入购物车',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                      ),
+                      child: isAddingNow
+                          ? SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  AppColors.primary,
                                 ),
                               ),
+                            )
+                          : Text(
+                              disabled && !needSelectSku
+                                  ? disabledLabel
+                                  : '加入购物车',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: disabled
+                          ? null
+                          : needSelectSku
+                              ? () => _openBottomSheetWithInfo(context, "购买类型")
+                              : _buyNow,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        disabledBackgroundColor: AppColors.textHint,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 11),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: Text(
+                        disabled ? disabledLabel : '立即购买',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: disabled
-                            ? null
-                            : needSelectSku
-                                ? () =>
-                                    _openBottomSheetWithInfo(context, "购买类型")
-                                : _buyNow,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(int.parse('fa436a', radix: 16))
-                              .withAlpha(255),
-                          disabledBackgroundColor:
-                              Color(int.parse('c0c4cc', radix: 16))
-                                  .withAlpha(255),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: Text(
-                          disabled ? disabledLabel : '立即购买',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -807,7 +900,7 @@ class _ProductDetailState extends State<ProductDetail> {
             Icon(
               Icons.inventory_2_outlined,
               size: 72,
-              color: Color(int.parse('c0c4cc', radix: 16)).withAlpha(255),
+              color: AppColors.textHint,
             ),
             const SizedBox(height: 16),
             Text(
@@ -818,7 +911,7 @@ class _ProductDetailState extends State<ProductDetail> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: Color(int.parse('303133', radix: 16)).withAlpha(255),
+                color: AppColors.textPrimary,
               ),
             ),
             if (visibility.recoveryHint.isNotEmpty) ...[
@@ -828,7 +921,7 @@ class _ProductDetailState extends State<ProductDetail> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Color(int.parse('909399', radix: 16)).withAlpha(255),
+                  color: AppColors.textSecondary,
                 ),
               ),
             ],
@@ -838,8 +931,7 @@ class _ProductDetailState extends State<ProductDetail> {
               child: ElevatedButton(
                 onPressed: () => _handleFallbackAction(context),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      Color(int.parse('fa436a', radix: 16)).withAlpha(255),
+                  backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
@@ -946,43 +1038,49 @@ class _ProductDetailState extends State<ProductDetail> {
     );
   }
 
-  InkWell buildImage(String url, String title) {
-    return InkWell(
-      onTap: () {
-        if (title.contains("收藏")) {
-          return;
-        }
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) {
-              if (title.contains("首页")) {
-                return const MainTab();
-              } else {
-                return const Cart();
-              }
-            },
-          ),
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.only(right: 16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(
-              url,
-              color: Color(int.parse('909399', radix: 16)).withAlpha(255),
-              height: 21,
-              width: 21,
-            ),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 12,
-                color: Color(int.parse('707070', radix: 16)).withAlpha(255),
+  Widget buildImage(IconData icon, String title) {
+    return Semantics(
+      button: true,
+      label: title,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) {
+                  if (title.contains("首页")) {
+                    return const MainTab();
+                  }
+                  return const Cart();
+                },
               ),
+            );
+          },
+          child: SizedBox(
+            width: 48,
+            height: 48,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  size: 22,
+                  color: AppColors.textSecondary,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -1185,7 +1283,7 @@ class _ProductDetailState extends State<ProductDetail> {
                   '该商品无可选规格',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Color(int.parse('909399', radix: 16)).withAlpha(255),
+                    color: AppColors.textHint,
                   ),
                 ),
               ],
@@ -1216,11 +1314,10 @@ class _ProductDetailState extends State<ProductDetail> {
                           padding: const EdgeInsets.only(bottom: 8, top: 12),
                           child: Text(
                             entry.key,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: Color(int.parse('303133', radix: 16))
-                                  .withAlpha(255),
+                              color: AppColors.textPrimary,
                             ),
                           ),
                         ),
@@ -1240,28 +1337,19 @@ class _ProductDetailState extends State<ProductDetail> {
                               label: Text(val),
                               selected: isSelected,
                               selectedColor:
-                                  Color(int.parse('fa436a', radix: 16))
-                                      .withAlpha(40),
-                              backgroundColor: !isAvailable
-                                  ? Color(int.parse('f5f5f5', radix: 16))
-                                      .withAlpha(255)
-                                  : null,
+                                  AppColors.price.withValues(alpha: 0.14),
+                              backgroundColor:
+                                  !isAvailable ? AppColors.surfaceMuted : null,
                               labelStyle: TextStyle(
                                 color: isSelected
-                                    ? Color(int.parse('fa436a', radix: 16))
-                                        .withAlpha(255)
+                                    ? AppColors.price
                                     : !isAvailable
-                                        ? Color(int.parse('c0c4cc', radix: 16))
-                                            .withAlpha(255)
-                                        : Color(int.parse('303133', radix: 16))
-                                            .withAlpha(255),
+                                        ? AppColors.textHint
+                                        : AppColors.textPrimary,
                                 fontSize: 13,
                               ),
                               side: isSelected
-                                  ? BorderSide(
-                                      color:
-                                          Color(int.parse('fa436a', radix: 16))
-                                              .withAlpha(255))
+                                  ? const BorderSide(color: AppColors.price)
                                   : null,
                               onSelected: !isAvailable
                                   ? null
@@ -1294,24 +1382,20 @@ class _ProductDetailState extends State<ProductDetail> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        color: Color(int.parse('fff5f5', radix: 16))
-                            .withAlpha(255),
+                        color: AppColors.price.withValues(alpha: 0.08),
                         borderRadius:
                             const BorderRadius.all(Radius.circular(8)),
                       ),
                       child: Row(
                         children: [
                           Icon(Icons.info_outline,
-                              size: 16,
-                              color: Color(int.parse('fa436a', radix: 16))
-                                  .withAlpha(255)),
+                              size: 16, color: AppColors.price),
                           const SizedBox(width: 6),
                           Text(
                             selectedSku!.purchaseReasonLabel,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 13,
-                              color: Color(int.parse('fa436a', radix: 16))
-                                  .withAlpha(255),
+                              color: AppColors.price,
                             ),
                           ),
                         ],
@@ -1328,11 +1412,8 @@ class _ProductDetailState extends State<ProductDetail> {
                                 }
                               : null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(int.parse('fa436a', radix: 16))
-                            .withAlpha(255),
-                        disabledBackgroundColor:
-                            Color(int.parse('c0c4cc', radix: 16))
-                                .withAlpha(255),
+                        backgroundColor: AppColors.primary,
+                        disabledBackgroundColor: AppColors.textHint,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
@@ -1369,7 +1450,7 @@ class _ProductDetailState extends State<ProductDetail> {
           '¥',
           style: TextStyle(
             fontSize: 16,
-            color: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
+            color: AppColors.price,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -1377,7 +1458,7 @@ class _ProductDetailState extends State<ProductDetail> {
           displayPrice,
           style: TextStyle(
             fontSize: 24,
-            color: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
+            color: AppColors.price,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -1386,7 +1467,7 @@ class _ProductDetailState extends State<ProductDetail> {
           '库存: $displayStock',
           style: TextStyle(
             fontSize: 13,
-            color: Color(int.parse('909399', radix: 16)).withAlpha(255),
+            color: AppColors.textHint,
           ),
         ),
       ],
@@ -1422,7 +1503,7 @@ class _ProductDetailState extends State<ProductDetail> {
               '暂无商品参数',
               style: TextStyle(
                 fontSize: 14,
-                color: Color(int.parse('909399', radix: 16)).withAlpha(255),
+                color: AppColors.textHint,
               ),
             ),
           ),
@@ -1442,7 +1523,7 @@ class _ProductDetailState extends State<ProductDetail> {
             border: Border(
               bottom: BorderSide(
                 width: 1,
-                color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
+                color: AppColors.surfaceMuted,
               ),
             ),
           ),
@@ -1455,7 +1536,7 @@ class _ProductDetailState extends State<ProductDetail> {
                   entry.key,
                   style: TextStyle(
                     fontSize: 14,
-                    color: Color(int.parse('909399', radix: 16)).withAlpha(255),
+                    color: AppColors.textHint,
                   ),
                 ),
               ),
@@ -1464,7 +1545,7 @@ class _ProductDetailState extends State<ProductDetail> {
                   entry.value,
                   style: TextStyle(
                     fontSize: 14,
-                    color: Color(int.parse('303133', radix: 16)).withAlpha(255),
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ),
@@ -1498,17 +1579,17 @@ class _ProductDetailState extends State<ProductDetail> {
 
   Color _couponActionBackgroundColor(int status) {
     if (status == 0) {
-      return Color(int.parse('fa436a', radix: 16)).withAlpha(255);
+      return AppColors.price;
     }
     if (status == 1) {
-      return Color(int.parse('fff1f4', radix: 16)).withAlpha(255);
+      return AppColors.price.withValues(alpha: 0.08);
     }
     return Colors.grey[300]!;
   }
 
   Color _couponActionForegroundColor(int status) {
     if (status == 1) {
-      return Color(int.parse('fa436a', radix: 16)).withAlpha(255);
+      return AppColors.price;
     }
     return Colors.white;
   }
@@ -1536,7 +1617,7 @@ class _ProductDetailState extends State<ProductDetail> {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
-                    color: Color(int.parse('303133', radix: 16)).withAlpha(255),
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -1545,7 +1626,7 @@ class _ProductDetailState extends State<ProductDetail> {
                   style: TextStyle(
                     fontSize: 14,
                     height: 1.5,
-                    color: Color(int.parse('606266', radix: 16)).withAlpha(255),
+                    color: AppColors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -1559,12 +1640,8 @@ class _ProductDetailState extends State<ProductDetail> {
                         },
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          foregroundColor: Color(int.parse('fa436a', radix: 16))
-                              .withAlpha(255),
-                          side: BorderSide(
-                            color: Color(int.parse('fa436a', radix: 16))
-                                .withAlpha(255),
-                          ),
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(color: AppColors.primary),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(24),
                           ),
@@ -1580,8 +1657,7 @@ class _ProductDetailState extends State<ProductDetail> {
                           _buyNow();
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(int.parse('fa436a', radix: 16))
-                              .withAlpha(255),
+                          backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
@@ -1665,7 +1741,7 @@ class _ProductDetailState extends State<ProductDetail> {
               '暂无可用优惠券',
               style: TextStyle(
                 fontSize: 14,
-                color: Color(int.parse('909399', radix: 16)).withAlpha(255),
+                color: AppColors.textHint,
               ),
             ),
           ),
@@ -1687,7 +1763,7 @@ class _ProductDetailState extends State<ProductDetail> {
             border: Border(
               bottom: BorderSide(
                 width: 1,
-                color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
+                color: AppColors.surfaceMuted,
               ),
             ),
           ),
@@ -1702,18 +1778,16 @@ class _ProductDetailState extends State<ProductDetail> {
                       children: [
                         Text(
                           coupon.name,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 16,
-                            color: Color(int.parse('303133', radix: 16))
-                                .withAlpha(255),
+                            color: AppColors.textPrimary,
                           ),
                         ),
                         Text(
                           '有效期至$endStr',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 12,
-                            color: Color(int.parse('909399', radix: 16))
-                                .withAlpha(255),
+                            color: AppColors.textHint,
                           ),
                         ),
                       ],
@@ -1725,28 +1799,25 @@ class _ProductDetailState extends State<ProductDetail> {
                         children: [
                           Text(
                             "￥",
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 17,
-                              color: Color(int.parse('fa436a', radix: 16))
-                                  .withAlpha(255),
+                              color: AppColors.price,
                             ),
                           ),
                           Text(
                             '${coupon.amount}',
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 22,
-                              color: Color(int.parse('fa436a', radix: 16))
-                                  .withAlpha(255),
+                              color: AppColors.price,
                             ),
                           ),
                         ],
                       ),
                       Text(
                         coupon.minAmount > 0 ? '满${coupon.minAmount}可用' : '无门槛',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 13,
-                          color: Color(int.parse('707070', radix: 16))
-                              .withAlpha(255),
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ],
@@ -1781,7 +1852,7 @@ class _ProductDetailState extends State<ProductDetail> {
                   coupon.description,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Color(int.parse('909399', radix: 16)).withAlpha(255),
+                    color: AppColors.textHint,
                   ),
                 ),
               ],
@@ -1836,7 +1907,7 @@ class _ProductDetailState extends State<ProductDetail> {
               '暂无促销活动',
               style: TextStyle(
                 fontSize: 14,
-                color: Color(int.parse('909399', radix: 16)).withAlpha(255),
+                color: AppColors.textHint,
               ),
             ),
           ),
@@ -1858,7 +1929,7 @@ class _ProductDetailState extends State<ProductDetail> {
         border: Border(
           bottom: BorderSide(
             width: 1,
-            color: Color(int.parse('f5f5f5', radix: 16)).withAlpha(255),
+            color: AppColors.surfaceMuted,
           ),
         ),
       ),
@@ -1868,7 +1939,7 @@ class _ProductDetailState extends State<ProductDetail> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: Color(int.parse('fa436a', radix: 16)).withAlpha(25),
+              color: AppColors.price.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
@@ -1876,7 +1947,7 @@ class _ProductDetailState extends State<ProductDetail> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
+                color: AppColors.price,
               ),
             ),
           ),
@@ -1887,7 +1958,7 @@ class _ProductDetailState extends State<ProductDetail> {
                   d,
                   style: TextStyle(
                     fontSize: 14,
-                    color: Color(int.parse('303133', radix: 16)).withAlpha(255),
+                    color: AppColors.textPrimary,
                   ),
                 ),
               )),
@@ -1911,10 +1982,10 @@ class _ProductDetailState extends State<ProductDetail> {
           padding: const EdgeInsets.all(15),
           margin: const EdgeInsets.only(bottom: 50),
           child: Text(
-            "无忧退货 · 快速退款 · 免费包邮 ·",
-            style: TextStyle(
+            "无忧退货 · 快速退款 · 免费包邮",
+            style: const TextStyle(
               fontSize: 14,
-              color: Color(int.parse('707070', radix: 16)).withAlpha(255),
+              color: AppColors.textSecondary,
             ),
           ),
         );

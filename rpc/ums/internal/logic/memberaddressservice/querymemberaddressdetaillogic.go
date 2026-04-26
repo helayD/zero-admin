@@ -34,7 +34,7 @@ func NewQueryMemberAddressDetailLogic(ctx context.Context, svcCtx *svc.ServiceCo
 // QueryMemberAddressDetail 查询会员收货地址详情
 func (l *QueryMemberAddressDetailLogic) QueryMemberAddressDetail(in *umsclient.QueryMemberAddressDetailReq) (*umsclient.QueryMemberAddressDetailResp, error) {
 	address := query.UmsMemberAddress
-	item, err := address.WithContext(l.ctx).Where(address.ID.Eq(in.Id), address.MemberID.Eq(in.MemberId)).First()
+	item, err := address.WithContext(l.ctx).Where(address.ID.Eq(in.Id), address.MemberID.Eq(in.MemberId), address.IsDeleted.Eq(0)).First()
 
 	switch {
 	case errors.Is(err, gorm.ErrRecordNotFound):

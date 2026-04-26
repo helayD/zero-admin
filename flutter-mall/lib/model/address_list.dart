@@ -4,9 +4,11 @@
 
 import 'dart:convert';
 
-AddressListModel addressListModelFromJson(String str) => AddressListModel.fromJson(json.decode(str));
+AddressListModel addressListModelFromJson(String str) =>
+    AddressListModel.fromJson(json.decode(str));
 
-String addressListModelToJson(AddressListModel data) => json.encode(data.toJson());
+String addressListModelToJson(AddressListModel data) =>
+    json.encode(data.toJson());
 
 class AddressListModel {
   int code;
@@ -27,25 +29,35 @@ class AddressListModel {
     required this.total,
   });
 
-  factory AddressListModel.fromJson(Map<String, dynamic> json) => AddressListModel(
-    code: json["code"],
-    message: json["message"],
-    current: json["current"],
-    data: List<AddressListData>.from(json["data"].map((x) => AddressListData.fromJson(x))),
-    pageSize: json["pageSize"],
-    success: json["success"],
-    total: json["total"],
-  );
+  factory AddressListModel.fromJson(Map<String, dynamic> json) {
+    final rawData = json["data"];
+    final List<AddressListData> items = rawData is List
+        ? rawData
+            .whereType<Map>()
+            .map((x) => AddressListData.fromJson(Map<String, dynamic>.from(x)))
+            .toList()
+        : <AddressListData>[];
+
+    return AddressListModel(
+      code: _asInt(json["code"]),
+      message: _asString(json["message"]),
+      current: _asInt(json["current"], fallback: 1),
+      data: items,
+      pageSize: _asInt(json["pageSize"], fallback: items.length),
+      success: json["success"] == true || _asInt(json["code"]) == 0,
+      total: _asInt(json["total"], fallback: items.length),
+    );
+  }
 
   Map<String, dynamic> toJson() => {
-    "code": code,
-    "message": message,
-    "current": current,
-    "data": List<dynamic>.from(data.map((x) => x.toJson())),
-    "pageSize": pageSize,
-    "success": success,
-    "total": total,
-  };
+        "code": code,
+        "message": message,
+        "current": current,
+        "data": List<dynamic>.from(data.map((x) => x.toJson())),
+        "pageSize": pageSize,
+        "success": success,
+        "total": total,
+      };
 }
 
 class AddressListData {
@@ -79,35 +91,61 @@ class AddressListData {
     required this.updateTime,
   });
 
-  factory AddressListData.fromJson(Map<String, dynamic> json) => AddressListData(
-    id: json["id"],
-    memberId: json["memberId"],
-    receiverName: json["receiverName"],
-    receiverPhone: json["receiverPhone"],
-    province: json["province"],
-    city: json["city"],
-    district: json["district"],
-    detailAddress: json["detailAddress"],
-    postalCode: json["postalCode"],
-    tag: json["tag"],
-    isDefault: json["isDefault"],
-    createTime: DateTime.parse(json["createTime"]),
-    updateTime: json["updateTime"],
-  );
+  factory AddressListData.fromJson(Map<String, dynamic> json) =>
+      AddressListData(
+        id: _asInt(json["id"]),
+        memberId: _asInt(json["memberId"]),
+        receiverName: _asString(json["receiverName"]),
+        receiverPhone: _asString(json["receiverPhone"]),
+        province: _asString(json["province"]),
+        city: _asString(json["city"]),
+        district: _asString(json["district"]),
+        detailAddress: _asString(json["detailAddress"]),
+        postalCode: _asString(json["postalCode"]),
+        tag: _asString(json["tag"]),
+        isDefault: _asInt(json["isDefault"]),
+        createTime: _asDateTime(json["createTime"]),
+        updateTime: _asString(json["updateTime"]),
+      );
 
   Map<String, dynamic> toJson() => {
-    "id": id,
-    "memberId": memberId,
-    "receiverName": receiverName,
-    "receiverPhone": receiverPhone,
-    "province": province,
-    "city": city,
-    "district": district,
-    "detailAddress": detailAddress,
-    "postalCode": postalCode,
-    "tag": tag,
-    "isDefault": isDefault,
-    "createTime": createTime.toIso8601String(),
-    "updateTime": updateTime,
-  };
+        "id": id,
+        "memberId": memberId,
+        "receiverName": receiverName,
+        "receiverPhone": receiverPhone,
+        "province": province,
+        "city": city,
+        "district": district,
+        "detailAddress": detailAddress,
+        "postalCode": postalCode,
+        "tag": tag,
+        "isDefault": isDefault,
+        "createTime": createTime.toIso8601String(),
+        "updateTime": updateTime,
+      };
+
+  String get fullAddress {
+    return [province, city, district, detailAddress]
+        .where((item) => item.trim().isNotEmpty)
+        .join(' ');
+  }
+
+  String get contactText {
+    return [receiverName, receiverPhone]
+        .where((item) => item.trim().isNotEmpty)
+        .join('  ');
+  }
+}
+
+int _asInt(dynamic value, {int fallback = 0}) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  return int.tryParse(value?.toString() ?? '') ?? fallback;
+}
+
+String _asString(dynamic value) => value?.toString() ?? '';
+
+DateTime _asDateTime(dynamic value) {
+  final raw = value?.toString() ?? '';
+  return DateTime.tryParse(raw) ?? DateTime.fromMillisecondsSinceEpoch(0);
 }

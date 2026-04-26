@@ -35,6 +35,9 @@ func NewDeleteAddressLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Del
 
 // DeleteAddress 删除会员收货地址
 func (l *DeleteAddressLogic) DeleteAddress(req *types.DeleteAddressReq) (resp *types.AddressResp, err error) {
+	if req == nil || len(req.Ids) == 0 {
+		return nil, errorx.NewDefaultError("请选择要删除的收货地址")
+	}
 	memberId, err := common.GetMemberId(l.ctx)
 	if err != nil {
 		return nil, err

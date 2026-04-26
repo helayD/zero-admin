@@ -35,6 +35,12 @@ func NewUpdateAddressStatusLogic(ctx context.Context, svcCtx *svc.ServiceContext
 
 // UpdateAddressStatus 更新会员默认收货地址
 func (l *UpdateAddressStatusLogic) UpdateAddressStatus(req *types.UpdateAddressStatusReq) (resp *types.AddressResp, err error) {
+	if req == nil || req.Id <= 0 {
+		return nil, errorx.NewDefaultError("地址ID不能为空")
+	}
+	if req.IsDefault != 1 {
+		req.IsDefault = 0
+	}
 	memberId, err := common.GetMemberId(l.ctx)
 	if err != nil {
 		return nil, err

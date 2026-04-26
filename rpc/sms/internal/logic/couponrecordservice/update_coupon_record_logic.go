@@ -3,7 +3,6 @@ package couponrecordservicelogic
 import (
 	"context"
 	"errors"
-	"github.com/feihua/zero-admin/rpc/sms/gen/model"
 	"github.com/feihua/zero-admin/rpc/sms/gen/query"
 	"github.com/feihua/zero-admin/rpc/sms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/sms/smsclient"
@@ -50,31 +49,40 @@ func (l *UpdateCouponRecordLogic) UpdateCouponRecord(in *smsclient.UpdateCouponR
 		}
 
 		now := time.Now()
-		item := &model.SmsCouponRecord{
-			ID:       coupon.ID,   //
-			CouponID: couponId,    // 优惠券ID
-			MemberID: in.MemberId, // 用户ID
-			Status:   in.Status,   // 状态：0-未使用，1-已使用，2-已过期，3-已失效
+		updates := map[string]interface{}{
+			"status": in.Status,
 		}
 
 		if in.Status == 1 {
-			item.UseTime = &now
-			item.OrderID = in.OrderId
-			item.OrderAmount = float64(in.OrderAmount)
-			item.DiscountAmount = float64(in.DiscountAmount)
+			updates["use_time"] = &now
+			updates["order_id"] = in.OrderId
+			updates["order_amount"] = float64(in.OrderAmount)
+			updates["discount_amount"] = float64(in.DiscountAmount)
+		}
+
+		if in.Status == 0 {
+			updates["use_time"] = nil
+			updates["order_id"] = 0
+			updates["order_amount"] = 0
+			updates["discount_amount"] = 0
+			updates["invalid_time"] = nil
+			updates["invalid_reason"] = ""
 		}
 
 		if in.Status == 3 {
 			invalidTime, _ := time.Parse("2006-01-02 15:04:05", in.InvalidTime)
-			item.InvalidTime = &invalidTime
-			item.InvalidReason = in.InvalidReason
+			updates["invalid_time"] = &invalidTime
+			updates["invalid_reason"] = in.InvalidReason
 		}
 
-		// 2.优惠券领取记录存在时,则直接更新优惠券领取记录
-		_, err = q.WithContext(l.ctx).Updates(item)
+		// 2.优惠券领取记录存在时,则按领取记录主键更新，避免 GORM 拦截无条件更新。
+		err = l.svcCtx.DB.WithContext(l.ctx).
+			Table("sms_coupon_record").
+			Where("id = ?", coupon.ID).
+			Updates(updates).Error
 
 		if err != nil {
-			logc.Errorf(l.ctx, "更新优惠券领取记录失败,参数:%+v,异常:%s", item, err.Error())
+			logc.Errorf(l.ctx, "更新优惠券领取记录失败,recordId:%d,参数:%+v,异常:%s", coupon.ID, in, err.Error())
 			return nil, errors.New("更新优惠券领取记录失败")
 		}
 

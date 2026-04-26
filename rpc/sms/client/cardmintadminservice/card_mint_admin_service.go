@@ -23,6 +23,13 @@ type CardMintAdminService interface {
 	ReviewAssetCompliance(ctx context.Context, scope pkgscope.GovernanceScope, assetInstanceID int64, operatorID int64, reason string, opts ...grpc.CallOption) (*digitalcardmint.DigitalCardAssetActionResult, error)
 	OfflineAssetDisplay(ctx context.Context, scope pkgscope.GovernanceScope, assetInstanceID int64, operatorID int64, reason string, opts ...grpc.CallOption) (*digitalcardmint.DigitalCardAssetActionResult, error)
 	RecycleAsset(ctx context.Context, scope pkgscope.GovernanceScope, assetInstanceID int64, operatorID int64, reason string, opts ...grpc.CallOption) (*digitalcardmint.DigitalCardAssetActionResult, error)
+	QueryPhysicalFulfillmentList(ctx context.Context, scope pkgscope.GovernanceScope, filter digitalcardmint.PhysicalFulfillmentFilter, opts ...grpc.CallOption) (int64, []digitalcardmint.PhysicalFulfillmentItem, error)
+	QueryPhysicalFulfillmentDetail(ctx context.Context, scope pkgscope.GovernanceScope, fulfillmentID int64, opts ...grpc.CallOption) (*digitalcardmint.PhysicalFulfillmentAdminDetail, error)
+	EnsurePhysicalFulfillment(ctx context.Context, scope pkgscope.GovernanceScope, input digitalcardmint.PhysicalFulfillmentInput, opts ...grpc.CallOption) (*digitalcardmint.PhysicalFulfillmentResult, error)
+	UpdatePhysicalCardProductionStatus(ctx context.Context, scope pkgscope.GovernanceScope, input digitalcardmint.UpdatePhysicalCardProductionStatusInput, opts ...grpc.CallOption) (*digitalcardmint.PhysicalFulfillmentResult, error)
+	ShipPhysicalCard(ctx context.Context, scope pkgscope.GovernanceScope, input digitalcardmint.ShipPhysicalCardInput, opts ...grpc.CallOption) (*digitalcardmint.PhysicalFulfillmentResult, error)
+	MarkPhysicalFulfillmentException(ctx context.Context, scope pkgscope.GovernanceScope, input digitalcardmint.PhysicalFulfillmentExceptionInput, opts ...grpc.CallOption) (*digitalcardmint.PhysicalFulfillmentResult, error)
+	RequestPhysicalCardReissue(ctx context.Context, scope pkgscope.GovernanceScope, input digitalcardmint.PhysicalFulfillmentExceptionInput, opts ...grpc.CallOption) (*digitalcardmint.PhysicalFulfillmentResult, error)
 }
 
 type cardMintAdminService struct {
@@ -112,6 +119,69 @@ func (m *cardMintAdminService) RecycleAsset(ctx context.Context, scope pkgscope.
 	return m.invokeAssetAction(ctx, cardmintadminrpc.MethodRecycleAsset, scope, assetInstanceID, operatorID, reason, opts...)
 }
 
+func (m *cardMintAdminService) QueryPhysicalFulfillmentList(ctx context.Context, scope pkgscope.GovernanceScope, filter digitalcardmint.PhysicalFulfillmentFilter, opts ...grpc.CallOption) (int64, []digitalcardmint.PhysicalFulfillmentItem, error) {
+	var out cardmintadminrpc.QueryPhysicalFulfillmentListResponse
+	if err := m.invoke(ctx, cardmintadminrpc.MethodQueryPhysicalFulfillmentList, cardmintadminrpc.QueryPhysicalFulfillmentListRequest{
+		Scope:  scope,
+		Filter: filter,
+	}, &out, opts...); err != nil {
+		return 0, nil, err
+	}
+	return out.Total, out.List, nil
+}
+
+func (m *cardMintAdminService) QueryPhysicalFulfillmentDetail(ctx context.Context, scope pkgscope.GovernanceScope, fulfillmentID int64, opts ...grpc.CallOption) (*digitalcardmint.PhysicalFulfillmentAdminDetail, error) {
+	var out cardmintadminrpc.QueryPhysicalFulfillmentDetailResponse
+	if err := m.invoke(ctx, cardmintadminrpc.MethodQueryPhysicalFulfillmentDetail, cardmintadminrpc.QueryPhysicalFulfillmentDetailRequest{
+		Scope:         scope,
+		FulfillmentID: fulfillmentID,
+	}, &out, opts...); err != nil {
+		return nil, err
+	}
+	return out.Detail, nil
+}
+
+func (m *cardMintAdminService) EnsurePhysicalFulfillment(ctx context.Context, scope pkgscope.GovernanceScope, input digitalcardmint.PhysicalFulfillmentInput, opts ...grpc.CallOption) (*digitalcardmint.PhysicalFulfillmentResult, error) {
+	var out cardmintadminrpc.PhysicalFulfillmentResultResponse
+	if err := m.invoke(ctx, cardmintadminrpc.MethodEnsurePhysicalFulfillment, cardmintadminrpc.EnsurePhysicalFulfillmentRequest{
+		Scope: scope,
+		Input: input,
+	}, &out, opts...); err != nil {
+		return nil, err
+	}
+	return out.Result, nil
+}
+
+func (m *cardMintAdminService) UpdatePhysicalCardProductionStatus(ctx context.Context, scope pkgscope.GovernanceScope, input digitalcardmint.UpdatePhysicalCardProductionStatusInput, opts ...grpc.CallOption) (*digitalcardmint.PhysicalFulfillmentResult, error) {
+	var out cardmintadminrpc.PhysicalFulfillmentResultResponse
+	if err := m.invoke(ctx, cardmintadminrpc.MethodUpdatePhysicalCardProductionStatus, cardmintadminrpc.UpdatePhysicalCardProductionStatusRequest{
+		Scope: scope,
+		Input: input,
+	}, &out, opts...); err != nil {
+		return nil, err
+	}
+	return out.Result, nil
+}
+
+func (m *cardMintAdminService) ShipPhysicalCard(ctx context.Context, scope pkgscope.GovernanceScope, input digitalcardmint.ShipPhysicalCardInput, opts ...grpc.CallOption) (*digitalcardmint.PhysicalFulfillmentResult, error) {
+	var out cardmintadminrpc.PhysicalFulfillmentResultResponse
+	if err := m.invoke(ctx, cardmintadminrpc.MethodShipPhysicalCard, cardmintadminrpc.ShipPhysicalCardRequest{
+		Scope: scope,
+		Input: input,
+	}, &out, opts...); err != nil {
+		return nil, err
+	}
+	return out.Result, nil
+}
+
+func (m *cardMintAdminService) MarkPhysicalFulfillmentException(ctx context.Context, scope pkgscope.GovernanceScope, input digitalcardmint.PhysicalFulfillmentExceptionInput, opts ...grpc.CallOption) (*digitalcardmint.PhysicalFulfillmentResult, error) {
+	return m.invokePhysicalException(ctx, cardmintadminrpc.MethodMarkPhysicalFulfillmentException, scope, input, opts...)
+}
+
+func (m *cardMintAdminService) RequestPhysicalCardReissue(ctx context.Context, scope pkgscope.GovernanceScope, input digitalcardmint.PhysicalFulfillmentExceptionInput, opts ...grpc.CallOption) (*digitalcardmint.PhysicalFulfillmentResult, error) {
+	return m.invokePhysicalException(ctx, cardmintadminrpc.MethodRequestPhysicalCardReissue, scope, input, opts...)
+}
+
 func (m *cardMintAdminService) invokeTaskAction(ctx context.Context, method string, scope pkgscope.GovernanceScope, taskID int64, operatorID int64, reason string, opts ...grpc.CallOption) (*digitalcardmint.ActionResult, error) {
 	var out cardmintadminrpc.TaskActionResponse
 	if err := m.invoke(ctx, method, cardmintadminrpc.TaskActionRequest{
@@ -132,6 +202,17 @@ func (m *cardMintAdminService) invokeAssetAction(ctx context.Context, method str
 		AssetInstanceID: assetInstanceID,
 		OperatorID:      operatorID,
 		Reason:          reason,
+	}, &out, opts...); err != nil {
+		return nil, err
+	}
+	return out.Result, nil
+}
+
+func (m *cardMintAdminService) invokePhysicalException(ctx context.Context, method string, scope pkgscope.GovernanceScope, input digitalcardmint.PhysicalFulfillmentExceptionInput, opts ...grpc.CallOption) (*digitalcardmint.PhysicalFulfillmentResult, error) {
+	var out cardmintadminrpc.PhysicalFulfillmentResultResponse
+	if err := m.invoke(ctx, method, cardmintadminrpc.PhysicalFulfillmentExceptionRequest{
+		Scope: scope,
+		Input: input,
 	}, &out, opts...); err != nil {
 		return nil, err
 	}

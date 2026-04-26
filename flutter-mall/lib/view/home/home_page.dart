@@ -4,6 +4,7 @@ import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mall/model/app_recent_context.dart';
 import 'package:flutter_mall/model/home_model.dart';
+import 'package:flutter_mall/model/message_model.dart';
 import 'package:flutter_mall/theme/app_theme.dart';
 import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/utils/commerce_state_resolver.dart';
@@ -11,6 +12,10 @@ import 'package:flutter_mall/utils/http_util.dart';
 import 'package:flutter_mall/view/digital_card/draw_activity_page.dart';
 import 'package:flutter_mall/view/home/brand/brand_detail.dart';
 import 'package:flutter_mall/view/home/brand/brand_list.dart';
+import 'package:flutter_mall/view/home/search/search_page.dart';
+import 'package:flutter_mall/view/mine/coupon/available_coupon_list.dart';
+import 'package:flutter_mall/view/mine/login/login.dart';
+import 'package:flutter_mall/view/mine/message/message.dart';
 import 'package:flutter_mall/widgets/cached_image_widget.dart';
 import 'package:flutter_mall/widgets/commerce_state_shell.dart';
 
@@ -48,6 +53,9 @@ class _HomePageState extends State<HomePage> {
   List<ProductList> hotProductList = [];
   List<PreferredAreaListData> preferredAreaList = [];
 
+  final GlobalKey _flashSectionKey = GlobalKey();
+  final GlobalKey _newProductSectionKey = GlobalKey();
+
   int _count = _initialGuessLikeCount;
   late EasyRefreshController _controller;
   bool _isInitialLoading = true;
@@ -55,35 +63,37 @@ class _HomePageState extends State<HomePage> {
   Object? _pageError;
   String? _contentBannerText;
   bool _contentBannerIsWeakNetwork = false;
+  int _unreadMessageCount = 0;
+  bool _isOpeningMessageCenter = false;
 
   final List<_HomeShortcut> _shortcutItems = const [
     _HomeShortcut(
-      label: '专题',
-      message: '专题',
-      icon: Icons.explore_outlined,
-      accentColor: Color(0xFFF97316),
-      backgroundColor: Color(0xFFFFEDD5),
+      target: _HomeShortcutTarget.brand,
+      label: '品牌馆',
+      icon: Icons.storefront_rounded,
+      accentColor: Color(0xFF9A5C00),
+      backgroundColor: Color(0xFFFFF4DB),
     ),
     _HomeShortcut(
-      label: '话题',
-      message: '话题',
-      icon: Icons.forum_outlined,
-      accentColor: Color(0xFFEC4899),
-      backgroundColor: Color(0xFFFCE7F3),
+      target: _HomeShortcutTarget.flash,
+      label: '限时购',
+      icon: Icons.bolt_rounded,
+      accentColor: Color(0xFFC2410C),
+      backgroundColor: Color(0xFFFFE7D6),
     ),
     _HomeShortcut(
-      label: '优选',
-      message: '优选',
-      icon: Icons.auto_awesome_outlined,
-      accentColor: Color(0xFF8B5CF6),
-      backgroundColor: Color(0xFFF3E8FF),
+      target: _HomeShortcutTarget.newProduct,
+      label: '新品',
+      icon: Icons.inventory_2_rounded,
+      accentColor: Color(0xFF0F766E),
+      backgroundColor: Color(0xFFE0F2F1),
     ),
     _HomeShortcut(
-      label: '特惠',
-      message: '特惠',
-      icon: Icons.local_offer_outlined,
-      accentColor: Color(0xFF65A30D),
-      backgroundColor: Color(0xFFECFCCB),
+      target: _HomeShortcutTarget.memberBenefits,
+      label: '会员权益',
+      icon: Icons.workspace_premium_rounded,
+      accentColor: Color(0xFF475569),
+      backgroundColor: Color(0xFFEFF6FF),
     ),
   ];
 
@@ -95,6 +105,7 @@ class _HomePageState extends State<HomePage> {
       controlFinishLoad: true,
     );
     _queryHomeData();
+    _queryUnreadMessageCount();
   }
 
   bool get _hasHomeContent {
@@ -341,6 +352,142 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  void _openSearchPage() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const SearchPage()),
+    );
+  }
+
+  Future<void> _queryUnreadMessageCount() async {
+    if (!AppRecoveryStore.hasValidToken()) {
+      if (mounted && _unreadMessageCount != 0) {
+        setState(() {
+          _unreadMessageCount = 0;
+        });
+      }
+      return;
+    }
+
+    try {
+      final Response result = await HttpUtil.get(
+        unreadCountUrl,
+        redirectOnUnauthorized: false,
+      );
+      final UnreadCountModel model = UnreadCountModel.fromJson(result.data);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _unreadMessageCount = model.unreadCount;
+      });
+    } catch (_) {
+      // 首页未读数失败时不阻塞首页内容展示。
+    }
+  }
+
+  Future<void> _openMessageCenter() async {
+    if (_isOpeningMessageCenter) {
+      return;
+    }
+
+    setState(() {
+      _isOpeningMessageCenter = true;
+    });
+
+    try {
+      if (!AppRecoveryStore.hasValidToken()) {
+        await Navigator.of(context).push(
+          MaterialPageRoute(builder: (context) => const Login()),
+        );
+        if (!mounted || !AppRecoveryStore.hasValidToken()) {
+          return;
+        }
+      }
+
+      await Navigator.of(context).push(
+        MaterialPageRoute(builder: (context) => const Message()),
+      );
+      await _queryUnreadMessageCount();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isOpeningMessageCenter = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _openMemberBenefits() async {
+    final AppRecentContext recoveryContext = AppRecentContext.create(
+      targetType: AppRecentTargetType.couponCenter,
+      source: 'home_member_benefits',
+      requiresAuth: true,
+      fallbackType: AppRecentTargetType.home,
+      fallbackTabIndex: 0,
+    );
+    await AppRecoveryStore.saveActiveIntentCandidate(recoveryContext);
+    if (!mounted) {
+      return;
+    }
+
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const AvailableCouponList(
+          intentSource: 'home_member_benefits',
+        ),
+      ),
+    );
+    await AppRecoveryStore.clearActiveIntentCandidateIfMatches(
+      AppRecentTargetType.couponCenter,
+    );
+  }
+
+  Future<void> _scrollToHomeSection({
+    required GlobalKey key,
+    required String sectionName,
+  }) async {
+    final BuildContext? sectionContext = key.currentContext;
+    if (sectionContext == null) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('当前暂无$sectionName内容，请下拉刷新后再试')),
+      );
+      return;
+    }
+
+    await Scrollable.ensureVisible(
+      sectionContext,
+      duration: const Duration(milliseconds: 360),
+      curve: Curves.easeOutCubic,
+      alignment: 0.04,
+    );
+  }
+
+  Future<void> _handleShortcutTap(_HomeShortcut item) async {
+    switch (item.target) {
+      case _HomeShortcutTarget.brand:
+        _openBrandList();
+        return;
+      case _HomeShortcutTarget.flash:
+        await _scrollToHomeSection(
+          key: _flashSectionKey,
+          sectionName: '限时好价',
+        );
+        return;
+      case _HomeShortcutTarget.newProduct:
+        await _scrollToHomeSection(
+          key: _newProductSectionKey,
+          sectionName: '新品首发',
+        );
+        return;
+      case _HomeShortcutTarget.memberBenefits:
+        await _openMemberBenefits();
+        return;
+    }
+  }
+
   void _openBrandDetail(BrandListData brand) {
     Navigator.of(context).push(
       MaterialPageRoute(builder: (context) => BrandDetail(brandId: brand.id)),
@@ -363,11 +510,17 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        bottom: false,
-        child: _buildPageBody(),
+    final MediaQueryData mediaQuery = MediaQuery.of(context);
+    return MediaQuery(
+      data: mediaQuery.copyWith(
+        textScaler: mediaQuery.textScaler.clamp(maxScaleFactor: 1.18),
+      ),
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: SafeArea(
+          bottom: false,
+          child: _buildPageBody(),
+        ),
       ),
     );
   }
@@ -428,6 +581,7 @@ class _HomePageState extends State<HomePage> {
         controller: _controller,
         onRefresh: () async {
           await _queryHomeData(isManualRefresh: true);
+          await _queryUnreadMessageCount();
           _controller.finishRefresh();
           _controller.resetFooter();
         },
@@ -440,45 +594,47 @@ class _HomePageState extends State<HomePage> {
             _buildTopBar(),
             if (advertiseList.isNotEmpty) _buildBannerSection(),
             _buildShortcutSection(),
-            if (preferredAreaList.isNotEmpty) _buildPreferredAreaSection(),
-            if (brandList.isNotEmpty) _buildBrandSection(),
             if (flashProductList.isNotEmpty)
               _buildProductGridSection(
-                title: '秒杀专区',
+                sectionKey: _flashSectionKey,
+                title: '限时好价',
                 subtitle: _flashPromotionSubtitle(),
                 icon: Icons.flash_on_rounded,
-                iconColor: AppColors.primaryDark,
-                iconBackground: AppColors.primarySoft,
+                iconColor: AppColors.price,
+                iconBackground: const Color(0xFFFFE7D6),
                 products: _featuredFlashProducts,
                 badgeLabel: '限时价',
               ),
             if (newProductList.isNotEmpty)
               _buildProductGridSection(
-                title: '新鲜好物',
-                subtitle: '为你挑选高颜值、高口碑的新鲜好物',
+                sectionKey: _newProductSectionKey,
+                title: '新品首发',
+                subtitle: '本周上新，精选更适合日常使用的好物',
                 icon: Icons.inventory_2_outlined,
-                iconColor: AppColors.primaryDark,
-                iconBackground: AppColors.primarySoft,
+                iconColor: const Color(0xFF0F766E),
+                iconBackground: const Color(0xFFE0F2F1),
                 products: _featuredNewProducts,
                 badgeLabel: '新品',
               ),
             if (hotProductList.isNotEmpty)
               _buildProductGridSection(
-                title: '人气推荐',
-                subtitle: '口碑热卖商品，浏览和下单都更集中',
+                title: '热卖榜单',
+                subtitle: '近期浏览和下单更集中的口碑商品',
                 icon: Icons.local_fire_department_outlined,
-                iconColor: AppColors.primaryDark,
-                iconBackground: AppColors.primarySoft,
+                iconColor: const Color(0xFF9A5C00),
+                iconBackground: AppColors.accentSoft,
                 products: _featuredHotProducts,
                 badgeLabel: '热卖',
               ),
+            if (brandList.isNotEmpty) _buildBrandSection(),
+            if (preferredAreaList.isNotEmpty) _buildPreferredAreaSection(),
             if (_guessLikePool.isNotEmpty)
               _buildProductGridSection(
                 title: '猜你喜欢',
                 subtitle: '根据热卖趋势展示的精选商品',
                 icon: Icons.favorite_border_rounded,
-                iconColor: AppColors.primaryDark,
-                iconBackground: AppColors.primarySoft,
+                iconColor: const Color(0xFF334155),
+                iconBackground: const Color(0xFFEFF6FF),
                 products: _guessLikePool.take(_guessLikeVisibleCount).toList(),
                 badgeLabel: '精选',
               ),
@@ -521,92 +677,82 @@ class _HomePageState extends State<HomePage> {
   SliverToBoxAdapter _buildTopBar() {
     final ThemeData theme = Theme.of(context);
     return SliverToBoxAdapter(
-      child: Padding(
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          border: Border(
+            bottom: BorderSide(
+              color: AppColors.border.withValues(alpha: 0.72),
+            ),
+          ),
+        ),
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.lg,
-          AppSpacing.md,
+          AppSpacing.sm,
           AppSpacing.lg,
-          0,
+          AppSpacing.md,
         ),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [AppColors.primary, AppColors.primaryDark],
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '九克城',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          color: AppColors.textPrimary,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        '品牌直供 · 限时好价 · 精选好物',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                _TopIconButton(
+                  icon: Icons.qr_code_scanner_rounded,
+                  semanticLabel: '扫一扫',
+                  onTap: () {
+                    _showFeatureInProgress('扫一扫');
+                  },
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                _TopIconButton(
+                  icon: Icons.notifications_none_rounded,
+                  semanticLabel: '消息',
+                  badgeCount: _unreadMessageCount,
+                  onTap: _openMessageCenter,
+                ),
+              ],
             ),
-            borderRadius: BorderRadius.circular(AppRadii.xxl),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x29101828),
-                blurRadius: 28,
-                offset: Offset(0, 16),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            AppSpacing.lg,
-            AppSpacing.lg,
-            AppSpacing.xl,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  _TopIconButton(
-                    icon: Icons.qr_code_scanner_rounded,
-                    semanticLabel: '扫一扫',
-                    onTap: () {
-                      _showFeatureInProgress('扫一扫');
-                    },
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: _SearchTrigger(
-                      onTap: () {
-                        _showFeatureInProgress('搜索');
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  _TopIconButton(
-                    icon: Icons.notifications_none_rounded,
-                    semanticLabel: '消息',
-                    onTap: () {
-                      _showFeatureInProgress('消息');
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              Text(
-                '九克城',
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  color: Colors.white,
-                  fontSize: 26,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                '品牌直供、限时秒杀与精选好物都在这里',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.92),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              Wrap(
-                spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.sm,
-                children: const [
-                  _HeaderTag(label: '品牌直供'),
-                  _HeaderTag(label: '限时好价'),
-                  _HeaderTag(label: '口碑精选'),
-                ],
-              ),
-            ],
-          ),
+            const SizedBox(height: AppSpacing.md),
+            _SearchTrigger(
+              onTap: _openSearchPage,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Wrap(
+              spacing: AppSpacing.sm,
+              runSpacing: AppSpacing.sm,
+              children: const [
+                _HeaderTag(label: '官方甄选'),
+                _HeaderTag(label: '正品保障'),
+                _HeaderTag(label: '好价上新'),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -617,14 +763,14 @@ class _HomePageState extends State<HomePage> {
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.lg,
-          AppSpacing.xl,
+          AppSpacing.md,
           AppSpacing.lg,
           0,
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(AppRadii.xl),
           child: SizedBox(
-            height: 190,
+            height: 168,
             child: Swiper(
               autoplay: true,
               itemCount: advertiseList.length,
@@ -667,8 +813,8 @@ class _HomePageState extends State<HomePage> {
                       const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
                   child: _ShortcutButton(
                     item: item,
-                    onTap: () {
-                      _showFeatureInProgress(item.message);
+                    onTap: () async {
+                      await _handleShortcutTap(item);
                     },
                   ),
                 ),
@@ -686,8 +832,8 @@ class _HomePageState extends State<HomePage> {
         children: [
           _SectionHeader(
             icon: Icons.auto_awesome_rounded,
-            iconColor: const Color(0xFF7C3AED),
-            iconBackground: const Color(0xFFF3E8FF),
+            iconColor: const Color(0xFF334155),
+            iconBackground: const Color(0xFFEFF6FF),
             title: '优选专区',
             subtitle: '聚合主题专场和精选活动，帮助用户快速找到想逛的内容',
           ),
@@ -725,8 +871,8 @@ class _HomePageState extends State<HomePage> {
         children: [
           _SectionHeader(
             icon: Icons.storefront_rounded,
-            iconColor: const Color(0xFF2563EB),
-            iconBackground: const Color(0xFFDBEAFE),
+            iconColor: const Color(0xFF9A5C00),
+            iconBackground: AppColors.accentSoft,
             title: '品牌制造商直供',
             subtitle: '精选品牌馆，突出货源可信与品牌背书',
             actionLabel: '查看全部',
@@ -759,6 +905,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   SliverToBoxAdapter _buildProductGridSection({
+    Key? sectionKey,
     required String title,
     required String subtitle,
     required IconData icon,
@@ -769,9 +916,10 @@ class _HomePageState extends State<HomePage> {
   }) {
     return SliverToBoxAdapter(
       child: Padding(
+        key: sectionKey,
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.lg,
-          AppSpacing.xl,
+          AppSpacing.lg,
           AppSpacing.lg,
           0,
         ),
@@ -822,7 +970,7 @@ class _HomePageState extends State<HomePage> {
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.lg,
-          AppSpacing.xl,
+          AppSpacing.lg,
           AppSpacing.lg,
           0,
         ),
@@ -833,9 +981,9 @@ class _HomePageState extends State<HomePage> {
             border: Border.all(color: borderColor),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x12101828),
-                blurRadius: 24,
-                offset: Offset(0, 12),
+                color: Color(0x0D101828),
+                blurRadius: 14,
+                offset: Offset(0, 6),
               ),
             ],
           ),
@@ -847,16 +995,23 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
+enum _HomeShortcutTarget {
+  brand,
+  flash,
+  newProduct,
+  memberBenefits,
+}
+
 class _HomeShortcut {
+  final _HomeShortcutTarget target;
   final String label;
-  final String message;
   final IconData icon;
   final Color accentColor;
   final Color backgroundColor;
 
   const _HomeShortcut({
+    required this.target,
     required this.label,
-    required this.message,
     required this.icon,
     required this.accentColor,
     required this.backgroundColor,
@@ -867,28 +1022,65 @@ class _TopIconButton extends StatelessWidget {
   final IconData icon;
   final String semanticLabel;
   final VoidCallback onTap;
+  final int badgeCount;
 
   const _TopIconButton({
     required this.icon,
     required this.semanticLabel,
     required this.onTap,
+    this.badgeCount = 0,
   });
 
   @override
   Widget build(BuildContext context) {
+    final String badgeText = badgeCount > 99 ? '99+' : badgeCount.toString();
     return Semantics(
       button: true,
-      label: semanticLabel,
+      label: badgeCount > 0 ? '$semanticLabel，$badgeCount 条未读' : semanticLabel,
       child: Material(
-        color: Colors.white.withValues(alpha: 0.18),
+        color: AppColors.surfaceMuted,
         borderRadius: BorderRadius.circular(AppRadii.md),
         child: InkWell(
           borderRadius: BorderRadius.circular(AppRadii.md),
           onTap: onTap,
           child: SizedBox(
-            width: 44,
-            height: 44,
-            child: Icon(icon, color: Colors.white),
+            width: 40,
+            height: 40,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Center(
+                  child: Icon(icon, color: AppColors.textPrimary, size: 22),
+                ),
+                if (badgeCount > 0)
+                  Positioned(
+                    top: 5,
+                    right: 4,
+                    child: Container(
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.price,
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: AppColors.surface, width: 1),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        badgeText,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          height: 1,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
@@ -907,30 +1099,42 @@ class _SearchTrigger extends StatelessWidget {
     return Semantics(
       button: true,
       label: '搜索商品',
-      child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppRadii.lg),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppRadii.lg),
-          onTap: onTap,
-          child: SizedBox(
-            height: 48,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.search_rounded,
-                    color: AppColors.textSecondary.withValues(alpha: 0.9),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Text(
-                    '搜索商品，例如：手机',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(AppRadii.md),
+            onTap: onTap,
+            child: SizedBox(
+              height: 46,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.search_rounded,
+                      color: AppColors.textSecondary.withValues(alpha: 0.9),
+                      size: 22,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        '搜索商品，例如：手机、家电',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -951,16 +1155,16 @@ class _HeaderTag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
+        vertical: AppSpacing.xs,
       ),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.16),
+        color: AppColors.primarySoft,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
         label,
         style: theme.textTheme.labelMedium?.copyWith(
-          color: Colors.white,
+          color: AppColors.textSecondary,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -984,104 +1188,127 @@ class _HomeBannerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final String normalizedImageUrl = imageUrl.trim();
+    final bool shouldShowCopy = normalizedImageUrl.isEmpty ||
+        normalizedImageUrl.contains('example.com');
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            CachedImageWidget(
-              double.infinity,
-              double.infinity,
-              imageUrl,
-              fallback: const _BannerFallbackVisual(),
-            ),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withValues(alpha: 0.08),
-                    Colors.black.withValues(alpha: 0.12),
-                    Colors.black.withValues(alpha: 0.54),
-                  ],
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final double textWidth = constraints.maxWidth * 0.66;
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                CachedImageWidget(
+                  double.infinity,
+                  double.infinity,
+                  imageUrl,
+                  fallback: const _BannerFallbackVisual(),
                 ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: AppSpacing.sm,
-                    ),
+                if (shouldShowCopy)
+                  DecoratedBox(
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      '今日精选',
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
+                      gradient: LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [
+                          Colors.black.withValues(alpha: 0.72),
+                          Colors.black.withValues(alpha: 0.38),
+                          Colors.black.withValues(alpha: 0.06),
+                        ],
                       ),
                     ),
                   ),
-                  const Spacer(),
-                  Text(
-                    title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    subtitle,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.white.withValues(alpha: 0.9),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.md,
-                          vertical: AppSpacing.sm,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          '立即查看',
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: AppColors.primaryDark,
-                            fontWeight: FontWeight.w700,
+                if (shouldShowCopy)
+                  Padding(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    child: SizedBox(
+                      width: textWidth,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.sm,
+                              vertical: AppSpacing.xs,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.accent.withValues(alpha: 0.96),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              '今日精选',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
                           ),
-                        ),
+                          const Spacer(),
+                          Text(
+                            title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            subtitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: Colors.white.withValues(alpha: 0.9),
+                              height: 1.35,
+                            ),
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Flexible(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: AppSpacing.md,
+                                    vertical: AppSpacing.xs,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Text(
+                                    '立即查看',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style:
+                                        theme.textTheme.labelMedium?.copyWith(
+                                      color: AppColors.primaryDark,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                              Icon(
+                                Icons.arrow_forward_rounded,
+                                color: Colors.white.withValues(alpha: 0.92),
+                                size: 20,
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Icon(
-                        Icons.arrow_forward_rounded,
-                        color: Colors.white.withValues(alpha: 0.92),
-                      ),
-                    ],
+                    ),
                   ),
-                ],
-              ),
-            ),
-          ],
+              ],
+            );
+          },
         ),
       ),
     );
@@ -1101,48 +1328,48 @@ class _BannerFallbackVisual extends StatelessWidget {
           colors: [
             AppColors.primary,
             AppColors.primaryDark,
-            Color(0xFF7A1F43),
+            Color(0xFF92400E),
           ],
         ),
       ),
       child: Stack(
         children: [
           Positioned(
-            top: -16,
-            right: -12,
+            top: 22,
+            right: 18,
             child: Container(
-              width: 96,
-              height: 96,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(32),
-              ),
-            ),
-          ),
-          Positioned(
-            left: 22,
-            bottom: 28,
-            child: Container(
-              width: 72,
-              height: 72,
+              width: 116,
+              height: 64,
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(AppRadii.xl),
               ),
             ),
           ),
           Positioned(
-            right: 42,
-            bottom: 24,
+            left: 24,
+            bottom: 22,
             child: Container(
-              width: 120,
-              height: 120,
+              width: 132,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppColors.accent.withValues(alpha: 0.22),
+                borderRadius: BorderRadius.circular(AppRadii.lg),
+              ),
+            ),
+          ),
+          Positioned(
+            right: 34,
+            bottom: 22,
+            child: Container(
+              width: 108,
+              height: 108,
               decoration: BoxDecoration(
                 border: Border.all(
                   color: Colors.white.withValues(alpha: 0.18),
                   width: 1.5,
                 ),
-                borderRadius: BorderRadius.circular(36),
+                borderRadius: BorderRadius.circular(AppRadii.xxl),
               ),
             ),
           ),
@@ -1177,13 +1404,13 @@ class _ShortcutButton extends StatelessWidget {
             child: Column(
               children: [
                 Container(
-                  width: 56,
-                  height: 56,
+                  width: 52,
+                  height: 52,
                   decoration: BoxDecoration(
                     color: item.backgroundColor,
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(AppRadii.xl),
                   ),
-                  child: Icon(item.icon, color: item.accentColor, size: 28),
+                  child: Icon(item.icon, color: item.accentColor, size: 26),
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
@@ -1243,6 +1470,8 @@ class _SectionHeader extends StatelessWidget {
               const SizedBox(height: AppSpacing.xs),
               Text(
                 subtitle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -1253,6 +1482,11 @@ class _SectionHeader extends StatelessWidget {
         if (actionLabel != null && onActionTap != null)
           TextButton(
             onPressed: onActionTap,
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              textStyle: theme.textTheme.labelMedium,
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+            ),
             child: Text(actionLabel!),
           ),
       ],
@@ -1461,13 +1695,13 @@ class _ProductPriceRow extends StatelessWidget {
               vertical: AppSpacing.xs,
             ),
             decoration: BoxDecoration(
-              color: AppColors.primarySoft,
+              color: AppColors.accentSoft,
               borderRadius: BorderRadius.circular(999),
             ),
             child: Text(
               badgeLabel!,
               style: theme.textTheme.labelSmall?.copyWith(
-                color: AppColors.primaryDark,
+                color: AppColors.price,
               ),
             ),
           ),
@@ -1478,7 +1712,7 @@ class _ProductPriceRow extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.titleSmall?.copyWith(
-              color: AppColors.primary,
+              color: AppColors.price,
               fontWeight: FontWeight.w700,
             ),
           ),

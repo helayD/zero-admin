@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/feihua/zero-admin/pkg/digitalcardmint"
 	"github.com/feihua/zero-admin/rpc/sms/cardmintadminrpc"
 	"github.com/feihua/zero-admin/rpc/sms/internal/svc"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -158,6 +159,89 @@ func (s *CardMintAdminServiceServer) RecycleAsset(ctx context.Context, in *struc
 	})
 }
 
+func (s *CardMintAdminServiceServer) QueryPhysicalFulfillmentList(ctx context.Context, in *structpb.Struct) (*structpb.Struct, error) {
+	var req cardmintadminrpc.QueryPhysicalFulfillmentListRequest
+	if err := cardmintadminrpc.DecodePayload(in, &req); err != nil {
+		return nil, err
+	}
+	if err := s.ensureCardMintService(); err != nil {
+		return nil, err
+	}
+	total, list, err := s.svcCtx.CardMintService.QueryPhysicalFulfillmentList(ctx, req.Scope, req.Filter)
+	if err != nil {
+		return nil, err
+	}
+	return cardmintadminrpc.EncodePayload(cardmintadminrpc.QueryPhysicalFulfillmentListResponse{
+		Total: total,
+		List:  list,
+	})
+}
+
+func (s *CardMintAdminServiceServer) QueryPhysicalFulfillmentDetail(ctx context.Context, in *structpb.Struct) (*structpb.Struct, error) {
+	var req cardmintadminrpc.QueryPhysicalFulfillmentDetailRequest
+	if err := cardmintadminrpc.DecodePayload(in, &req); err != nil {
+		return nil, err
+	}
+	if err := s.ensureCardMintService(); err != nil {
+		return nil, err
+	}
+	detail, err := s.svcCtx.CardMintService.QueryPhysicalFulfillmentAdminDetail(ctx, req.Scope, req.FulfillmentID)
+	if err != nil {
+		return nil, err
+	}
+	return cardmintadminrpc.EncodePayload(cardmintadminrpc.QueryPhysicalFulfillmentDetailResponse{Detail: detail})
+}
+
+func (s *CardMintAdminServiceServer) EnsurePhysicalFulfillment(ctx context.Context, in *structpb.Struct) (*structpb.Struct, error) {
+	var req cardmintadminrpc.EnsurePhysicalFulfillmentRequest
+	if err := cardmintadminrpc.DecodePayload(in, &req); err != nil {
+		return nil, err
+	}
+	return s.handlePhysicalResult(func(service *digitalcardmint.Service) (*digitalcardmint.PhysicalFulfillmentResult, error) {
+		return service.EnsurePhysicalFulfillmentByAsset(ctx, req.Scope, req.Input)
+	})
+}
+
+func (s *CardMintAdminServiceServer) UpdatePhysicalCardProductionStatus(ctx context.Context, in *structpb.Struct) (*structpb.Struct, error) {
+	var req cardmintadminrpc.UpdatePhysicalCardProductionStatusRequest
+	if err := cardmintadminrpc.DecodePayload(in, &req); err != nil {
+		return nil, err
+	}
+	return s.handlePhysicalResult(func(service *digitalcardmint.Service) (*digitalcardmint.PhysicalFulfillmentResult, error) {
+		return service.UpdatePhysicalCardProductionStatus(ctx, req.Scope, req.Input)
+	})
+}
+
+func (s *CardMintAdminServiceServer) ShipPhysicalCard(ctx context.Context, in *structpb.Struct) (*structpb.Struct, error) {
+	var req cardmintadminrpc.ShipPhysicalCardRequest
+	if err := cardmintadminrpc.DecodePayload(in, &req); err != nil {
+		return nil, err
+	}
+	return s.handlePhysicalResult(func(service *digitalcardmint.Service) (*digitalcardmint.PhysicalFulfillmentResult, error) {
+		return service.ShipPhysicalCard(ctx, req.Scope, req.Input)
+	})
+}
+
+func (s *CardMintAdminServiceServer) MarkPhysicalFulfillmentException(ctx context.Context, in *structpb.Struct) (*structpb.Struct, error) {
+	var req cardmintadminrpc.PhysicalFulfillmentExceptionRequest
+	if err := cardmintadminrpc.DecodePayload(in, &req); err != nil {
+		return nil, err
+	}
+	return s.handlePhysicalResult(func(service *digitalcardmint.Service) (*digitalcardmint.PhysicalFulfillmentResult, error) {
+		return service.MarkPhysicalFulfillmentException(ctx, req.Scope, req.Input)
+	})
+}
+
+func (s *CardMintAdminServiceServer) RequestPhysicalCardReissue(ctx context.Context, in *structpb.Struct) (*structpb.Struct, error) {
+	var req cardmintadminrpc.PhysicalFulfillmentExceptionRequest
+	if err := cardmintadminrpc.DecodePayload(in, &req); err != nil {
+		return nil, err
+	}
+	return s.handlePhysicalResult(func(service *digitalcardmint.Service) (*digitalcardmint.PhysicalFulfillmentResult, error) {
+		return service.RequestPhysicalCardReissue(ctx, req.Scope, req.Input)
+	})
+}
+
 func (s *CardMintAdminServiceServer) handleTaskAction(ctx context.Context, in *structpb.Struct, handler func(cardmintadminrpc.TaskActionRequest) (interface{}, error)) (*structpb.Struct, error) {
 	var req cardmintadminrpc.TaskActionRequest
 	if err := cardmintadminrpc.DecodePayload(in, &req); err != nil {
@@ -171,6 +255,24 @@ func (s *CardMintAdminServiceServer) handleTaskAction(ctx context.Context, in *s
 		return nil, err
 	}
 	return cardmintadminrpc.EncodePayload(payload)
+}
+
+func (s *CardMintAdminServiceServer) handlePhysicalResult(handler func(*digitalcardmint.Service) (*digitalcardmint.PhysicalFulfillmentResult, error)) (*structpb.Struct, error) {
+	if err := s.ensureCardMintService(); err != nil {
+		return nil, err
+	}
+	result, err := handler(s.svcCtx.CardMintService)
+	if err != nil {
+		return nil, err
+	}
+	return cardmintadminrpc.EncodePayload(cardmintadminrpc.PhysicalFulfillmentResultResponse{Result: result})
+}
+
+func (s *CardMintAdminServiceServer) ensureCardMintService() error {
+	if s.svcCtx == nil || s.svcCtx.CardMintService == nil {
+		return errors.New("数字卡片服务未初始化")
+	}
+	return nil
 }
 
 func (s *CardMintAdminServiceServer) handleAssetAction(ctx context.Context, in *structpb.Struct, handler func(cardmintadminrpc.AssetActionRequest) (interface{}, error)) (*structpb.Struct, error) {

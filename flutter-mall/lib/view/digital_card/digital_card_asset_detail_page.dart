@@ -9,6 +9,7 @@ import 'package:flutter_mall/theme/app_theme.dart';
 import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/utils/http_util.dart';
 import 'package:flutter_mall/view/digital_card/compliance_rule_banner.dart';
+import 'package:flutter_mall/view/digital_card/digital_card_physical_fulfillment_page.dart';
 import 'package:flutter_mall/view/digital_card/digital_card_display_text.dart';
 import 'package:flutter_mall/view/digital_card/mint_status_timeline.dart';
 import 'package:flutter_mall/widgets/cached_image_widget.dart';
@@ -198,10 +199,74 @@ class _DigitalCardAssetDetailPageState
           if (detail != null) ...<Widget>[
             const SizedBox(height: AppSpacing.lg),
             _buildStatusCard(detail, statusCopy),
+            const SizedBox(height: AppSpacing.lg),
+            _buildPhysicalFulfillmentEntry(detail.item),
           ],
         ],
       ),
     );
+  }
+
+  Widget _buildPhysicalFulfillmentEntry(DigitalCardAssetItem item) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: <Widget>[
+          const Icon(Icons.local_shipping_outlined, color: Color(0xFF2563EB)),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  '实体卡进度',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: AppColors.textPrimary,
+                      ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  _physicalEntryHint(item),
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            tooltip: '查看实体卡进度',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => DigitalCardPhysicalFulfillmentPage(
+                    assetInstanceId: item.assetInstanceId,
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(Icons.chevron_right_rounded),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _physicalEntryHint(DigitalCardAssetItem item) {
+    if (item.mintStatus == 'mint_success') {
+      return '查看地址确认、制作、配送和签收进度。';
+    }
+    if (item.mintStatus == 'mint_pending' ||
+        item.mintStatus == 'mint_processing') {
+      return '待到账后可继续确认地址和查看制作配送进度。';
+    }
+    if (item.mintStatus == 'mint_failed') {
+      return '当前暂不可发货，请等待处理结果更新。';
+    }
+    return '查看实体卡制作与配送进度。';
   }
 
   Widget _buildHeroCard(

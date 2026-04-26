@@ -9,12 +9,14 @@ import 'package:flutter_mall/model/app_version_policy.dart';
 import 'package:flutter_mall/model/message_model.dart';
 import 'package:flutter_mall/model/upgrade_gate_context.dart';
 import 'package:flutter_mall/provider/app_lifecycle_provider.dart';
+import 'package:flutter_mall/theme/app_theme.dart';
 import 'package:flutter_mall/utils/app_intent_dispatcher.dart';
 import 'package:flutter_mall/utils/app_recovery_router.dart';
 import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/utils/commerce_state_resolver.dart';
 import 'package:flutter_mall/utils/http_util.dart';
 import 'package:flutter_mall/utils/upgrade_gate_service.dart';
+import 'package:flutter_mall/view/digital_card/digital_card_display_text.dart';
 import 'package:flutter_mall/view/mine/login/login.dart';
 import 'package:flutter_mall/widgets/commerce_state_shell.dart';
 import 'package:provider/provider.dart';
@@ -42,8 +44,18 @@ class _MessageState extends State<Message> {
     2: [],
     3: [],
     4: [],
+    5: [],
   };
-  int _selectedTab = 0; // 0-全部 1-订单 2-售后 3-活动 4-会员
+  static const List<_MessageTab> _messageTabs = [
+    _MessageTab(label: '全部', messageType: 0),
+    _MessageTab(label: '订单', messageType: 1),
+    _MessageTab(label: '支付', messageType: 2),
+    _MessageTab(label: '售后', messageType: 3),
+    _MessageTab(label: '活动', messageType: 4),
+    _MessageTab(label: '会员', messageType: 5),
+  ];
+
+  int _selectedTab = 0;
   bool _isLoading = false;
   bool _hasMore = true;
   int _pageNum = 1;
@@ -71,23 +83,20 @@ class _MessageState extends State<Message> {
       }
     });
 
-    int? messageType;
-    if (_selectedTab != 0) {
-      messageType = _selectedTab;
-    }
+    final int? messageType = _selectedTab == 0 ? null : _selectedTab;
 
     try {
-      final params = <String, String>{
-        'pageNum': _pageNum.toString(),
-        'pageSize': _pageSize.toString(),
+      final params = <String, dynamic>{
+        'pageNum': _pageNum,
+        'pageSize': _pageSize,
       };
       if (messageType != null) {
-        params['messageType'] = messageType.toString();
+        params['messageType'] = messageType;
       }
-      final queryString =
-          params.entries.map((e) => '${e.key}=${e.value}').join('&');
-      final Response result =
-          await HttpUtil.get('$messageListDataUrl?$queryString');
+      final Response result = await HttpUtil.get(
+        messageListDataUrl,
+        queryParameters: params,
+      );
 
       final model = MessageModel.fromJson(result.data);
       if (!mounted) return;
@@ -108,6 +117,12 @@ class _MessageState extends State<Message> {
             _tabMessages[_selectedTab]?.addAll(model.data);
           }
         }
+        final int loadedCount =
+            (_selectedTab == 0 ? _messages : _tabMessages[_selectedTab] ?? [])
+                .length;
+        _hasMore = model.total > 0
+            ? loadedCount < model.total
+            : model.data.length >= _pageSize;
         _loadError = null;
         _isLoading = false;
       });
@@ -133,10 +148,29 @@ class _MessageState extends State<Message> {
 
   Future<bool> _markAsRead(int messageId) async {
     try {
-      await HttpUtil.post(messageReadUrl, data: {'id': messageId});
+      await HttpUtil.post(messageReadDataUrl(messageId));
       return true;
     } catch (_) {
-      return false;
+      try {
+        await HttpUtil.post(messageReadUrl, data: {'id': messageId});
+        return true;
+      } catch (_) {
+        return false;
+      }
+    }
+  }
+
+  Future<bool> _deleteMessage(int messageId) async {
+    try {
+      await HttpUtil.delete(messageDeleteDataUrl(messageId));
+      return true;
+    } catch (_) {
+      try {
+        await HttpUtil.post(messageDeleteUrl, data: {'id': messageId});
+        return true;
+      } catch (_) {
+        return false;
+      }
     }
   }
 
@@ -154,6 +188,41 @@ class _MessageState extends State<Message> {
         }
       }
     });
+  }
+
+  void _removeLocalMessage(int messageId) {
+    setState(() {
+      _messages.removeWhere((item) => item.id == messageId);
+      for (final entry in _tabMessages.entries) {
+        _tabMessages[entry.key] =
+            entry.value.where((item) => item.id != messageId).toList();
+      }
+    });
+  }
+
+  Future<void> _openMessageDetail(MessageData msg) async {
+    final _MessageDetailResult? result = await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => _MessageDetailPage(
+          initialMessage: msg,
+          markAsRead: _markAsRead,
+          deleteMessage: _deleteMessage,
+        ),
+      ),
+    );
+    if (!mounted || result == null) {
+      return;
+    }
+    if (result.markedRead) {
+      _markLocalAsRead(result.message.id);
+    }
+    if (result.deleted) {
+      _removeLocalMessage(result.message.id);
+      return;
+    }
+    if (result.openTarget) {
+      await _handleMessageTap(result.message);
+    }
   }
 
   Future<void> _markMessageReadIfNeeded(
@@ -243,6 +312,9 @@ class _MessageState extends State<Message> {
               msg,
               shouldMarkMessageRead: plan.shouldMarkMessageRead,
             );
+            if (!gateContext.mounted) {
+              return;
+            }
             await AppRecoveryRouter.replaceWithTarget(
               gateContext,
               pending.recoveryContext!,
@@ -267,13 +339,13 @@ class _MessageState extends State<Message> {
       await _loadMessages(reset: true);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('全部已读'), backgroundColor: Colors.green),
+          const SnackBar(content: Text('已将全部消息标记为已读')),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('操作失败: $e'), backgroundColor: Colors.red),
+          const SnackBar(content: Text('标记已读失败，请稍后重试')),
         );
       }
     }
@@ -363,18 +435,21 @@ class _MessageState extends State<Message> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        title: const Text("通知"),
+        backgroundColor: AppColors.surface,
+        foregroundColor: AppColors.textPrimary,
+        elevation: 0,
+        title: const Text("消息中心"),
         centerTitle: true,
         actions: [
           TextButton(
-            onPressed: _markAllAsRead,
+            onPressed: _isLoading ? null : _markAllAsRead,
             child: Text(
               "全部已读",
               style: TextStyle(
                 fontSize: 14,
-                color: Color(int.parse('fa436a', radix: 16)).withAlpha(255),
+                color: _isLoading ? AppColors.textHint : AppColors.accent,
               ),
             ),
           ),
@@ -390,45 +465,43 @@ class _MessageState extends State<Message> {
   }
 
   Widget _buildTabBar() {
-    final tabs = ['全部', '订单', '售后', '活动', '会员'];
     return Container(
-      color: Colors.white,
-      child: Row(
-        children: List.generate(tabs.length, (index) {
-          final isSelected = _selectedTab == index;
-          return Expanded(
-            child: GestureDetector(
-              onTap: () {
-                if (_selectedTab == index) return;
-                setState(() => _selectedTab = index);
-                _loadMessages(reset: true);
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      width: 2,
-                      color: isSelected
-                          ? Color(int.parse('fa436a', radix: 16)).withAlpha(255)
-                          : Colors.transparent,
-                    ),
-                  ),
+      color: AppColors.surface,
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.sm,
+        AppSpacing.md,
+        AppSpacing.md,
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: _messageTabs.map((tab) {
+            final isSelected = _selectedTab == tab.messageType;
+            return Padding(
+              padding: const EdgeInsets.only(right: AppSpacing.sm),
+              child: ChoiceChip(
+                label: Text(tab.label),
+                selected: isSelected,
+                onSelected: (_) {
+                  if (_selectedTab == tab.messageType) return;
+                  setState(() => _selectedTab = tab.messageType);
+                  _loadMessages(reset: true);
+                },
+                selectedColor: AppColors.accentSoft,
+                backgroundColor: AppColors.surfaceMuted,
+                side: BorderSide(
+                  color: isSelected ? AppColors.accent : AppColors.border,
                 ),
-                child: Text(
-                  tabs[index],
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: isSelected
-                        ? Color(int.parse('fa436a', radix: 16)).withAlpha(255)
-                        : Color(int.parse('303133', radix: 16)).withAlpha(255),
-                  ),
+                labelStyle: TextStyle(
+                  color:
+                      isSelected ? AppColors.accent : AppColors.textSecondary,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 ),
               ),
-            ),
-          );
-        }),
+            );
+          }).toList(),
+        ),
       ),
     );
   }
@@ -583,7 +656,7 @@ class _MessageState extends State<Message> {
           ),
           GestureDetector(
             onTap: () {
-              unawaited(_handleMessageTap(msg));
+              unawaited(_openMessageDetail(msg));
             },
             child: Container(
               color: Colors.white,
@@ -593,7 +666,7 @@ class _MessageState extends State<Message> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    msg.title,
+                    _safeMessageText(msg.title),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
@@ -613,7 +686,7 @@ class _MessageState extends State<Message> {
                   ],
                   const SizedBox(height: 8),
                   Text(
-                    msg.content,
+                    _safeMessageText(msg.content),
                     style: TextStyle(
                       fontSize: 14,
                       color:
@@ -625,7 +698,7 @@ class _MessageState extends State<Message> {
                   if (msg.intent?.failureReason.isNotEmpty == true) ...[
                     const SizedBox(height: 8),
                     Text(
-                      msg.intent!.recoveryHint,
+                      _safeMessageText(msg.intent!.recoveryHint),
                       style: TextStyle(
                         fontSize: 12,
                         color: Color(int.parse('fa436a', radix: 16))
@@ -679,4 +752,370 @@ class _MessageState extends State<Message> {
     return '${time.year}-${time.month.toString().padLeft(2, '0')}-${time.day.toString().padLeft(2, '0')} '
         '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
+}
+
+String _safeMessageText(String text) {
+  return digitalCardUserFacingText(text);
+}
+
+class _MessageTab {
+  final String label;
+  final int messageType;
+
+  const _MessageTab({
+    required this.label,
+    required this.messageType,
+  });
+}
+
+class _MessageDetailResult {
+  final MessageData message;
+  final bool markedRead;
+  final bool deleted;
+  final bool openTarget;
+
+  const _MessageDetailResult({
+    required this.message,
+    this.markedRead = false,
+    this.deleted = false,
+    this.openTarget = false,
+  });
+}
+
+class _MessageDetailPage extends StatefulWidget {
+  final MessageData initialMessage;
+  final Future<bool> Function(int messageId) markAsRead;
+  final Future<bool> Function(int messageId) deleteMessage;
+
+  const _MessageDetailPage({
+    required this.initialMessage,
+    required this.markAsRead,
+    required this.deleteMessage,
+  });
+
+  @override
+  State<_MessageDetailPage> createState() => _MessageDetailPageState();
+}
+
+class _MessageDetailPageState extends State<_MessageDetailPage> {
+  late MessageData _message = widget.initialMessage;
+  bool _isLoading = true;
+  bool _isDeleting = false;
+  bool _markedRead = false;
+  String? _errorText;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDetail();
+    _markReadIfNeeded();
+  }
+
+  Future<void> _loadDetail() async {
+    try {
+      final Response result = await HttpUtil.get(
+        messageDetailDataUrl(widget.initialMessage.id),
+      );
+      final MessageDetailModel model = MessageDetailModel.fromJson(result.data);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        final MessageData nextMessage = model.data ?? _message;
+        _message = _markedRead ? nextMessage.copyWith(status: 1) : nextMessage;
+        _isLoading = false;
+        _errorText = null;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isLoading = false;
+        _errorText = '消息详情刷新失败，已展示本地消息内容';
+      });
+    }
+  }
+
+  Future<void> _markReadIfNeeded() async {
+    if (_message.status != 0) {
+      return;
+    }
+    final bool success = await widget.markAsRead(_message.id);
+    if (!mounted || !success) {
+      return;
+    }
+    setState(() {
+      _message = _message.copyWith(status: 1);
+      _markedRead = true;
+    });
+  }
+
+  Future<void> _confirmDelete() async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('删除消息'),
+        content: const Text('删除后将不再显示这条消息，是否继续？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _isDeleting = true;
+    });
+    final bool success = await widget.deleteMessage(_message.id);
+    if (!mounted) {
+      return;
+    }
+    if (!success) {
+      setState(() {
+        _isDeleting = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('删除失败，请稍后重试')),
+      );
+      return;
+    }
+    Navigator.of(context).pop(
+      _MessageDetailResult(
+        message: _message,
+        markedRead: _markedRead,
+        deleted: true,
+      ),
+    );
+  }
+
+  void _openTarget() {
+    Navigator.of(context).pop(
+      _MessageDetailResult(
+        message: _message,
+        markedRead: _markedRead,
+        openTarget: true,
+      ),
+    );
+  }
+
+  void _closePage() {
+    Navigator.of(context).pop(
+      _markedRead
+          ? _MessageDetailResult(message: _message, markedRead: true)
+          : null,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool hasTarget = _message.intent != null;
+
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          _closePage();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          backgroundColor: AppColors.surface,
+          foregroundColor: AppColors.textPrimary,
+          elevation: 0,
+          leading: IconButton(
+            onPressed: _closePage,
+            icon: const Icon(Icons.arrow_back_rounded),
+            tooltip: '返回',
+          ),
+          title: const Text('消息详情'),
+          centerTitle: true,
+          actions: [
+            IconButton(
+              onPressed: _isDeleting ? null : _confirmDelete,
+              icon: const Icon(Icons.delete_outline_rounded),
+              tooltip: '删除',
+            ),
+          ],
+        ),
+        body: ListView(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          children: [
+            if (_errorText != null) ...[
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF7E6),
+                  borderRadius: BorderRadius.circular(AppRadii.md),
+                  border: Border.all(color: const Color(0xFFFFD591)),
+                ),
+                child: Text(
+                  _errorText!,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: const Color(0xFFD46B08),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+            ],
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(AppRadii.xl),
+                border: Border.all(color: AppColors.border),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x0D101828),
+                    blurRadius: 14,
+                    offset: Offset(0, 6),
+                  ),
+                ],
+              ),
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      _MessageTypePill(message: _message),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          _formatMessageTime(_message.createTime),
+                          textAlign: TextAlign.right,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppColors.textHint,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  Text(
+                    _safeMessageText(_message.title),
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  if (_message.imageUrl != null &&
+                      _message.imageUrl!.trim().isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.lg),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(AppRadii.md),
+                      child: Image.network(
+                        _message.imageUrl!,
+                        width: double.infinity,
+                        height: 180,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: AppSpacing.lg),
+                  Text(
+                    _safeMessageText(_message.content),
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: AppColors.textSecondary,
+                      height: 1.65,
+                    ),
+                  ),
+                  if (_message.intent?.failureReason.isNotEmpty == true) ...[
+                    const SizedBox(height: AppSpacing.lg),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      decoration: BoxDecoration(
+                        color: AppColors.accentSoft,
+                        borderRadius: BorderRadius.circular(AppRadii.md),
+                      ),
+                      child: Text(
+                        _safeMessageText(_message.intent!.recoveryHint),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppColors.accent,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            FilledButton.icon(
+              onPressed: hasTarget && !_isLoading ? _openTarget : null,
+              icon: const Icon(Icons.open_in_new_rounded),
+              label: Text(hasTarget ? '查看相关内容' : '暂无可跳转内容'),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            OutlinedButton.icon(
+              onPressed: _isDeleting ? null : _confirmDelete,
+              icon: _isDeleting
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.delete_outline_rounded),
+              label: const Text('删除消息'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(46),
+                foregroundColor: AppColors.textSecondary,
+                side: const BorderSide(color: AppColors.border),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MessageTypePill extends StatelessWidget {
+  final MessageData message;
+
+  const _MessageTypePill({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: 4,
+      ),
+      decoration: BoxDecoration(
+        color: Color(message.typeColor).withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        message.typeName,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: Color(message.typeColor),
+              fontWeight: FontWeight.w700,
+            ),
+      ),
+    );
+  }
+}
+
+String _formatMessageTime(DateTime? time) {
+  if (time == null) return '';
+  return '${time.year}-${time.month.toString().padLeft(2, '0')}-${time.day.toString().padLeft(2, '0')} '
+      '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
 }

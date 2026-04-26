@@ -387,6 +387,12 @@
         path: '/sms/digitalCardAsset/list',
         component: './sms/DigitalCardAssetWorkbench',
       },
+      {
+        name: '实体卡履约',
+        icon: 'table',
+        path: '/sms/digitalCardPhysicalFulfillment/list',
+        component: './sms/DigitalCardPhysicalFulfillmentWorkbench',
+      },
     ],
   },
   {

@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	digitalcardassethandler "github.com/feihua/zero-admin/api/front/internal/handler/digital_card/digital_card_asset"
+	physicalfulfillmenthandler "github.com/feihua/zero-admin/api/front/internal/handler/digital_card/physical_fulfillment"
 	membermessagehandler "github.com/feihua/zero-admin/api/front/internal/handler/member/message"
 	"github.com/feihua/zero-admin/api/front/internal/svc"
 	"github.com/zeromicro/go-zero/rest"
@@ -25,6 +26,28 @@ func RegisterExtraHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		},
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
 		rest.WithPrefix("/api/digitalCard/asset"),
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodGet,
+				Path:    "/queryMyPhysicalFulfillmentDetail",
+				Handler: physicalfulfillmenthandler.QueryMyPhysicalFulfillmentDetailHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/confirmPhysicalFulfillmentAddress",
+				Handler: physicalfulfillmenthandler.ConfirmPhysicalFulfillmentAddressHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/confirmPhysicalCardReceipt",
+				Handler: physicalfulfillmenthandler.ConfirmPhysicalCardReceiptHandler(serverCtx),
+			},
+		},
+		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/digitalCard/physicalFulfillment"),
 	)
 
 	server.AddRoutes(

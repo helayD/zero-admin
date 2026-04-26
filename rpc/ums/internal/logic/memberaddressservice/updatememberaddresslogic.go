@@ -38,7 +38,7 @@ func (l *UpdateMemberAddressLogic) UpdateMemberAddress(in *umsclient.UpdateMembe
 
 		q := tx.UmsMemberAddress
 
-		item, err := q.WithContext(l.ctx).Where(q.ID.Eq(in.Id), q.MemberID.Eq(in.MemberId)).First()
+		item, err := q.WithContext(l.ctx).Where(q.ID.Eq(in.Id), q.MemberID.Eq(in.MemberId), q.IsDeleted.Eq(0)).First()
 
 		switch {
 		case errors.Is(err, gorm.ErrRecordNotFound):
@@ -49,11 +49,21 @@ func (l *UpdateMemberAddressLogic) UpdateMemberAddress(in *umsclient.UpdateMembe
 			return err
 		}
 
-		// 如果新增的地址为默认地址,则需要把之前的默认地址去除默认标识
-		addressDo := q.WithContext(l.ctx)
+		isDefault := int32(0)
 		if in.IsDefault == 1 {
-			if _, err = addressDo.Where(q.MemberID.Eq(in.MemberId), q.IsDefault.Eq(1)).Update(q.IsDefault, 0); err != nil {
+			isDefault = 1
+			if err = clearMemberDefaultAddresses(l.ctx, tx, in.MemberId); err != nil {
 				return err
+			}
+		} else if item.IsDefault == 1 {
+			otherDefaultCount, countErr := q.WithContext(l.ctx).
+				Where(q.MemberID.Eq(in.MemberId), q.IsDeleted.Eq(0), q.IsDefault.Eq(1), q.ID.Neq(in.Id)).
+				Count()
+			if countErr != nil {
+				return countErr
+			}
+			if otherDefaultCount == 0 {
+				isDefault = 1
 			}
 		}
 
@@ -69,13 +79,16 @@ func (l *UpdateMemberAddressLogic) UpdateMemberAddress(in *umsclient.UpdateMembe
 			DetailAddress: in.DetailAddress, // 详细地址
 			PostalCode:    in.PostalCode,    // 邮政编码
 			Tag:           in.Tag,           // 地址标签：家、公司等
-			IsDefault:     in.IsDefault,     // 是否默认地址
+			IsDefault:     isDefault,        // 是否默认地址
 			CreateTime:    item.CreateTime,  // 创建时间
 			UpdateTime:    &now,             // 更新时间
+			IsDeleted:     item.IsDeleted,   // 是否删除
 		}
 
-		_, err = q.WithContext(l.ctx).Where(q.ID.Eq(in.Id)).Updates(address)
-		return err
+		if _, err = q.WithContext(l.ctx).Where(q.ID.Eq(in.Id), q.MemberID.Eq(in.MemberId), q.IsDeleted.Eq(0)).Updates(address); err != nil {
+			return err
+		}
+		return ensureMemberHasDefaultAddress(l.ctx, tx, in.MemberId)
 
 	})
 

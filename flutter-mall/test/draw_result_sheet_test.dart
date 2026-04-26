@@ -49,8 +49,9 @@ void main() {
         findsOneWidget);
     expect(find.text('资产已创建，处理中'), findsNothing);
     expect(find.text('资产已创建，链上处理中'), findsNothing);
-    expect(find.textContaining('唯一编号: CARD202604170001'), findsOneWidget);
-    expect(find.textContaining('建账时间: 2026-04-17 10:00:00'), findsOneWidget);
+    expect(find.text('编号 CARD202604170001'), findsOneWidget);
+    expect(find.text('卡片编号'), findsOneWidget);
+    expect(find.text('获取时间'), findsOneWidget);
   });
 
   testWidgets('DrawResultSheet 在无编号时仍展示服务端资产状态', (WidgetTester tester) async {
@@ -149,5 +150,6 @@ void main() {
     expect(find.textContaining('完成实名认证后可继续兑卡并发放到我的数字卡片'), findsOneWidget);
     expect(find.text('到账中'), findsNothing);
     expect(find.text('资产已创建，链上处理中'), findsNothing);
+    expect(find.text('获取时间'), findsNothing);
   });
 }

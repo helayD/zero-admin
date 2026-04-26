@@ -166,6 +166,23 @@ class HttpUtil {
     return response;
   }
 
+  static Future<Response> delete(
+    String path, {
+    Map<String, dynamic>? data,
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    Response response = await dio.delete(
+      path,
+      data: data == null ? null : jsonEncode(data),
+      queryParameters: queryParameters,
+      options: Options(
+        contentType: 'application/json',
+        headers: await _buildHeaders(),
+      ),
+    );
+    return response;
+  }
+
   // 封装POST请求，数据以form表单格式发送
   static Future<Response> postForm(String path,
       {Map<String, dynamic>? data}) async {

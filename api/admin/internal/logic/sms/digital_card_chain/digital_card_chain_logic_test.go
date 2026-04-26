@@ -243,6 +243,34 @@ func (s *localChainAdminService) RecycleAsset(context.Context, pkgscope.Governan
 	return nil, nil
 }
 
+func (s *localChainAdminService) QueryPhysicalFulfillmentList(context.Context, pkgscope.GovernanceScope, digitalcardmint.PhysicalFulfillmentFilter, ...grpc.CallOption) (int64, []digitalcardmint.PhysicalFulfillmentItem, error) {
+	return 0, nil, nil
+}
+
+func (s *localChainAdminService) QueryPhysicalFulfillmentDetail(context.Context, pkgscope.GovernanceScope, int64, ...grpc.CallOption) (*digitalcardmint.PhysicalFulfillmentAdminDetail, error) {
+	return nil, nil
+}
+
+func (s *localChainAdminService) EnsurePhysicalFulfillment(context.Context, pkgscope.GovernanceScope, digitalcardmint.PhysicalFulfillmentInput, ...grpc.CallOption) (*digitalcardmint.PhysicalFulfillmentResult, error) {
+	return nil, nil
+}
+
+func (s *localChainAdminService) UpdatePhysicalCardProductionStatus(context.Context, pkgscope.GovernanceScope, digitalcardmint.UpdatePhysicalCardProductionStatusInput, ...grpc.CallOption) (*digitalcardmint.PhysicalFulfillmentResult, error) {
+	return nil, nil
+}
+
+func (s *localChainAdminService) ShipPhysicalCard(context.Context, pkgscope.GovernanceScope, digitalcardmint.ShipPhysicalCardInput, ...grpc.CallOption) (*digitalcardmint.PhysicalFulfillmentResult, error) {
+	return nil, nil
+}
+
+func (s *localChainAdminService) MarkPhysicalFulfillmentException(context.Context, pkgscope.GovernanceScope, digitalcardmint.PhysicalFulfillmentExceptionInput, ...grpc.CallOption) (*digitalcardmint.PhysicalFulfillmentResult, error) {
+	return nil, nil
+}
+
+func (s *localChainAdminService) RequestPhysicalCardReissue(context.Context, pkgscope.GovernanceScope, digitalcardmint.PhysicalFulfillmentExceptionInput, ...grpc.CallOption) (*digitalcardmint.PhysicalFulfillmentResult, error) {
+	return nil, nil
+}
+
 func newAdminServiceContext(t *testing.T) (*svc.ServiceContext, int64) {
 	t.Helper()
 

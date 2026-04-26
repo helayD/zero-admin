@@ -35,6 +35,9 @@ func NewUpdateAddressLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Upd
 
 // UpdateAddress 更新会员收货地址
 func (l *UpdateAddressLogic) UpdateAddress(req *types.AddressReq) (resp *types.AddressResp, err error) {
+	if err = normalizeAndValidateAddressReq(req, true); err != nil {
+		return nil, err
+	}
 	memberId, err := common.GetMemberId(l.ctx)
 	if err != nil {
 		return nil, err

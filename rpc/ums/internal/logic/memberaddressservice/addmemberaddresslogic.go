@@ -33,18 +33,23 @@ func NewAddMemberAddressLogic(ctx context.Context, svcCtx *svc.ServiceContext) *
 // AddMemberAddress 添加会员收货地址
 func (l *AddMemberAddressLogic) AddMemberAddress(in *umsclient.AddMemberAddressReq) (*umsclient.AddMemberAddressResp, error) {
 	err := query.Q.Transaction(func(tx *query.Query) error {
-
 		q := tx.UmsMemberAddress
+		activeCount, err := q.WithContext(l.ctx).
+			Where(q.MemberID.Eq(in.MemberId), q.IsDeleted.Eq(0)).
+			Count()
+		if err != nil {
+			return err
+		}
 
-		// 如果新增的地址为默认地址,则需要把之前的默认地址去除默认标识
-		addressDo := q.WithContext(l.ctx)
-		if in.IsDefault == 1 {
-			if _, err := addressDo.Where(q.MemberID.Eq(in.MemberId), q.IsDefault.Eq(1)).Update(q.IsDefault, 0); err != nil {
+		isDefault := int32(0)
+		if activeCount == 0 || in.IsDefault == 1 {
+			isDefault = 1
+			if err = clearMemberDefaultAddresses(l.ctx, tx, in.MemberId); err != nil {
 				return err
 			}
 		}
 
-		if err := addressDo.Create(&model.UmsMemberAddress{
+		if err = q.WithContext(l.ctx).Create(&model.UmsMemberAddress{
 			MemberID:      in.MemberId,      // 会员ID
 			ReceiverName:  in.ReceiverName,  // 收货人姓名
 			ReceiverPhone: in.ReceiverPhone, // 收货人电话
@@ -54,7 +59,8 @@ func (l *AddMemberAddressLogic) AddMemberAddress(in *umsclient.AddMemberAddressR
 			DetailAddress: in.DetailAddress, // 详细地址
 			PostalCode:    in.PostalCode,    // 邮政编码
 			Tag:           in.Tag,           // 地址标签：家、公司等
-			IsDefault:     in.IsDefault,     // 是否默认地址
+			IsDefault:     isDefault,        // 是否默认地址
+			IsDeleted:     0,                // 是否删除
 		}); err != nil {
 			return err
 		}

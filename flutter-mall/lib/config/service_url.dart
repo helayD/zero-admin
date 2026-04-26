@@ -20,7 +20,8 @@ String proxyImageUrl(String url) {
 // 首页
 const homeDataUrl = "$baseUrl/api/home/index";
 // 首页广告点击
-const recordHomeAdvertiseClickUrl = "$baseUrl/api/home/recordHomeAdvertiseClick";
+const recordHomeAdvertiseClickUrl =
+    "$baseUrl/api/home/recordHomeAdvertiseClick";
 // 品牌列表
 const brandListDataUrl = "$baseUrl/api/product/queryBrandList";
 // 品牌详情
@@ -46,21 +47,33 @@ const generateOrderUrl = "$baseUrl/api/order/generateOrder";
 // 添加商品进购物车
 const cartAddUrl = "$baseUrl/api/order/addCart";
 // 商品列表
+const productListQueryUrl = "$baseUrl/api/product/queryProductList";
 const productListDataUrl =
     "$baseUrl/api/product/queryProductList?productCategoryId=";
 // 商品详情
 const productDetailDataUrl =
     "$baseUrl/api/product/queryProductDetail?productId=";
+// 站内消息
+const memberMessageBaseUrl = "$baseUrl/api/member/message";
 // 通知消息列表（全部）
-const messageListDataUrl = "$baseUrl/api/member/message/list";
+const messageListDataUrl = "$memberMessageBaseUrl/list";
+// 消息详情
+String messageDetailDataUrl(int messageId) =>
+    "$memberMessageBaseUrl/$messageId";
 // 标记单条消息已读
-const messageReadUrl = "$baseUrl/api/member/message/read";
+String messageReadDataUrl(int messageId) =>
+    "$memberMessageBaseUrl/$messageId/read";
+// 兼容旧版标记单条消息已读入口
+const messageReadUrl = "$memberMessageBaseUrl/read";
 // 标记全部已读
-const markAllReadUrl = "$baseUrl/api/member/message/readAll";
+const markAllReadUrl = "$memberMessageBaseUrl/readAll";
 // 查询未读消息数
-const unreadCountUrl = "$baseUrl/api/member/message/unreadCount";
+const unreadCountUrl = "$memberMessageBaseUrl/unreadCount";
 // 删除消息
-const messageDeleteUrl = "$baseUrl/api/member/message/delete";
+String messageDeleteDataUrl(int messageId) =>
+    "$memberMessageBaseUrl/$messageId";
+// 兼容旧版删除消息入口
+const messageDeleteUrl = "$memberMessageBaseUrl/delete";
 // 优惠券
 const couponDataUrl = "$baseUrl/api/member/coupon/queryCouponList?useStatus=";
 // 可领取优惠券列表
@@ -139,6 +152,15 @@ const queryMyDigitalCardAssetListUrl =
 // 查询我的数字卡片资产详情
 const queryMyDigitalCardAssetDetailUrl =
     "$baseUrl/api/digitalCard/asset/queryMyDigitalCardAssetDetail";
+// 查询我的实体卡履约详情
+const queryMyPhysicalFulfillmentDetailUrl =
+    "$baseUrl/api/digitalCard/physicalFulfillment/queryMyPhysicalFulfillmentDetail";
+// 确认实体卡收货地址
+const confirmPhysicalFulfillmentAddressUrl =
+    "$baseUrl/api/digitalCard/physicalFulfillment/confirmPhysicalFulfillmentAddress";
+// 确认实体卡签收
+const confirmPhysicalCardReceiptUrl =
+    "$baseUrl/api/digitalCard/physicalFulfillment/confirmPhysicalCardReceipt";
 
 // ==================== 支付相关（Story 5.5 Task 11）====================
 // 发起支付

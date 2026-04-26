@@ -4,6 +4,7 @@ import 'package:flutter_mall/provider/counter.dart';
 import 'package:flutter_mall/provider/comment_provider.dart';
 import 'package:flutter_mall/provider/app_lifecycle_provider.dart';
 import 'package:flutter_mall/theme/app_theme.dart';
+import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/utils/app_version_service.dart';
 import 'package:flutter_mall/utils/permission_broker.dart';
 import 'package:flutter_mall/utils/shared_preferences_util.dart';
@@ -25,6 +26,7 @@ void main() async {
   // 初始化SharedPreferences
   await SharedPreferencesUtil.init();
   await AppVersionService.init();
+  await AppRecoveryStore.clearPageRecoveryState();
   await const PermissionBroker().captureLostMediaOnLaunch();
   // 启动应用程序
   runApp(const MyApp());
@@ -54,6 +56,7 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         // 设置全局的navigatorKey，以便在应用的任何地方进行导航
         navigatorKey: NavKey.navKey,
+        debugShowCheckedModeBanner: false,
         title: '九克城',
         theme: AppTheme.lightTheme(),
         // 设置应用的首页为Welcome部件

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mall/model/app_recent_context.dart';
-import 'package:flutter_mall/utils/app_recovery_store.dart';
 
 class IntentTelemetrySnapshot {
   final String eventName;
@@ -480,28 +479,10 @@ class AppLifecycleProvider extends ChangeNotifier with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     _currentState = state;
-    if (state == AppLifecycleState.paused) {
-      _pausedCandidate = AppRecoveryStore.getRecentContext();
-      if (_pausedCandidate != null) {
-        AppRecoveryStore.saveActiveIntentCandidate(
-          _pausedCandidate!.copyWith(
-            source: 'resume',
-            lastValidatedAt: DateTime.now(),
-          ),
-        );
-      }
-    }
     if (state == AppLifecycleState.resumed) {
       _resumeTick++;
-      if (_pausedCandidate != null) {
-        AppRecoveryStore.saveActiveIntentCandidate(
-          _pausedCandidate!.copyWith(
-            source: 'resume',
-            lastValidatedAt: DateTime.now(),
-          ),
-        );
-      }
     }
+    _pausedCandidate = null;
     notifyListeners();
   }
 

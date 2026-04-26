@@ -16,6 +16,7 @@ create table pms_product_sku
     promotion_start_time datetime                           null comment '促销开始时间',
     promotion_end_time   datetime                           null comment '促销结束时间',
     stock                int                                not null comment '库存',
+    lock_stock           int      default 0                 not null comment '锁定库存',
     low_stock            int                                not null comment '预警库存',
     spec_data            json                               not null comment '规格数据',
     weight               decimal(10, 2)                     not null comment '重量(kg)',

@@ -121,6 +121,34 @@ func (s *localAssetAdminService) RecycleAsset(ctx context.Context, scope pkgscop
 	return s.service.RecycleDigitalCardAsset(ctx, scope, assetInstanceID, operatorID, reason)
 }
 
+func (s *localAssetAdminService) QueryPhysicalFulfillmentList(context.Context, pkgscope.GovernanceScope, digitalcardmint.PhysicalFulfillmentFilter, ...grpc.CallOption) (int64, []digitalcardmint.PhysicalFulfillmentItem, error) {
+	return 0, nil, nil
+}
+
+func (s *localAssetAdminService) QueryPhysicalFulfillmentDetail(context.Context, pkgscope.GovernanceScope, int64, ...grpc.CallOption) (*digitalcardmint.PhysicalFulfillmentAdminDetail, error) {
+	return nil, nil
+}
+
+func (s *localAssetAdminService) EnsurePhysicalFulfillment(context.Context, pkgscope.GovernanceScope, digitalcardmint.PhysicalFulfillmentInput, ...grpc.CallOption) (*digitalcardmint.PhysicalFulfillmentResult, error) {
+	return nil, nil
+}
+
+func (s *localAssetAdminService) UpdatePhysicalCardProductionStatus(context.Context, pkgscope.GovernanceScope, digitalcardmint.UpdatePhysicalCardProductionStatusInput, ...grpc.CallOption) (*digitalcardmint.PhysicalFulfillmentResult, error) {
+	return nil, nil
+}
+
+func (s *localAssetAdminService) ShipPhysicalCard(context.Context, pkgscope.GovernanceScope, digitalcardmint.ShipPhysicalCardInput, ...grpc.CallOption) (*digitalcardmint.PhysicalFulfillmentResult, error) {
+	return nil, nil
+}
+
+func (s *localAssetAdminService) MarkPhysicalFulfillmentException(context.Context, pkgscope.GovernanceScope, digitalcardmint.PhysicalFulfillmentExceptionInput, ...grpc.CallOption) (*digitalcardmint.PhysicalFulfillmentResult, error) {
+	return nil, nil
+}
+
+func (s *localAssetAdminService) RequestPhysicalCardReissue(context.Context, pkgscope.GovernanceScope, digitalcardmint.PhysicalFulfillmentExceptionInput, ...grpc.CallOption) (*digitalcardmint.PhysicalFulfillmentResult, error) {
+	return nil, nil
+}
+
 func newAdminAssetServiceContext(t *testing.T) *svc.ServiceContext {
 	t.Helper()
 	return &svc.ServiceContext{

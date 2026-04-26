@@ -1,7 +1,10 @@
 package svc
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/feihua/zero-admin/pkg/antchain"
@@ -56,7 +59,8 @@ func NewServiceContext(c config.Config) *ServiceContext {
 }
 
 func buildChainClient(c config.Config) chainclient.ChainClient {
-	if c.Blockchain.Primary == "antchain" {
+	switch strings.ToLower(strings.TrimSpace(c.Blockchain.Primary)) {
+	case "antchain":
 		return antchain.NewClient(antchain.Config{
 			Endpoint:        c.AntChain.Endpoint,
 			ReceiptEndpoint: c.AntChain.ReceiptEndpoint,
@@ -66,16 +70,39 @@ func buildChainClient(c config.Config) chainclient.ChainClient {
 			TimeoutSeconds:  c.AntChain.TimeoutSeconds,
 			Enabled:         c.AntChain.Enabled,
 		})
+	case "", "fisco", "free_chain":
+		return fisco.NewClient(fisco.Config{
+			NodeAddr:       c.Fisco.NodeAddr,
+			GroupID:        c.Fisco.GroupID,
+			ChainID:        c.Fisco.ChainID,
+			ContractAddr:   c.Fisco.ContractAddr,
+			PrivateKey:     c.Fisco.PrivateKey,
+			TimeoutSeconds: c.Fisco.TimeoutSeconds,
+			Enabled:        c.Fisco.Enabled,
+		})
+	default:
+		return invalidChainClient{primary: c.Blockchain.Primary}
 	}
-	return fisco.NewClient(fisco.Config{
-		NodeAddr:       c.Fisco.NodeAddr,
-		GroupID:        c.Fisco.GroupID,
-		ChainID:        c.Fisco.ChainID,
-		ContractAddr:   c.Fisco.ContractAddr,
-		PrivateKey:     c.Fisco.PrivateKey,
-		TimeoutSeconds: c.Fisco.TimeoutSeconds,
-		Enabled:        c.Fisco.Enabled,
-	})
+}
+
+type invalidChainClient struct {
+	primary string
+}
+
+func (c invalidChainClient) MintToken(context.Context, *chainclient.MintTokenRequest) (*chainclient.MintTokenResponse, error) {
+	return nil, c.err()
+}
+
+func (c invalidChainClient) QueryMintToken(context.Context, *chainclient.QueryMintTokenRequest) (*chainclient.MintTokenResponse, error) {
+	return nil, c.err()
+}
+
+func (c invalidChainClient) ChainType() string {
+	return "invalid"
+}
+
+func (c invalidChainClient) err() error {
+	return errors.New("数字资产通道配置非法: " + strings.TrimSpace(c.primary))
 }
 
 type Writer struct{}

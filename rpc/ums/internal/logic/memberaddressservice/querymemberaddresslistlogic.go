@@ -32,20 +32,31 @@ func NewQueryMemberAddressListLogic(ctx context.Context, svcCtx *svc.ServiceCont
 
 // QueryMemberAddressList 查询会员收货地址列表
 func (l *QueryMemberAddressListLogic) QueryMemberAddressList(in *umsclient.QueryMemberAddressListReq) (*umsclient.QueryMemberAddressListResp, error) {
+	pageNum := in.PageNum
+	if pageNum <= 0 {
+		pageNum = 1
+	}
+	pageSize := in.PageSize
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+
 	memberAddress := query.UmsMemberAddress
-	q := memberAddress.WithContext(l.ctx)
+	q := memberAddress.WithContext(l.ctx).Where(memberAddress.IsDeleted.Eq(0))
 	if in.MemberId != 0 {
 		q = q.Where(memberAddress.MemberID.Eq(in.MemberId))
 	}
 
-	result, count, err := q.FindByPage(int((in.PageNum-1)*in.PageSize), int(in.PageSize))
+	result, count, err := q.
+		Order(memberAddress.IsDefault.Desc(), memberAddress.ID.Desc()).
+		FindByPage(int((pageNum-1)*pageSize), int(pageSize))
 
 	if err != nil {
 		logc.Errorf(l.ctx, "查询会员收货地址列表失败,参数:%+v,异常:%s", in, err.Error())
 		return nil, errors.New("查询会员收货地址列表失败")
 	}
 
-	var list []*umsclient.MemberAddressListData
+	list := make([]*umsclient.MemberAddressListData, 0, len(result))
 
 	for _, item := range result {
 		list = append(list, &umsclient.MemberAddressListData{
