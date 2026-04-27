@@ -1,0 +1,25 @@
+@import (reference) '~antd/es/style/themes/index';
+
+.configCard {
+  background: #fff;
+}
+
+.formStack {
+  width: 100%;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.fullWidth {
+  width: 100%;
+}
+
+@media (max-width: @screen-md) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+}
