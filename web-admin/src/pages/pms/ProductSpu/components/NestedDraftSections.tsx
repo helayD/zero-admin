@@ -7,6 +7,7 @@ import {
   hasDuplicateSkuCode,
 } from '../draftFeedback';
 import type { SelectOption } from './useCatalogOptions';
+import UploadFileComponents from '@/components/common/UploadFileComponents';
 
 const listCardStyle = {
   marginBottom: 12,
@@ -122,10 +123,10 @@ const NestedDraftSections: FC<NestedDraftSectionsProps> = ({ attributeOptions = 
                     <Input.TextArea rows={2} placeholder='例如：{"颜色":"黑色","容量":"128G"}' />
                   </Form.Item>
                   <Form.Item name={[field.name, 'mainPic']} label="SKU 主图">
-                    <Input placeholder="图片 URL" />
+                    <UploadFileComponents count={1} />
                   </Form.Item>
                   <Form.Item name={[field.name, 'albumPics']} label="SKU 图集">
-                    <Input placeholder="多个图片 URL 用逗号分隔" />
+                    <UploadFileComponents count={8} />
                   </Form.Item>
                   <Space size={12} wrap>
                     <Form.Item

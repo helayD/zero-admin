@@ -42,6 +42,25 @@ Auth:
 Redis:
   Address: 110.41.179.89:30195
   Pass: r-wz9wop62956dh5k9ed
+
+SystemConfig:
+  OSS:
+    Endpoint: oss-cn-shenzhen.aliyuncs.com
+    BucketName: mbjq
+    URL: https://speed.maibanjk.com/
+    MaxSizeMB: 20
+  SMS:
+    Enabled: false
+    Provider: ""
+    Endpoint: ""
+    SignName: ""
+    TemplateCode: ""
+  Push:
+    Enabled: false
+    Provider: ""
+    Endpoint: ""
+    AppKey: ""
+
 Log:
   ServiceName: admin-api
   Stat: false # go-zero 版本 >= 1.5.0 才支持

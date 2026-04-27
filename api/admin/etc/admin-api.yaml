@@ -75,6 +75,24 @@ Swagger:
   IsTest: true
   Path: "/root/zero-admin/api/admin/static"
 
+SystemConfig:
+  OSS:
+    Endpoint: oss-cn-shenzhen.aliyuncs.com
+    BucketName: mbjq
+    URL: https://speed.maibanjk.com/
+    MaxSizeMB: 20
+  SMS:
+    Enabled: false
+    Provider: ""
+    Endpoint: ""
+    SignName: ""
+    TemplateCode: ""
+  Push:
+    Enabled: false
+    Provider: ""
+    Endpoint: ""
+    AppKey: ""
+
 Log:
   ServiceName: admin-api
   Stat: false

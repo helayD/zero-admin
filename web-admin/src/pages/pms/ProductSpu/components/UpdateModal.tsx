@@ -6,6 +6,7 @@ import NestedDraftSections from './NestedDraftSections';
 import { useCatalogOptions } from './useCatalogOptions';
 import type { CatalogActionError } from '@/pages/pms/errorFeedback';
 import type { GovernanceScopeValue } from '@/pages/system/components/governance';
+import UploadFileComponents from '@/components/common/UploadFileComponents';
 
 export interface UpdateModalProps {
   onCancel: () => void;
@@ -173,13 +174,13 @@ const UpdateModal: React.FC<UpdateModalProps> = (props) => {
         </FormItem>
         <FormItem
           name="albumPics"
-          label="画册图片，最多8张，以逗号分割"
-          rules={[{ required: true, message: '请输入画册图片，最多8张，以逗号分割!' }]}
+          label="画册图片"
+          rules={[{ required: true, message: '请上传画册图片!' }]}
         >
-          <Input id="update-albumPics" placeholder={'请输入画册图片，最多8张，以逗号分割!'} />
+          <UploadFileComponents count={8} />
         </FormItem>
-        <FormItem name="mainPic" label="主图" rules={[{ required: true, message: '请输入主图!' }]}>
-          <Input id="update-mainPic" placeholder={'请输入主图!'} />
+        <FormItem name="mainPic" label="主图" rules={[{ required: true, message: '请上传主图!' }]}>
+          <UploadFileComponents count={1} />
         </FormItem>
         <FormItem
           name="publishStatus"
