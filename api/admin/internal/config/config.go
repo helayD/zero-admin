@@ -48,7 +48,7 @@ type Config struct {
 		Path   string
 	}
 
-	SystemConfig SystemConfig
+	SystemConfig SystemConfig `json:",optional"`
 }
 
 type SystemConfig struct {
@@ -59,8 +59,8 @@ type SystemConfig struct {
 
 type OSSConfig struct {
 	Endpoint        string `json:",env=OSS_ENDPOINT,default=oss-cn-shenzhen.aliyuncs.com"`
-	AccessKeyID     string `json:",env=OSS_ACCESS_KEY_ID"`
-	AccessKeySecret string `json:",env=OSS_ACCESS_KEY_SECRET"`
+	AccessKeyID     string `json:",optional,env=OSS_ACCESS_KEY_ID"`
+	AccessKeySecret string `json:",optional,env=OSS_ACCESS_KEY_SECRET"`
 	BucketName      string `json:",env=OSS_BUCKET_NAME,default=mbjq"`
 	URL             string `json:",env=OSS_URL,default=https://speed.maibanjk.com/"`
 	MaxSizeMB       int64  `json:",env=OSS_MAX_SIZE_MB,default=20"`
@@ -68,18 +68,18 @@ type OSSConfig struct {
 
 type SMSConfig struct {
 	Enabled         bool   `json:",env=SMS_ENABLED,default=false"`
-	Provider        string `json:",env=SMS_PROVIDER"`
-	Endpoint        string `json:",env=SMS_ENDPOINT"`
-	AccessKeyID     string `json:",env=SMS_ACCESS_KEY_ID"`
-	AccessKeySecret string `json:",env=SMS_ACCESS_KEY_SECRET"`
-	SignName        string `json:",env=SMS_SIGN_NAME"`
-	TemplateCode    string `json:",env=SMS_TEMPLATE_CODE"`
+	Provider        string `json:",optional,env=SMS_PROVIDER"`
+	Endpoint        string `json:",optional,env=SMS_ENDPOINT"`
+	AccessKeyID     string `json:",optional,env=SMS_ACCESS_KEY_ID"`
+	AccessKeySecret string `json:",optional,env=SMS_ACCESS_KEY_SECRET"`
+	SignName        string `json:",optional,env=SMS_SIGN_NAME"`
+	TemplateCode    string `json:",optional,env=SMS_TEMPLATE_CODE"`
 }
 
 type PushConfig struct {
 	Enabled   bool   `json:",env=PUSH_ENABLED,default=false"`
-	Provider  string `json:",env=PUSH_PROVIDER"`
-	Endpoint  string `json:",env=PUSH_ENDPOINT"`
-	AppKey    string `json:",env=PUSH_APP_KEY"`
-	AppSecret string `json:",env=PUSH_APP_SECRET"`
+	Provider  string `json:",optional,env=PUSH_PROVIDER"`
+	Endpoint  string `json:",optional,env=PUSH_ENDPOINT"`
+	AppKey    string `json:",optional,env=PUSH_APP_KEY"`
+	AppSecret string `json:",optional,env=PUSH_APP_SECRET"`
 }
