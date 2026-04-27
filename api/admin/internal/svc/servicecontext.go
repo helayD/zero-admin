@@ -83,6 +83,8 @@ import (
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/rest"
 	"github.com/zeromicro/go-zero/zrpc"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
 type ServiceContext struct {
@@ -169,6 +171,7 @@ type ServiceContext struct {
 	PreferredAreaService                preferredareaservice.PreferredAreaService
 	PreferredAreaProductRelationService preferredareaproductrelationservice.PreferredAreaProductRelationService
 	SubjectCategoryService              subjectcategoryservice.SubjectCategoryService
+	DB                                  *gorm.DB
 	Redis                               *redis.Redis
 }
 
@@ -182,6 +185,18 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	cmsClient := zrpc.MustNewClient(c.CmsRpc)
 	operateLogService := operatelogservice.NewOperateLogService(sysClient)
 	cardMintAdminService := cardmintadminservice.NewCardMintAdminService(smsClient)
+	var db *gorm.DB
+	if c.Mysql.Datasource != "" {
+		dbConn, dbErr := gorm.Open(mysql.Open(c.Mysql.Datasource), &gorm.Config{
+			SkipDefaultTransaction: true,
+			PrepareStmt:            true,
+		})
+		if dbErr != nil {
+			panic(dbErr)
+		}
+		db = dbConn
+	}
+
 	return &ServiceContext{
 		Config:                               c,
 		CardMintAdminService:                 cardMintAdminService,
@@ -265,6 +280,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		PreferredAreaService:                preferredareaservice.NewPreferredAreaService(cmsClient),
 		PreferredAreaProductRelationService: preferredareaproductrelationservice.NewPreferredAreaProductRelationService(cmsClient),
 		SubjectCategoryService:              subjectcategoryservice.NewSubjectCategoryService(cmsClient),
+		DB:                                  db,
 		Redis:                               newRedis,
 	}
 }

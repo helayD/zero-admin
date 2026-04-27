@@ -17,6 +17,7 @@ import (
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
 
+	systemconfiglogic "github.com/feihua/zero-admin/api/admin/internal/logic/sys/system_config"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
 	"github.com/feihua/zero-admin/api/admin/internal/types"
 )
@@ -91,7 +92,7 @@ func (l *UploadLogic) Upload() (resp *types.UploadResp, err error) {
 }
 
 func (l *UploadLogic) uploadToOSS(part *multipart.Part) (string, error) {
-	ossConfig := l.svcCtx.Config.SystemConfig.OSS
+	ossConfig := systemconfiglogic.EffectiveOSSConfig(l.ctx, l.svcCtx)
 	endpoint := strings.TrimSpace(ossConfig.Endpoint)
 	accessKeyID := strings.TrimSpace(ossConfig.AccessKeyID)
 	accessKeySecret := strings.TrimSpace(ossConfig.AccessKeySecret)

@@ -113,8 +113,19 @@
         component: './system/channel_integration_template',
       },
       {
+        name: '系统配置',
+        icon: 'setting',
+        path: '/system/systemConfig',
+        component: './system/system_config',
+      },
+      {
         path: '/system/channel-integration-template/list',
         redirect: '/system/channelIntegrationTemplate/list',
+        hideInMenu: true,
+      },
+      {
+        path: '/system/system-config',
+        redirect: '/system/systemConfig',
         hideInMenu: true,
       },
       // {

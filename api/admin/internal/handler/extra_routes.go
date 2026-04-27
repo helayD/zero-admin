@@ -7,6 +7,7 @@ import (
 	digitalcardchainhandler "github.com/feihua/zero-admin/api/admin/internal/handler/sms/digital_card_chain"
 	digitalcardphysicalfulfillmenthandler "github.com/feihua/zero-admin/api/admin/internal/handler/sms/digital_card_physical_fulfillment"
 	channelintegrationtemplatehandler "github.com/feihua/zero-admin/api/admin/internal/handler/sys/channel_integration_template"
+	systemconfighandler "github.com/feihua/zero-admin/api/admin/internal/handler/sys/system_config"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
 	"github.com/zeromicro/go-zero/rest"
 )
@@ -45,6 +46,26 @@ func RegisterExtraHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		),
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
 		rest.WithPrefix("/api/sys/channelIntegrationTemplate"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.CheckUrl},
+			[]rest.Route{
+				{
+					Method:  http.MethodGet,
+					Path:    "/querySystemConfig",
+					Handler: systemconfighandler.QuerySystemConfigHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/saveSystemConfig",
+					Handler: systemconfighandler.SaveSystemConfigHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/sys/systemConfig"),
 	)
 
 	server.AddRoutes(
