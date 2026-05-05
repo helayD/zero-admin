@@ -289,8 +289,10 @@ const errorHandler = (error: any) => {
 // 请求拦截
 const addToken: RequestInterceptor = (url: string, options: RequestOptionsInit) => {
   const { method, data, params } = options;
+  const token = localStorage.getItem('token');
   options.headers = {
-    Authorization: 'Bearer ' + localStorage.getItem('token'),
+    ...options.headers,
+    ...(token ? { Authorization: 'Bearer ' + token } : {}),
   };
 
   // if (data && data.current) {
