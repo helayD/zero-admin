@@ -180,8 +180,9 @@ export async function getInitialState(): Promise<{
     }
     return undefined;
   };
-  // 如果是登录页面，不执行
-  if (history.location.pathname !== loginPath) {
+  // 如果是登录页面，不执行（去掉末尾斜杠后比较）
+  const currentPath = history.location.pathname.replace(/\/+$/, '');
+  if (currentPath !== loginPath) {
     const currentUser = await fetchUserInfo();
     return {
       fetchUserInfo,
@@ -207,7 +208,7 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
     onPageChange: () => {
       const { location } = history;
       // 如果没有登录，重定向到 login
-      if (!initialState?.currentUser && location.pathname !== loginPath) {
+      if (!initialState?.currentUser && location.pathname.replace(/\/+$/, '') !== loginPath) {
         history.push(loginPath);
       }
     },
