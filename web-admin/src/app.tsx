@@ -291,7 +291,7 @@ const addToken: RequestInterceptor = (url: string, options: RequestOptionsInit) 
   const { method, data, params } = options;
   const token = localStorage.getItem('token');
   options.headers = {
-    ...options.headers,
+    ...(options.headers || {}),
     ...(token ? { Authorization: 'Bearer ' + token } : {}),
   };
 
