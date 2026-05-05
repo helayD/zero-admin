@@ -396,3 +396,67 @@ if err = logiccommon.ValidateRoleIDsInScope(l.ctx, l.svcCtx.DB, currentScope, in
 ctx := context.WithValue(ctx, "userId", json.Number("1001"))
 count, err := query.SysUser.WithContext(l.ctx).Where(query.SysUser.ID.Eq(in.UserId)).Count()
 ```
+
+<!-- gitnexus:start -->
+# GitNexus — Code Intelligence
+
+This project is indexed by GitNexus as **zero-admin** (71285 symbols, 155382 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+
+> If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
+
+## Always Do
+
+- **MUST run impact analysis before editing any symbol.** Before modifying a function, class, or method, run `gitnexus_impact({target: "symbolName", direction: "upstream"})` and report the blast radius (direct callers, affected processes, risk level) to the user.
+- **MUST run `gitnexus_detect_changes()` before committing** to verify your changes only affect expected symbols and execution flows.
+- **MUST warn the user** if impact analysis returns HIGH or CRITICAL risk before proceeding with edits.
+- When exploring unfamiliar code, use `gitnexus_query({query: "concept"})` to find execution flows instead of grepping. It returns process-grouped results ranked by relevance.
+- When you need full context on a specific symbol — callers, callees, which execution flows it participates in — use `gitnexus_context({name: "symbolName"})`.
+
+## Never Do
+
+- NEVER edit a function, class, or method without first running `gitnexus_impact` on it.
+- NEVER ignore HIGH or CRITICAL risk warnings from impact analysis.
+- NEVER rename symbols with find-and-replace — use `gitnexus_rename` which understands the call graph.
+- NEVER commit changes without running `gitnexus_detect_changes()` to check affected scope.
+
+## Resources
+
+| Resource | Use for |
+|----------|---------|
+| `gitnexus://repo/zero-admin/context` | Codebase overview, check index freshness |
+| `gitnexus://repo/zero-admin/clusters` | All functional areas |
+| `gitnexus://repo/zero-admin/processes` | All execution flows |
+| `gitnexus://repo/zero-admin/process/{name}` | Step-by-step execution trace |
+
+## CLI
+
+| Task | Read this skill file |
+|------|---------------------|
+| Understand architecture / "How does X work?" | `.claude/skills/gitnexus/gitnexus-exploring/SKILL.md` |
+| Blast radius / "What breaks if I change X?" | `.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md` |
+| Trace bugs / "Why is X failing?" | `.claude/skills/gitnexus/gitnexus-debugging/SKILL.md` |
+| Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
+| Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
+| Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
+| Work in the Static area (1322 symbols) | `.claude/skills/generated/static/SKILL.md` |
+| Work in the User area (958 symbols) | `.claude/skills/generated/user/SKILL.md` |
+| Work in the Query area (734 symbols) | `.claude/skills/generated/query/SKILL.md` |
+| Work in the Userservice area (456 symbols) | `.claude/skills/generated/userservice/SKILL.md` |
+| Work in the Order area (298 symbols) | `.claude/skills/generated/order/SKILL.md` |
+| Work in the Digitalcardmint area (149 symbols) | `.claude/skills/generated/digitalcardmint/SKILL.md` |
+| Work in the Orderservice area (124 symbols) | `.claude/skills/generated/orderservice/SKILL.md` |
+| Work in the Productspuservice area (82 symbols) | `.claude/skills/generated/productspuservice/SKILL.md` |
+| Work in the Merchantservice area (67 symbols) | `.claude/skills/generated/merchantservice/SKILL.md` |
+| Work in the Channelintegrationtemplateservice area (55 symbols) | `.claude/skills/generated/channelintegrationtemplateservice/SKILL.md` |
+| Work in the Middleware area (52 symbols) | `.claude/skills/generated/middleware/SKILL.md` |
+| Work in the Drawparticipationservice area (51 symbols) | `.claude/skills/generated/drawparticipationservice/SKILL.md` |
+| Work in the Commentservice area (51 symbols) | `.claude/skills/generated/commentservice/SKILL.md` |
+| Work in the Drawactivityservice area (50 symbols) | `.claude/skills/generated/drawactivityservice/SKILL.md` |
+| Work in the Memberinfoservice area (50 symbols) | `.claude/skills/generated/memberinfoservice/SKILL.md` |
+| Work in the Scope area (48 symbols) | `.claude/skills/generated/scope/SKILL.md` |
+| Work in the Cardassetservice area (48 symbols) | `.claude/skills/generated/cardassetservice/SKILL.md` |
+| Work in the Tenantservice area (44 symbols) | `.claude/skills/generated/tenantservice/SKILL.md` |
+| Work in the Membermessageservice area (43 symbols) | `.claude/skills/generated/membermessageservice/SKILL.md` |
+| Work in the Membertagservice area (42 symbols) | `.claude/skills/generated/membertagservice/SKILL.md` |
+
+<!-- gitnexus:end -->
