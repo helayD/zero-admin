@@ -36,7 +36,7 @@ const governanceHighlights = [
   },
 ];
 
-const trustTags = ['go-zero 微服务架构', 'RBAC 权限模型', '多主体后台治理', '审计链路留痕'];
+const trustTags = ['go-zero 微服务架构', 'RBAC 权限模型', '审计链路留痕'];
 
 const emptyLoginState: API.LoginResult = {
   code: '',
@@ -165,15 +165,14 @@ const Login: React.FC = () => {
             <img src="/logo.svg" alt="" className={styles.brandLogo} aria-hidden="true" />
             <div className={styles.brandHeroText}>
               <div className={styles.brandTitle}>九克城</div>
-              <div className={styles.brandTagline}>面向平台、租户与商户的企业经营控制台</div>
+              <div className={styles.brandTagline}>企业级后台管理控制台</div>
             </div>
           </div>
 
-          <div className={styles.brandHeadline}>让治理、经营分析与权限审计在一个入口完成闭环。</div>
+          <div className={styles.brandHeadline}>一站式企业后台管理</div>
 
           <div className={styles.brandSubtitle}>
-            基于 go-zero 微服务架构，聚合系统、会员、商品、订单、营销、内容与搜索核心模块，
-            让企业后台同时具备治理深度、业务扩展性和运营清晰度。
+            基于 go-zero 微服务架构，聚合系统、会员、商品、订单、营销、内容核心模块。
           </div>
 
           <div className={styles.modulePills}>
@@ -220,7 +219,7 @@ const Login: React.FC = () => {
               </div>
               <div className={styles.loginTitle}>登录管理控制台</div>
               <div className={styles.loginSubtitle}>
-                使用已分配的后台账号进入系统。所有登录行为都会进入审计链路，并受主体状态与权限策略约束。
+                使用已分配的后台账号进入系统。
               </div>
             </div>
 
@@ -229,7 +228,7 @@ const Login: React.FC = () => {
               type="info"
               className={styles.securityAlert}
               message="登录前提示"
-              description="当前入口面向平台、租户与商户后台管理员。若账号未开通、主体被停用或密码需要重置，请联系平台管理员处理。"
+              description="若账号未开通或密码需要重置，请联系管理员处理。"
             />
 
             {hasLoginError && (
@@ -338,7 +337,7 @@ const Login: React.FC = () => {
                 </div>
 
                 <div className={styles.submitHint}>
-                  登录即代表你同意遵循后台访问控制与审计策略。
+                  登录即表示同意后台访问控制策略。
                 </div>
               </LoginForm>
             </div>
