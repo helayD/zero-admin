@@ -15,6 +15,7 @@ import (
 	omsorder_main "github.com/feihua/zero-admin/api/admin/internal/handler/oms/order_main"
 	omsorder_return "github.com/feihua/zero-admin/api/admin/internal/handler/oms/order_return"
 	omsorder_setting "github.com/feihua/zero-admin/api/admin/internal/handler/oms/order_setting"
+	omsreturn_apply "github.com/feihua/zero-admin/api/admin/internal/handler/oms/return_apply"
 	omsreturn_reason "github.com/feihua/zero-admin/api/admin/internal/handler/oms/return_reason"
 	pmscomment "github.com/feihua/zero-admin/api/admin/internal/handler/pms/comment"
 	pmsproduct_attribute "github.com/feihua/zero-admin/api/admin/internal/handler/pms/product_attribute"
@@ -363,6 +364,21 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		),
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
 		rest.WithPrefix("/api/oms/orderReturn"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.CheckUrl},
+			[]rest.Route{
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryOrderReturnApplyList",
+					Handler: omsreturn_apply.QueryOrderReturnApplyListHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/oms/returnApply"),
 	)
 
 	server.AddRoutes(

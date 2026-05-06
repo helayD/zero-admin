@@ -3542,6 +3542,54 @@ type QueryOrderReturnListResp struct {
 	Success  bool                        `json:"success"`
 }
 
+type QueryOrderReturnApplyListData struct {
+	Id             int64   `json:"id"`             //主键ID
+	OrderId        int64   `json:"orderId"`        //关联订单ID
+	ReturnNo       string  `json:"returnNo"`       //退货单号
+	MemberId       int64   `json:"memberId"`       //会员ID
+	Status         int32   `json:"status"`         //退货状态（0待审核 1审核通过 2已收货 3已退款 4已拒绝 5已关闭）
+	Type           int32   `json:"type"`           //售后类型（0退货退款 1仅退款 2换货）
+	Reason         string  `json:"reason"`         //退货原因
+	Description    string  `json:"description"`    //问题描述
+	ProofPic       string  `json:"proofPic"`       //凭证图片，逗号分隔
+	RefundAmount   float64 `json:"refundAmount"`   //退款金额
+	ReturnName     string  `json:"returnName"`     //退货人姓名
+	ReturnPhone    string  `json:"returnPhone"`    //退货人电话
+	CompanyAddress string  `json:"companyAddress"` //退货收货地址
+	CreateTime     string  `json:"createTime"`     //申请时间
+	HandleTime     string  `json:"handleTime"`     //处理时间
+	HandleNote     string  `json:"handleNote"`     //处理备注
+	HandleMan      string  `json:"handleMan"`      //处理人员
+	ReceiveTime    string  `json:"receiveTime"`    //收货时间
+	ReceiveNote    string  `json:"receiveNote"`    //收货备注
+	ReceiveMan     string  `json:"receiveMan"`     //收货人
+	RefundTime     string  `json:"refundTime"`     //退款时间
+	CloseTime      string  `json:"closeTime"`      //关闭时间
+	Remark         string  `json:"remark"`         //备注
+}
+
+type QueryOrderReturnApplyListReq struct {
+	Current     int32  `form:"current,default=1"`    //第几页
+	PageSize    int32  `form:"pageSize,default=20"`  //每页的数量
+	OrderId     int64  `form:"orderId,optional"`     //关联订单ID
+	ReturnNo    string `form:"returnNo,optional"`    //退货单号
+	MemberId    int64  `form:"memberId,optional"`    //会员ID
+	Status      int32  `form:"status,default=2"`     //退货状态（0待审核 1审核通过 2已收货 3已退款 4已拒绝 5已关闭）
+	Type        int32  `form:"type,optional"`        //售后类型（0退货退款 1仅退款 2换货）
+	ReturnName  string `form:"returnName,optional"`  //退货人姓名
+	ReturnPhone string `form:"returnPhone,optional"` //退货人电话
+}
+
+type QueryOrderReturnApplyListResp struct {
+	Code     string                           `json:"code"`
+	Message  string                           `json:"message"`
+	Data     []*QueryOrderReturnApplyListData `json:"data"`
+	Current  int32                            `json:"current,default=1"`
+	PageSize int32                            `json:"pageSize,default=20"`
+	Total    int64                            `json:"total"`
+	Success  bool                             `json:"success"`
+}
+
 type QueryOrderReturnReasonDetailData struct {
 	Id         int64  `json:"id"`         //主键ID
 	Name       string `json:"name"`       //退货类型
