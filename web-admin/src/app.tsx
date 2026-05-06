@@ -66,10 +66,12 @@ const ensureOrphanOverlayCleanupStyle = () => {
     body.${orphanOverlayCleanupClass} .ant-tour-mask,
     body.${orphanOverlayCleanupClass} .ant-modal-wrap,
     body.${orphanOverlayCleanupClass} .ant-drawer-content-wrapper,
-    body.${orphanOverlayCleanupClass} .ant-tour {
+    body.${orphanOverlayCleanupClass} .ant-tour,
+    body.${orphanOverlayCleanupClass} .ant-spin-blur::after {
       pointer-events: none !important;
       visibility: hidden !important;
       opacity: 0 !important;
+      display: none !important;
     }
   `;
   document.head.appendChild(style);
@@ -87,14 +89,24 @@ const cleanupOrphanAntdOverlays = () => {
     isVisibleOverlayNode('.ant-drawer-content-wrapper .ant-drawer-content') ||
     isVisibleOverlayNode('.ant-tour .ant-tour-inner');
 
+  const hasResidualOverlay =
+    document.querySelector('.ant-modal-mask, .ant-drawer-mask, .ant-tour-mask, .ant-spin-blur') !==
+      null || document.body.classList.contains('ant-scrolling-effect');
+
+  // 调试日志
+  if (process.env.NODE_ENV === 'development' || window.location.hostname === '47.107.224.56') {
+    console.log('[OverlayCleanup]', {
+      hasVisibleDialog,
+      hasResidualOverlay,
+      bodyClass: document.body.className,
+      residualElements: Array.from(document.querySelectorAll('.ant-modal-mask, .ant-drawer-mask, .ant-tour-mask, .ant-spin-blur')).map(el => el.className),
+    });
+  }
+
   if (hasVisibleDialog) {
     document.body.classList.remove(orphanOverlayCleanupClass);
     return;
   }
-
-  const hasResidualOverlay =
-    document.querySelector('.ant-modal-mask, .ant-drawer-mask, .ant-tour-mask, .ant-spin-blur') !==
-      null || document.body.classList.contains('ant-scrolling-effect');
 
   if (!hasResidualOverlay) {
     document.body.classList.remove(orphanOverlayCleanupClass);
@@ -137,19 +149,15 @@ const OverlayCleanupGuard: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   useEffect(() => {
-    cleanupOrphanAntdOverlays();
-
-    const fastTimer = window.setTimeout(() => {
-      cleanupOrphanAntdOverlays();
-    }, 200);
-
-    const slowTimer = window.setTimeout(() => {
-      cleanupOrphanAntdOverlays();
-    }, 1200);
+    // 页面切换时立即清理，并延迟多次执行确保彻底清理
+    const timers = [0, 100, 300, 600, 1000, 1500].map((delay) =>
+      window.setTimeout(() => {
+        cleanupOrphanAntdOverlays();
+      }, delay),
+    );
 
     return () => {
-      window.clearTimeout(fastTimer);
-      window.clearTimeout(slowTimer);
+      timers.forEach(window.clearTimeout);
     };
   }, [location.pathname]);
 
