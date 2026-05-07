@@ -326,8 +326,8 @@ func (l *GenerateOrderLogic) GenerateOrder(req *types.GenerateOrderReq) (*types.
 		payAmount = 0
 	}
 
-	// === Task 2.4: 支付方式校验 ===
-	if req.PayType != 1 && req.PayType != 2 {
+	// === Task 2.4: 支付方式校验（99=模拟支付，测试专用）===
+	if req.PayType != 1 && req.PayType != 2 && req.PayType != 99 {
 		if idempotencyKey != "" {
 			middleware.MarkFailed(l.ctx, l.svcCtx.Redis, idempotencyKey, ErrCodeOrderPayTypeInvalid, "支付方式无效")
 		}
