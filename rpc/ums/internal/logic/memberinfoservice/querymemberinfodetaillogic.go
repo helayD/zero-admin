@@ -46,6 +46,24 @@ func (l *QueryMemberInfoDetailLogic) QueryMemberInfoDetail(in *umsclient.QueryMe
 		return nil, errors.New("查询会员异常")
 	}
 
+	// 实时统计订单数（从 oms_order_main）
+	var orderCount int64
+	if countErr := l.svcCtx.DB.WithContext(l.ctx).Table("oms_order_main").
+		Where("user_id = ? AND is_deleted = 0", in.MemberId).
+		Count(&orderCount).Error; countErr != nil {
+		logc.Errorf(l.ctx, "统计会员订单数失败,memberId:%d,异常:%s", in.MemberId, countErr.Error())
+		orderCount = int64(item.OrderCount)
+	}
+
+	// 实时统计可用优惠券数（从 sms_coupon_record，status=0 未使用）
+	var couponCount int64
+	if countErr := l.svcCtx.DB.WithContext(l.ctx).Table("sms_coupon_record").
+		Where("member_id = ? AND status = 0 AND is_deleted = 0", in.MemberId).
+		Count(&couponCount).Error; countErr != nil {
+		logc.Errorf(l.ctx, "统计会员优惠券数失败,memberId:%d,异常:%s", in.MemberId, countErr.Error())
+		couponCount = int64(item.CouponCount)
+	}
+
 	data := &umsclient.QueryMemberInfoDetailResp{
 		Id:           item.ID,                                 // 主键ID
 		MemberId:     item.MemberID,                           // 会员ID
@@ -61,8 +79,8 @@ func (l *QueryMemberInfoDetailLogic) QueryMemberInfoDetail(in *umsclient.QueryMe
 		Points:       item.Points,                             // 积分
 		TotalPoints:  item.TotalPoints,                        // 累计获得积分
 		SpendAmount:  float32(item.SpendAmount),               // 累计消费金额
-		OrderCount:   item.OrderCount,                         // 订单数
-		CouponCount:  item.CouponCount,                        // 优惠券数量
+		OrderCount:   int32(orderCount),                       // 订单数（实时统计）
+		CouponCount:  int32(couponCount),                      // 优惠券数量（实时统计）
 		CommentCount: item.CommentCount,                       // 评价数
 		ReturnCount:  item.ReturnCount,                        // 退货数
 		LotteryTimes: item.LotteryTimes,                       // 剩余抽奖次数

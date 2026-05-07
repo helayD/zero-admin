@@ -19,6 +19,8 @@ import 'package:flutter_mall/view/mine/profile/profile_edit.dart';
 import 'package:flutter_mall/view/mine/setting/settings.dart';
 import 'package:flutter_mall/view/digital_card/my_digital_card_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'package:flutter_mall/model/digital_card/digital_card_asset_model.dart';
 
 ///
 /// 我的页面
@@ -37,6 +39,7 @@ class _MineState extends State<Mine> {
   bool _isLoggedIn = false;
   MemberInfoData? _memberInfoData;
   int _unreadMessageCount = 0;
+  int? _digitalCardCount;
 
   @override
   void initState() {
@@ -58,11 +61,16 @@ class _MineState extends State<Mine> {
       if (!loggedIn) {
         _memberInfoData = null;
         _unreadMessageCount = 0;
+        _digitalCardCount = null;
       }
     });
 
     if (loggedIn) {
-      await Future.wait([_queryMemberInfo(), _queryUnreadMessageCount()]);
+      await Future.wait([
+        _queryMemberInfo(),
+        _queryUnreadMessageCount(),
+        _queryDigitalCardCount(),
+      ]);
     }
   }
 
@@ -78,6 +86,26 @@ class _MineState extends State<Mine> {
       });
     } catch (_) {
       // 未读数查询失败不阻塞页面展示。
+    }
+  }
+
+  Future<void> _queryDigitalCardCount() async {
+    try {
+      final Response response = await HttpUtil.get(
+        queryMyDigitalCardAssetListUrl,
+        queryParameters: <String, dynamic>{'pageNum': 1, 'pageSize': 1},
+      );
+      final QueryMyDigitalCardAssetListResponse parsed =
+          queryMyDigitalCardAssetListResponseFromJson(
+              jsonEncode(response.data));
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _digitalCardCount = parsed.data.total;
+      });
+    } catch (_) {
+      // 数字卡片数量查询失败不阻塞页面展示。
     }
   }
 
@@ -429,9 +457,9 @@ class _MineState extends State<Mine> {
         },
       ),
       _MineMetricData(
-        label: '数字卡片',
-        value: '查看',
-        subtitle: '到账进度',
+        label: '提货卡',
+        value: (_digitalCardCount ?? 0).toString(),
+        subtitle: '已收录张数',
         icon: Icons.style_outlined,
         accentColor: const Color(0xFF7C3AED),
         backgroundColor: const Color(0xFFF3E8FF),
