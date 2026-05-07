@@ -299,7 +299,9 @@ func (l *PaymentOperationsUtils) SimulatePaySuccess(outTradeNo string) error {
 	if orderId == 0 {
 		// 通过 OrderNo 查询订单
 		orderResp, queryErr := l.svcCtx.OrderService.QueryOrderList(l.ctx, &omsclient.QueryOrderListReq{
-			OrderNo: outTradeNo,
+			OrderNo:  outTradeNo,
+			PageNum:  1,
+			PageSize: 1,
 		})
 		if queryErr == nil && orderResp != nil && len(orderResp.List) > 0 {
 			orderId = orderResp.List[0].Id
