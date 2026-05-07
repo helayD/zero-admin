@@ -79,7 +79,7 @@ func (l *UpdateOrderLogic) UpdateOrder(in *omsclient.UpdateOrderReq) (*omsclient
 	}
 
 	if err != nil {
-		logc.Errorf(l.ctx, "更新订单失败,参数:%+v,异常:%s", item, err.Error())
+		logc.Errorf(l.ctx, "更新订单失败,参数:%+v,异常:%s", in, err.Error())
 		return nil, errors.New("更新订单失败")
 	}
 
