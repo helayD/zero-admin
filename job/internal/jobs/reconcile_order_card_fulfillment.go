@@ -73,7 +73,7 @@ func reconcileMissingCardAssets(ctx context.Context, db *gorm.DB, cardMintServic
 			main.member_id,
 			main.pay_time
 		`).
-		Where(`main.order_status = 1 AND main.pay_status = 1 AND main.is_deleted = 0`).
+		Where(`main.order_status = 2 AND main.pay_status = 1 AND main.is_deleted = 0`).
 		Where(`COALESCE(NULLIF(sku.fulfillment_mode, ''), spu.fulfillment_mode) = 'digital_asset'`).
 		Where(`main.pay_time < DATE_SUB(NOW(), INTERVAL 5 MINUTE)`).
 		Where(`NOT EXISTS (

@@ -737,8 +737,8 @@ func resolveTimelineStatusText(status string) string {
 	}
 }
 
-// RefundCard处置Input 退款触发的卡片处置输入
-type RefundCard处置Input struct {
+// RefundCardDisposeInput 退款触发的卡片处置输入
+type RefundCardDisposeInput struct {
 	OrderID      int64
 	OrderItemID  int64
 	RefundPolicy string // freeze_card / recycle_card / manual_review
@@ -747,21 +747,21 @@ type RefundCard处置Input struct {
 	TraceID      string
 }
 
-// RefundCard处置Result 退款触发的卡片处置结果
-type RefundCard处置Result struct {
+// RefundCardDisposeResult 退款触发的卡片处置结果
+type RefundCardDisposeResult struct {
 	AssetInstanceID  int64
 	AssetNo          string
 	ComplianceStatus string
-	处置Action       string
+	DisposeAction    string
 	RefundAction     string // 导出字段，供外部包使用
 }
 
-// HandleRefundCard处置 处理退款触发的卡片处置
+// HandleRefundCardDispose 处理退款触发的卡片处置
 // 根据 refund_policy 执行对应的处置动作：
 // - freeze_card: 更新 compliance_status 为 frozen，不可提货、不可转赠
 // - recycle_card: 更新 compliance_status 为 recycled
 // - manual_review: 标记为待人工复核
-func (s *Service) HandleRefundCard处置(ctx context.Context, input RefundCard处置Input) (*RefundCard处置Result, error) {
+func (s *Service) HandleRefundCardDispose(ctx context.Context, input RefundCardDisposeInput) (*RefundCardDisposeResult, error) {
 	if s == nil || s.DB == nil {
 		return nil, errors.New("数据库未初始化")
 	}
@@ -772,7 +772,7 @@ func (s *Service) HandleRefundCard处置(ctx context.Context, input RefundCard�
 		return nil, errors.New("退款处置策略不能为空")
 	}
 
-	var result *RefundCard处置Result
+	var result *RefundCardDisposeResult
 	err := s.DB.Transaction(func(tx *gorm.DB) error {
 		// 查找订单明细对应的卡片资产
 		var instance CardInstanceRow
@@ -793,11 +793,11 @@ func (s *Service) HandleRefundCard处置(ctx context.Context, input RefundCard�
 			instance.ComplianceStatus == ComplianceStatusRecycled ||
 			instance.ComplianceStatus == ComplianceStatusManualReview {
 			// 已经处置过，直接返回当前状态
-			result = &RefundCard处置Result{
+			result = &RefundCardDisposeResult{
 				AssetInstanceID:  instance.ID,
 				AssetNo:          instance.AssetNo,
 				ComplianceStatus: instance.ComplianceStatus,
-				处置Action:       "already_disposed",
+				DisposeAction:    "already_disposed",
 				RefundAction:     "already_disposed",
 			}
 			return nil
@@ -852,11 +852,11 @@ func (s *Service) HandleRefundCard处置(ctx context.Context, input RefundCard�
 			return fmt.Errorf("写入审计日志失败: %w", err)
 		}
 
-		result = &RefundCard处置Result{
+		result = &RefundCardDisposeResult{
 			AssetInstanceID:  instance.ID,
 			AssetNo:          instance.AssetNo,
 			ComplianceStatus: nextComplianceStatus,
-			处置Action:       input.RefundPolicy,
+			DisposeAction:    input.RefundPolicy,
 			RefundAction:     input.RefundPolicy,
 		}
 		return nil

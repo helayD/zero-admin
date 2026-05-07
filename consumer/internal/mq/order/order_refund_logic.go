@@ -64,6 +64,7 @@ func processRefundedOrderCards(ctx context.Context, payload *EventPayload, cardM
 	}
 
 	// 查询每个订单明细对应的卡片资产的退款处置策略
+	var lastErr error
 	for _, item := range items {
 		var policyRow orderRefundPolicyRow
 		err := db.WithContext(ctx).
@@ -77,6 +78,7 @@ func processRefundedOrderCards(ctx context.Context, payload *EventPayload, cardM
 				continue
 			}
 			logc.Errorf(ctx, "查询卡片资产退款策略失败, orderItemId=%d, err=%v", item.ID, err)
+			lastErr = err
 			continue
 		}
 
@@ -86,7 +88,7 @@ func processRefundedOrderCards(ctx context.Context, payload *EventPayload, cardM
 		}
 
 		// 执行卡片处置
-		result, err := cardMintService.HandleRefundCard处置(ctx, digitalcardmint.RefundCard处置Input{
+		result, err := cardMintService.HandleRefundCardDispose(ctx, digitalcardmint.RefundCardDisposeInput{
 			OrderID:      payload.EntityID,
 			OrderItemID:  item.ID,
 			RefundPolicy: policyRow.RefundPolicy,
@@ -96,6 +98,7 @@ func processRefundedOrderCards(ctx context.Context, payload *EventPayload, cardM
 		})
 		if err != nil {
 			logc.Errorf(ctx, "卡片处置失败, orderItemId=%d, err=%v", item.ID, err)
+			lastErr = err
 			continue
 		}
 
@@ -105,5 +108,5 @@ func processRefundedOrderCards(ctx context.Context, payload *EventPayload, cardM
 		}
 	}
 
-	return nil
+	return lastErr
 }

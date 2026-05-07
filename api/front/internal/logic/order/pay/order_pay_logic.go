@@ -101,6 +101,13 @@ func (l *OrderPayLogic) OrderPay(req *types.OrderPayReq) (resp *types.OrderPayRe
 		payParam, err = operationsUtils.TradeAppPay(outTradeNo, payAmountStr, orderSubject)
 	case 2: // 微信
 		payParam, err = operationsUtils.TradeAppPayWechat(outTradeNo, payAmountStr, orderSubject)
+	case 99: // 模拟支付（测试专用，Story 10.6）
+		if err := operationsUtils.SimulatePaySuccess(outTradeNo); err != nil {
+			l.Logger.Errorf("模拟支付失败 orderId=%d err=%v", req.OrderId, err)
+			return &types.OrderPayResp{Code: 1, Message: "模拟支付失败: " + err.Error()}, nil
+		}
+		_ = middleware.MarkCompleted(l.ctx, l.svcCtx.Redis, idempotencyKey, req.OrderId)
+		return &types.OrderPayResp{Code: 0, Message: "模拟支付成功", Data: "simulate_pay_success"}, nil
 	}
 
 	if err != nil {

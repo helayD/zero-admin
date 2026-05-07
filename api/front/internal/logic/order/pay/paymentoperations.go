@@ -263,6 +263,73 @@ func (l *PaymentOperationsUtils) UpdatePaidStatus(outTradeNo string) {
 	}
 }
 
+// SimulatePaySuccess 模拟支付成功（测试专用）
+// Story 10.6: 测试环境未对接真实支付，通过此方法直接触发订单支付成功及后续履约分叉
+func (l *PaymentOperationsUtils) SimulatePaySuccess(outTradeNo string) error {
+	l.Logger.Infof("SimulatePaySuccess 开始模拟支付, outTradeNo=%s", outTradeNo)
+
+	// Step 1: 查询支付记录获取 payment_id
+	paymentList, err := l.svcCtx.OrderPaymentService.QueryOrderPaymentList(l.ctx, &omsclient.QueryOrderPaymentListReq{
+		OrderNo: outTradeNo,
+	})
+	var paymentId int64
+	if err == nil && paymentList != nil && len(paymentList.List) > 0 {
+		paymentId = paymentList.List[0].Id
+	}
+
+	// Step 2: 更新 pay_status=1
+	if paymentId > 0 {
+		_, err = l.svcCtx.OrderPaymentService.UpdateOrderPaymentStatus(l.ctx, &omsclient.UpdateOrderPaymentStatusReq{
+			Ids:       []int64{paymentId},
+			PayStatus: order.PayStatusSuccess, // 1=支付成功
+		})
+		if err != nil {
+			l.Logger.Errorf("SimulatePaySuccess 更新支付状态失败 outTradeNo=%s err=%v", outTradeNo, err)
+			return fmt.Errorf("更新支付状态失败: %w", err)
+		}
+		l.Logger.Infof("SimulatePaySuccess 更新支付状态成功 outTradeNo=%s paymentId=%d", outTradeNo, paymentId)
+	}
+
+	// Step 3: 更新 order_status=2（已支付）
+	_, err = l.svcCtx.OrderService.UpdateOrder(l.ctx, &omsclient.UpdateOrderReq{
+		OrderNo:     outTradeNo,
+		OrderStatus: order.OrderStatusPaid, // 2=已支付
+	})
+	if err != nil {
+		l.Logger.Errorf("SimulatePaySuccess 更新订单状态失败 outTradeNo=%s err=%v", outTradeNo, err)
+		// 回滚支付状态
+		if paymentId > 0 {
+			_, _ = l.svcCtx.OrderPaymentService.UpdateOrderPaymentStatus(l.ctx, &omsclient.UpdateOrderPaymentStatusReq{
+				Ids:       []int64{paymentId},
+				PayStatus: order.PayStatusPending, // 0=待支付
+			})
+		}
+		return fmt.Errorf("更新订单状态失败: %w", err)
+	}
+	l.Logger.Infof("SimulatePaySuccess 更新订单状态成功 outTradeNo=%s", outTradeNo)
+
+	// Step 4: 写入操作日志
+	var orderId int64
+	if paymentList != nil && len(paymentList.List) > 0 {
+		orderId = paymentList.List[0].OrderId
+		_, _ = l.svcCtx.OrderOperationLogService.AddOrderOperationLog(l.ctx, &omsclient.AddOrderOperationLogReq{
+			OrderId:       orderId,
+			OperatorType:  order.OperatorTypeSystem,
+			OperationType: order.OpPaymentSuccess,
+			OperatorNote:  fmt.Sprintf("模拟支付成功 outTradeNo=%s", outTradeNo),
+		})
+	}
+
+	// Step 5: 发布支付成功 MQ 事件，触发履约分叉（Story 10.6）
+	if orderId > 0 {
+		go l.publishPaySuccessEvent(outTradeNo, orderId)
+		l.Logger.Infof("SimulatePaySuccess 已发布支付成功事件, outTradeNo=%s orderId=%d", outTradeNo, orderId)
+	}
+
+	l.Logger.Infof("SimulatePaySuccess 模拟支付完成, outTradeNo=%s", outTradeNo)
+	return nil
+}
+
 // formatAmount 将元转为分（字符串），微信支付接口要求金额单位为分
 func formatAmount(yuan float64) string {
 	return fmt.Sprintf("%d", int(yuan*100+0.5))

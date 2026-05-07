@@ -369,7 +369,7 @@ func TestEnsureOrderPurchaseAssetCreatesIdempotentAsset(t *testing.T) {
 	}
 }
 
-func TestHandleRefundCard处置FreezeCard(t *testing.T) {
+func TestHandleRefundCardDisposeFreezeCard(t *testing.T) {
 	service := NewService(newAssetServiceTestDB(t), nil, nil)
 
 	// 先创建订单购买型资产
@@ -394,7 +394,7 @@ func TestHandleRefundCard处置FreezeCard(t *testing.T) {
 	}
 
 	// 测试冻结处置
-处置Result, err := service.HandleRefundCard处置(context.Background(), RefundCard处置Input{
+	disposeResult, err := service.HandleRefundCardDispose(context.Background(), RefundCardDisposeInput{
 		OrderID:      1002,
 		OrderItemID:  2002,
 		RefundPolicy: "freeze_card",
@@ -403,20 +403,20 @@ func TestHandleRefundCard处置FreezeCard(t *testing.T) {
 		TraceID:      "trace-refund-1",
 	})
 	if err != nil {
-		t.Fatalf("HandleRefundCard处置 returned error: %v", err)
+		t.Fatalf("HandleRefundCardDispose returned error: %v", err)
 	}
-	if 处置Result.AssetInstanceID != result.AssetInstanceID {
-		t.Fatalf("expected same asset instance ID, got %d vs %d", 处置Result.AssetInstanceID, result.AssetInstanceID)
+	if disposeResult.AssetInstanceID != result.AssetInstanceID {
+		t.Fatalf("expected same asset instance ID, got %d vs %d", disposeResult.AssetInstanceID, result.AssetInstanceID)
 	}
-	if 处置Result.ComplianceStatus != ComplianceStatusFrozen {
-		t.Fatalf("expected compliance status frozen, got %s", 处置Result.ComplianceStatus)
+	if disposeResult.ComplianceStatus != ComplianceStatusFrozen {
+		t.Fatalf("expected compliance status frozen, got %s", disposeResult.ComplianceStatus)
 	}
-	if 处置Result.RefundAction != "freeze_card" {
-		t.Fatalf("expected action freeze_card, got %s", 处置Result.RefundAction)
+	if disposeResult.RefundAction != "freeze_card" {
+		t.Fatalf("expected action freeze_card, got %s", disposeResult.RefundAction)
 	}
 
 	// 幂等性验证：再次处置应返回 already_disposed
-处置Result2, err := service.HandleRefundCard处置(context.Background(), RefundCard处置Input{
+	disposeResult2, err := service.HandleRefundCardDispose(context.Background(), RefundCardDisposeInput{
 		OrderID:      1002,
 		OrderItemID:  2002,
 		RefundPolicy: "freeze_card",
@@ -425,10 +425,10 @@ func TestHandleRefundCard处置FreezeCard(t *testing.T) {
 		TraceID:      "trace-refund-2",
 	})
 	if err != nil {
-		t.Fatalf("HandleRefundCard处置 second call returned error: %v", err)
+		t.Fatalf("HandleRefundCardDispose second call returned error: %v", err)
 	}
-	if 处置Result2.RefundAction != "already_disposed" {
-		t.Fatalf("expected action already_disposed, got %s", 处置Result2.RefundAction)
+	if disposeResult2.RefundAction != "already_disposed" {
+		t.Fatalf("expected action already_disposed, got %s", disposeResult2.RefundAction)
 	}
 }
 
