@@ -24,7 +24,6 @@ import (
 	"github.com/feihua/zero-admin/rpc/sms/client/couponrecordservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/couponservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/coupontypeservice"
-	productfulfillmentruleservice "github.com/feihua/zero-admin/rpc/sms/client/productfulfillmentruleservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/membergrowthlogservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/memberinfoservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/membermessageservice"
@@ -61,9 +60,6 @@ type ServiceContext struct {
 	ProductSpuService productspuservice.ProductSpuService
 	// 订单相关
 	OrderService orderservice.OrderService
-
-	// 发卡规则相关（Story 10.6）
-	ProductFulfillmentRuleService productfulfillmentruleservice.ProductFulfillmentRuleService
 
 	// 搜索相关
 	Search search_client.Search
@@ -106,7 +102,6 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	memberMessageService := membermessageservice.NewMemberMessageService(umsClient)
 	couponService := couponservice.NewCouponService(smsClient)
 	couponRecordService := couponrecordservice.NewCouponRecordService(smsClient)
-	productFulfillmentRuleService := productfulfillmentruleservice.NewProductFulfillmentRuleService(smsClient)
 	skuService := productskuservice.NewProductSkuService(pmsClient)
 	spuService := productspuservice.NewProductSpuService(pmsClient)
 	orderService := orderservice.NewOrderService(omsClient)
@@ -128,7 +123,6 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		ProductSkuService:      skuService,
 		ProductSpuService:      spuService,
 		OrderService:           orderService,
-		ProductFulfillmentRuleService: productFulfillmentRuleService,
 		Search:                 search,
 	}
 
@@ -199,7 +193,13 @@ func NewServiceContext(c config.Config) *ServiceContext {
 
 	go func() {
 		rabbitmq.ConsumeSimpleWithAck("order.pay.queue", func(body []byte) error {
-			return order.OrderPay(context.Background(), body, memberMessageService, productFulfillmentRuleService)
+			return order.OrderPay(context.Background(), body, memberMessageService, cardMintService, db)
+		})
+	}()
+
+	go func() {
+		rabbitmq.ConsumeSimpleWithAck("order.refund.queue", func(body []byte) error {
+			return order.OrderRefund(context.Background(), body, cardMintService, db)
 		})
 	}()
 

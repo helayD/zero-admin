@@ -60,6 +60,14 @@ type CardInstanceRow struct {
 	MintStatus            string     `gorm:"column:mint_status"`
 	TokenID               string     `gorm:"column:token_id"`
 	ChainStatus           string     `gorm:"column:chain_status"`
+	SourceType            string     `gorm:"column:source_type"`
+	SourceID              int64      `gorm:"column:source_id"`
+	FulfillmentRuleID     int64      `gorm:"column:fulfillment_rule_id"`
+	Transferable          int32      `gorm:"column:transferable"`
+	TransferLimit         int32      `gorm:"column:transfer_limit"`
+	ClaimCondition        string     `gorm:"column:claim_condition"`
+	RedemptionCondition   string     `gorm:"column:redemption_condition"`
+	RefundPolicy          string     `gorm:"column:refund_policy"`
 	DisplayStatus         string     `gorm:"column:display_status"`
 	ComplianceStatus      string     `gorm:"column:compliance_status"`
 	LastReceiptAt         *time.Time `gorm:"column:last_receipt_at"`
@@ -208,6 +216,8 @@ type TaskListItem struct {
 	AssetStatusText       string `json:"assetStatusText"`
 	ParticipationRecordID int64  `json:"participationRecordId"`
 	ChainType             string `json:"chainType"`
+	SourceType            string `json:"sourceType"`        // 资产来源类型: draw-抽卡获取, purchase-订单购买
+	SourceDisplayName     string `json:"sourceDisplayName"` // 来源显示名称
 }
 
 type AssetLogItem struct {

@@ -38,7 +38,6 @@ func (l *QueryMyDigitalCardAssetDetailLogic) QueryMyDigitalCardAssetDetail(req *
 		Message: "查询我的数字卡片资产详情成功",
 		Data: types.DigitalCardAssetDetailData{
 			Item:                mapAssetItem(detail.Item),
-			TokenIdMasked:       detail.TokenIDMasked,
 			LatestStatusSummary: detail.LatestStatusSummary,
 			RestrictionReason:   detail.RestrictionReason,
 			DrawSummary:         mapDrawSummary(detail.DrawSummary),

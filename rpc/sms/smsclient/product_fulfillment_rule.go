@@ -6,6 +6,16 @@ import (
 	"google.golang.org/grpc"
 )
 
+const (
+	ProductFulfillmentRuleService_AddProductFulfillmentRule_FullMethodName          = "/smsclient.ProductFulfillmentRuleService/AddProductFulfillmentRule"
+	ProductFulfillmentRuleService_UpdateProductFulfillmentRule_FullMethodName       = "/smsclient.ProductFulfillmentRuleService/UpdateProductFulfillmentRule"
+	ProductFulfillmentRuleService_QueryProductFulfillmentRuleList_FullMethodName    = "/smsclient.ProductFulfillmentRuleService/QueryProductFulfillmentRuleList"
+	ProductFulfillmentRuleService_QueryProductFulfillmentRuleDetail_FullMethodName  = "/smsclient.ProductFulfillmentRuleService/QueryProductFulfillmentRuleDetail"
+	ProductFulfillmentRuleService_UpdateProductFulfillmentRuleStatus_FullMethodName = "/smsclient.ProductFulfillmentRuleService/UpdateProductFulfillmentRuleStatus"
+	ProductFulfillmentRuleService_DeleteProductFulfillmentRule_FullMethodName       = "/smsclient.ProductFulfillmentRuleService/DeleteProductFulfillmentRule"
+	ProductFulfillmentRuleService_CheckProductFulfillmentRuleBinding_FullMethodName = "/smsclient.ProductFulfillmentRuleService/CheckProductFulfillmentRuleBinding"
+)
+
 // ProductFulfillmentRuleData 发卡规则数据
 type ProductFulfillmentRuleData struct {
 	Id                  int64  `json:"id"`
@@ -180,41 +190,169 @@ func NewProductFulfillmentRuleServiceClient(conn grpc.ClientConnInterface) Produ
 }
 
 func (c *productFulfillmentRuleServiceImpl) AddProductFulfillmentRule(ctx context.Context, in *AddProductFulfillmentRuleReq, opts ...grpc.CallOption) (*AddProductFulfillmentRuleResp, error) {
-	// TODO: 实现 gRPC 调用
-	return nil, nil
+	out := new(AddProductFulfillmentRuleResp)
+	err := c.conn.Invoke(ctx, ProductFulfillmentRuleService_AddProductFulfillmentRule_FullMethodName, in, out, opts...)
+	return out, err
 }
 
 func (c *productFulfillmentRuleServiceImpl) UpdateProductFulfillmentRule(ctx context.Context, in *UpdateProductFulfillmentRuleReq, opts ...grpc.CallOption) (*UpdateProductFulfillmentRuleResp, error) {
-	// TODO: 实现 gRPC 调用
-	return nil, nil
+	out := new(UpdateProductFulfillmentRuleResp)
+	err := c.conn.Invoke(ctx, ProductFulfillmentRuleService_UpdateProductFulfillmentRule_FullMethodName, in, out, opts...)
+	return out, err
 }
 
 func (c *productFulfillmentRuleServiceImpl) QueryProductFulfillmentRuleList(ctx context.Context, in *QueryProductFulfillmentRuleListReq, opts ...grpc.CallOption) (*QueryProductFulfillmentRuleListResp, error) {
-	// TODO: 实现 gRPC 调用
-	return nil, nil
+	out := new(QueryProductFulfillmentRuleListResp)
+	err := c.conn.Invoke(ctx, ProductFulfillmentRuleService_QueryProductFulfillmentRuleList_FullMethodName, in, out, opts...)
+	return out, err
 }
 
 func (c *productFulfillmentRuleServiceImpl) QueryProductFulfillmentRuleDetail(ctx context.Context, in *QueryProductFulfillmentRuleDetailReq, opts ...grpc.CallOption) (*QueryProductFulfillmentRuleDetailResp, error) {
-	// TODO: 实现 gRPC 调用
-	return nil, nil
+	out := new(QueryProductFulfillmentRuleDetailResp)
+	err := c.conn.Invoke(ctx, ProductFulfillmentRuleService_QueryProductFulfillmentRuleDetail_FullMethodName, in, out, opts...)
+	return out, err
 }
 
 func (c *productFulfillmentRuleServiceImpl) UpdateProductFulfillmentRuleStatus(ctx context.Context, in *UpdateProductFulfillmentRuleStatusReq, opts ...grpc.CallOption) (*UpdateProductFulfillmentRuleStatusResp, error) {
-	// TODO: 实现 gRPC 调用
-	return nil, nil
+	out := new(UpdateProductFulfillmentRuleStatusResp)
+	err := c.conn.Invoke(ctx, ProductFulfillmentRuleService_UpdateProductFulfillmentRuleStatus_FullMethodName, in, out, opts...)
+	return out, err
 }
 
 func (c *productFulfillmentRuleServiceImpl) DeleteProductFulfillmentRule(ctx context.Context, in *DeleteProductFulfillmentRuleReq, opts ...grpc.CallOption) (*DeleteProductFulfillmentRuleResp, error) {
-	// TODO: 实现 gRPC 调用
-	return nil, nil
+	out := new(DeleteProductFulfillmentRuleResp)
+	err := c.conn.Invoke(ctx, ProductFulfillmentRuleService_DeleteProductFulfillmentRule_FullMethodName, in, out, opts...)
+	return out, err
 }
 
 func (c *productFulfillmentRuleServiceImpl) CheckProductFulfillmentRuleBinding(ctx context.Context, in *CheckProductFulfillmentRuleBindingReq, opts ...grpc.CallOption) (*CheckProductFulfillmentRuleBindingResp, error) {
-	// TODO: 实现 gRPC 调用
-	return nil, nil
+	out := new(CheckProductFulfillmentRuleBindingResp)
+	err := c.conn.Invoke(ctx, ProductFulfillmentRuleService_CheckProductFulfillmentRuleBinding_FullMethodName, in, out, opts...)
+	return out, err
 }
 
 // RegisterProductFulfillmentRuleServiceServer 注册发卡规则服务到 gRPC 服务器
 func RegisterProductFulfillmentRuleServiceServer(s *grpc.Server, srv ProductFulfillmentRuleService) {
-	// TODO: 实现服务注册
+	s.RegisterService(&ProductFulfillmentRuleService_ServiceDesc, srv)
+}
+
+var ProductFulfillmentRuleService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "smsclient.ProductFulfillmentRuleService",
+	HandlerType: (*ProductFulfillmentRuleService)(nil),
+	Methods: []grpc.MethodDesc{
+		{MethodName: "AddProductFulfillmentRule", Handler: _ProductFulfillmentRuleService_AddProductFulfillmentRule_Handler},
+		{MethodName: "UpdateProductFulfillmentRule", Handler: _ProductFulfillmentRuleService_UpdateProductFulfillmentRule_Handler},
+		{MethodName: "QueryProductFulfillmentRuleList", Handler: _ProductFulfillmentRuleService_QueryProductFulfillmentRuleList_Handler},
+		{MethodName: "QueryProductFulfillmentRuleDetail", Handler: _ProductFulfillmentRuleService_QueryProductFulfillmentRuleDetail_Handler},
+		{MethodName: "UpdateProductFulfillmentRuleStatus", Handler: _ProductFulfillmentRuleService_UpdateProductFulfillmentRuleStatus_Handler},
+		{MethodName: "DeleteProductFulfillmentRule", Handler: _ProductFulfillmentRuleService_DeleteProductFulfillmentRule_Handler},
+		{MethodName: "CheckProductFulfillmentRuleBinding", Handler: _ProductFulfillmentRuleService_CheckProductFulfillmentRuleBinding_Handler},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "rpc/sms/product_fulfillment_rule.proto",
+}
+
+func _ProductFulfillmentRuleService_AddProductFulfillmentRule_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddProductFulfillmentRuleReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProductFulfillmentRuleService).AddProductFulfillmentRule(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{Server: srv, FullMethod: ProductFulfillmentRuleService_AddProductFulfillmentRule_FullMethodName}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProductFulfillmentRuleService).AddProductFulfillmentRule(ctx, req.(*AddProductFulfillmentRuleReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProductFulfillmentRuleService_UpdateProductFulfillmentRule_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateProductFulfillmentRuleReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProductFulfillmentRuleService).UpdateProductFulfillmentRule(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{Server: srv, FullMethod: ProductFulfillmentRuleService_UpdateProductFulfillmentRule_FullMethodName}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProductFulfillmentRuleService).UpdateProductFulfillmentRule(ctx, req.(*UpdateProductFulfillmentRuleReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProductFulfillmentRuleService_QueryProductFulfillmentRuleList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryProductFulfillmentRuleListReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProductFulfillmentRuleService).QueryProductFulfillmentRuleList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{Server: srv, FullMethod: ProductFulfillmentRuleService_QueryProductFulfillmentRuleList_FullMethodName}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProductFulfillmentRuleService).QueryProductFulfillmentRuleList(ctx, req.(*QueryProductFulfillmentRuleListReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProductFulfillmentRuleService_QueryProductFulfillmentRuleDetail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryProductFulfillmentRuleDetailReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProductFulfillmentRuleService).QueryProductFulfillmentRuleDetail(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{Server: srv, FullMethod: ProductFulfillmentRuleService_QueryProductFulfillmentRuleDetail_FullMethodName}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProductFulfillmentRuleService).QueryProductFulfillmentRuleDetail(ctx, req.(*QueryProductFulfillmentRuleDetailReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProductFulfillmentRuleService_UpdateProductFulfillmentRuleStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateProductFulfillmentRuleStatusReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProductFulfillmentRuleService).UpdateProductFulfillmentRuleStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{Server: srv, FullMethod: ProductFulfillmentRuleService_UpdateProductFulfillmentRuleStatus_FullMethodName}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProductFulfillmentRuleService).UpdateProductFulfillmentRuleStatus(ctx, req.(*UpdateProductFulfillmentRuleStatusReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProductFulfillmentRuleService_DeleteProductFulfillmentRule_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteProductFulfillmentRuleReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProductFulfillmentRuleService).DeleteProductFulfillmentRule(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{Server: srv, FullMethod: ProductFulfillmentRuleService_DeleteProductFulfillmentRule_FullMethodName}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProductFulfillmentRuleService).DeleteProductFulfillmentRule(ctx, req.(*DeleteProductFulfillmentRuleReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProductFulfillmentRuleService_CheckProductFulfillmentRuleBinding_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckProductFulfillmentRuleBindingReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProductFulfillmentRuleService).CheckProductFulfillmentRuleBinding(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{Server: srv, FullMethod: ProductFulfillmentRuleService_CheckProductFulfillmentRuleBinding_FullMethodName}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProductFulfillmentRuleService).CheckProductFulfillmentRuleBinding(ctx, req.(*CheckProductFulfillmentRuleBindingReq))
+	}
+	return interceptor(ctx, in, info, handler)
 }

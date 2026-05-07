@@ -35,19 +35,18 @@ func mapAssetItem(item digitalcardmint.MemberDigitalCardAssetItem) types.Digital
 		CardFaceImage:         item.CardFaceImage,
 		ActivityId:            item.ActivityID,
 		ActivityName:          item.ActivityName,
+		SourceType:            item.SourceType,
+		SourceDisplayName:     item.SourceDisplayName,
 		Rarity:                item.Rarity,
 		ObtainedAt:            item.ObtainedAt,
 		MintStatus:            item.MintStatus,
 		MintStatusText:        item.MintStatusText,
-		ChainStatus:           item.ChainStatus,
-		ChainStatusText:       item.ChainStatusText,
 		DisplayStatus:         item.DisplayStatus,
 		DisplayStatusText:     item.DisplayStatusText,
 		ComplianceStatus:      item.ComplianceStatus,
 		ComplianceStatusText:  item.ComplianceStatusText,
 		TokenStatusText:       item.TokenStatusText,
 		ComplianceRuleSummary: item.ComplianceRuleSummary,
-		ChainType:             item.ChainType,
 	}
 }
 

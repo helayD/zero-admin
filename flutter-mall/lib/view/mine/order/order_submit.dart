@@ -887,6 +887,44 @@ class _OrderSubmitState extends State<OrderSubmit> {
                                 color: AppColors.price,
                               ),
                             ],
+                            // Story 10.6: 数字资产商品履约模式提示
+                            if (item.fulfillmentMode == 'digital_asset') ...[
+                              const SizedBox(height: AppSpacing.sm),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.shade50,
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(
+                                    color: Colors.blue.shade200,
+                                    width: 0.5,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.card_giftcard,
+                                      size: 14,
+                                      color: Colors.blue.shade600,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Flexible(
+                                      child: Text(
+                                        '该商品为数字资产，支付成功后将发放至您的数字卡包',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: Colors.blue.shade700,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                             const SizedBox(height: AppSpacing.sm),
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.end,

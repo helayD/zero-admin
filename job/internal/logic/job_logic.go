@@ -30,6 +30,8 @@ func (l *JobLogic) Job(req *types.Request) (resp *types.Response, err error) {
 		l.CancelTimeOutOrderJob()
 	case "handle_card_mint_timeout":
 		l.HandleCardMintTimeout()
+	case "reconcile_order_card_fulfillment":
+		l.ReconcileOrderCardFulfillment()
 	default:
 		logx.Errorf("unknown job name: %s", req.Name)
 	}
@@ -46,4 +48,8 @@ func (l *JobLogic) CancelTimeOutOrderJob() {
 
 func (l *JobLogic) HandleCardMintTimeout() {
 	jobs.HandleCardMintTimeout(l.ctx, l.svcCtx.CardMintService)
+}
+
+func (l *JobLogic) ReconcileOrderCardFulfillment() {
+	jobs.ReconcileOrderCardFulfillment(l.ctx, l.svcCtx.DB, l.svcCtx.CardMintService)
 }

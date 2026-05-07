@@ -273,19 +273,26 @@ func formatAmount(yuan float64) string {
 func (l *PaymentOperationsUtils) publishPaySuccessEvent(outTradeNo string, orderId int64) {
 	// 从 JWT context 提取 scope 信息（platformId/tenantId/merchantId）
 	current := common.ResolveEffectiveGovernanceScope(l.ctx)
+	memberID, _ := common.GetMemberId(l.ctx)
 
 	msgEvent := map[string]any{
-		"memberId":    0, // ActorID 在 Consumer 层从 EventPayload.ActorID 获取
-		"orderId":     orderId,
-		"orderNo":     outTradeNo,
-		"messageType": 2, // 支付消息
-		"title":       "支付成功",
-		"content":     fmt.Sprintf("您的订单（%s）已支付成功，感谢您的购买！", outTradeNo),
-		"linkType":    "order",
-		"linkId":      fmt.Sprintf("%d", orderId),
-		"platformId":  current.PlatformID,
-		"tenantId":    current.TenantID,
-		"merchantId":  current.MerchantID,
+		"eventId":    fmt.Sprintf("order-paid-%d", orderId),
+		"traceId":    fmt.Sprintf("order-paid-%d", orderId),
+		"platformId": current.PlatformID,
+		"tenantId":   current.TenantID,
+		"merchantId": current.MerchantID,
+		"actorId":    memberID,
+		"entityId":   orderId,
+		"action":     "paid",
+		"version":    "v1",
+		"data": map[string]any{
+			"orderNo":     outTradeNo,
+			"messageType": 2,
+			"title":       "支付成功",
+			"content":     fmt.Sprintf("您的订单（%s）已支付成功，感谢您的购买！", outTradeNo),
+			"linkType":    "order",
+			"linkId":      fmt.Sprintf("%d", orderId),
+		},
 	}
 
 	body, err := json.Marshal(msgEvent)

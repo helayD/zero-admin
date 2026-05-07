@@ -84,6 +84,7 @@ class ConfirmCartItem {
   int realStock;
   int integration;
   int growth;
+  String fulfillmentMode; // 履约模式：physical_delivery / digital_asset
 
   ConfirmCartItem({
     required this.id,
@@ -109,6 +110,7 @@ class ConfirmCartItem {
     required this.realStock,
     required this.integration,
     required this.growth,
+    required this.fulfillmentMode,
   });
 
   factory ConfirmCartItem.fromJson(Map<String, dynamic> json) =>
@@ -136,6 +138,7 @@ class ConfirmCartItem {
         realStock: json["realStock"] ?? 0,
         integration: json["integration"] ?? 0,
         growth: json["growth"] ?? 0,
+        fulfillmentMode: json["fulfillmentMode"] ?? "physical_delivery",
       );
 }
 

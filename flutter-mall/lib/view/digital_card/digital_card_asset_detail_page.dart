@@ -446,7 +446,8 @@ class _DigitalCardAssetDetailPageState
               timeline:
                   detail?.timeline ?? const <DigitalCardAssetTimelineItem>[]),
           const SizedBox(height: AppSpacing.lg),
-          if (detail != null) _buildDrawSummaryCard(detail.drawSummary),
+          if (detail != null && _shouldShowDrawSummary(detail))
+            _buildDrawSummaryCard(detail.drawSummary),
           if (detail != null) ...<Widget>[
             const SizedBox(height: AppSpacing.lg),
             _buildStatusCard(detail, statusCopy),
@@ -705,6 +706,21 @@ class _DigitalCardAssetDetailPageState
     );
   }
 
+  bool _shouldShowDrawSummary(DigitalCardAssetDetailData detail) {
+    return detail.item.sourceType == 'draw' &&
+        detail.drawSummary.participationRecordId > 0;
+  }
+
+  String _assetSourceName(DigitalCardAssetItem item) {
+    if (item.sourceDisplayName.trim().isNotEmpty) {
+      return item.sourceDisplayName.trim();
+    }
+    if (item.activityName.trim().isNotEmpty) {
+      return item.activityName.trim();
+    }
+    return '待同步';
+  }
+
   Widget _buildStatusCard(
     DigitalCardAssetDetailData detail,
     DigitalCardStatusCopy statusCopy,
@@ -728,7 +744,7 @@ class _DigitalCardAssetDetailPageState
           _buildMetaLine('状态说明', statusCopy.description),
           if (statusCopy.actionHint.trim().isNotEmpty)
             _buildMetaLine('下一步', statusCopy.actionHint),
-          _buildMetaLine('所属活动', detail.item.activityName),
+          _buildMetaLine('资产来源', _assetSourceName(detail.item)),
           _buildMetaLine(
             '获取时间',
             detail.item.obtainedAt.isEmpty ? '待同步' : detail.item.obtainedAt,

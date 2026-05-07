@@ -13,19 +13,18 @@ type DigitalCardAssetItem struct {
 	CardFaceImage         string `json:"cardFaceImage"`
 	ActivityId            int64  `json:"activityId"`
 	ActivityName          string `json:"activityName"`
+	SourceType            string `json:"sourceType"`
+	SourceDisplayName     string `json:"sourceDisplayName"`
 	Rarity                string `json:"rarity"`
 	ObtainedAt            string `json:"obtainedAt"`
 	MintStatus            string `json:"mintStatus"`
 	MintStatusText        string `json:"mintStatusText"`
-	ChainStatus           string `json:"chainStatus"`
-	ChainStatusText       string `json:"chainStatusText"`
 	DisplayStatus         string `json:"displayStatus"`
 	DisplayStatusText     string `json:"displayStatusText"`
 	ComplianceStatus      string `json:"complianceStatus"`
 	ComplianceStatusText  string `json:"complianceStatusText"`
 	TokenStatusText       string `json:"tokenStatusText"`
 	ComplianceRuleSummary string `json:"complianceRuleSummary"`
-	ChainType             string `json:"chainType"`
 }
 
 type QueryMyDigitalCardAssetListData struct {
@@ -62,7 +61,6 @@ type DigitalCardAssetDrawSummary struct {
 
 type DigitalCardAssetDetailData struct {
 	Item                DigitalCardAssetItem           `json:"item"`
-	TokenIdMasked       string                         `json:"tokenIdMasked"`
 	LatestStatusSummary string                         `json:"latestStatusSummary"`
 	RestrictionReason   string                         `json:"restrictionReason"`
 	DrawSummary         DigitalCardAssetDrawSummary    `json:"drawSummary"`

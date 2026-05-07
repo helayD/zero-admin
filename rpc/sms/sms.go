@@ -18,6 +18,7 @@ import (
 	drawparticipationserviceServer "github.com/feihua/zero-admin/rpc/sms/internal/server/drawparticipationservice"
 	homeadvertiseserviceServer "github.com/feihua/zero-admin/rpc/sms/internal/server/homeadvertiseservice"
 	operatedashboardserviceServer "github.com/feihua/zero-admin/rpc/sms/internal/server/operatedashboardservice"
+	productfulfillmentruleserviceServer "github.com/feihua/zero-admin/rpc/sms/internal/server/productfulfillmentruleservice"
 	seckillactivityserviceServer "github.com/feihua/zero-admin/rpc/sms/internal/server/seckillactivityservice"
 	seckillproductserviceServer "github.com/feihua/zero-admin/rpc/sms/internal/server/seckillproductservice"
 	seckillreservationserviceServer "github.com/feihua/zero-admin/rpc/sms/internal/server/seckillreservationservice"
@@ -54,6 +55,7 @@ func main() {
 		smsclient.RegisterDrawParticipationServiceServer(grpcServer, drawparticipationserviceServer.NewDrawParticipationServiceServer(ctx))
 		smsclient.RegisterHomeAdvertiseServiceServer(grpcServer, homeadvertiseserviceServer.NewHomeAdvertiseServiceServer(ctx))
 		smsclient.RegisterOperateDashboardServiceServer(grpcServer, operatedashboardserviceServer.NewOperateDashboardServiceServer(ctx))
+		smsclient.RegisterProductFulfillmentRuleServiceServer(grpcServer, productfulfillmentruleserviceServer.NewProductFulfillmentRuleServiceServer(ctx))
 		smsclient.RegisterSeckillActivityServiceServer(grpcServer, seckillactivityserviceServer.NewSeckillActivityServiceServer(ctx))
 		smsclient.RegisterSeckillProductServiceServer(grpcServer, seckillproductserviceServer.NewSeckillProductServiceServer(ctx))
 		smsclient.RegisterSeckillReservationServiceServer(grpcServer, seckillreservationserviceServer.NewSeckillReservationServiceServer(ctx))

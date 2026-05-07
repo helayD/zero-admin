@@ -19,19 +19,18 @@ void main() {
       cardFaceImage: '',
       activityId: 2001,
       activityName: '春季抽卡',
+      sourceType: 'draw',
+      sourceDisplayName: '春季抽卡',
       rarity: 'SSR',
       obtainedAt: '2026-04-18 10:00:00',
       mintStatus: 'mint_processing',
       mintStatusText: '链上处理中',
-      chainStatus: 'processing',
-      chainStatusText: '处理中',
       displayStatus: 'display_hidden',
       displayStatusText: '受限展示',
       complianceStatus: 'compliance_review',
       complianceStatusText: '人工复核中',
       tokenStatusText: '底层凭证处理中',
       complianceRuleSummary: '合规复核中',
-      chainType: 'antchain',
     );
 
     final DigitalCardStatusCopy copy = digitalCardAssetPrimaryCopy(item);

@@ -3,6 +3,7 @@ package order
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/zeromicro/go-zero/core/logc"
 )
@@ -36,6 +37,44 @@ func (p *EventPayload) ToContext(ctx context.Context) context.Context {
 
 func (p *EventPayload) EntityIDToString() string {
 	return fmt.Sprintf("%d", p.EntityID)
+}
+
+func (p *EventPayload) NormalizeLegacyPaymentPayload() {
+	if p == nil || p.EntityID > 0 {
+		return
+	}
+	p.EntityID = numberFromData(p.Data, "orderId")
+	p.ActorID = numberFromData(p.Data, "memberId")
+	p.PlatformID = numberFromData(p.Data, "platformId")
+	p.TenantID = numberFromData(p.Data, "tenantId")
+	p.MerchantID = numberFromData(p.Data, "merchantId")
+	if p.Action == "" {
+		p.Action = "paid"
+	}
+	if p.EntityID > 0 && p.Data == nil {
+		p.Data = map[string]interface{}{}
+	}
+}
+
+func numberFromData(data map[string]interface{}, key string) int64 {
+	if data == nil {
+		return 0
+	}
+	switch value := data[key].(type) {
+	case int64:
+		return value
+	case int:
+		return int64(value)
+	case int32:
+		return int64(value)
+	case float64:
+		return int64(value)
+	case string:
+		parsed, _ := strconv.ParseInt(value, 10, 64)
+		return parsed
+	default:
+		return 0
+	}
 }
 
 func LogWithEventPayload(ctx context.Context, msg string, args ...interface{}) {

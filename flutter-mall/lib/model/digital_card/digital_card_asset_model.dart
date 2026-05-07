@@ -85,19 +85,18 @@ class DigitalCardAssetItem {
   final String cardFaceImage;
   final int activityId;
   final String activityName;
+  final String sourceType;
+  final String sourceDisplayName;
   final String rarity;
   final String obtainedAt;
   final String mintStatus;
   final String mintStatusText;
-  final String chainStatus;
-  final String chainStatusText;
   final String displayStatus;
   final String displayStatusText;
   final String complianceStatus;
   final String complianceStatusText;
   final String tokenStatusText;
   final String complianceRuleSummary;
-  final String chainType;
 
   const DigitalCardAssetItem({
     required this.assetInstanceId,
@@ -107,19 +106,18 @@ class DigitalCardAssetItem {
     required this.cardFaceImage,
     required this.activityId,
     required this.activityName,
+    required this.sourceType,
+    required this.sourceDisplayName,
     required this.rarity,
     required this.obtainedAt,
     required this.mintStatus,
     required this.mintStatusText,
-    required this.chainStatus,
-    required this.chainStatusText,
     required this.displayStatus,
     required this.displayStatusText,
     required this.complianceStatus,
     required this.complianceStatusText,
     required this.tokenStatusText,
     required this.complianceRuleSummary,
-    required this.chainType,
   });
 
   factory DigitalCardAssetItem.fromJson(Map<String, dynamic> json) {
@@ -131,19 +129,18 @@ class DigitalCardAssetItem {
       cardFaceImage: json['cardFaceImage']?.toString() ?? '',
       activityId: _intValue(json['activityId']),
       activityName: json['activityName']?.toString() ?? '',
+      sourceType: json['sourceType']?.toString() ?? 'draw',
+      sourceDisplayName: json['sourceDisplayName']?.toString() ?? '',
       rarity: json['rarity']?.toString() ?? '',
       obtainedAt: json['obtainedAt']?.toString() ?? '',
       mintStatus: json['mintStatus']?.toString() ?? '',
       mintStatusText: json['mintStatusText']?.toString() ?? '',
-      chainStatus: json['chainStatus']?.toString() ?? '',
-      chainStatusText: json['chainStatusText']?.toString() ?? '',
       displayStatus: json['displayStatus']?.toString() ?? '',
       displayStatusText: json['displayStatusText']?.toString() ?? '',
       complianceStatus: json['complianceStatus']?.toString() ?? '',
       complianceStatusText: json['complianceStatusText']?.toString() ?? '',
       tokenStatusText: json['tokenStatusText']?.toString() ?? '',
       complianceRuleSummary: json['complianceRuleSummary']?.toString() ?? '',
-      chainType: json['chainType']?.toString() ?? '',
     );
   }
 
@@ -154,7 +151,6 @@ class DigitalCardAssetItem {
 
 class DigitalCardAssetDetailData {
   final DigitalCardAssetItem item;
-  final String tokenIdMasked;
   final String latestStatusSummary;
   final String restrictionReason;
   final DigitalCardAssetDrawSummary drawSummary;
@@ -162,7 +158,6 @@ class DigitalCardAssetDetailData {
 
   const DigitalCardAssetDetailData({
     required this.item,
-    required this.tokenIdMasked,
     required this.latestStatusSummary,
     required this.restrictionReason,
     required this.drawSummary,
@@ -174,7 +169,6 @@ class DigitalCardAssetDetailData {
       item: DigitalCardAssetItem.fromJson(
         Map<String, dynamic>.from(json['item'] ?? const <String, dynamic>{}),
       ),
-      tokenIdMasked: json['tokenIdMasked']?.toString() ?? '',
       latestStatusSummary: json['latestStatusSummary']?.toString() ?? '',
       restrictionReason: json['restrictionReason']?.toString() ?? '',
       drawSummary: DigitalCardAssetDrawSummary.fromJson(

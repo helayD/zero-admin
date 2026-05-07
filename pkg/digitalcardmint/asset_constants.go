@@ -13,6 +13,8 @@ const (
 	ComplianceStatusRestricted       = "compliance_restricted"
 	ComplianceStatusRecycleRequested = "compliance_recycle_requested"
 	ComplianceStatusRecycled         = "compliance_recycled"
+	ComplianceStatusFrozen           = "compliance_frozen"
+	ComplianceStatusManualReview     = "compliance_manual_review"
 
 	OperationAssetDisplayHidden     = "asset_display_hidden"
 	OperationAssetDisplayRestored   = "asset_display_restored"
@@ -22,6 +24,10 @@ const (
 	OperationAssetRecycled          = "asset_recycled"
 	OperationAssetTransferred       = "asset_transferred"
 	OperationAssetWithdrawRequested = "asset_withdraw_requested"
+	OperationAssetCreatedFromOrder  = "asset_created_from_order"
+	OperationAssetFrozenByRefund    = "asset_frozen_by_refund"
+	OperationAssetRecycledByRefund  = "asset_recycled_by_refund"
+	OperationAssetManualReviewByRefund = "asset_manual_review_by_refund"
 )
 
 func displayStatusText(status string) string {
@@ -51,6 +57,10 @@ func complianceStatusText(status string) string {
 		return "回收处理中"
 	case ComplianceStatusRecycled:
 		return "已回收"
+	case ComplianceStatusFrozen:
+		return "已冻结"
+	case ComplianceStatusManualReview:
+		return "待人工复核"
 	default:
 		return "合规状态未知"
 	}
@@ -103,6 +113,14 @@ func assetLogOperationText(operationType string) string {
 		return "卡片已转赠"
 	case OperationAssetWithdrawRequested:
 		return "提现申请已提交"
+	case OperationAssetCreatedFromOrder:
+		return "购买后创建资产"
+	case OperationAssetFrozenByRefund:
+		return "退款后冻结资产"
+	case OperationAssetRecycledByRefund:
+		return "退款后回收资产"
+	case OperationAssetManualReviewByRefund:
+		return "退款后待人工复核"
 	default:
 		return strings.TrimSpace(operationType)
 	}

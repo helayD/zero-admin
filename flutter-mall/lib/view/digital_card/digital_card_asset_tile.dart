@@ -35,6 +35,9 @@ class DigitalCardAssetTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final Color accentColor = _statusColor();
     final DigitalCardStatusCopy statusCopy = digitalCardAssetPrimaryCopy(item);
+    final String sourceName = item.sourceDisplayName.trim().isNotEmpty
+        ? item.sourceDisplayName.trim()
+        : item.activityName.trim();
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -118,9 +121,7 @@ class DigitalCardAssetTile extends StatelessWidget {
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
-                      item.activityName.trim().isEmpty
-                          ? '所属活动待同步'
-                          : item.activityName,
+                      sourceName.isEmpty ? '来源待同步' : '来源 $sourceName',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: AppColors.textSecondary,
                           ),

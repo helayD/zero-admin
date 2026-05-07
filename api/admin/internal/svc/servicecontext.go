@@ -39,6 +39,7 @@ import (
 	"github.com/feihua/zero-admin/rpc/sms/client/coupontypeservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/drawactivityservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/operatedashboardservice"
+	"github.com/feihua/zero-admin/rpc/sms/client/productfulfillmentruleservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/seckillactivityservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/seckillproductservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/seckillreservationservice"
@@ -154,17 +155,18 @@ type ServiceContext struct {
 	OrderSettingService      ordersettingservice.OrderSettingService
 	OrderDeliveryService     orderdeliveryservice.OrderDeliveryService
 	// 营销相关
-	CouponRecordService       couponrecordservice.CouponRecordService
-	OperateDashboardService   operatedashboardservice.OperateDashboardService
-	CouponScopeService        couponscopeservice.CouponScopeService
-	CouponService             couponservice.CouponService
-	CouponTypeService         coupontypeservice.CouponTypeService
-	DrawActivityService       drawactivityservice.DrawActivityService
-	HomeAdvertiseService      homeadvertiseservice.HomeAdvertiseService
-	SeckillActivityService    seckillactivityservice.SeckillActivityService
-	SeckillProductService     seckillproductservice.SeckillProductService
-	SeckillReservationService seckillreservationservice.SeckillReservationService
-	SeckillSessionService     seckillsessionservice.SeckillSessionService
+	CouponRecordService           couponrecordservice.CouponRecordService
+	OperateDashboardService       operatedashboardservice.OperateDashboardService
+	CouponScopeService            couponscopeservice.CouponScopeService
+	CouponService                 couponservice.CouponService
+	CouponTypeService             coupontypeservice.CouponTypeService
+	DrawActivityService           drawactivityservice.DrawActivityService
+	ProductFulfillmentRuleService productfulfillmentruleservice.ProductFulfillmentRuleService
+	HomeAdvertiseService          homeadvertiseservice.HomeAdvertiseService
+	SeckillActivityService        seckillactivityservice.SeckillActivityService
+	SeckillProductService         seckillproductservice.SeckillProductService
+	SeckillReservationService     seckillreservationservice.SeckillReservationService
+	SeckillSessionService         seckillsessionservice.SeckillSessionService
 	// 内容相关
 	SubjectService                      subjectservice.SubjectService
 	SubjectProductRelationService       subjectproductrelationservice.SubjectProductRelationService
@@ -263,17 +265,18 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		OrderSettingService:      ordersettingservice.NewOrderSettingService(omsClient),
 		OrderDeliveryService:     orderdeliveryservice.NewOrderDeliveryService(omsClient),
 
-		CouponRecordService:       couponrecordservice.NewCouponRecordService(smsClient),
-		OperateDashboardService:   operatedashboardservice.NewOperateDashboardService(smsClient),
-		CouponScopeService:        couponscopeservice.NewCouponScopeService(smsClient),
-		CouponService:             couponservice.NewCouponService(smsClient),
-		CouponTypeService:         coupontypeservice.NewCouponTypeService(smsClient),
-		DrawActivityService:       drawactivityservice.NewDrawActivityService(smsClient),
-		HomeAdvertiseService:      homeadvertiseservice.NewHomeAdvertiseService(smsClient),
-		SeckillActivityService:    seckillactivityservice.NewSeckillActivityService(smsClient),
-		SeckillProductService:     seckillproductservice.NewSeckillProductService(smsClient),
-		SeckillReservationService: seckillreservationservice.NewSeckillReservationService(smsClient),
-		SeckillSessionService:     seckillsessionservice.NewSeckillSessionService(smsClient),
+		CouponRecordService:           couponrecordservice.NewCouponRecordService(smsClient),
+		OperateDashboardService:       operatedashboardservice.NewOperateDashboardService(smsClient),
+		CouponScopeService:            couponscopeservice.NewCouponScopeService(smsClient),
+		CouponService:                 couponservice.NewCouponService(smsClient),
+		CouponTypeService:             coupontypeservice.NewCouponTypeService(smsClient),
+		DrawActivityService:           drawactivityservice.NewDrawActivityService(smsClient),
+		ProductFulfillmentRuleService: productfulfillmentruleservice.NewProductFulfillmentRuleService(smsClient),
+		HomeAdvertiseService:          homeadvertiseservice.NewHomeAdvertiseService(smsClient),
+		SeckillActivityService:        seckillactivityservice.NewSeckillActivityService(smsClient),
+		SeckillProductService:         seckillproductservice.NewSeckillProductService(smsClient),
+		SeckillReservationService:     seckillreservationservice.NewSeckillReservationService(smsClient),
+		SeckillSessionService:         seckillsessionservice.NewSeckillSessionService(smsClient),
 
 		SubjectService:                      subjectservice.NewSubjectService(cmsClient),
 		SubjectProductRelationService:       subjectproductrelationservice.NewSubjectProductRelationService(cmsClient),

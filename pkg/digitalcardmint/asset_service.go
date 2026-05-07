@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -25,19 +26,18 @@ type MemberDigitalCardAssetItem struct {
 	CardFaceImage         string `json:"cardFaceImage"`
 	ActivityID            int64  `json:"activityId"`
 	ActivityName          string `json:"activityName"`
+	SourceType            string `json:"sourceType"`
+	SourceDisplayName     string `json:"sourceDisplayName"`
 	Rarity                string `json:"rarity"`
 	ObtainedAt            string `json:"obtainedAt"`
 	MintStatus            string `json:"mintStatus"`
 	MintStatusText        string `json:"mintStatusText"`
-	ChainStatus           string `json:"chainStatus"`
-	ChainStatusText       string `json:"chainStatusText"`
 	DisplayStatus         string `json:"displayStatus"`
 	DisplayStatusText     string `json:"displayStatusText"`
 	ComplianceStatus      string `json:"complianceStatus"`
 	ComplianceStatusText  string `json:"complianceStatusText"`
 	TokenStatusText       string `json:"tokenStatusText"`
 	ComplianceRuleSummary string `json:"complianceRuleSummary"`
-	ChainType             string `json:"chainType"`
 }
 
 type MemberDigitalCardAssetTimelineItem struct {
@@ -59,7 +59,6 @@ type MemberDigitalCardAssetDrawSummary struct {
 
 type MemberDigitalCardAssetDetail struct {
 	Item                MemberDigitalCardAssetItem           `json:"item"`
-	TokenIDMasked       string                               `json:"tokenIdMasked"`
 	LatestStatusSummary string                               `json:"latestStatusSummary"`
 	RestrictionReason   string                               `json:"restrictionReason"`
 	DrawSummary         MemberDigitalCardAssetDrawSummary    `json:"drawSummary"`
@@ -168,6 +167,8 @@ type digitalCardAssetBaseRow struct {
 	TraceID                   string       `gorm:"column:trace_id"`
 	ActivityID                int64        `gorm:"column:activity_id"`
 	ActivityName              string       `gorm:"column:activity_name"`
+	SourceType                string       `gorm:"column:source_type"`
+	SourceID                  int64        `gorm:"column:source_id"`
 	ActivityComplianceSummary string       `gorm:"column:activity_compliance_summary"`
 	MemberID                  int64        `gorm:"column:member_id"`
 	TemplateID                int64        `gorm:"column:template_id"`
@@ -227,11 +228,9 @@ func (s *Service) QueryMemberDigitalCardAssetList(ctx context.Context, currentSc
 		return 0, nil, err
 	}
 
-	chainTypeVal := s.chainType()
 	items := make([]MemberDigitalCardAssetItem, 0, len(rows))
 	for _, row := range rows {
 		item := buildMemberAssetItem(row)
-		item.ChainType = chainTypeVal
 		items = append(items, item)
 	}
 	return total, items, nil
@@ -259,10 +258,8 @@ func (s *Service) QueryMemberDigitalCardAssetDetail(ctx context.Context, current
 	}
 
 	memberItem := buildMemberAssetItem(row)
-	memberItem.ChainType = s.chainType()
 	return &MemberDigitalCardAssetDetail{
 		Item:                memberItem,
-		TokenIDMasked:       maskTokenID(row.TokenID),
 		LatestStatusSummary: ResolveAssetStatusText(row.AssetStatus, row.MintStatus, row.ChainStatus),
 		RestrictionReason:   firstNonEmpty(row.ComplianceReason, row.DisplayReason),
 		DrawSummary: MemberDigitalCardAssetDrawSummary{
@@ -464,6 +461,8 @@ func memberAssetSelectColumns() string {
 		COALESCE(instance.trace_id, '') AS trace_id,
 		instance.activity_id AS activity_id,
 		COALESCE(activity.name, '') AS activity_name,
+		COALESCE(instance.source_type, 'draw') AS source_type,
+		COALESCE(instance.source_id, 0) AS source_id,
 		COALESCE(activity.compliance_rule_summary, '') AS activity_compliance_summary,
 		instance.member_id AS member_id,
 		instance.template_id AS template_id,
@@ -507,19 +506,33 @@ func buildMemberAssetItem(row digitalCardAssetBaseRow) MemberDigitalCardAssetIte
 		CardFaceImage:         row.CardFaceImage,
 		ActivityID:            row.ActivityID,
 		ActivityName:          row.ActivityName,
+		SourceType:            userFacingSourceType(row.SourceType),
+		SourceDisplayName:     userFacingSourceName(row.SourceType, row.ActivityName),
 		Rarity:                row.Rarity,
 		ObtainedAt:            formatNullableTime(row.ObtainedAt),
 		MintStatus:            row.MintStatus,
 		MintStatusText:        mintStatusText(row.MintStatus),
-		ChainStatus:           row.ChainStatus,
-		ChainStatusText:       chainStatusText(row.ChainStatus),
 		DisplayStatus:         row.DisplayStatus,
 		DisplayStatusText:     displayStatusText(row.DisplayStatus),
 		ComplianceStatus:      row.ComplianceStatus,
 		ComplianceStatusText:  complianceStatusText(row.ComplianceStatus),
-		TokenStatusText:       tokenStatusText(row.TokenID, row.ChainStatus),
+		TokenStatusText:       mintStatusText(row.MintStatus),
 		ComplianceRuleSummary: complianceRuleSummary(row.ActivityComplianceSummary, row.DisplayReason, row.ComplianceReason),
 	}
+}
+
+func userFacingSourceName(sourceType string, activityName string) string {
+	if strings.TrimSpace(sourceType) == sourceTypePurchase {
+		return "购买获取"
+	}
+	return strings.TrimSpace(activityName)
+}
+
+func userFacingSourceType(sourceType string) string {
+	if strings.TrimSpace(sourceType) == sourceTypePurchase {
+		return "purchase"
+	}
+	return "draw"
 }
 
 func buildAuditAssetItem(row digitalCardAssetBaseRow) DigitalCardAssetAuditItem {
@@ -717,9 +730,139 @@ func resolveTimelineStatusText(status string) string {
 		return mintStatusText(value)
 	case DisplayStatusVisible, DisplayStatusHidden, DisplayStatusOfflined, DisplayStatusRecycled:
 		return displayStatusText(value)
-	case ComplianceStatusClear, ComplianceStatusReview, ComplianceStatusRestricted, ComplianceStatusRecycleRequested, ComplianceStatusRecycled:
+	case ComplianceStatusClear, ComplianceStatusReview, ComplianceStatusRestricted, ComplianceStatusRecycleRequested, ComplianceStatusRecycled, ComplianceStatusFrozen, ComplianceStatusManualReview:
 		return complianceStatusText(value)
 	default:
 		return value
 	}
+}
+
+// RefundCard处置Input 退款触发的卡片处置输入
+type RefundCard处置Input struct {
+	OrderID      int64
+	OrderItemID  int64
+	RefundPolicy string // freeze_card / recycle_card / manual_review
+	OperatorID   int64
+	Reason       string
+	TraceID      string
+}
+
+// RefundCard处置Result 退款触发的卡片处置结果
+type RefundCard处置Result struct {
+	AssetInstanceID  int64
+	AssetNo          string
+	ComplianceStatus string
+	处置Action       string
+	RefundAction     string // 导出字段，供外部包使用
+}
+
+// HandleRefundCard处置 处理退款触发的卡片处置
+// 根据 refund_policy 执行对应的处置动作：
+// - freeze_card: 更新 compliance_status 为 frozen，不可提货、不可转赠
+// - recycle_card: 更新 compliance_status 为 recycled
+// - manual_review: 标记为待人工复核
+func (s *Service) HandleRefundCard处置(ctx context.Context, input RefundCard处置Input) (*RefundCard处置Result, error) {
+	if s == nil || s.DB == nil {
+		return nil, errors.New("数据库未初始化")
+	}
+	if input.OrderItemID <= 0 {
+		return nil, errors.New("订单明细ID不能为空")
+	}
+	if input.RefundPolicy == "" {
+		return nil, errors.New("退款处置策略不能为空")
+	}
+
+	var result *RefundCard处置Result
+	err := s.DB.Transaction(func(tx *gorm.DB) error {
+		// 查找订单明细对应的卡片资产
+		var instance CardInstanceRow
+		err := tx.WithContext(ctx).
+			Table(instance.TableName()).
+			Where("source_type = ? AND source_id = ? AND is_deleted = 0", sourceTypePurchase, input.OrderItemID).
+			Take(&instance).Error
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				// 没有对应的卡片资产，可能是实物商品，直接返回
+				return nil
+			}
+			return fmt.Errorf("查询卡片资产失败: %w", err)
+		}
+
+		// 检查是否已经处置过（幂等性）
+		if instance.ComplianceStatus == ComplianceStatusFrozen ||
+			instance.ComplianceStatus == ComplianceStatusRecycled ||
+			instance.ComplianceStatus == ComplianceStatusManualReview {
+			// 已经处置过，直接返回当前状态
+			result = &RefundCard处置Result{
+				AssetInstanceID:  instance.ID,
+				AssetNo:          instance.AssetNo,
+				ComplianceStatus: instance.ComplianceStatus,
+				处置Action:       "already_disposed",
+				RefundAction:     "already_disposed",
+			}
+			return nil
+		}
+
+		// 根据 refund_policy 执行处置
+		var nextComplianceStatus string
+		var operationType string
+		var reasonText string
+
+		switch input.RefundPolicy {
+		case "freeze_card":
+			nextComplianceStatus = ComplianceStatusFrozen
+			operationType = OperationAssetFrozenByRefund
+			reasonText = "退款触发卡片冻结"
+		case "recycle_card":
+			nextComplianceStatus = ComplianceStatusRecycled
+			operationType = OperationAssetRecycledByRefund
+			reasonText = "退款触发卡片回收"
+		case "manual_review":
+			nextComplianceStatus = ComplianceStatusManualReview
+			operationType = OperationAssetManualReviewByRefund
+			reasonText = "退款触发人工复核"
+		default:
+			return fmt.Errorf("未知的退款处置策略: %s", input.RefundPolicy)
+		}
+
+		// 更新卡片状态
+		now := time.Now()
+		updateMap := map[string]interface{}{
+			"compliance_status": nextComplianceStatus,
+			"update_time":       now,
+		}
+		if input.OperatorID > 0 {
+			updateMap["update_by"] = input.OperatorID
+		}
+
+		if err := tx.WithContext(ctx).
+			Table(instance.TableName()).
+			Where("id = ? AND is_deleted = 0", instance.ID).
+			Updates(updateMap).Error; err != nil {
+			return fmt.Errorf("更新卡片状态失败: %w", err)
+		}
+
+		// 写入审计日志
+		if err := s.appendAssetLogTx(ctx, tx, &instance, instance.ComplianceStatus, nextComplianceStatus, operationType, "refund", input.TraceID, input.RefundPolicy, reasonText, map[string]interface{}{
+			"orderId":      input.OrderID,
+			"orderItemId":  input.OrderItemID,
+			"refundPolicy": input.RefundPolicy,
+			"reason":       input.Reason,
+		}); err != nil {
+			return fmt.Errorf("写入审计日志失败: %w", err)
+		}
+
+		result = &RefundCard处置Result{
+			AssetInstanceID:  instance.ID,
+			AssetNo:          instance.AssetNo,
+			ComplianceStatus: nextComplianceStatus,
+			处置Action:       input.RefundPolicy,
+			RefundAction:     input.RefundPolicy,
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }

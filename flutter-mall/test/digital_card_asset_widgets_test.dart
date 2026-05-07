@@ -26,19 +26,18 @@ void main() {
       cardFaceImage: '',
       activityId: 2001,
       activityName: '春季抽卡',
+      sourceType: 'draw',
+      sourceDisplayName: '春季抽卡',
       rarity: 'SSR',
       obtainedAt: '2026-04-18 10:00:00',
       mintStatus: 'mint_processing',
       mintStatusText: '链上处理中',
-      chainStatus: 'processing',
-      chainStatusText: '处理中',
       displayStatus: 'display_hidden',
       displayStatusText: '受限展示',
       complianceStatus: 'compliance_review',
       complianceStatusText: '人工复核中',
       tokenStatusText: '底层凭证处理中',
       complianceRuleSummary: '合规复核中',
-      chainType: 'antchain',
     );
 
     await tester.pumpWidget(
@@ -51,6 +50,7 @@ void main() {
 
     expect(find.text('SSR 卡'), findsOneWidget);
     expect(find.textContaining('编号 CARD202604180001'), findsOneWidget);
+    expect(find.text('来源 春季抽卡'), findsOneWidget);
     expect(find.text('合规复核中'), findsOneWidget);
     expect(find.text('受限展示'), findsOneWidget);
     expect(find.text('卡片正在复核，结果更新后会自动同步。'), findsOneWidget);
@@ -191,19 +191,18 @@ void main() {
       cardFaceImage: '',
       activityId: 2001,
       activityName: '春季抽卡',
+      sourceType: 'draw',
+      sourceDisplayName: '春季抽卡',
       rarity: 'SSR',
       obtainedAt: '2026-04-18 10:00:00',
       mintStatus: 'mint_processing',
       mintStatusText: '链上处理中',
-      chainStatus: 'processing',
-      chainStatusText: '处理中',
       displayStatus: 'display_hidden',
       displayStatusText: '受限展示',
       complianceStatus: 'compliance_review',
       complianceStatusText: '人工复核中',
       tokenStatusText: '底层凭证处理中',
       complianceRuleSummary: '合规复核中',
-      chainType: 'antchain',
     );
 
     await tester.pumpWidget(
@@ -215,7 +214,6 @@ void main() {
             message: 'success',
             data: DigitalCardAssetDetailData(
               item: item,
-              tokenIdMasked: 'token-***-001',
               latestStatusSummary: '',
               restrictionReason: '',
               drawSummary: DigitalCardAssetDrawSummary(
@@ -243,6 +241,8 @@ void main() {
     expect(find.text('到账进度'), findsOneWidget);
     await tester.drag(find.byType(ListView), const Offset(0, -900));
     await tester.pumpAndSettle();
+    expect(find.text('资产来源'), findsOneWidget);
+    expect(find.text('春季抽卡'), findsWidgets);
     expect(find.text('待发放完成后，可支付邮费、提交提现申请或转赠给已注册用户。'), findsOneWidget);
     final Finder payButtonFinder = find.widgetWithText(FilledButton, '支付邮费');
     final Finder withdrawButtonFinder =

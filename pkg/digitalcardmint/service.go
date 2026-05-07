@@ -114,7 +114,7 @@ func (s *Service) EnsureTaskTx(ctx context.Context, tx *gorm.DB, assetInstanceID
 	}
 
 	record, err := s.loadParticipationRecord(ctx, tx, instance.ParticipationRecordID)
-	if err != nil {
+	if err != nil && !isOrderPurchaseAsset(instance) {
 		return nil, err
 	}
 	if err = s.validateMintPrerequisites(ctx, tx, instance, record); err != nil {
@@ -144,8 +144,8 @@ func (s *Service) EnsureTaskTx(ctx context.Context, tx *gorm.DB, assetInstanceID
 		ParticipationRecordID: instance.ParticipationRecordID,
 		ActivityID:            instance.ActivityID,
 		MemberID:              instance.MemberID,
-		RequestID:             firstNonEmpty(strings.TrimSpace(instance.RequestID), strings.TrimSpace(record.RequestID)),
-		TraceID:               firstNonEmpty(strings.TrimSpace(instance.TraceID), strings.TrimSpace(record.TraceID)),
+		RequestID:             firstNonEmpty(strings.TrimSpace(instance.RequestID), participationRequestID(record)),
+		TraceID:               firstNonEmpty(strings.TrimSpace(instance.TraceID), participationTraceID(record)),
 		IdempotencyKey:        buildIdempotencyKey(instance.ID),
 		TaskStatus:            TaskStatusPendingDispatch,
 		MintStatus:            currentMintStatus,
@@ -533,6 +533,8 @@ func (s *Service) QueryTaskList(ctx context.Context, currentScope pkgscope.Gover
 		ParticipationRecordID int64      `gorm:"column:participation_record_id"`
 		AssetStatus           string     `gorm:"column:asset_status"`
 		LastExecuteAt         *time.Time `gorm:"column:last_execute_at"`
+		SourceType            string     `gorm:"column:source_type"`
+		SourceID              int64      `gorm:"column:source_id"`
 	}
 	var rows []taskListRow
 	err := base.Select(`
@@ -557,7 +559,9 @@ func (s *Service) QueryTaskList(ctx context.Context, currentScope pkgscope.Gover
 			task.last_receipt_summary AS last_receipt_summary,
 			task.participation_record_id AS participation_record_id,
 			instance.asset_status AS asset_status,
-			task.last_execute_at AS last_execute_at`).
+			task.last_execute_at AS last_execute_at,
+			instance.source_type AS source_type,
+			instance.source_id AS source_id`).
 		Order("task.id DESC").
 		Offset(int((filter.PageNum - 1) * filter.PageSize)).
 		Limit(int(filter.PageSize)).
@@ -593,6 +597,8 @@ func (s *Service) QueryTaskList(ctx context.Context, currentScope pkgscope.Gover
 			LastReceiptSummary:    row.LastReceiptSummary,
 			AssetStatusText:       ResolveAssetStatusText(row.AssetStatus, row.MintStatus, row.ChainStatus),
 			ParticipationRecordID: row.ParticipationRecordID,
+			SourceType:            row.SourceType,
+			SourceDisplayName:     resolveSourceDisplayName(row.SourceType, row.ActivityName),
 		}
 		if row.LastExecuteAt != nil {
 			item.LastExecuteAt = row.LastExecuteAt.Format("2006-01-02 15:04:05")
@@ -1564,6 +1570,25 @@ func (s *Service) loadCardTemplate(ctx context.Context, db *gorm.DB, templateID 
 }
 
 func (s *Service) validateMintPrerequisites(ctx context.Context, tx *gorm.DB, instance *CardInstanceRow, record *ParticipationRecordRow) error {
+	if isOrderPurchaseAsset(instance) {
+		template, err := s.loadCardTemplate(ctx, tx, instance.TemplateID)
+		if err != nil {
+			return err
+		}
+		if template.Status != mintPublishedStatus {
+			return errors.New("所属模板已下线，当前资产不允许发放")
+		}
+		if template.DisplayStatus != mintDisplayVisible {
+			return errors.New("所属模板已隐藏，当前资产不允许发放")
+		}
+		if template.AuditStatus == mintApprovalRejected || template.ContentAuditStatus == mintComplianceRejected {
+			return errors.New("所属模板合规状态禁止发放")
+		}
+		return nil
+	}
+	if record == nil {
+		return errors.New("参与记录不能为空")
+	}
 	activity, err := s.loadDrawActivity(ctx, tx, instance.ActivityID)
 	if err != nil {
 		return err
@@ -1624,6 +1649,24 @@ func parseMintEligibilitySnapshot(raw string) (*mintEligibilitySnapshot, error) 
 
 func buildIdempotencyKey(assetInstanceID int64) string {
 	return fmt.Sprintf("card-mint:%d", assetInstanceID)
+}
+
+func isOrderPurchaseAsset(instance *CardInstanceRow) bool {
+	return instance != nil && strings.TrimSpace(instance.SourceType) == sourceTypePurchase
+}
+
+func participationRequestID(record *ParticipationRecordRow) string {
+	if record == nil {
+		return ""
+	}
+	return strings.TrimSpace(record.RequestID)
+}
+
+func participationTraceID(record *ParticipationRecordRow) string {
+	if record == nil {
+		return ""
+	}
+	return strings.TrimSpace(record.TraceID)
 }
 
 func cloneTimePointer(value *time.Time) *time.Time {
@@ -1855,6 +1898,20 @@ func resolveScopeType(platformID, tenantID, merchantID int64) string {
 		return pkgscope.SubjectTypePlatform
 	}
 	return ""
+}
+
+func resolveSourceDisplayName(sourceType string, activityName string) string {
+	switch strings.TrimSpace(sourceType) {
+	case sourceTypePurchase:
+		return "订单购买"
+	case "draw":
+		if activityName != "" {
+			return activityName
+		}
+		return "抽卡获取"
+	default:
+		return "未知来源"
+	}
 }
 
 func buildExecuteResult(task *CardMintTaskRow) *ExecuteResult {
