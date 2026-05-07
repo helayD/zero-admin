@@ -39,6 +39,8 @@ type PmsProductSpu struct {
 	Stock               int32      `gorm:"column:stock;not null;comment:库存" json:"stock"`                                                                             // 库存
 	LowStock            int32      `gorm:"column:low_stock;not null;comment:预警库存" json:"low_stock"`                                                                   // 预警库存
 	PromotionType       int32      `gorm:"column:promotion_type;not null;comment:促销类型：0->没有促销使用原价;1->使用促销价；2->使用会员价；3->使用阶梯价格；4->使用满减价格；5->秒杀" json:"promotion_type"` // 促销类型：0->没有促销使用原价;1->使用促销价；2->使用会员价；3->使用阶梯价格；4->使用满减价格；5->秒杀
+	FulfillmentMode     string     `gorm:"column:fulfillment_mode;not null;default:physical_delivery;comment:履约模式: physical_delivery-实物发货, digital_asset-数字资产" json:"fulfillment_mode"` // 履约模式: physical_delivery-实物发货, digital_asset-数字资产
+	FulfillmentRuleID   int64      `gorm:"column:fulfillment_rule_id;not null;default:0;comment:关联发卡规则ID,仅digital_asset模式时有效" json:"fulfillment_rule_id"`              // 关联发卡规则ID,仅digital_asset模式时有效
 	DetailHTML          string     `gorm:"column:detail_html;not null;comment:网页详情" json:"detail_html"`                                                               // 网页详情
 	DetailMobileHTML    string     `gorm:"column:detail_mobile_html;not null;comment:移动端详情" json:"detail_mobile_html"`                                                // 移动端详情
 	CreateBy            int64      `gorm:"column:create_by;not null;comment:创建人ID" json:"create_by"`                                                                  // 创建人ID

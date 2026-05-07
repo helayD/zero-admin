@@ -16044,6 +16044,8 @@ type ProductSpuReq struct {
 	ProductLadderList         []*ProductLadderList         `protobuf:"bytes,37,rep,name=ProductLadderList,proto3" json:"ProductLadderList,omitempty"`                                   //阶梯价格
 	SkuStockList              []*SkuStockList              `protobuf:"bytes,38,rep,name=SkuStockList,proto3" json:"SkuStockList,omitempty"`                                             //商品sku库存
 	Scope                     *GovernanceScope             `protobuf:"bytes,39,opt,name=scope,proto3" json:"scope,omitempty"`                                                           //治理范围(platform/tenant/merchant)
+	FulfillmentMode           string                       `protobuf:"bytes,50,opt,name=fulfillment_mode,json=fulfillmentMode,proto3" json:"fulfillment_mode,omitempty"`                //履约模式: physical_delivery-实物发货, digital_asset-数字资产
+	FulfillmentRuleId         int64                        `protobuf:"varint,51,opt,name=fulfillment_rule_id,json=fulfillmentRuleId,proto3" json:"fulfillment_rule_id,omitempty"`       //关联发卡规则ID,仅digital_asset模式时有效
 }
 
 func (x *ProductSpuReq) Reset() {
@@ -16328,6 +16330,20 @@ func (x *ProductSpuReq) GetScope() *GovernanceScope {
 		return x.Scope
 	}
 	return nil
+}
+
+func (x *ProductSpuReq) GetFulfillmentMode() string {
+	if x != nil {
+		return x.FulfillmentMode
+	}
+	return ""
+}
+
+func (x *ProductSpuReq) GetFulfillmentRuleId() int64 {
+	if x != nil {
+		return x.FulfillmentRuleId
+	}
+	return 0
 }
 
 type ProductSpuResp struct {
@@ -17866,6 +17882,8 @@ type ProductSpuListData struct {
 	RecommendMan        string  `protobuf:"bytes,47,opt,name=recommend_man,json=recommendMan,proto3" json:"recommend_man,omitempty"`                         //最近推荐操作人
 	RecommendTime       string  `protobuf:"bytes,48,opt,name=recommend_time,json=recommendTime,proto3" json:"recommend_time,omitempty"`                      //最近推荐时间
 	RecommendDetail     string  `protobuf:"bytes,49,opt,name=recommend_detail,json=recommendDetail,proto3" json:"recommend_detail,omitempty"`                //最近推荐说明
+	FulfillmentMode     string  `protobuf:"bytes,50,opt,name=fulfillment_mode,json=fulfillmentMode,proto3" json:"fulfillment_mode,omitempty"`                //履约模式: physical_delivery-实物发货, digital_asset-数字资产
+	FulfillmentRuleId   int64   `protobuf:"varint,51,opt,name=fulfillment_rule_id,json=fulfillmentRuleId,proto3" json:"fulfillment_rule_id,omitempty"`       //关联发卡规则ID,仅digital_asset模式时有效
 }
 
 func (x *ProductSpuListData) Reset() {
@@ -18220,6 +18238,20 @@ func (x *ProductSpuListData) GetRecommendDetail() string {
 		return x.RecommendDetail
 	}
 	return ""
+}
+
+func (x *ProductSpuListData) GetFulfillmentMode() string {
+	if x != nil {
+		return x.FulfillmentMode
+	}
+	return ""
+}
+
+func (x *ProductSpuListData) GetFulfillmentRuleId() int64 {
+	if x != nil {
+		return x.FulfillmentRuleId
+	}
+	return 0
 }
 
 type QueryProductSpuListResp struct {

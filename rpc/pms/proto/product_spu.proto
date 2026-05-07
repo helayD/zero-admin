@@ -84,6 +84,8 @@ message ProductSpuReq {
   repeated ProductLadderList      ProductLadderList = 37; //阶梯价格
   repeated SkuStockList      SkuStockList = 38; //商品sku库存
   GovernanceScope scope = 39; //治理范围(platform/tenant/merchant)
+  string fulfillment_mode = 50; //履约模式: physical_delivery-实物发货, digital_asset-数字资产
+  int64 fulfillment_rule_id = 51; //关联发卡规则ID,仅digital_asset模式时有效
 }
 
 message ProductSpuResp {
@@ -296,6 +298,8 @@ message ProductSpuListData {
   string recommend_man = 47; //最近推荐操作人
   string recommend_time = 48; //最近推荐时间
   string recommend_detail = 49; //最近推荐说明
+  string fulfillment_mode = 50; //履约模式: physical_delivery-实物发货, digital_asset-数字资产
+  int64 fulfillment_rule_id = 51; //关联发卡规则ID,仅digital_asset模式时有效
 
 }
 
@@ -345,4 +349,26 @@ service ProductSpuService {
 
   //根据id集合查询商品信息
   rpc QueryProductSpuListByIds(QueryProductSpuByIdsReq) returns(QueryProductSpuListResp);
+
+  // 查询商品履约模式配置冲突
+  rpc CheckProductFulfillmentConflict(CheckProductFulfillmentConflictReq) returns(CheckProductFulfillmentConflictResp);
+}
+
+// 查询商品履约模式配置冲突请求
+message CheckProductFulfillmentConflictReq {
+  repeated int64 ids = 1; // 商品ID列表
+  GovernanceScope scope = 2; // 治理范围
+}
+
+// 商品配置冲突项
+message ProductFulfillmentConflictItem {
+  int64 product_id = 1; // 商品ID
+  string product_name = 2; // 商品名称
+  bool has_conflict = 3; // 是否有冲突
+  string conflict_msg = 4; // 冲突信息
+}
+
+// 查询商品履约模式配置冲突响应
+message CheckProductFulfillmentConflictResp {
+  repeated ProductFulfillmentConflictItem items = 1;
 }

@@ -1,4 +1,4 @@
-# generated: 2026-04-16T21:43:04+0800
+# generated: 2026-05-06T01:30:00+0800
 # project: ai_flutter_client
 # project_key: NOKEY
 # tracking_system: file-system
@@ -32,8 +32,18 @@
 # - Stories can be worked in parallel if team capacity allows
 # - SM typically creates next story after previous one is "done" to incorporate learnings
 # - Dev moves story to "review", then runs code-review (fresh context, different LLM recommended)
+#
+# SYNC NOTES (2026-05-06):
+# =========================
+# - epic.md 已从 FR71 扩展到 FR78
+# - 新增 Story 10.6: 商品履约模式与既有数字卡包入账
+# - 新增 Story 10.7: 提货卡转赠与微信扫码注册领取
+# - 新增 Story 10.8: 提货状态流转、履约对账与 C 端合规展示
+# - 原 Story 10.6(实体卡)重编号为 Story 10.9
+# - Story 10.4 标题更新为"链上 token 发放复用既有蚂蚁链/FISCO 链路"
+# - 链上发放、数字卡包/资产台账均为复用既有能力，不是全新功能
 
-generated: 2026-04-16T21:43:04+0800
+generated: 2026-05-06T01:30:00+0800
 project: ai_flutter_client
 project_key: NOKEY
 tracking_system: file-system
@@ -126,7 +136,10 @@ development_status:
   10-1-抽卡活动-卡池与卡片模板配置: in-progress
   10-2-实名资格校验与消费者抽卡参与: review
   10-3-卡片实例生成-唯一编号与本地资产台账: in-progress
-  10-4-蚂蚁链-token-发放-回执写回与失败补偿: review
+  10-4-链上-token-发放复用既有蚂蚁链-fisco-链路: review
   10-5-数字卡片资产展示-审计检索与合规处置: review
-  10-6-实体卡制作-物流履约与签收闭环: in-progress
+  10-6-商品履约模式与既有数字卡包入账: in-progress  # 代码审查完成，已修复 HIGH/MEDIUM 问题
+  10-7-提货卡转赠与微信扫码注册领取: backlog
+  10-8-提货状态流转-履约对账与-c-端合规展示: backlog
+  10-9-实体卡制作-物流履约与签收闭环: in-progress
   epic-10-retrospective: optional

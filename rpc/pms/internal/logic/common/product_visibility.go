@@ -26,19 +26,21 @@ const (
 )
 
 type ProductVisibilityRow struct {
-	ID              int64  `gorm:"column:id"`
-	Name            string `gorm:"column:name"`
-	CategoryID      int64  `gorm:"column:category_id"`
-	BrandID         int64  `gorm:"column:brand_id"`
-	MainPic         string `gorm:"column:main_pic"`
-	PublishStatus   int32  `gorm:"column:publish_status"`
-	VerifyStatus    int32  `gorm:"column:verify_status"`
-	RecommendStatus int32  `gorm:"column:recommend_status"`
-	PreviewStatus   int32  `gorm:"column:preview_status"`
-	Stock           int32  `gorm:"column:stock"`
-	PlatformID      int64  `gorm:"column:platform_id"`
-	TenantID        int64  `gorm:"column:tenant_id"`
-	MerchantID      int64  `gorm:"column:merchant_id"`
+	ID                int64  `gorm:"column:id"`
+	Name              string `gorm:"column:name"`
+	CategoryID        int64  `gorm:"column:category_id"`
+	BrandID           int64  `gorm:"column:brand_id"`
+	MainPic           string `gorm:"column:main_pic"`
+	PublishStatus     int32  `gorm:"column:publish_status"`
+	VerifyStatus      int32  `gorm:"column:verify_status"`
+	RecommendStatus   int32  `gorm:"column:recommend_status"`
+	PreviewStatus     int32  `gorm:"column:preview_status"`
+	Stock             int32  `gorm:"column:stock"`
+	FulfillmentMode   string `gorm:"column:fulfillment_mode"`
+	FulfillmentRuleID int64  `gorm:"column:fulfillment_rule_id"`
+	PlatformID        int64  `gorm:"column:platform_id"`
+	TenantID          int64  `gorm:"column:tenant_id"`
+	MerchantID        int64  `gorm:"column:merchant_id"`
 }
 
 type tenantStatusRow struct {
@@ -121,7 +123,7 @@ func LoadProductVisibilityRows(ctx context.Context, db *gorm.DB, current pkgscop
 		current,
 		"",
 	).Select(
-		"id, name, category_id, brand_id, main_pic, publish_status, verify_status, recommend_status, preview_status, stock, platform_id, tenant_id, merchant_id",
+		"id, name, category_id, brand_id, main_pic, publish_status, verify_status, recommend_status, preview_status, stock, fulfillment_mode, fulfillment_rule_id, platform_id, tenant_id, merchant_id",
 	).Where("id IN ? AND is_deleted = 0", uniqueIDs).Find(&rows).Error; err != nil {
 		return nil, err
 	}
@@ -190,6 +192,104 @@ func ensureProductPublishable(ctx context.Context, db *gorm.DB, row ProductVisib
 	}
 	if row.VerifyStatus != ProductVerifyStatusApproved {
 		return errors.New("商品审核未通过")
+	}
+	// 履约模式校验（Story 10.6）- 使用结构化错误
+	errs := ValidateFulfillmentModeWithDetails(ctx, db, row)
+	if errs.HasErrors() {
+		return errs
+	}
+
+	return nil
+}
+
+// validateFulfillmentMode 校验商品履约模式配置的有效性
+func validateFulfillmentMode(ctx context.Context, db *gorm.DB, row ProductVisibilityRow) error {
+	// 1. 校验履约模式取值
+	if row.FulfillmentMode == "" {
+		// 兼容旧数据：未配置履约模式的商品默认为实物发货
+		return nil
+	}
+	if row.FulfillmentMode != "physical_delivery" && row.FulfillmentMode != "digital_asset" {
+		return fmt.Errorf("履约模式取值非法[%s]，仅支持 physical_delivery 或 digital_asset", row.FulfillmentMode)
+	}
+
+	// 2. 数字资产模式的额外校验
+	if row.FulfillmentMode == "digital_asset" {
+		if row.FulfillmentRuleID <= 0 {
+			return errors.New("数字资产模式商品必须绑定有效发卡规则")
+		}
+		// 校验发卡规则是否存在且有效
+		if err := validateFulfillmentRule(ctx, db, row); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// fulfillmentRuleRow 发卡规则查询结果
+type fulfillmentRuleRow struct {
+	ID             int64  `gorm:"column:id"`
+	RuleStatus     int32  `gorm:"column:rule_status"`
+	CardTemplateID int64  `gorm:"column:card_template_id"`
+	PlatformID     int64  `gorm:"column:platform_id"`
+	TenantID       int64  `gorm:"column:tenant_id"`
+	MerchantID     int64  `gorm:"column:merchant_id"`
+}
+
+// cardTemplateRow 卡片模板查询结果
+type cardTemplateRow struct {
+	ID     int64 `gorm:"column:id"`
+	Status int32 `gorm:"column:status"`
+}
+
+// validateFulfillmentRule 校验发卡规则的有效性
+func validateFulfillmentRule(ctx context.Context, db *gorm.DB, row ProductVisibilityRow) error {
+	// 查询发卡规则
+	var rule fulfillmentRuleRow
+	err := db.WithContext(ctx).
+		Table("sms_product_fulfillment_rule").
+		Select("id, rule_status, card_template_id, platform_id, tenant_id, merchant_id").
+		Where("id = ? AND is_deleted = 0", row.FulfillmentRuleID).
+		Take(&rule).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("发卡规则[%d]不存在或已删除", row.FulfillmentRuleID)
+		}
+		return fmt.Errorf("查询发卡规则失败: %w", err)
+	}
+
+	// 校验发卡规则状态
+	if rule.RuleStatus != 1 {
+		return fmt.Errorf("发卡规则[%d]已禁用，请先启用规则或更换其他规则", row.FulfillmentRuleID)
+	}
+
+	// 校验作用域一致性
+	if rule.PlatformID != row.PlatformID || rule.TenantID != row.TenantID || rule.MerchantID != row.MerchantID {
+		return fmt.Errorf("发卡规则[%d]的作用域与商品不一致，规则归属(platform:%d,tenant:%d,merchant:%d)，商品归属(platform:%d,tenant:%d,merchant:%d)",
+			row.FulfillmentRuleID, rule.PlatformID, rule.TenantID, rule.MerchantID,
+			row.PlatformID, row.TenantID, row.MerchantID)
+	}
+
+	// 校验关联的卡片模板是否存在且有效
+	if rule.CardTemplateID > 0 {
+		var template cardTemplateRow
+		err := db.WithContext(ctx).
+			Table("sms_card_template").
+			Select("id, status").
+			Where("id = ? AND is_deleted = 0", rule.CardTemplateID).
+			Take(&template).Error
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return fmt.Errorf("发卡规则[%d]关联的卡片模板[%d]不存在或已删除", row.FulfillmentRuleID, rule.CardTemplateID)
+			}
+			return fmt.Errorf("查询卡片模板失败: %w", err)
+		}
+		// 注：status 校验取决于卡片模板的状态定义，这里假设 0-禁用 1-启用
+		// 如果模板状态定义不同，需要调整
+		if template.Status == 0 {
+			return fmt.Errorf("发卡规则[%d]关联的卡片模板[%d]已禁用，请先启用模板或更换规则", row.FulfillmentRuleID, rule.CardTemplateID)
+		}
 	}
 
 	return nil

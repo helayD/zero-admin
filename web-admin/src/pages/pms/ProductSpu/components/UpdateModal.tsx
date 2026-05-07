@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, Form, Input, InputNumber, Modal, Radio, Select, TreeSelect } from 'antd';
 import type { ProductSpuDraftFormValues } from '../data.d';
 import { buildDraftClientValidationErrors, buildDraftFieldErrors } from '../draftFeedback';
@@ -7,6 +7,11 @@ import { useCatalogOptions } from './useCatalogOptions';
 import type { CatalogActionError } from '@/pages/pms/errorFeedback';
 import type { GovernanceScopeValue } from '@/pages/system/components/governance';
 import UploadFileComponents from '@/components/common/UploadFileComponents';
+
+const fulfillmentModeOptions = [
+  { value: 'physical_delivery', label: '实物发货' },
+  { value: 'digital_asset', label: '数字资产（支付后生成数字卡片入账）' },
+];
 
 export interface UpdateModalProps {
   onCancel: () => void;
@@ -26,6 +31,7 @@ const formLayout = {
 
 const UpdateModal: React.FC<UpdateModalProps> = (props) => {
   const [form] = Form.useForm();
+  const [fulfillmentMode, setFulfillmentMode] = useState<string>('physical_delivery');
 
   const { onSubmit, onCancel, updateVisible, currentData, scope, submitError } = props;
   const {
@@ -47,6 +53,9 @@ const UpdateModal: React.FC<UpdateModalProps> = (props) => {
       form.setFieldsValue({
         ...currentData,
       });
+      if (currentData.fulfillmentMode) {
+        setFulfillmentMode(currentData.fulfillmentMode);
+      }
     }
   }, [currentData, form]);
 
@@ -281,6 +290,40 @@ const UpdateModal: React.FC<UpdateModalProps> = (props) => {
         </FormItem>
         <FormItem name="subTitle" label="副标题">
           <Input id="update-subTitle" placeholder={'请输入副标题!'} />
+        </FormItem>
+        <FormItem
+          name="fulfillmentMode"
+          label="履约模式"
+          rules={[{ required: true, message: '请选择履约模式!' }]}
+          tooltip="实物发货：商品直接进入物流履约流程；数字资产：支付成功后生成数字卡片资产并复用数字卡包入账"
+        >
+          <Select
+            options={fulfillmentModeOptions}
+            placeholder="请选择履约模式"
+            onChange={(value: string) => {
+              setFulfillmentMode(value);
+              if (value !== 'digital_asset') {
+                form.setFieldsValue({ fulfillmentRuleId: undefined });
+              }
+            }}
+          />
+        </FormItem>
+        {fulfillmentMode === 'digital_asset' && (
+          <FormItem
+            name="fulfillmentRuleId"
+            label="发卡规则ID"
+            rules={[{ required: true, message: '请输入发卡规则ID!' }]}
+            tooltip="数字资产模式下必须关联一个有效的发卡规则"
+          >
+            <InputNumber
+              style={{ width: '100%' }}
+              placeholder="请输入发卡规则ID"
+              min={1}
+            />
+          </FormItem>
+        )}
+        <FormItem name="fulfillmentRuleId" hidden>
+          <Input id="update-fulfillmentRuleId" />
         </FormItem>
         <FormItem
           name="detailHtml"

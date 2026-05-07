@@ -98,6 +98,8 @@ func (l *UpdateProductSpuLogic) UpdateProductSpu(in *pmsclient.ProductSpuReq) (*
 		Stock:               summary.TotalStock,
 		LowStock:            summary.LowStock,
 		PromotionType:       in.PromotionType,
+		FulfillmentMode:     in.FulfillmentMode,
+		FulfillmentRuleID:   in.FulfillmentRuleId,
 		SubTitle:            in.SubTitle,
 		DetailHTML:          in.DetailHtml,
 		DetailMobileHTML:    in.DetailMobileHtml,

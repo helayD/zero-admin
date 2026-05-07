@@ -88,6 +88,16 @@ const renderVerifyStatusTag = (status: number) => {
 const renderRecommendStatusTag = (status: number) =>
   status === 1 ? <Tag color="gold">推荐中</Tag> : <Tag>未推荐</Tag>;
 
+const renderFulfillmentModeTag = (mode?: string) => {
+  if (mode === 'digital_asset') {
+    return <Tag color="purple">数字资产</Tag>;
+  }
+  if (mode === 'physical_delivery') {
+    return <Tag color="blue">实物发货</Tag>;
+  }
+  return <Tag>未配置</Tag>;
+};
+
 const renderScopeSource = (record: Pick<
   ProductSpuListItem,
   'scopeType' | 'platformId' | 'tenantId' | 'merchantId'
@@ -733,6 +743,14 @@ const ProductSpuList: React.FC = () => {
             return <Tag color={'success'}>秒杀</Tag>;
         }
         return <>未知{entity.promotionType}</>;
+      },
+    },
+    {
+      title: '履约模式',
+      dataIndex: 'fulfillmentMode',
+      hideInSearch: true,
+      render: (dom, entity) => {
+        return renderFulfillmentModeTag(entity.fulfillmentMode);
       },
     },
 

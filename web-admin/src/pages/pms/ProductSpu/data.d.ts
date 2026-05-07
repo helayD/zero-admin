@@ -50,6 +50,8 @@ export interface ProductSpuListItem {
   recommendTime?: string; //最近推荐时间
   recommendDetail?: string; //最近推荐说明
   isDeleted: number; //是否删除
+  fulfillmentMode?: 'physical_delivery' | 'digital_asset'; //履约模式：physical_delivery-实物发货，digital_asset-数字资产
+  fulfillmentRuleId?: number; //发卡规则ID（仅digital_asset模式有效）
 }
 
 export interface ProductSpuListPagination {

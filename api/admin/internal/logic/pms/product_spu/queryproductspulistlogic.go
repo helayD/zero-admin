@@ -97,11 +97,13 @@ func (l *QueryProductSpuListLogic) QueryProductSpuList(req *types.QueryProductSp
 			Sales:               detail.Sales,               // 销量
 			Stock:               detail.Stock,               // 库存
 			LowStock:            detail.LowStock,            // 预警库存
-			PromotionType:       detail.PromotionType,       // 促销类型：0->没有促销使用原价;1->使用促销价；2->使用会员价；3->使用阶梯价格；4->使用满减价格；5->秒杀
-			SubTitle:            detail.SubTitle,            // 详情标题
-			DetailHtml:          detail.DetailHtml,          // 产品详情网页内容
-			DetailMobileHtml:    detail.DetailMobileHtml,    // 移动端网页详情
-			CreateBy:            detail.CreateBy,            // 创建人ID
+		PromotionType:       detail.PromotionType,       // 促销类型：0->没有促销使用原价;1->使用促销价；2->使用会员价；3->使用阶梯价格；4->使用满减价格；5->秒杀
+		FulfillmentMode:     detail.FulfillmentMode,     // 履约模式: physical_delivery-实物发货, digital_asset-数字资产
+		FulfillmentRuleId:   detail.FulfillmentRuleId,   // 关联发卡规则ID,仅digital_asset模式时有效
+		SubTitle:            detail.SubTitle,            // 详情标题
+		DetailHtml:          detail.DetailHtml,          // 产品详情网页内容
+		DetailMobileHtml:    detail.DetailMobileHtml,    // 移动端网页详情
+		CreateBy:            detail.CreateBy,            // 创建人ID
 			CreateTime:          detail.CreateTime,          // 创建时间
 			UpdateBy:            detail.UpdateBy,            // 更新人ID
 			UpdateTime:          detail.UpdateTime,          // 更新时间

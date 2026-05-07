@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/feihua/zero-admin/api/admin/internal/common"
+	common2 "github.com/feihua/zero-admin/api/admin/internal/common"
 	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/common/res"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
@@ -52,6 +53,11 @@ func (l *AddProductSpuLogic) AddProductSpu(req *types.AddProductSpuReq) (resp *t
 
 	if err != nil {
 		logc.Errorf(l.ctx, "添加商品信息失败,参数：%+v,响应：%s", req, err.Error())
+		// 解析结构化校验错误
+		fulfillmentErr := common2.ParseFulfillmentValidationErrors(err)
+		if fulfillmentErr != nil && len(fulfillmentErr.Errors) > 0 {
+			return nil, errorx.NewDefaultError(fulfillmentErr.Description)
+		}
 		s, _ := status.FromError(err)
 		return nil, errorx.NewDefaultError(s.Message())
 	}
@@ -114,6 +120,8 @@ func (l *AddProductSpuLogic) addProductSpuInfo(req *types.AddProductSpuReq) (*pr
 		Stock:                     product.Stock,                       // 库存
 		LowStock:                  product.LowStock,                    // 预警库存
 		PromotionType:             product.PromotionType,               // 促销类型：0->没有促销使用原价;1->使用促销价；2->使用会员价；3->使用阶梯价格；4->使用满减价格；5->秒杀
+		FulfillmentMode:           product.FulfillmentMode,             // 履约模式: physical_delivery-实物发货, digital_asset-数字资产
+		FulfillmentRuleId:         product.FulfillmentRuleId,           // 关联发卡规则ID,仅digital_asset模式时有效
 		SubTitle:                  product.SubTitle,                    // 详情标题
 		DetailHtml:                product.DetailHtml,                  // 产品详情网页内容
 		DetailMobileHtml:          product.DetailMobileHtml,            // 移动端网页详情

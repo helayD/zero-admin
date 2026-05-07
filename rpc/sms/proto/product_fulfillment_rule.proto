@@ -1,0 +1,131 @@
+syntax = "proto3";
+
+package main;
+
+option go_package = "./proto";
+
+message ProductFulfillmentRuleData {
+  int64 id = 1; // 规则ID
+  string rule_name = 2; // 规则名称
+  int32 rule_status = 3; // 规则状态：0-禁用，1-启用
+  int64 card_template_id = 4; // 关联卡片模板ID
+  string card_template_name = 5; // 关联卡片模板名称（查询时填充）
+  int32 expire_days = 6; // 卡片有效期天数
+  int32 transferable = 7; // 是否可转赠：0-否，1-是
+  int32 transfer_limit = 8; // 最大转赠次数
+  string claim_condition = 9; // 领取条件（JSON）
+  string redemption_condition = 10; // 提货条件
+  string refund_policy = 11; // 退款处置策略：freeze_card/recycle_card/manual_review
+  string refund_policy_text = 12; // 退款处置策略文案（查询时填充）
+  int64 platform_id = 13; // 平台ID
+  int64 tenant_id = 14; // 租户ID
+  int64 merchant_id = 15; // 商户ID
+  string create_by = 16; // 创建人
+  string update_by = 17; // 更新人
+  string create_time = 18; // 创建时间
+  string update_time = 19; // 更新时间
+  int32 binding_count = 20; // 绑定商品数量（查询时填充）
+}
+
+message AddProductFulfillmentRuleReq {
+  string rule_name = 1; // 规则名称
+  int64 card_template_id = 2; // 关联卡片模板ID
+  int32 expire_days = 3; // 卡片有效期天数
+  int32 transferable = 4; // 是否可转赠：0-否，1-是
+  int32 transfer_limit = 5; // 最大转赠次数
+  string claim_condition = 6; // 领取条件（JSON）
+  string redemption_condition = 7; // 提货条件
+  string refund_policy = 8; // 退款处置策略：freeze_card/recycle_card/manual_review
+  GovernanceScope scope = 9; // 治理范围
+  string operator_type = 10; // 操作者类型
+}
+
+message AddProductFulfillmentRuleResp {
+  ProductFulfillmentRuleData rule = 1; // 创建的规则
+}
+
+message UpdateProductFulfillmentRuleReq {
+  int64 id = 1; // 规则ID
+  string rule_name = 2; // 规则名称
+  int64 card_template_id = 3; // 关联卡片模板ID
+  int32 expire_days = 4; // 卡片有效期天数
+  int32 transferable = 5; // 是否可转赠：0-否，1-是
+  int32 transfer_limit = 6; // 最大转赠次数
+  string claim_condition = 7; // 领取条件（JSON）
+  string redemption_condition = 8; // 提货条件
+  string refund_policy = 9; // 退款处置策略
+  GovernanceScope scope = 10; // 治理范围
+  string operator_type = 11; // 操作者类型
+}
+
+message UpdateProductFulfillmentRuleResp {
+  ProductFulfillmentRuleData rule = 1; // 更新后的规则
+}
+
+message QueryProductFulfillmentRuleListReq {
+  string rule_name = 1; // 规则名称（模糊查询）
+  int64 card_template_id = 2; // 关联卡片模板ID
+  int32 rule_status = 3; // 规则状态：-1-全部，0-禁用，1-启用
+  int32 page = 4; // 页码
+  int32 page_size = 5; // 每页数量
+  GovernanceScope scope = 6; // 治理范围
+}
+
+message QueryProductFulfillmentRuleListResp {
+  repeated ProductFulfillmentRuleData list = 1; // 规则列表
+  int64 total = 2; // 总数
+}
+
+message QueryProductFulfillmentRuleDetailReq {
+  int64 id = 1; // 规则ID
+  GovernanceScope scope = 2; // 治理范围
+}
+
+message QueryProductFulfillmentRuleDetailResp {
+  ProductFulfillmentRuleData rule = 1; // 规则详情
+}
+
+message UpdateProductFulfillmentRuleStatusReq {
+  int64 id = 1; // 规则ID
+  int32 rule_status = 2; // 规则状态：0-禁用，1-启用
+  GovernanceScope scope = 3; // 治理范围
+  string operator_type = 4; // 操作者类型
+}
+
+message UpdateProductFulfillmentRuleStatusResp {
+  ProductFulfillmentRuleData rule = 1; // 更新后的规则
+}
+
+message DeleteProductFulfillmentRuleReq {
+  int64 id = 1; // 规则ID
+  GovernanceScope scope = 2; // 治理范围
+  string operator_type = 3; // 操作者类型
+}
+
+message DeleteProductFulfillmentRuleResp {
+  int32 code = 1; // 状态码：0-成功
+  string message = 2; // 提示信息
+}
+
+message CheckProductFulfillmentRuleBindingReq {
+  int64 id = 1; // 规则ID
+  GovernanceScope scope = 2; // 治理范围
+}
+
+message CheckProductFulfillmentRuleBindingResp {
+  int32 binding_count = 1; // 绑定商品数量
+  repeated string binding_product_names = 2; // 绑定的商品名称列表
+  bool can_disable = 3; // 是否可以禁用
+  bool can_delete = 4; // 是否可以删除
+  string message = 5; // 提示信息
+}
+
+service ProductFulfillmentRuleService {
+  rpc AddProductFulfillmentRule(AddProductFulfillmentRuleReq) returns (AddProductFulfillmentRuleResp){}
+  rpc UpdateProductFulfillmentRule(UpdateProductFulfillmentRuleReq) returns (UpdateProductFulfillmentRuleResp){}
+  rpc QueryProductFulfillmentRuleList(QueryProductFulfillmentRuleListReq) returns (QueryProductFulfillmentRuleListResp){}
+  rpc QueryProductFulfillmentRuleDetail(QueryProductFulfillmentRuleDetailReq) returns (QueryProductFulfillmentRuleDetailResp){}
+  rpc UpdateProductFulfillmentRuleStatus(UpdateProductFulfillmentRuleStatusReq) returns (UpdateProductFulfillmentRuleStatusResp){}
+  rpc DeleteProductFulfillmentRule(DeleteProductFulfillmentRuleReq) returns (DeleteProductFulfillmentRuleResp){}
+  rpc CheckProductFulfillmentRuleBinding(CheckProductFulfillmentRuleBindingReq) returns (CheckProductFulfillmentRuleBindingResp){}
+}

@@ -54,6 +54,8 @@ type (
 		Stock               int32   `json:"stock"` //库存
 		LowStock            int32   `json:"lowStock"` //预警库存
 		PromotionType       int32   `json:"promotionType"` //促销类型：0->没有促销使用原价;1->使用促销价；2->使用会员价；3->使用阶梯价格；4->使用满减价格；5->秒杀
+		FulfillmentMode     string  `json:"fulfillmentMode,optional"` //履约模式: physical_delivery-实物发货, digital_asset-数字资产
+		FulfillmentRuleId   int64   `json:"fulfillmentRuleId,optional"` //关联发卡规则ID,仅digital_asset模式时有效
 		SubTitle            string  `json:"subTitle"` //副标题
 		DetailHtml          string  `json:"detailHtml"` //产品详情网页内容
 		DetailMobileHtml    string  `json:"detailMobileHtml"` //移动端网页详情

@@ -153,28 +153,30 @@ func (l *QueryProductSpuListLogic) QueryProductSpuList(in *pmsclient.QueryProduc
 			Sales:               item.Sales,                                       // 销量
 			Stock:               item.Stock,                                       // 库存
 			LowStock:            item.LowStock,                                    // 预警库存
-			PromotionType:       item.PromotionType,                               // 促销类型：0->没有促销使用原价;1->使用促销价；2->使用会员价；3->使用阶梯价格；4->使用满减价格；5->秒杀
-			SubTitle:            item.SubTitle,                                    // 副标题
-			DetailHtml:          item.DetailHTML,                                  // 产品详情网页内容
-			DetailMobileHtml:    item.DetailMobileHTML,                            // 移动端网页详情
-			CreateBy:            item.CreateBy,                                    // 创建人ID
-			CreateTime:          time_util.TimeToStr(item.CreateTime),             // 创建时间
-			UpdateBy:            pointerprocess.DefaltData(item.UpdateBy).(int64), // 更新人ID
-			UpdateTime:          time_util.TimeToString(item.UpdateTime),          // 更新时间
-			ScopeType:           scopeMeta.ScopeType,
-			PlatformId:          scopeMeta.PlatformID,
-			TenantId:            scopeMeta.TenantID,
-			MerchantId:          scopeMeta.MerchantID,
-			ReviewMan:           reviewMeta.ReviewMan,
-			ReviewTime:          reviewMeta.ReviewTime,
-			ReviewDetail:        reviewMeta.ReviewDetail,
-			PublishMan:          operationMeta.PublishMan,
-			PublishTime:         operationMeta.PublishTime,
-			PublishDetail:       operationMeta.PublishDetail,
-			RecommendMan:        operationMeta.RecommendMan,
-			RecommendTime:       operationMeta.RecommendTime,
-			RecommendDetail:     operationMeta.RecommendDetail,
-		})
+		PromotionType:       item.PromotionType,                               // 促销类型：0->没有促销使用原价;1->使用促销价；2->使用会员价；3->使用阶梯价格；4->使用满减价格；5->秒杀
+		FulfillmentMode:     item.FulfillmentMode,                             // 履约模式: physical_delivery-实物发货, digital_asset-数字资产
+		FulfillmentRuleId:   item.FulfillmentRuleID,                           // 关联发卡规则ID,仅digital_asset模式时有效
+		SubTitle:            item.SubTitle,                                    // 副标题
+		DetailHtml:          item.DetailHTML,                                  // 产品详情网页内容
+		DetailMobileHtml:    item.DetailMobileHTML,                            // 移动端网页详情
+		CreateBy:            item.CreateBy,                                    // 创建人ID
+		CreateTime:          time_util.TimeToStr(item.CreateTime),             // 创建时间
+		UpdateBy:            pointerprocess.DefaltData(item.UpdateBy).(int64), // 更新人ID
+		UpdateTime:          time_util.TimeToString(item.UpdateTime),          // 更新时间
+		ScopeType:           scopeMeta.ScopeType,
+		PlatformId:          scopeMeta.PlatformID,
+		TenantId:            scopeMeta.TenantID,
+		MerchantId:          scopeMeta.MerchantID,
+		ReviewMan:           reviewMeta.ReviewMan,
+		ReviewTime:          reviewMeta.ReviewTime,
+		ReviewDetail:        reviewMeta.ReviewDetail,
+		PublishMan:          operationMeta.PublishMan,
+		PublishTime:         operationMeta.PublishTime,
+		PublishDetail:       operationMeta.PublishDetail,
+		RecommendMan:        operationMeta.RecommendMan,
+		RecommendTime:       operationMeta.RecommendTime,
+		RecommendDetail:     operationMeta.RecommendDetail,
+	})
 	}
 
 	return &pmsclient.QueryProductSpuListResp{

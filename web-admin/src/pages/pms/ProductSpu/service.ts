@@ -41,6 +41,8 @@ const productDataFieldNames = [
   'subTitle',
   'detailHtml',
   'detailMobileHtml',
+  'fulfillmentMode',
+  'fulfillmentRuleId',
 ] as const;
 
 const emptyNestedPayload: Required<ProductSpuNestedPayload> = {

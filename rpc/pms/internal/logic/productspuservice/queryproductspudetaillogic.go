@@ -119,6 +119,8 @@ func (l *QueryProductSpuDetailLogic) QueryProductSpuDetail(in *pmsclient.QueryPr
 		Stock:               item.Stock,                                       // 库存
 		LowStock:            item.LowStock,                                    // 预警库存
 		PromotionType:       item.PromotionType,                               // 促销类型：0->没有促销使用原价;1->使用促销价；2->使用会员价；3->使用阶梯价格；4->使用满减价格；5->秒杀
+		FulfillmentMode:     item.FulfillmentMode,                             // 履约模式: physical_delivery-实物发货, digital_asset-数字资产
+		FulfillmentRuleId:   item.FulfillmentRuleID,                           // 关联发卡规则ID,仅digital_asset模式时有效
 		SubTitle:            item.SubTitle,                                    // 副标题
 		DetailHtml:          item.DetailHTML,                                  // 产品详情网页内容
 		DetailMobileHtml:    item.DetailMobileHTML,                            // 移动端网页详情
