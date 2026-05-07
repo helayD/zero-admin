@@ -38,9 +38,9 @@ func NewOrderPayLogic(ctx context.Context, svcCtx *svc.ServiceContext) *OrderPay
 
 // OrderPay 预下单（Task 1: 真实金额 + 状态校验 + PayType 路由 + 幂等保护）
 func (l *OrderPayLogic) OrderPay(req *types.OrderPayReq) (resp *types.OrderPayResp, err error) {
-	// 0. 支付方式校验
-	if req.PayType != 1 && req.PayType != 2 {
-		return &types.OrderPayResp{Code: 1, Message: "支付方式无效，仅支持支付宝(1)或微信(2)"}, nil
+	// 0. 支付方式校验（99=模拟支付，测试专用）
+	if req.PayType != 1 && req.PayType != 2 && req.PayType != 99 {
+		return &types.OrderPayResp{Code: 1, Message: "支付方式无效，仅支持支付宝(1)、微信(2)或模拟支付(99)"}, nil
 	}
 
 	// 1. 获取会员ID
