@@ -291,7 +291,26 @@ func (l *PaymentOperationsUtils) SimulatePaySuccess(outTradeNo string) error {
 	}
 
 	// Step 3: 更新 order_status=2（已支付）
+	// 先查询订单获取 ID
+	var orderId int64
+	if paymentList != nil && len(paymentList.List) > 0 {
+		orderId = paymentList.List[0].OrderId
+	}
+	if orderId == 0 {
+		// 通过 OrderNo 查询订单
+		orderResp, queryErr := l.svcCtx.OrderService.QueryOrderList(l.ctx, &omsclient.QueryOrderListReq{
+			OrderNo: outTradeNo,
+		})
+		if queryErr == nil && orderResp != nil && len(orderResp.List) > 0 {
+			orderId = orderResp.List[0].Id
+		}
+	}
+	if orderId == 0 {
+		return fmt.Errorf("无法获取订单ID, outTradeNo=%s", outTradeNo)
+	}
+
 	_, err = l.svcCtx.OrderService.UpdateOrder(l.ctx, &omsclient.UpdateOrderReq{
+		Id:          orderId,
 		OrderNo:     outTradeNo,
 		OrderStatus: order.OrderStatusPaid, // 2=已支付
 	})
@@ -309,9 +328,7 @@ func (l *PaymentOperationsUtils) SimulatePaySuccess(outTradeNo string) error {
 	l.Logger.Infof("SimulatePaySuccess 更新订单状态成功 outTradeNo=%s", outTradeNo)
 
 	// Step 4: 写入操作日志
-	var orderId int64
-	if paymentList != nil && len(paymentList.List) > 0 {
-		orderId = paymentList.List[0].OrderId
+	if orderId > 0 {
 		_, _ = l.svcCtx.OrderOperationLogService.AddOrderOperationLog(l.ctx, &omsclient.AddOrderOperationLogReq{
 			OrderId:       orderId,
 			OperatorType:  order.OperatorTypeSystem,
