@@ -210,6 +210,17 @@ class _OrderPayState extends State<OrderPay> with WidgetsBindingObserver {
       }
 
       final payParams = data['data'] as String? ?? '';
+
+      // 模拟支付（payType=99）直接返回成功，无需调用 SDK
+      if (_selectedPayType == 99) {
+        if (!mounted) return;
+        setState(() {
+          _pageState = PayPageState.success;
+          _isPaying = false;
+        });
+        return;
+      }
+
       if (payParams.isEmpty) {
         setState(() {
           _pageState = PayPageState.failed;
@@ -557,6 +568,8 @@ class _OrderPayState extends State<OrderPay> with WidgetsBindingObserver {
         return '支付宝支付';
       case 2:
         return '微信支付';
+      case 99:
+        return '模拟支付（测试）';
       default:
         return '未知支付方式';
     }
@@ -775,8 +788,9 @@ class _OrderPayState extends State<OrderPay> with WidgetsBindingObserver {
         // 支付宝
         Container(
           height: 60,
-          margin: const EdgeInsets.only(left: 30, bottom: 30),
+          margin: const EdgeInsets.only(left: 30),
           padding: const EdgeInsets.only(right: 18),
+          decoration: BoxDecoration(border: Border(bottom: border)),
           child: Row(
             children: [
               Image.asset('images/ali_pay.png', height: 27, width: 26),
@@ -794,6 +808,44 @@ class _OrderPayState extends State<OrderPay> with WidgetsBindingObserver {
                   side: const BorderSide(width: 1, color: Colors.black26),
                   onChanged: (value) {
                     if (value == true) setState(() => _selectedPayType = 1);
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        // 模拟支付（测试专用）
+        Container(
+          height: 60,
+          margin: const EdgeInsets.only(left: 30, bottom: 30),
+          padding: const EdgeInsets.only(right: 18),
+          decoration: BoxDecoration(border: Border(bottom: border)),
+          child: Row(
+            children: [
+              Icon(Icons.science, size: 26, color: Colors.orange[700]),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('模拟支付（测试）',
+                        style: TextStyle(fontSize: 16, color: textPrimary)),
+                    const SizedBox(height: 2),
+                    Text('跳过真实支付，直接完成订单',
+                        style: TextStyle(fontSize: 12, color: textSecondary)),
+                  ],
+                ),
+              ),
+              Transform.scale(
+                scale: 1.3,
+                child: Checkbox(
+                  value: _selectedPayType == 99,
+                  activeColor: Colors.orange[700],
+                  shape: const CircleBorder(),
+                  side: const BorderSide(width: 1, color: Colors.black26),
+                  onChanged: (value) {
+                    if (value == true) setState(() => _selectedPayType = 99);
                   },
                 ),
               ),
