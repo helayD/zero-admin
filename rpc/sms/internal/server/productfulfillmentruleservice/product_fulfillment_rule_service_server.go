@@ -10,7 +10,7 @@ import (
 
 type ProductFulfillmentRuleServiceServer struct {
 	svcCtx *svc.ServiceContext
-	smsclient.ProductFulfillmentRuleService
+	smsclient.UnimplementedProductFulfillmentRuleServiceServer
 }
 
 func NewProductFulfillmentRuleServiceServer(svcCtx *svc.ServiceContext) *ProductFulfillmentRuleServiceServer {
