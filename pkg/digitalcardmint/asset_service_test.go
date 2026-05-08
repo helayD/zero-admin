@@ -51,6 +51,13 @@ func newAssetServiceTestDB(t *testing.T) *gorm.DB {
 			create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			is_deleted INTEGER NOT NULL DEFAULT 0
 		)`,
+		`CREATE TABLE oms_order_item (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			order_id INTEGER NOT NULL,
+			sku_id INTEGER NOT NULL,
+			sku_name TEXT NOT NULL DEFAULT '',
+			is_deleted INTEGER NOT NULL DEFAULT 0
+		)`,
 		`CREATE TABLE sms_card_instance (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			platform_id INTEGER NOT NULL DEFAULT 1,
@@ -178,6 +185,8 @@ func newAssetServiceTestDB(t *testing.T) *gorm.DB {
 			(1, 2001, 3001, 'req-asset-1', 'trace-asset-1', 'won', 'won_pending_asset', '', '2026-04-18 10:00:00', 0),
 			(2, 2001, 3001, 'req-asset-2', 'trace-asset-2', 'won', 'won_pending_asset', '', '2026-04-18 10:05:00', 0),
 			(3, 2001, 3999, 'req-asset-3', 'trace-asset-3', 'won', 'won_pending_asset', '', '2026-04-18 10:10:00', 0)`,
+		`INSERT INTO oms_order_item (id, order_id, sku_id, sku_name, is_deleted) VALUES
+			(1001, 9001, 8001, '购买的提货卡商品', 0)`,
 		`INSERT INTO sms_card_instance (
 			id, platform_id, tenant_id, merchant_id, activity_id, member_id, participation_record_id, request_id, trace_id,
 			template_id, rarity, asset_no, asset_status, mint_status, token_id, chain_status,
@@ -265,6 +274,20 @@ func TestQueryMemberDigitalCardAssetListKeepsRestrictedAssetVisible(t *testing.T
 	}
 	if restricted.ComplianceRuleSummary != "合规复核中" {
 		t.Fatalf("expected restricted reason to win over activity summary, got %q", restricted.ComplianceRuleSummary)
+	}
+
+	var purchase *MemberDigitalCardAssetItem
+	for index := range list {
+		if list[index].AssetNo == "CARD-PURCHASE-001" {
+			purchase = &list[index]
+			break
+		}
+	}
+	if purchase == nil {
+		t.Fatalf("expected purchase asset CARD-PURCHASE-001 in %+v", list)
+	}
+	if purchase.SourceType != "purchase" || purchase.SourceDisplayName != "购买的提货卡商品" {
+		t.Fatalf("expected purchase source to expose sku name only, got %+v", purchase)
 	}
 }
 

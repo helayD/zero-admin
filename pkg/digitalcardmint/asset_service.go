@@ -169,6 +169,7 @@ type digitalCardAssetBaseRow struct {
 	ActivityName              string       `gorm:"column:activity_name"`
 	SourceType                string       `gorm:"column:source_type"`
 	SourceID                  int64        `gorm:"column:source_id"`
+	SourceDisplayName         string       `gorm:"column:source_display_name"`
 	ActivityComplianceSummary string       `gorm:"column:activity_compliance_summary"`
 	MemberID                  int64        `gorm:"column:member_id"`
 	TemplateID                int64        `gorm:"column:template_id"`
@@ -394,6 +395,7 @@ func (s *Service) memberAssetBaseQuery(ctx context.Context, currentScope pkgscop
 		Joins("LEFT JOIN sms_card_template AS template ON template.id = instance.template_id AND template.is_deleted = 0").
 		Joins("LEFT JOIN sms_card_mint_task AS task ON task.asset_instance_id = instance.id AND task.is_deleted = 0").
 		Joins("LEFT JOIN sms_draw_participation_record AS record ON record.id = instance.participation_record_id AND record.is_deleted = 0").
+		Joins("LEFT JOIN oms_order_item AS order_item ON instance.source_type = ? AND order_item.id = instance.source_id AND order_item.is_deleted = 0", sourceTypePurchase).
 		Where("instance.is_deleted = 0 AND instance.member_id = ?", memberID)
 	return pkgscope.ApplyGovernanceScope(base, currentScope, "instance")
 }
@@ -405,6 +407,7 @@ func (s *Service) auditAssetBaseQuery(ctx context.Context, currentScope pkgscope
 		Joins("LEFT JOIN sms_card_template AS template ON template.id = instance.template_id AND template.is_deleted = 0").
 		Joins("LEFT JOIN sms_card_mint_task AS task ON task.asset_instance_id = instance.id AND task.is_deleted = 0").
 		Joins("LEFT JOIN sms_draw_participation_record AS record ON record.id = instance.participation_record_id AND record.is_deleted = 0").
+		Joins("LEFT JOIN oms_order_item AS order_item ON instance.source_type = ? AND order_item.id = instance.source_id AND order_item.is_deleted = 0", sourceTypePurchase).
 		Where("instance.is_deleted = 0")
 	base = pkgscope.ApplyGovernanceScope(base, currentScope, "instance")
 
@@ -463,6 +466,7 @@ func memberAssetSelectColumns() string {
 		COALESCE(activity.name, '') AS activity_name,
 		COALESCE(instance.source_type, 'draw') AS source_type,
 		COALESCE(instance.source_id, 0) AS source_id,
+		COALESCE(NULLIF(order_item.sku_name, ''), '') AS source_display_name,
 		COALESCE(activity.compliance_rule_summary, '') AS activity_compliance_summary,
 		instance.member_id AS member_id,
 		instance.template_id AS template_id,
@@ -507,7 +511,7 @@ func buildMemberAssetItem(row digitalCardAssetBaseRow) MemberDigitalCardAssetIte
 		ActivityID:            row.ActivityID,
 		ActivityName:          row.ActivityName,
 		SourceType:            userFacingSourceType(row.SourceType),
-		SourceDisplayName:     userFacingSourceName(row.SourceType, row.ActivityName),
+		SourceDisplayName:     userFacingSourceName(row.SourceType, row.ActivityName, row.SourceDisplayName),
 		Rarity:                row.Rarity,
 		ObtainedAt:            formatNullableTime(row.ObtainedAt),
 		MintStatus:            row.MintStatus,
@@ -521,8 +525,11 @@ func buildMemberAssetItem(row digitalCardAssetBaseRow) MemberDigitalCardAssetIte
 	}
 }
 
-func userFacingSourceName(sourceType string, activityName string) string {
+func userFacingSourceName(sourceType string, activityName string, purchaseName string) string {
 	if strings.TrimSpace(sourceType) == sourceTypePurchase {
+		if name := strings.TrimSpace(purchaseName); name != "" {
+			return name
+		}
 		return "购买获取"
 	}
 	return strings.TrimSpace(activityName)
@@ -627,6 +634,7 @@ func (s *Service) mutateAssetComplianceState(ctx context.Context, currentScope p
 			Joins("LEFT JOIN sms_card_template AS template ON template.id = instance.template_id AND template.is_deleted = 0").
 			Joins("LEFT JOIN sms_card_mint_task AS task ON task.asset_instance_id = instance.id AND task.is_deleted = 0").
 			Joins("LEFT JOIN sms_draw_participation_record AS record ON record.id = instance.participation_record_id AND record.is_deleted = 0").
+			Joins("LEFT JOIN oms_order_item AS order_item ON instance.source_type = ? AND order_item.id = instance.source_id AND order_item.is_deleted = 0", sourceTypePurchase).
 			Where("instance.id = ? AND instance.is_deleted = 0", assetInstanceID).
 			Select(memberAssetSelectColumns()).
 			Clauses(clause.Locking{Strength: "UPDATE"})

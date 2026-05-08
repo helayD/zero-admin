@@ -1,17 +1,17 @@
-package order
+package pay
 
 import (
 	"context"
 	"fmt"
 	"testing"
 
-	"github.com/bytedance/sonic"
+	"github.com/feihua/zero-admin/api/front/internal/svc"
 	"github.com/feihua/zero-admin/pkg/digitalcardmint"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
-func newOrderPayTestDB(t *testing.T) *gorm.DB {
+func newPaymentOperationsTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
 
 	db, err := gorm.Open(sqlite.Open(fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())), &gorm.Config{})
@@ -20,6 +20,15 @@ func newOrderPayTestDB(t *testing.T) *gorm.DB {
 	}
 
 	stmts := []string{
+		`CREATE TABLE oms_order_main (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			platform_id INTEGER NOT NULL DEFAULT 1,
+			tenant_id INTEGER NOT NULL DEFAULT 0,
+			merchant_id INTEGER NOT NULL DEFAULT 0,
+			order_no TEXT NOT NULL DEFAULT '',
+			user_id INTEGER NOT NULL DEFAULT 0,
+			is_deleted INTEGER NOT NULL DEFAULT 0
+		)`,
 		`CREATE TABLE oms_order_item (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			order_id INTEGER NOT NULL,
@@ -30,7 +39,7 @@ func newOrderPayTestDB(t *testing.T) *gorm.DB {
 		`CREATE TABLE pms_product_sku (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			spu_id INTEGER NOT NULL,
-			fulfillment_mode TEXT NOT NULL DEFAULT 'physical_delivery',
+			fulfillment_mode TEXT NOT NULL DEFAULT '',
 			fulfillment_rule_id INTEGER NOT NULL DEFAULT 0,
 			is_deleted INTEGER NOT NULL DEFAULT 0
 		)`,
@@ -39,7 +48,7 @@ func newOrderPayTestDB(t *testing.T) *gorm.DB {
 			platform_id INTEGER NOT NULL DEFAULT 1,
 			tenant_id INTEGER NOT NULL DEFAULT 0,
 			merchant_id INTEGER NOT NULL DEFAULT 0,
-			fulfillment_mode TEXT NOT NULL DEFAULT 'physical_delivery',
+			fulfillment_mode TEXT NOT NULL DEFAULT '',
 			fulfillment_rule_id INTEGER NOT NULL DEFAULT 0,
 			is_deleted INTEGER NOT NULL DEFAULT 0
 		)`,
@@ -158,7 +167,6 @@ func newOrderPayTestDB(t *testing.T) *gorm.DB {
 			update_time DATETIME NULL,
 			is_deleted INTEGER NOT NULL DEFAULT 0
 		)`,
-		`CREATE UNIQUE INDEX uk_card_mint_task_asset_test ON sms_card_mint_task(asset_instance_id, is_deleted)`,
 		`CREATE TABLE sms_card_asset_log (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			asset_instance_id INTEGER NOT NULL,
@@ -180,192 +188,55 @@ func newOrderPayTestDB(t *testing.T) *gorm.DB {
 		}
 	}
 
+	seeds := []string{
+		`INSERT INTO oms_order_main (id, platform_id, tenant_id, merchant_id, order_no, user_id, is_deleted) VALUES
+			(4001, 1, 10, 88, 'OR4001', 5001, 0)`,
+		`INSERT INTO oms_order_item (id, order_id, sku_id, sku_name, is_deleted) VALUES
+			(3001, 4001, 2001, '提货卡商品', 0)`,
+		`INSERT INTO pms_product_spu (id, platform_id, tenant_id, merchant_id, fulfillment_mode, fulfillment_rule_id, is_deleted) VALUES
+			(1001, 1, 10, 88, 'digital_asset', 1, 0)`,
+		`INSERT INTO pms_product_sku (id, spu_id, fulfillment_mode, fulfillment_rule_id, is_deleted) VALUES
+			(2001, 1001, '', 0, 0)`,
+		`INSERT INTO sms_product_fulfillment_rule (id, platform_id, tenant_id, merchant_id, rule_name, rule_status, card_template_id, expire_days, transferable, transfer_limit, claim_condition, redemption_condition, refund_policy, is_deleted) VALUES
+			(1, 1, 10, 88, '测试规则', 1, 21, 365, 1, 3, '', '', 'freeze_card', 0)`,
+		`INSERT INTO sms_card_template (id, template_name, display_status, content_audit_status, credential_ref, status, audit_status, is_deleted) VALUES
+			(21, 'SSR 兔兔', 1, 2, 'cred-1', 1, 2, 0)`,
+	}
+	for _, seed := range seeds {
+		if err := db.Exec(seed).Error; err != nil {
+			t.Fatalf("seed data failed: %v", err)
+		}
+	}
+
 	return db
 }
 
-func seedOrderTestData(t *testing.T, db *gorm.DB) {
-	t.Helper()
+func TestEnsurePaidOrderPurchaseAssetsUsesOrderContextForSimulatedPayment(t *testing.T) {
+	db := newPaymentOperationsTestDB(t)
+	logic := NewPaymentOperationsUtils(context.Background(), &svc.ServiceContext{
+		DB:              db,
+		CardMintService: digitalcardmint.NewService(db, nil, nil),
+	})
 
-	// 创建商品 SPU（提货卡模式）
-	if err := db.Exec(`INSERT INTO pms_product_spu (id, platform_id, tenant_id, merchant_id, fulfillment_mode, fulfillment_rule_id, is_deleted) VALUES (1001, 1, 10, 88, 'digital_asset', 1, 0)`).Error; err != nil {
-		t.Fatalf("seed product spu failed: %v", err)
-	}
-
-	// 创建商品 SKU（继承 SPU 的履约模式和发卡规则）
-	if err := db.Exec(`INSERT INTO pms_product_sku (id, spu_id, fulfillment_mode, fulfillment_rule_id, is_deleted) VALUES (2001, 1001, '', 0, 0)`).Error; err != nil {
-		t.Fatalf("seed product sku failed: %v", err)
-	}
-
-	// 创建发卡规则
-	if err := db.Exec(`INSERT INTO sms_product_fulfillment_rule (id, platform_id, tenant_id, merchant_id, rule_name, rule_status, card_template_id, expire_days, transferable, transfer_limit, claim_condition, redemption_condition, refund_policy, is_deleted) VALUES (1, 1, 10, 88, '测试规则', 1, 21, 365, 1, 3, '', '', 'freeze_card', 0)`).Error; err != nil {
-		t.Fatalf("seed fulfillment rule failed: %v", err)
-	}
-
-	// 创建卡片模板
-	if err := db.Exec(`INSERT INTO sms_card_template (id, template_name, display_status, content_audit_status, credential_ref, status, audit_status, is_deleted) VALUES (21, 'SSR 兔兔', 1, 2, 'cred-1', 1, 2, 0)`).Error; err != nil {
-		t.Fatalf("seed card template failed: %v", err)
-	}
-
-	// 创建订单明细
-	if err := db.Exec(`INSERT INTO oms_order_item (id, order_id, sku_id, sku_name, is_deleted) VALUES (3001, 4001, 2001, '提货卡商品', 0)`).Error; err != nil {
-		t.Fatalf("seed order item failed: %v", err)
-	}
-}
-
-func buildOrderPayEventPayload(orderID int64) []byte {
-	payload := EventPayload{
-		EventID:    fmt.Sprintf("order-paid-%d", orderID),
-		TraceID:    fmt.Sprintf("trace-order-%d", orderID),
-		PlatformID: 1,
-		TenantID:   10,
-		MerchantID: 88,
-		ActorID:    5001,
-		EntityID:   orderID,
-		Action:     "paid",
-		Version:    "v1",
-		Data: map[string]interface{}{
-			"orderNo": fmt.Sprintf("OR%d", orderID),
-		},
-	}
-	body, _ := sonic.Marshal(payload)
-	return body
-}
-
-func TestProcessPaidOrderDigitalAssetsCreatesAssetForDigitalProduct(t *testing.T) {
-	db := newOrderPayTestDB(t)
-	seedOrderTestData(t, db)
-
-	service := digitalcardmint.NewService(db, nil, nil)
-
-	payload := &EventPayload{
-		EventID:    "order-paid-4001",
-		TraceID:    "trace-order-4001",
-		PlatformID: 1,
-		TenantID:   10,
-		MerchantID: 88,
-		ActorID:    5001,
-		EntityID:   4001,
-		Action:     "paid",
-	}
-
-	ctx := context.Background()
-	err := processPaidOrderDigitalAssets(ctx, payload, service, db)
+	eventCtx, err := logic.loadPaidOrderEventContext("OR4001", 4001)
 	if err != nil {
-		t.Fatalf("processPaidOrderDigitalAssets returned error: %v", err)
+		t.Fatalf("loadPaidOrderEventContext returned error: %v", err)
+	}
+	if eventCtx.MemberID != 5001 || eventCtx.PlatformID != 1 || eventCtx.TenantID != 10 || eventCtx.MerchantID != 88 {
+		t.Fatalf("unexpected order context: %+v", eventCtx)
 	}
 
-	// 验证卡片资产已创建
+	if err := logic.ensurePaidOrderPurchaseAssets(eventCtx); err != nil {
+		t.Fatalf("ensurePaidOrderPurchaseAssets returned error: %v", err)
+	}
+
 	var count int64
-	db.Table("sms_card_instance").
-		Where("source_type = ? AND source_id = ? AND member_id = ? AND is_deleted = 0", "purchase", 3001, 5001).
-		Count(&count)
+	if err := db.Table("sms_card_instance").
+		Where("source_type = ? AND source_id = ? AND member_id = ? AND platform_id = ? AND tenant_id = ? AND merchant_id = ? AND is_deleted = 0", "purchase", 3001, 5001, 1, 10, 88).
+		Count(&count).Error; err != nil {
+		t.Fatalf("count asset failed: %v", err)
+	}
 	if count != 1 {
-		t.Fatalf("expected 1 card instance, got %d", count)
-	}
-}
-
-func TestProcessPaidOrderDigitalAssetsSkipsPhysicalProduct(t *testing.T) {
-	db := newOrderPayTestDB(t)
-
-	// 创建实物商品
-	if err := db.Exec(`INSERT INTO pms_product_spu (id, platform_id, tenant_id, merchant_id, fulfillment_mode, fulfillment_rule_id, is_deleted) VALUES (1002, 1, 10, 88, 'physical_delivery', 0, 0)`).Error; err != nil {
-		t.Fatalf("seed product spu failed: %v", err)
-	}
-	if err := db.Exec(`INSERT INTO pms_product_sku (id, spu_id, fulfillment_mode, fulfillment_rule_id, is_deleted) VALUES (2002, 1002, '', 0, 0)`).Error; err != nil {
-		t.Fatalf("seed product sku failed: %v", err)
-	}
-	if err := db.Exec(`INSERT INTO oms_order_item (id, order_id, sku_id, sku_name, is_deleted) VALUES (3002, 4002, 2002, '实物商品', 0)`).Error; err != nil {
-		t.Fatalf("seed order item failed: %v", err)
-	}
-
-	service := digitalcardmint.NewService(db, nil, nil)
-
-	payload := &EventPayload{
-		EventID:    "order-paid-4002",
-		TraceID:    "trace-order-4002",
-		PlatformID: 1,
-		TenantID:   10,
-		MerchantID: 88,
-		ActorID:    5001,
-		EntityID:   4002,
-		Action:     "paid",
-	}
-
-	ctx := context.Background()
-	err := processPaidOrderDigitalAssets(ctx, payload, service, db)
-	if err != nil {
-		t.Fatalf("processPaidOrderDigitalAssets returned error: %v", err)
-	}
-
-	// 验证没有创建卡片资产
-	var count int64
-	db.Table("sms_card_instance").
-		Where("source_type = ? AND source_id = ? AND is_deleted = 0", "purchase", 3002).
-		Count(&count)
-	if count != 0 {
-		t.Fatalf("expected 0 card instance for physical product, got %d", count)
-	}
-}
-
-func TestProcessPaidOrderDigitalAssetsIdempotent(t *testing.T) {
-	db := newOrderPayTestDB(t)
-	seedOrderTestData(t, db)
-
-	service := digitalcardmint.NewService(db, nil, nil)
-
-	payload := &EventPayload{
-		EventID:    "order-paid-4001",
-		TraceID:    "trace-order-4001",
-		PlatformID: 1,
-		TenantID:   10,
-		MerchantID: 88,
-		ActorID:    5001,
-		EntityID:   4001,
-		Action:     "paid",
-	}
-
-	ctx := context.Background()
-
-	// 第一次调用
-	err := processPaidOrderDigitalAssets(ctx, payload, service, db)
-	if err != nil {
-		t.Fatalf("first call returned error: %v", err)
-	}
-
-	// 第二次调用（幂等）
-	err = processPaidOrderDigitalAssets(ctx, payload, service, db)
-	if err != nil {
-		t.Fatalf("second call returned error: %v", err)
-	}
-
-	// 验证只有一个卡片资产
-	var count int64
-	db.Table("sms_card_instance").
-		Where("source_type = ? AND source_id = ? AND member_id = ? AND is_deleted = 0", "purchase", 3001, 5001).
-		Count(&count)
-	if count != 1 {
-		t.Fatalf("expected 1 card instance after idempotent call, got %d", count)
-	}
-}
-
-func TestProcessPaidOrderDigitalAssetsHandlesMissingPayload(t *testing.T) {
-	db := newOrderPayTestDB(t)
-	service := digitalcardmint.NewService(db, nil, nil)
-
-	ctx := context.Background()
-
-	// nil payload
-	err := processPaidOrderDigitalAssets(ctx, nil, service, db)
-	if err != nil {
-		t.Fatalf("nil payload should return nil error, got: %v", err)
-	}
-
-	// invalid entity ID
-	payload := &EventPayload{
-		EntityID: 0,
-	}
-	err = processPaidOrderDigitalAssets(ctx, payload, service, db)
-	if err != nil {
-		t.Fatalf("invalid entity ID should return nil error, got: %v", err)
+		t.Fatalf("expected one purchase asset, got %d", count)
 	}
 }

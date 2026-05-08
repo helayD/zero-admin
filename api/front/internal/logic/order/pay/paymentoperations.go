@@ -6,14 +6,18 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/feihua/zero-admin/api/front/internal/logic/common"
 	"github.com/feihua/zero-admin/api/front/internal/logic/order/order"
 	"github.com/feihua/zero-admin/api/front/internal/svc"
+	"github.com/feihua/zero-admin/pkg/digitalcardmint"
+	pkgscope "github.com/feihua/zero-admin/pkg/scope"
 	"github.com/feihua/zero-admin/rpc/oms/omsclient"
 	"github.com/smartwalle/alipay/v3"
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
+	"gorm.io/gorm"
 )
 
 // PaymentOperationsUtils 支付相关工具
@@ -176,7 +180,11 @@ func (l *PaymentOperationsUtils) AliPayNotify(writer http.ResponseWriter, reques
 			orderId = paymentList.List[0].OrderId
 		}
 		if orderId > 0 {
-			go l.publishPaySuccessEvent(outTradeNo, orderId)
+			go func() {
+				if err := l.publishPaySuccessEvent(outTradeNo, orderId); err != nil {
+					logc.Errorf(l.ctx, "AliPayNotify 发布支付成功事件失败 outTradeNo=%s orderId=%d err=%v", outTradeNo, orderId, err)
+				}
+			}()
 		}
 
 		// Step 6: Saga 补偿链路（Epic 7 处理，本 Story 只标记，补偿在后续 Story 实施）
@@ -341,8 +349,20 @@ func (l *PaymentOperationsUtils) SimulatePaySuccess(outTradeNo string) error {
 
 	// Step 5: 发布支付成功 MQ 事件，触发履约分叉（Story 10.6）
 	if orderId > 0 {
-		go l.publishPaySuccessEvent(outTradeNo, orderId)
-		l.Logger.Infof("SimulatePaySuccess 已发布支付成功事件, outTradeNo=%s orderId=%d", outTradeNo, orderId)
+		eventCtx, loadErr := l.loadPaidOrderEventContext(outTradeNo, orderId)
+		if loadErr != nil {
+			l.Logger.Errorf("SimulatePaySuccess 获取订单上下文失败 outTradeNo=%s orderId=%d err=%v", outTradeNo, orderId, loadErr)
+			return fmt.Errorf("获取订单上下文失败: %w", loadErr)
+		}
+		if fulfillErr := l.ensurePaidOrderPurchaseAssets(eventCtx); fulfillErr != nil {
+			l.Logger.Errorf("SimulatePaySuccess 提货卡履约失败 outTradeNo=%s orderId=%d err=%v", outTradeNo, orderId, fulfillErr)
+			return fmt.Errorf("提货卡履约失败: %w", fulfillErr)
+		}
+		if publishErr := l.publishPaySuccessEventWithContext(outTradeNo, eventCtx); publishErr != nil {
+			l.Logger.Errorf("SimulatePaySuccess 发布支付成功事件失败 outTradeNo=%s orderId=%d err=%v", outTradeNo, orderId, publishErr)
+		} else {
+			l.Logger.Infof("SimulatePaySuccess 已发布支付成功事件, outTradeNo=%s orderId=%d", outTradeNo, orderId)
+		}
 	}
 
 	l.Logger.Infof("SimulatePaySuccess 模拟支付完成, outTradeNo=%s", outTradeNo)
@@ -354,43 +374,186 @@ func formatAmount(yuan float64) string {
 	return fmt.Sprintf("%d", int(yuan*100+0.5))
 }
 
-// publishPaySuccessEvent 发布订单支付成功消息事件（异步 goroutine，不阻塞支付回调主流程）
-// Story 8-1 Fix #1: 修复支付成功消息缺失
-func (l *PaymentOperationsUtils) publishPaySuccessEvent(outTradeNo string, orderId int64) {
-	// 从 JWT context 提取 scope 信息（platformId/tenantId/merchantId）
+type paidOrderEventContext struct {
+	OrderID    int64  `gorm:"column:id"`
+	OrderNo    string `gorm:"column:order_no"`
+	MemberID   int64  `gorm:"column:member_id"`
+	PlatformID int64  `gorm:"column:platform_id"`
+	TenantID   int64  `gorm:"column:tenant_id"`
+	MerchantID int64  `gorm:"column:merchant_id"`
+}
+
+func (c paidOrderEventContext) normalized() paidOrderEventContext {
+	if c.PlatformID <= 0 {
+		c.PlatformID = pkgscope.DefaultPlatformID
+	}
+	return c
+}
+
+func (c paidOrderEventContext) governanceScope() pkgscope.GovernanceScope {
+	return pkgscope.DefaultScope(c.PlatformID, c.TenantID, c.MerchantID)
+}
+
+func (l *PaymentOperationsUtils) loadPaidOrderEventContext(outTradeNo string, orderId int64) (paidOrderEventContext, error) {
+	outTradeNo = strings.TrimSpace(outTradeNo)
+	if l == nil || l.svcCtx == nil {
+		return paidOrderEventContext{}, errors.New("服务上下文未初始化")
+	}
+
+	if l.svcCtx.DB != nil {
+		var row paidOrderEventContext
+		q := l.svcCtx.DB.WithContext(l.ctx).
+			Table("oms_order_main").
+			Select("id, order_no, user_id AS member_id, platform_id, tenant_id, merchant_id").
+			Where("is_deleted = 0")
+		if orderId > 0 {
+			q = q.Where("id = ?", orderId)
+		} else if outTradeNo != "" {
+			q = q.Where("order_no = ?", outTradeNo)
+		} else {
+			return paidOrderEventContext{}, errors.New("订单ID和订单号不能同时为空")
+		}
+		if err := q.Take(&row).Error; err == nil {
+			return row.normalized(), nil
+		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return paidOrderEventContext{}, err
+		}
+	}
+
+	fallback := l.fallbackPaidOrderEventContext(outTradeNo, orderId)
+	if fallback.OrderID > 0 {
+		return fallback.normalized(), nil
+	}
+	return paidOrderEventContext{}, fmt.Errorf("无法获取订单上下文, outTradeNo=%s orderId=%d", outTradeNo, orderId)
+}
+
+func (l *PaymentOperationsUtils) fallbackPaidOrderEventContext(outTradeNo string, orderId int64) paidOrderEventContext {
 	current := common.ResolveEffectiveGovernanceScope(l.ctx)
 	memberID, _ := common.GetMemberId(l.ctx)
+	eventCtx := paidOrderEventContext{
+		OrderID:    orderId,
+		OrderNo:    outTradeNo,
+		MemberID:   memberID,
+		PlatformID: current.PlatformID,
+		TenantID:   current.TenantID,
+		MerchantID: current.MerchantID,
+	}
+	if orderId > 0 || strings.TrimSpace(outTradeNo) == "" || l.svcCtx == nil || l.svcCtx.OrderService == nil {
+		return eventCtx.normalized()
+	}
 
+	resp, err := l.svcCtx.OrderService.QueryOrderList(l.ctx, &omsclient.QueryOrderListReq{
+		OrderNo:  outTradeNo,
+		PageNum:  1,
+		PageSize: 1,
+		Scope: &omsclient.GovernanceScope{
+			ScopeType:  current.ScopeType,
+			PlatformId: current.PlatformID,
+			TenantId:   current.TenantID,
+			MerchantId: current.MerchantID,
+		},
+	})
+	if err == nil && resp != nil && len(resp.List) > 0 {
+		eventCtx.OrderID = resp.List[0].Id
+		eventCtx.OrderNo = resp.List[0].OrderNo
+		if resp.List[0].UserId > 0 {
+			eventCtx.MemberID = resp.List[0].UserId
+		}
+	}
+	return eventCtx.normalized()
+}
+
+func (l *PaymentOperationsUtils) ensurePaidOrderPurchaseAssets(eventCtx paidOrderEventContext) error {
+	if eventCtx.OrderID <= 0 {
+		return errors.New("订单ID不能为空")
+	}
+	if l == nil || l.svcCtx == nil {
+		return errors.New("服务上下文未初始化")
+	}
+
+	cardMintService := l.svcCtx.CardMintService
+	if (cardMintService == nil || cardMintService.DB == nil) && l.svcCtx.DB != nil {
+		cardMintService = digitalcardmint.NewService(l.svcCtx.DB, l.svcCtx.RabbitMQ, nil)
+	}
+	if cardMintService == nil || cardMintService.DB == nil {
+		return errors.New("提货卡服务未初始化")
+	}
+
+	result, err := cardMintService.EnsurePaidOrderPurchaseAssets(l.ctx, digitalcardmint.EnsurePaidOrderPurchaseAssetsInput{
+		OrderID:      eventCtx.OrderID,
+		MemberID:     eventCtx.MemberID,
+		PlatformID:   eventCtx.PlatformID,
+		TenantID:     eventCtx.TenantID,
+		MerchantID:   eventCtx.MerchantID,
+		EventID:      fmt.Sprintf("order-paid-%d", eventCtx.OrderID),
+		TraceID:      fmt.Sprintf("order-paid-%d", eventCtx.OrderID),
+		OperatorType: "system",
+	})
+	if err != nil {
+		return err
+	}
+	if result != nil && result.ProcessedCount > 0 {
+		l.Logger.Infof("提货卡履约完成 orderId=%d count=%d", eventCtx.OrderID, result.ProcessedCount)
+	}
+	return nil
+}
+
+// publishPaySuccessEvent 发布订单支付成功消息事件（异步 goroutine，不阻塞支付回调主流程）
+// Story 8-1 Fix #1: 修复支付成功消息缺失
+func (l *PaymentOperationsUtils) publishPaySuccessEvent(outTradeNo string, orderId int64) error {
+	eventCtx, err := l.loadPaidOrderEventContext(outTradeNo, orderId)
+	if err != nil {
+		return err
+	}
+	return l.publishPaySuccessEventWithContext(outTradeNo, eventCtx)
+}
+
+func (l *PaymentOperationsUtils) publishPaySuccessEventWithContext(outTradeNo string, eventCtx paidOrderEventContext) error {
+	eventCtx = eventCtx.normalized()
+	current := eventCtx.governanceScope()
+	orderNo := firstNonEmptyString(eventCtx.OrderNo, outTradeNo)
 	msgEvent := map[string]any{
-		"eventId":    fmt.Sprintf("order-paid-%d", orderId),
-		"traceId":    fmt.Sprintf("order-paid-%d", orderId),
-		"platformId": current.PlatformID,
-		"tenantId":   current.TenantID,
-		"merchantId": current.MerchantID,
-		"actorId":    memberID,
-		"entityId":   orderId,
+		"eventId":    fmt.Sprintf("order-paid-%d", eventCtx.OrderID),
+		"traceId":    fmt.Sprintf("order-paid-%d", eventCtx.OrderID),
+		"scopeType":  current.ScopeType,
+		"platformId": eventCtx.PlatformID,
+		"tenantId":   eventCtx.TenantID,
+		"merchantId": eventCtx.MerchantID,
+		"actorId":    eventCtx.MemberID,
+		"entityId":   eventCtx.OrderID,
 		"action":     "paid",
 		"version":    "v1",
 		"data": map[string]any{
-			"orderNo":     outTradeNo,
+			"orderNo":     orderNo,
 			"messageType": 2,
 			"title":       "支付成功",
-			"content":     fmt.Sprintf("您的订单（%s）已支付成功，感谢您的购买！", outTradeNo),
+			"content":     fmt.Sprintf("您的订单（%s）已支付成功，感谢您的购买！", orderNo),
 			"linkType":    "order",
-			"linkId":      fmt.Sprintf("%d", orderId),
+			"linkId":      fmt.Sprintf("%d", eventCtx.OrderID),
 		},
 	}
 
 	body, err := json.Marshal(msgEvent)
 	if err != nil {
-		logc.Errorf(l.ctx, "publishPaySuccessEvent 序列化失败 outTradeNo=%s err=%v", outTradeNo, err)
-		return
+		return fmt.Errorf("支付成功事件序列化失败: %w", err)
 	}
 
+	if l == nil || l.svcCtx == nil || l.svcCtx.RabbitMQ == nil {
+		return errors.New("RabbitMQ 未配置")
+	}
 	if err := l.svcCtx.RabbitMQ.SendMessage("order.event.exchange", "direct",
 		"order.pay.queue", "order.paid.key", body); err != nil {
-		logc.Errorf(l.ctx, "publishPaySuccessEvent 发送消息失败 outTradeNo=%s err=%v", outTradeNo, err)
-	} else {
-		logc.Infof(l.ctx, "publishPaySuccessEvent 发送支付成功消息 outTradeNo=%s orderId=%d", outTradeNo, orderId)
+		return err
 	}
+	logc.Infof(l.ctx, "publishPaySuccessEvent 发送支付成功消息 outTradeNo=%s orderId=%d", orderNo, eventCtx.OrderID)
+	return nil
+}
+
+func firstNonEmptyString(values ...string) string {
+	for _, value := range values {
+		if trimmed := strings.TrimSpace(value); trimmed != "" {
+			return trimmed
+		}
+	}
+	return ""
 }
