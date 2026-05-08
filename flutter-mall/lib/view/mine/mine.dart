@@ -105,7 +105,7 @@ class _MineState extends State<Mine> {
         _digitalCardCount = parsed.data.total;
       });
     } catch (_) {
-      // 数字卡片数量查询失败不阻塞页面展示。
+      // 提货卡数量查询失败不阻塞页面展示。
     }
   }
 

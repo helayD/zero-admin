@@ -387,13 +387,13 @@
         component: './sms/DigitalCardActivity',
       },
       {
-        name: '数字卡片链路',
+        name: '提货卡链路',
         icon: 'table',
         path: '/sms/digitalCardChain/list',
         component: './sms/DigitalCardChainMonitor',
       },
       {
-        name: '数字卡片资产',
+        name: '提货卡资产',
         icon: 'table',
         path: '/sms/digitalCardAsset/list',
         component: './sms/DigitalCardAssetWorkbench',

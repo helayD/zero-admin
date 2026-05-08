@@ -24,7 +24,7 @@ func (s *CardMintAdminServiceServer) QueryTaskList(ctx context.Context, in *stru
 		return nil, err
 	}
 	if s.svcCtx == nil || s.svcCtx.CardMintService == nil {
-		return nil, errors.New("数字卡片服务未初始化")
+		return nil, errors.New("提货卡服务未初始化")
 	}
 	total, list, err := s.svcCtx.CardMintService.QueryTaskList(ctx, req.Scope, req.Filter)
 	if err != nil {
@@ -42,7 +42,7 @@ func (s *CardMintAdminServiceServer) QueryTaskDetail(ctx context.Context, in *st
 		return nil, err
 	}
 	if s.svcCtx == nil || s.svcCtx.CardMintService == nil {
-		return nil, errors.New("数字卡片服务未初始化")
+		return nil, errors.New("提货卡服务未初始化")
 	}
 	detail, err := s.svcCtx.CardMintService.QueryTaskDetail(ctx, req.Scope, req.TaskID)
 	if err != nil {
@@ -57,7 +57,7 @@ func (s *CardMintAdminServiceServer) QueryAvailableTaskActions(ctx context.Conte
 		return nil, err
 	}
 	if s.svcCtx == nil || s.svcCtx.CardMintService == nil {
-		return nil, errors.New("数字卡片服务未初始化")
+		return nil, errors.New("提货卡服务未初始化")
 	}
 	actions, err := s.svcCtx.CardMintService.QueryAvailableActions(ctx, req.Scope, req.TaskID)
 	if err != nil {
@@ -102,7 +102,7 @@ func (s *CardMintAdminServiceServer) QueryAssetAuditList(ctx context.Context, in
 		return nil, err
 	}
 	if s.svcCtx == nil || s.svcCtx.CardMintService == nil {
-		return nil, errors.New("数字卡片服务未初始化")
+		return nil, errors.New("提货卡服务未初始化")
 	}
 	total, list, err := s.svcCtx.CardMintService.QueryDigitalCardAssetAuditList(ctx, req.Scope, req.Filter)
 	if err != nil {
@@ -120,7 +120,7 @@ func (s *CardMintAdminServiceServer) QueryAssetAuditDetail(ctx context.Context, 
 		return nil, err
 	}
 	if s.svcCtx == nil || s.svcCtx.CardMintService == nil {
-		return nil, errors.New("数字卡片服务未初始化")
+		return nil, errors.New("提货卡服务未初始化")
 	}
 	detail, err := s.svcCtx.CardMintService.QueryDigitalCardAssetAuditDetail(ctx, req.Scope, req.AssetInstanceID)
 	if err != nil {
@@ -248,7 +248,7 @@ func (s *CardMintAdminServiceServer) handleTaskAction(ctx context.Context, in *s
 		return nil, err
 	}
 	if s.svcCtx == nil || s.svcCtx.CardMintService == nil {
-		return nil, errors.New("数字卡片服务未初始化")
+		return nil, errors.New("提货卡服务未初始化")
 	}
 	payload, err := handler(req)
 	if err != nil {
@@ -270,7 +270,7 @@ func (s *CardMintAdminServiceServer) handlePhysicalResult(handler func(*digitalc
 
 func (s *CardMintAdminServiceServer) ensureCardMintService() error {
 	if s.svcCtx == nil || s.svcCtx.CardMintService == nil {
-		return errors.New("数字卡片服务未初始化")
+		return errors.New("提货卡服务未初始化")
 	}
 	return nil
 }
@@ -281,7 +281,7 @@ func (s *CardMintAdminServiceServer) handleAssetAction(ctx context.Context, in *
 		return nil, err
 	}
 	if s.svcCtx == nil || s.svcCtx.CardMintService == nil {
-		return nil, errors.New("数字卡片服务未初始化")
+		return nil, errors.New("提货卡服务未初始化")
 	}
 	payload, err := handler(req)
 	if err != nil {

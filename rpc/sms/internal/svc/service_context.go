@@ -102,7 +102,7 @@ func (c invalidChainClient) ChainType() string {
 }
 
 func (c invalidChainClient) err() error {
-	return errors.New("数字资产通道配置非法: " + strings.TrimSpace(c.primary))
+	return errors.New("提货卡通道配置非法: " + strings.TrimSpace(c.primary))
 }
 
 type Writer struct{}

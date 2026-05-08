@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS `sms_card_instance` (
     UNIQUE KEY `uk_card_instance_asset_no` (`asset_no`, `is_deleted`),
     KEY `idx_card_instance_member_status` (`member_id`, `asset_status`, `id`),
     KEY `idx_card_instance_activity_template` (`activity_id`, `template_id`, `id`)
-) COMMENT='数字卡片资产实例表';
+) COMMENT='提货卡资产实例表';
 
 CREATE TABLE IF NOT EXISTS `sms_card_asset_log` (
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '编号',
@@ -136,4 +136,4 @@ CREATE TABLE IF NOT EXISTS `sms_card_asset_log` (
     KEY `idx_card_asset_log_instance` (`asset_instance_id`, `id`),
     KEY `idx_card_asset_log_participation` (`participation_record_id`, `id`),
     KEY `idx_card_asset_log_trace` (`trace_id`)
-) COMMENT='数字卡片资产状态日志表';
+) COMMENT='提货卡资产状态日志表';

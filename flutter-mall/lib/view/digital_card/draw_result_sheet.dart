@@ -60,7 +60,7 @@ class DrawResultSheet extends StatelessWidget {
       final String prefix = cardName.isEmpty ? '你已中奖' : '你抽中了 $cardName';
       final String suffix =
           record.assetNo.trim().isEmpty ? '' : '唯一编号 ${record.assetNo}。';
-      return '$prefix，完成实名认证后可继续兑卡并发放到我的数字卡片。$suffix';
+      return '$prefix，完成实名认证后可继续兑卡并发放到我的提货卡。$suffix';
     }
     if (_assetStatusCopy.description.trim().isNotEmpty) {
       if (record.assetNo.trim().isNotEmpty) {

@@ -90,7 +90,7 @@ const renderRecommendStatusTag = (status: number) =>
 
 const renderFulfillmentModeTag = (mode?: string) => {
   if (mode === 'digital_asset') {
-    return <Tag color="purple">数字资产</Tag>;
+    return <Tag color="purple">提货卡</Tag>;
   }
   if (mode === 'physical_delivery') {
     return <Tag color="blue">实物发货</Tag>;

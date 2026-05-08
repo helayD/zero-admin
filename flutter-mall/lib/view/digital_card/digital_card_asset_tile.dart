@@ -79,7 +79,7 @@ class DigitalCardAssetTile extends StatelessWidget {
                         Expanded(
                           child: Text(
                             item.templateName.trim().isEmpty
-                                ? '数字卡片'
+                                ? '提货卡'
                                 : item.templateName,
                             style: Theme.of(context)
                                 .textTheme

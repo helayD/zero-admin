@@ -132,10 +132,10 @@ const registerDataUrl = "$baseUrl/api/member/register";
 const memberInfoDataUrl = "$baseUrl/api/member/info";
 // 更新会员信息
 const updateMemberDataUrl = "$baseUrl/api/member/updateMember";
-// 数字卡片活动落地页（匿名）
+// 提货卡活动落地页（匿名）
 const queryDrawActivityLandingUrl =
     "$baseUrl/api/digitalCard/queryDrawActivityLanding";
-// 数字卡片活动落地页（登录态）
+// 提货卡活动落地页（登录态）
 const queryMyDrawActivityLandingUrl =
     "$baseUrl/api/digitalCard/queryMyDrawActivityLanding";
 // 预检抽卡资格
@@ -146,19 +146,19 @@ const participateDrawUrl = "$baseUrl/api/digitalCard/participateDraw";
 // 查询我的抽卡记录
 const queryMyDrawRecordListUrl =
     "$baseUrl/api/digitalCard/queryMyDrawRecordList";
-// 查询我的数字卡片资产列表
+// 查询我的提货卡资产列表
 const queryMyDigitalCardAssetListUrl =
     "$baseUrl/api/digitalCard/asset/queryMyDigitalCardAssetList";
-// 查询我的数字卡片资产详情
+// 查询我的提货卡资产详情
 const queryMyDigitalCardAssetDetailUrl =
     "$baseUrl/api/digitalCard/asset/queryMyDigitalCardAssetDetail";
-// 识别数字卡片转赠接收人
+// 识别提货卡转赠接收人
 const resolveDigitalCardTransferRecipientUrl =
     "$baseUrl/api/digitalCard/asset/resolveTransferRecipient";
-// 转赠数字卡片
+// 转赠提货卡
 const transferDigitalCardAssetUrl =
     "$baseUrl/api/digitalCard/asset/transferDigitalCardAsset";
-// 提交数字卡片提现申请
+// 提交提货卡提现申请
 const requestDigitalCardWithdrawUrl =
     "$baseUrl/api/digitalCard/asset/requestDigitalCardWithdraw";
 // 查询我的实体卡履约详情

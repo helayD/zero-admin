@@ -206,4 +206,4 @@ CREATE TABLE IF NOT EXISTS `sms_card_mint_task` (
     KEY `idx_card_mint_task_activity_member` (`activity_id`, `member_id`, `id`),
     KEY `idx_card_mint_task_token` (`token_id`, `is_deleted`),
     KEY `idx_card_mint_task_trace` (`trace_id`)
-) COMMENT='数字卡片链上发放任务表';
+) COMMENT='提货卡链上发放任务表';

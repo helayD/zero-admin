@@ -15,7 +15,7 @@ import (
 
 // OrderPay 订单支付成功消息处理
 // Story 8-1 Fix #1: 新增支付成功消息消费者
-// Story 10.6: 增加履约分叉逻辑，数字资产商品触发 SMS 发卡
+// Story 10.6: 增加履约分叉逻辑，提货卡商品触发 SMS 发卡
 func OrderPay(ctx context.Context, body []byte, memberMsgService membermessageservice.MemberMessageService, cardMintService *digitalcardmint.Service, db *gorm.DB) error {
 	var payload EventPayload
 	if err := sonic.Unmarshal(body, &payload); err != nil {
@@ -58,7 +58,7 @@ func OrderPay(ctx context.Context, body []byte, memberMsgService membermessagese
 
 	// 2. 履约分叉逻辑（Story 10.6）
 	if err := processPaidOrderDigitalAssets(ctx, &payload, cardMintService, db); err != nil {
-		LogWithEventPayload(ctx, "OrderPay 数字资产履约分叉失败, orderId=%d, err=%v", payload.EntityID, err)
+		LogWithEventPayload(ctx, "OrderPay 提货卡履约分叉失败, orderId=%d, err=%v", payload.EntityID, err)
 		return err
 	}
 	LogWithEventPayload(ctx, "OrderPay 履约分叉处理完成, orderId=%d", payload.EntityID)
@@ -131,7 +131,7 @@ func processPaidOrderDigitalAssets(ctx context.Context, payload *EventPayload, c
 			OperatorType:      "system",
 		})
 		if err != nil {
-			return fmt.Errorf("订单明细[%d]数字资产建账失败: %w", item.ID, err)
+			return fmt.Errorf("订单明细[%d]提货卡建账失败: %w", item.ID, err)
 		}
 	}
 	return nil

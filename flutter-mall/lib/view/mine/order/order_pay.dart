@@ -15,6 +15,7 @@ import 'package:flutter_mall/model/upgrade_gate_context.dart';
 import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/utils/http_util.dart';
 import 'package:flutter_mall/utils/upgrade_gate_service.dart';
+import 'package:flutter_mall/view/digital_card/my_digital_card_page.dart';
 
 ///
 /// 订单支付页面（Story 5.4 重构 + Story 5.5 支付发起）
@@ -915,48 +916,235 @@ class _OrderPayState extends State<OrderPay> with WidgetsBindingObserver {
   }
 
   /// Task 8.1: 支付成功态
+  /// Story 10.6: 增加提货卡履约提示
+  /// UX 优化: 添加动画效果、改进颜色对比度、优化布局
   Widget _buildSuccessState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: const BoxDecoration(
-              color: Color(0xFF52C41A),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.check, color: Colors.white, size: 48),
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFFF0FFF4), // 浅绿色渐变开始
+            Color(0xFFFFFFFF), // 白色渐变结束
+          ],
+        ),
+      ),
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // 成功图标 - 带缩放动画
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.0, end: 1.0),
+                duration: const Duration(milliseconds: 600),
+                curve: Curves.elasticOut,
+                builder: (context, value, child) {
+                  return Transform.scale(
+                    scale: value,
+                    child: child,
+                  );
+                },
+                child: Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF52C41A),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF52C41A).withValues(alpha: 0.3),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.check_rounded,
+                    color: Colors.white,
+                    size: 56,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+              
+              // 支付成功标题
+              const Text(
+                '支付成功',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1E293B), // 深色，对比度更高
+                ),
+              ),
+              const SizedBox(height: 12),
+              
+              // 订单号
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  '订单号：${widget.orderSn ?? '-'}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF475569),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+              
+              // Story 10.6: 提货卡履约提示卡片 - 优化设计
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 8),
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      const Color(0xFFEFF6FF),
+                      const Color(0xFFDBEAFE),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: const Color(0xFFBFDBFE),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    // 图标容器
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.card_giftcard_rounded,
+                        size: 28,
+                        color: Color(0xFF2563EB),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      '提货卡已发放',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF1E40AF),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '您的提货卡已自动发放至卡包\n无需手动操作，可随时查看',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: const Color(0xFF1E40AF).withValues(alpha: 0.8),
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+              
+              // Story 10.6: 查看提货卡按钮 - 优化样式
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    // 跳转到提货卡页面
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => MyDigitalCardPage(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(
+                    Icons.card_giftcard_rounded,
+                    size: 22,
+                  ),
+                  label: const Text(
+                    '查看我的提货卡',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF2563EB),
+                    backgroundColor: Colors.white,
+                    side: const BorderSide(
+                      color: Color(0xFF93C5FD),
+                      width: 1.5,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // 查看订单详情按钮 - 优化样式
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: () {
+                    // 跳转订单详情
+                    Navigator.of(context).pop();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF52C41A),
+                    foregroundColor: Colors.white,
+                    elevation: 4,
+                    shadowColor: const Color(0xFF52C41A).withValues(alpha: 0.4),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    '查看订单详情',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              
+              // 底部提示
+              Text(
+                '如有疑问，请联系客服',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: const Color(0xFF94A3B8),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 24),
-          const Text(
-            '支付成功',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF52C41A),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '订单号：${widget.orderSn ?? '-'}',
-            style: const TextStyle(fontSize: 13, color: Color(0xFF909399)),
-          ),
-          const SizedBox(height: 32),
-          ElevatedButton(
-            onPressed: () {
-              // 跳转订单详情
-              Navigator.of(context).pop();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF52C41A),
-              foregroundColor: Colors.white,
-              minimumSize: const Size(200, 40),
-            ),
-            child: const Text('查看订单详情'),
-          ),
-        ],
+        ),
       ),
     );
   }

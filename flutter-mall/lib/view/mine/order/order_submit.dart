@@ -887,7 +887,7 @@ class _OrderSubmitState extends State<OrderSubmit> {
                                 color: AppColors.price,
                               ),
                             ],
-                            // Story 10.6: 数字资产商品履约模式提示
+                            // Story 10.6: 提货卡履约模式提示
                             if (item.fulfillmentMode == 'digital_asset') ...[
                               const SizedBox(height: AppSpacing.sm),
                               Container(
@@ -914,7 +914,7 @@ class _OrderSubmitState extends State<OrderSubmit> {
                                     const SizedBox(width: 4),
                                     Flexible(
                                       child: Text(
-                                        '该商品为数字资产，支付成功后将发放至您的数字卡包',
+                                        '该商品为提货卡，支付成功后系统将自动发放至您的卡包',
                                         style: TextStyle(
                                           fontSize: 11,
                                           color: Colors.blue.shade700,

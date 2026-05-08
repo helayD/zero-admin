@@ -84,7 +84,7 @@ class _MyDigitalCardPageState extends State<MyDigitalCardPage> {
         return;
       }
       setState(() {
-        _errorMessage = '加载我的数字卡片失败，请稍后重试';
+        _errorMessage = '加载我的提货卡失败，请稍后重试';
         _assets = <DigitalCardAssetItem>[];
         _isLoading = false;
       });
@@ -121,7 +121,7 @@ class _MyDigitalCardPageState extends State<MyDigitalCardPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('我的数字卡片'),
+        title: const Text('我的提货卡'),
       ),
       body: _buildBody(),
     );
@@ -143,7 +143,7 @@ class _MyDigitalCardPageState extends State<MyDigitalCardPage> {
     if (_assets.isEmpty) {
       return _buildStateCard(
         icon: Icons.style_outlined,
-        title: '还没有数字卡片',
+        title: '还没有提货卡',
         description: '参与抽卡成功后，到账进度、发放状态和受限说明都会集中展示在这里。',
         actionLabel: '下拉刷新',
         onTap: _loadAssets,
@@ -191,7 +191,7 @@ class _MyDigitalCardPageState extends State<MyDigitalCardPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Text(
-            '已收录 ${_assets.length} 张数字卡片',
+            '已收录 ${_assets.length} 张提货卡',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   color: Colors.white,
                   fontSize: 24,

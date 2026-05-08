@@ -27,6 +27,6 @@ func DispatchCardMintTask(ctx context.Context, svcCtx *svc.ServiceContext, taskI
 		return
 	}
 	if err := svcCtx.CardMintService.DispatchTask(ctx, taskID, reason); err != nil {
-		logc.Errorf(ctx, "派发数字卡片发放任务失败, taskId=%d, reason=%s, err=%s", taskID, reason, err.Error())
+		logc.Errorf(ctx, "派发提货卡发放任务失败, taskId=%d, reason=%s, err=%s", taskID, reason, err.Error())
 	}
 }

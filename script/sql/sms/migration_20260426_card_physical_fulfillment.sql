@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS `sms_card_physical_fulfillment` (
     `platform_id` BIGINT NOT NULL DEFAULT 1 COMMENT '平台ID',
     `tenant_id` BIGINT NOT NULL DEFAULT 0 COMMENT '租户ID',
     `merchant_id` BIGINT NOT NULL DEFAULT 0 COMMENT '商户ID',
-    `asset_instance_id` BIGINT NOT NULL COMMENT '数字卡片资产实例ID',
+    `asset_instance_id` BIGINT NOT NULL COMMENT '提货卡资产实例ID',
     `participation_record_id` BIGINT NOT NULL DEFAULT 0 COMMENT '抽卡参与记录ID',
     `activity_id` BIGINT NOT NULL DEFAULT 0 COMMENT '活动ID',
     `template_id` BIGINT NOT NULL DEFAULT 0 COMMENT '卡片模板ID',
@@ -53,12 +53,12 @@ CREATE TABLE IF NOT EXISTS `sms_card_physical_fulfillment` (
     KEY `idx_card_physical_tracking_lookup` (`tracking_no`, `carrier_code`, `is_deleted`),
     KEY `idx_card_physical_timeout` (`fulfillment_status`, `update_time`, `id`),
     KEY `idx_card_physical_trace` (`trace_id`)
-) COMMENT='数字卡片实体履约单表';
+) COMMENT='提货卡实体履约单表';
 
 CREATE TABLE IF NOT EXISTS `sms_card_physical_fulfillment_log` (
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '编号',
     `fulfillment_id` BIGINT NOT NULL COMMENT '实体履约单ID',
-    `asset_instance_id` BIGINT NOT NULL COMMENT '数字卡片资产实例ID',
+    `asset_instance_id` BIGINT NOT NULL COMMENT '提货卡资产实例ID',
     `action` VARCHAR(64) NOT NULL DEFAULT '' COMMENT '履约动作',
     `from_status` VARCHAR(32) NOT NULL DEFAULT '' COMMENT '原履约状态',
     `to_status` VARCHAR(32) NOT NULL DEFAULT '' COMMENT '新履约状态',
@@ -74,4 +74,4 @@ CREATE TABLE IF NOT EXISTS `sms_card_physical_fulfillment_log` (
     KEY `idx_card_physical_log_asset` (`asset_instance_id`, `id`),
     KEY `idx_card_physical_log_action` (`action`, `create_time`),
     KEY `idx_card_physical_log_trace` (`trace_id`)
-) COMMENT='数字卡片实体履约日志表';
+) COMMENT='提货卡实体履约日志表';

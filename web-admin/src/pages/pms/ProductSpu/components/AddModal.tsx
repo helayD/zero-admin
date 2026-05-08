@@ -10,7 +10,7 @@ import UploadFileComponents from '@/components/common/UploadFileComponents';
 
 const fulfillmentModeOptions = [
   { value: 'physical_delivery', label: '实物发货' },
-  { value: 'digital_asset', label: '数字资产（支付后生成数字卡片入账）' },
+  { value: 'digital_asset', label: '提货卡（支付后生成提货卡入账）' },
 ];
 
 export interface AddModalProps {
@@ -298,7 +298,7 @@ const AddModal: React.FC<AddModalProps> = (props) => {
           name="fulfillmentMode"
           label="履约模式"
           rules={[{ required: true, message: '请选择履约模式!' }]}
-          tooltip="实物发货：商品直接进入物流履约流程；数字资产：支付成功后生成数字卡片资产并复用数字卡包入账"
+          tooltip="实物发货：商品直接进入物流履约流程；提货卡：支付成功后生成提货卡资产并复用提货卡入账"
         >
           <Select
             options={fulfillmentModeOptions}
@@ -316,7 +316,7 @@ const AddModal: React.FC<AddModalProps> = (props) => {
             name="fulfillmentRuleId"
             label="发卡规则ID"
             rules={[{ required: true, message: '请输入发卡规则ID!' }]}
-            tooltip="数字资产模式下必须关联一个有效的发卡规则"
+            tooltip="提货卡模式下必须关联一个有效的发卡规则"
           >
             <InputNumber
               style={{ width: '100%' }}

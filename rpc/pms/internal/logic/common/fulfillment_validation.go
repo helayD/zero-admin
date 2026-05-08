@@ -83,18 +83,18 @@ func ValidateFulfillmentModeWithDetails(ctx context.Context, db *gorm.DB, row Pr
 			FulfillmentErrCodeInvalidMode,
 			"fulfillment_mode",
 			fmt.Sprintf("履约模式取值非法[%s]", row.FulfillmentMode),
-			"请将履约模式设置为 physical_delivery（实物发货）或 digital_asset（数字资产）",
+			"请将履约模式设置为 physical_delivery（实物发货）或 digital_asset（提货卡）",
 		)
 		return errs
 	}
 
-	// 2. 数字资产模式的额外校验
+	// 2. 提货卡模式的额外校验
 	if row.FulfillmentMode == "digital_asset" {
 		if row.FulfillmentRuleID <= 0 {
 			errs.AddError(
 				FulfillmentErrCodeMissingRule,
 				"fulfillment_rule_id",
-				"数字资产模式商品必须绑定发卡规则",
+				"提货卡模式商品必须绑定发卡规则",
 				"请在商品编辑页面选择一个有效的发卡规则",
 			)
 			return errs
@@ -194,14 +194,14 @@ func CheckProductFulfillmentConflict(ctx context.Context, db *gorm.DB, row Produ
 		return false, ""
 	}
 
-	// 只检查数字资产模式
+	// 只检查提货卡模式
 	if row.FulfillmentMode != "digital_asset" {
 		return false, ""
 	}
 
 	// 检查发卡规则是否存在
 	if row.FulfillmentRuleID <= 0 {
-		return true, "数字资产模式商品未绑定发卡规则"
+		return true, "提货卡模式商品未绑定发卡规则"
 	}
 
 	// 查询发卡规则

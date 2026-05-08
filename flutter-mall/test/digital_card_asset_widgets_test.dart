@@ -137,7 +137,7 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('还没有数字卡片'), findsOneWidget);
+    expect(find.text('还没有提货卡'), findsOneWidget);
     expect(find.textContaining('发放状态'), findsOneWidget);
     expect(find.textContaining('链上状态'), findsNothing);
     expect(find.text('下拉刷新'), findsOneWidget);
@@ -177,7 +177,7 @@ void main() {
     completer.completeError(Exception('detail failed'));
     await tester.pumpAndSettle();
 
-    expect(find.text('加载数字卡片详情失败，请稍后重试'), findsOneWidget);
+    expect(find.text('加载提货卡详情失败，请稍后重试'), findsOneWidget);
     expect(find.text('重新加载'), findsOneWidget);
   });
 

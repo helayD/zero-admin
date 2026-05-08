@@ -213,10 +213,10 @@ func validateFulfillmentMode(ctx context.Context, db *gorm.DB, row ProductVisibi
 		return fmt.Errorf("履约模式取值非法[%s]，仅支持 physical_delivery 或 digital_asset", row.FulfillmentMode)
 	}
 
-	// 2. 数字资产模式的额外校验
+	// 2. 提货卡模式的额外校验
 	if row.FulfillmentMode == "digital_asset" {
 		if row.FulfillmentRuleID <= 0 {
-			return errors.New("数字资产模式商品必须绑定有效发卡规则")
+			return errors.New("提货卡模式商品必须绑定有效发卡规则")
 		}
 		// 校验发卡规则是否存在且有效
 		if err := validateFulfillmentRule(ctx, db, row); err != nil {

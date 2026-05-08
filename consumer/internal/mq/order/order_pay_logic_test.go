@@ -186,7 +186,7 @@ func newOrderPayTestDB(t *testing.T) *gorm.DB {
 func seedOrderTestData(t *testing.T, db *gorm.DB) {
 	t.Helper()
 
-	// 创建商品 SPU（数字资产模式）
+	// 创建商品 SPU（提货卡模式）
 	if err := db.Exec(`INSERT INTO pms_product_spu (id, platform_id, tenant_id, merchant_id, fulfillment_mode, fulfillment_rule_id, is_deleted) VALUES (1001, 1, 10, 88, 'digital_asset', 1, 0)`).Error; err != nil {
 		t.Fatalf("seed product spu failed: %v", err)
 	}
@@ -207,7 +207,7 @@ func seedOrderTestData(t *testing.T, db *gorm.DB) {
 	}
 
 	// 创建订单明细
-	if err := db.Exec(`INSERT INTO oms_order_item (id, order_id, sku_id, sku_name, is_deleted) VALUES (3001, 4001, 2001, '数字资产商品', 0)`).Error; err != nil {
+	if err := db.Exec(`INSERT INTO oms_order_item (id, order_id, sku_id, sku_name, is_deleted) VALUES (3001, 4001, 2001, '提货卡商品', 0)`).Error; err != nil {
 		t.Fatalf("seed order item failed: %v", err)
 	}
 }

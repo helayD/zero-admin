@@ -205,7 +205,7 @@ func validDrawAddReq() *smsclient.AddDrawActivityReq {
 	return &smsclient.AddDrawActivityReq{
 		Scope:                       merchantScope(),
 		ActivityCode:                "DRAW-20260416",
-		Name:                        "春季数字卡片抽赏",
+		Name:                        "春季提货卡抽赏",
 		RuleSummary:                 "完成实名后可参与，每次消耗 10 积分",
 		StartTime:                   "2026-04-16 10:00:00",
 		EndTime:                     "2026-04-30 23:59:59",
@@ -378,7 +378,7 @@ func TestAddAndUpdateAppendAuditRecords(t *testing.T) {
 		Id:                          addResp.Id,
 		Scope:                       merchantScope(),
 		ActivityCode:                "DRAW-20260416",
-		Name:                        "春季数字卡片抽赏-更新",
+		Name:                        "春季提货卡抽赏-更新",
 		RuleSummary:                 "规则更新",
 		StartTime:                   "2026-04-16 10:00:00",
 		EndTime:                     "2026-04-30 23:59:59",

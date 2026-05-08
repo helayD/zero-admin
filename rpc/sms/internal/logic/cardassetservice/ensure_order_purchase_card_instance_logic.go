@@ -279,7 +279,7 @@ func ensureOrderPurchaseAssetLog(ctx context.Context, tx *gorm.DB, record *order
 		OperatorType:          operatorType,
 		TraceID:               firstNonEmpty(strings.TrimSpace(traceID), strings.TrimSpace(record.RequestId)),
 		ReasonCode:            cardAssetReasonPurchase,
-		ReasonText:            "订单支付成功后创建数字资产实例",
+		ReasonText:            "订单支付成功后创建提货卡实例",
 		PayloadJSON:           string(payload),
 	}
 	return tx.WithContext(ctx).Table(logRow.TableName()).Create(logRow).Error

@@ -50,11 +50,11 @@ so that 链上确权失败时我可以及时识别、重试和人工介入。
 ## 明确非目标（本 Story 不做）
 
 - 不重做抽卡活动配置、实名认证校验、抽卡参与和本地资产建账；这些分别属于 10.1、10.2、10.3。
-- 不建设完整“我的数字卡片资产列表 / 详情页”与客服审计详情页；完整资产展示与审计检索属于 10.5。
+- 不建设完整“我的提货卡资产列表 / 详情页”与客服审计详情页；完整资产展示与审计检索属于 10.5。
 - 不在 Flutter、front-api handler 或页面组件里直连蚂蚁链接口，也不通过临时脚本绕过 `pkg/antchain`。
 - 不把“人工重试”实现成直接修改数据库字段后假装成功；所有重试、冻结、人工复核都必须经过受控服务逻辑与日志留痕。
 - 不在本 Story 顺手升级 go-zero、GORM、RabbitMQ 客户端或引入新的消息中间件。
-- 不开放数字卡片二级交易、连续挂牌、收益承诺、虚拟币计价或其他违反去金融化约束的能力。
+- 不开放提货卡二级交易、连续挂牌、收益承诺、虚拟币计价或其他违反去金融化约束的能力。
 
 ## 实施顺序（必须按序推进）
 
@@ -133,7 +133,7 @@ so that 链上确权失败时我可以及时识别、重试和人工介入。
   - `task_status` 描述调度/补偿任务状态
   - `chain_status` 描述链上结果摘要
   任何一个字段都不能代替另外三个。
-- [x] 2.6 admin 侧为数字卡片补偿链路新增独立 API 文档文件，例如 `api/admin/doc/api/sms/digital_card_chain.api`，并在 `api/admin/doc/api/sms/sms.api` 中显式引入。
+- [x] 2.6 admin 侧为提货卡补偿链路新增独立 API 文档文件，例如 `api/admin/doc/api/sms/digital_card_chain.api`，并在 `api/admin/doc/api/sms/sms.api` 中显式引入。
 - [x] 2.7 如需向 front/Flutter 透出最小链上状态，只允许增加服务端聚合字段，例如 `mintStatus`、`mintStatusText`、`chainStatus`；不得让客户端自行根据本地时间或文案猜测“已到账”。
 - [x] 2.8 所有后台动作接口必须携带并校验 `scopeType/platformId/tenantId/merchantId`，复用现有治理范围模式。
 - [ ] 2.9 如新增 `CardMintTaskService` 或等价 gRPC service，必须同步在 `rpc/sms/sms.go` 完成 server 注册；只创建 logic / proto 文件但不注册，不算完成。
@@ -211,7 +211,7 @@ so that 链上确权失败时我可以及时识别、重试和人工介入。
 
 #### Task 5 (AC: 2): 让技术运营能在授权范围内看见问题并立即处理
 
-- [x] 5.1 参考 `oms/chain-monitor`，在 admin 侧新增数字卡片链路查询逻辑，例如：
+- [x] 5.1 参考 `oms/chain-monitor`，在 admin 侧新增提货卡链路查询逻辑，例如：
   - `api/admin/internal/logic/sms/digital_card_chain/query...`
   - `retry...`
   - `freeze...`
@@ -233,7 +233,7 @@ so that 链上确权失败时我可以及时识别、重试和人工介入。
   - `freeze`：冻结资产发放或后续流转
   - `escalate`：升级为人工复核
   如确有需要可补 `replay`，但不要先设计一套和 OMS 完全不同的动作词典。
-- [x] 5.5 在 `web-admin/src/pages/sms/` 下新增数字卡片链路工作台页面，例如 `DigitalCardChainMonitor/`，优先复用 `oms/chain-monitor` 的“筛选区 + 列表 + 详情抽屉 + 动作按钮”结构。
+- [x] 5.5 在 `web-admin/src/pages/sms/` 下新增提货卡链路工作台页面，例如 `DigitalCardChainMonitor/`，优先复用 `oms/chain-monitor` 的“筛选区 + 列表 + 详情抽屉 + 动作按钮”结构。
 - [x] 5.6 详情抽屉至少展示：
   - 资产实例与中奖来源快照
   - 最近一次回执摘要
@@ -317,13 +317,13 @@ cd flutter-mall && flutter test
   - `script/sql/sms/migration_20260417_card_asset_ledger.sql`
   - `api/front/internal/logic/digital_card/draw_activity/`
   - `flutter-mall/lib/view/digital_card/`
-2. 这说明当前仓库对数字卡片链路的真实演进方式是“围绕既有模块增量补齐”，而不是新起服务或新起前台入口。
+2. 这说明当前仓库对提货卡链路的真实演进方式是“围绕既有模块增量补齐”，而不是新起服务或新起前台入口。
 3. 现有后台已经有 `oms/chain-monitor` 成熟模式；10.4 应优先借鉴它的查询、动作、抽屉和作用域治理方式，而不是从零造一个完全不同的运维工作台。
 4. `oms/chain-monitor` 可复用的不是单个页面，而是 `types + handler + logic + web-admin service + operate log/干预动作语义` 的整套接法；10.4 应整体借鉴，而不是只抄一个列表 UI。
 
 ### 架构约束（必须遵守）
 
-1. **`sms` 域继续拥有数字卡片资产台账与链上发放编排。**
+1. **`sms` 域继续拥有提货卡资产台账与链上发放编排。**
 2. **链下主台账优先于链上结果。** `sms_card_instance` / `sms_card_mint_task` 才是本地真相源，链上 token 只是确权结果。
 3. **MQ 负责触发，job 负责兜底，二者都不是真相源。**
 4. **外部链上能力必须通过统一集成层接入。**
@@ -381,7 +381,7 @@ cd flutter-mall && flutter test
 - `consumer/internal/mq/digital_card/`
   - `mint_requested` 事件消费与执行入口。
 - `consumer/internal/svc/service_context.go`
-  - 显式启动数字卡片发放相关订阅，不依赖目录自动扫描。
+  - 显式启动提货卡发放相关订阅，不依赖目录自动扫描。
 - `job/internal/jobs/`
   - pending / timeout / retry 补偿扫描任务。
 - `job/internal/logic/job_logic.go`
@@ -389,13 +389,13 @@ cd flutter-mall && flutter test
 - `api/admin/doc/api/sms/digital_card_chain.api`
   - 后台工作台接口。
 - `api/admin/internal/types/`
-  - 数字卡片链路查询、详情和干预动作结构定义。
+  - 提货卡链路查询、详情和干预动作结构定义。
 - `api/admin/internal/logic/sms/digital_card_chain/`
   - 列表查询、详情、retry/freeze/escalate 等逻辑。
 - `api/admin/internal/handler/sms/digital_card_chain/`
-  - 数字卡片链路工作台 HTTP handler 入口。
+  - 提货卡链路工作台 HTTP handler 入口。
 - `web-admin/src/pages/sms/DigitalCardChainMonitor/`
-  - 数字卡片链路工作台页面。
+  - 提货卡链路工作台页面。
 - `api/front/doc/api/digital_card/draw_activity.api`
   - 如需最小状态透出，在此增补 `mintStatus` 等字段。
 - `flutter-mall/lib/model/digital_card/draw_activity_model.dart`
@@ -456,10 +456,10 @@ cd flutter-mall && flutter test
   - `ConsumeSimple`
   - `ConsumeSimpleWithAck`
   但没有 publisher confirm 封装，所以 10.4 的消息可靠性策略必须建立在 DB 任务表 + job 扫描之上。
-- `consumer/internal/svc/service_context.go` 当前通过硬编码 goroutine 启动各类 MQ 订阅，不会自动发现新 consumer；10.4 的数字卡片发放订阅必须显式接到这里。
+- `consumer/internal/svc/service_context.go` 当前通过硬编码 goroutine 启动各类 MQ 订阅，不会自动发现新 consumer；10.4 的提货卡发放订阅必须显式接到这里。
 - `job` 当前通过 `job-api /from/:name` + `job/internal/logic/job_logic.go` 的 `switch req.Name` 分发执行，不会自动执行新增 job 文件；10.4 的补偿任务名必须手工接入。
 - `rpc/sms/sms.go` 当前手工注册各个 gRPC service；若新增 `CardMintTaskService`，必须同步注册才能对外提供能力。
-- 当前 `web-admin` 已经有 `oms/chain-monitor` 页面与 admin 动作接口，这为 10.4 的数字卡片发放工作台提供了现成模式。
+- 当前 `web-admin` 已经有 `oms/chain-monitor` 页面与 admin 动作接口，这为 10.4 的提货卡发放工作台提供了现成模式。
 - 当前 `web-admin/src/pages/sms/DigitalCardActivity/` 只负责活动配置，不负责发卡链路监控；10.4 应新增链路工作台，而不是把补偿动作塞进活动配置页。
 - 当前 `flutter-mall` 和 front 聚合已经能展示“资产已创建，链上处理中”，但还没有 token 成功、补偿中、人工复核、冻结这些明确状态。
 
@@ -467,12 +467,12 @@ cd flutter-mall && flutter test
 
 - `/_opcos/planning-artifacts/1-new-feature/epic.md#Story 10.4`
 - `/_opcos/planning-artifacts/1-new-feature/prd.md#Journey 10`
-- `/_opcos/planning-artifacts/1-new-feature/prd.md#数字卡片抽赏与链上资产`
+- `/_opcos/planning-artifacts/1-new-feature/prd.md#提货卡抽赏与链上资产`
 - `/_opcos/planning-artifacts/1-new-feature/architecture.md#Digital Card Asset Modeling`
 - `/_opcos/planning-artifacts/1-new-feature/architecture.md#API & Communication Patterns`
 - `/_opcos/planning-artifacts/1-new-feature/architecture.md#Infrastructure & Deployment`
 - `/_opcos/planning-artifacts/1-new-feature/architecture.md#Data Flow`
-- `/_opcos/planning-artifacts/1-new-feature/ux-design.md#数字卡片抽赏与链上资产到账流`
+- `/_opcos/planning-artifacts/1-new-feature/ux-design.md#提货卡抽赏与链上资产到账流`
 - `/_opcos/planning-artifacts/1-new-feature/ux-design.md#Digital Asset Status`
 - `/_opcos/planning-artifacts/1-new-feature/ux-design.md#Ops Audit Flow`
 - `/_opcos/project-context.md`
@@ -518,7 +518,7 @@ GPT-5 Codex
 
 - 已新增 `pkg/antchain` 与 `pkg/digitalcardmint`，落地发放任务表模型、幂等键、状态机、回执写回、失败补偿与可用动作判定。
 - 已把链路接入 `rpc/sms -> consumer -> job -> admin/web-admin`：中奖/回填会确保任务存在并事务外派发，consumer 执行发链，job 在无 MQ 场景下可直接复用执行器做兜底补偿。
-- 已新增数字卡片链路后台工作台：`extra_routes`、API 文档、admin handler/logic/types、`web-admin/src/pages/sms/DigitalCardChainMonitor/` 全链路打通。
+- 已新增提货卡链路后台工作台：`extra_routes`、API 文档、admin handler/logic/types、`web-admin/src/pages/sms/DigitalCardChainMonitor/` 全链路打通。
 - 已补充自动化测试：`pkg/digitalcardmint`、`consumer/internal/mq/digital_card`、`job/internal/jobs`、`api/admin/internal/logic/sms/digital_card_chain`、`web-admin` helper 测试均通过。
 - 已更正 6.1 状态：当前 `smsclient.DrawMemberRecordData` 仍未承载 `mintStatus` / `mintStatusText` / `chainStatus`，front/Flutter 只能继续透传服务端确认后的 `assetStatusText`，该项保持未完成。
 - 受仓库 AGENTS 约束，本次未新增 `rpc/sms/proto/card_mint_task.proto` 或生成 gRPC service，而是以手工共享服务 `pkg/digitalcardmint` 收口执行边界。
@@ -573,4 +573,4 @@ GPT-5 Codex
 ## Change Log
 
 - 2026-04-17: 创建 Story 10.4，补全统一链上集成层、发放任务表、MQ+Job 补偿、后台干预工作台与幂等回执写回约束。
-- 2026-04-18: 完成 10.4 主体实现，新增发放任务 DDL、统一链上集成层、共享发放执行器、consumer/job 兜底、admin/API 文档与 `web-admin` 数字卡片链路工作台，并补充核心自动化测试；同时更正 6.1 未完成状态与 File List 漏项。
+- 2026-04-18: 完成 10.4 主体实现，新增发放任务 DDL、统一链上集成层、共享发放执行器、consumer/job 兜底、admin/API 文档与 `web-admin` 提货卡链路工作台，并补充核心自动化测试；同时更正 6.1 未完成状态与 File List 漏项。

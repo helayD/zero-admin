@@ -204,26 +204,26 @@ DigitalCardStatusCopy digitalCardDrawResultCopy(DrawMemberRecord record) {
     case 'asset_processing':
       return const DigitalCardStatusCopy(
         label: '到账中',
-        description: '卡片正在到账，稍后会同步到我的数字卡片。',
+        description: '提货卡正在到账，稍后会同步到我的提货卡。',
         actionHint: '可以先关闭弹窗，稍后在卡包查看。',
       );
     case 'asset_success':
       return const DigitalCardStatusCopy(
         label: '已到账',
-        description: '卡片已到账，可以前往我的数字卡片查看。',
+        description: '提货卡已到账，可以前往我的提货卡查看。',
       );
     case 'asset_failed':
       return const DigitalCardStatusCopy(
         label: '发放失败',
-        description: '卡片暂未到账，系统已记录本次失败结果。',
+        description: '提货卡暂未到账，系统已记录本次失败结果。',
         actionHint: '请稍后刷新，仍未恢复时联系平台客服。',
       );
     default:
       return DigitalCardStatusCopy(
         label: label.isEmpty ? '已中奖待到账' : label,
         description: label.isEmpty
-            ? '卡片正在准备到账，稍后可在我的数字卡片查看。'
-            : '当前状态为 $label，稍后可在我的数字卡片查看。',
+            ? '提货卡正在准备到账，稍后可在我的提货卡查看。'
+            : '当前状态为 $label，稍后可在我的提货卡查看。',
       );
   }
 }

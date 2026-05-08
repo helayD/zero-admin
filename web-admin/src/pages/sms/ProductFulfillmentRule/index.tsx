@@ -247,7 +247,7 @@ const ProductFulfillmentRuleList: React.FC = () => {
         type="info"
         style={{ marginBottom: 16 }}
         message={`当前查询范围：${buildGovernanceScopeLabel(scope)}`}
-        description="管理数字资产商品的发卡规则，包括卡片模板、有效期、转赠规则和退款处置策略。"
+        description="管理提货卡商品的发卡规则，包括卡片模板、有效期、转赠规则和退款处置策略。"
       />
       <ProTable<ProductFulfillmentRuleListItem>
         headerTitle="发卡规则管理"

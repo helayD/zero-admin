@@ -137,9 +137,9 @@ class _RegisterState extends State<Register> {
         case AppRecentTargetType.settings:
           return '注册完成后将继续访问账户设置。';
         case AppRecentTargetType.digitalCardAssetList:
-          return '注册完成后将继续查看我的数字卡片。';
+          return '注册完成后将继续查看我的提货卡。';
         case AppRecentTargetType.digitalCardAssetDetail:
-          return '注册完成后将继续查看数字卡片详情。';
+          return '注册完成后将继续查看提货卡详情。';
         case AppRecentTargetType.home:
         case AppRecentTargetType.activity:
         case AppRecentTargetType.subject:

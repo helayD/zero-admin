@@ -31,7 +31,7 @@ func TestBuildChainClientRejectsInvalidPrimary(t *testing.T) {
 		t.Fatal("expected explicit invalid client")
 	}
 	_, err := client.MintToken(context.Background(), &chainclient.MintTokenRequest{IdempotencyKey: "k1"})
-	if err == nil || !strings.Contains(err.Error(), "数字资产通道配置非法") {
+	if err == nil || !strings.Contains(err.Error(), "提货卡通道配置非法") {
 		t.Fatalf("expected invalid primary error, got %v", err)
 	}
 }

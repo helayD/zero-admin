@@ -128,7 +128,7 @@ zero-admin（九克城）作为电商平台，预期在以下场景中引入区�
 采用 **"FISCO 做基础存证底座 + 特殊场景按需接入至信链 / 蚂蚁链 + 多链 Adapter 解耦"** 的稳态架构：
 
 - **基础存证层**：默认由自建 FISCO BCOS 承担商品溯源、订单存证、运营审计等通用存证需求
-- **特殊场景层**：司法采信类场景按需接入至信链，数字权益 / 数字资产类场景按需接入蚂蚁链或长安链
+- **特殊场景层**：司法采信类场景按需接入至信链，数字权益 / 提货卡类场景按需接入蚂蚁链或长安链
 - **代码层面**：通过 Adapter 和链路由配置解耦业务逻辑与具体链实现
 - **长期形态**：不是"只选一条链"，而是让 FISCO 长期保留为基础底座，特殊业务按能力接入专用链并可多链并存
 
@@ -192,12 +192,12 @@ zero-admin（九克城）作为电商平台，预期在以下场景中引入区�
 
 ### 阶段三 B：资产型升级（按需触发）
 
-- **触发条件**：发行会员数字权益凭证、做合规数字藏品、IP 授权
+- **触发条件**：发行会员数字权益凭证、做合规提货卡、IP 授权
 - **方案**：在保留 FISCO 基础存证的前提下，接入 **长安链 BaaS** 或 **蚂蚁链 BaaS**
 - **计费**：几千~几万/月
 - **改动**：
   - 新增 `antchain` 或 `chainmaker` Adapter
-  - 数字资产相关业务路由到新链
+  - 提货卡相关业务路由到新链
   - 通用存证类业务继续保留在 FISCO，司法增强类业务保留 FISCO / 至信链 双写
 
 ### 演进路线示意
@@ -230,8 +230,8 @@ zero-admin（九克城）作为电商平台，预期在以下场景中引入区�
 | 秒杀 / 抽奖结果 | ✅ | FISCO | 保留自建 | 公平性证据 |
 | 优惠券发放记录 | ✅ | FISCO | 保留自建 | 审计用 |
 | 后台关键操作日志 | ✅ | FISCO | 保留自建 | 管理员操作审计 |
-| 会员数字权益凭证 | ✅ | FISCO（初期） | → 蚂蚁链（有能力后） | 数字卡片发放已上线 |
-| 数字藏品 | ❌ | - | → 蚂蚁链 / 文昌链 | 监管严格，需合规 BaaS |
+| 会员数字权益凭证 | ✅ | FISCO（初期） | → 蚂蚁链（有能力后） | 提货卡发放已上线 |
+| 提货卡 | ❌ | - | → 蚂蚁链 / 文昌链 | 监管严格，需合规 BaaS |
 
 ### 6.2 哪些业务**不应该上链**
 
@@ -244,7 +244,7 @@ zero-admin（九克城）作为电商平台，预期在以下场景中引入区�
 
 ## 七、当前实现概述
 
-> **核心策略**：蚂蚁链 BaaS 年费 12 万+，不适合初期项目搭建。因此项目初期选择 **FISCO BCOS**（开源免费、自主可控）作为数字资产发放的链底座。架构设计上，业务代码只依赖 `ChainClient` 接口，不绑定任何具体链——**有能力后随时可以切换到蚂蚁链**，只需改一行配置，无需改代码。
+> **核心策略**：蚂蚁链 BaaS 年费 12 万+，不适合初期项目搭建。因此项目初期选择 **FISCO BCOS**（开源免费、自主可控）作为提货卡发放的链底座。架构设计上，业务代码只依赖 `ChainClient` 接口，不绑定任何具体链——**有能力后随时可以切换到蚂蚁链**，只需改一行配置，无需改代码。
 >
 > 蚂蚁链 Adapter 已在代码中完整实现（`pkg/antchain`），作为升级路径预留。当项目营收支撑蚂蚁链费用时，切换即可获得蚂蚁链的合规背书和更高的商业可信度。
 
@@ -252,7 +252,7 @@ zero-admin（九克城）作为电商平台，预期在以下场景中引入区�
 
 | 能力 | 状态 | 技术实现 |
 |------|------|---------|
-| 数字卡片链上发放（Mint Token） | 已上线 | `pkg/digitalcardmint` + `ChainClient` 接口 |
+| 提货卡链上发放（Mint Token） | 已上线 | `pkg/digitalcardmint` + `ChainClient` 接口 |
 | FISCO BCOS 链底座（初期默认） | 已上线 | `pkg/fisco`（开源免费，初期首选） |
 | 蚂蚁链 Adapter（升级路径预留） | 已实现 | `pkg/antchain`（代码就绪，改配置即可启用） |
 | 发放任务状态机（pending/dispatched/running/succeeded/failed/frozen） | 已上线 | `digitalcardmint.Service` |
@@ -260,7 +260,7 @@ zero-admin（九克城）作为电商平台，预期在以下场景中引入区�
 | 超时补偿扫描（ScanDueTasks） | 已上线 | `job/` 定时任务 |
 | 链路管理后台（查询/重试/冻结/升级人工复核） | 已上线 | admin-api `digital_card_chain` |
 | 资产合规管理（审核/下线/回收） | 已上线 | admin-api `digital_card_asset` |
-| 会员数字资产查看（我的卡片/详情/时间线） | 已上线 | front-api `digital_card_asset` |
+| 会员提货卡查看（我的卡片/详情/时间线） | 已上线 | front-api `digital_card_asset` |
 | 抽卡活动系统（资格校验/概率抽奖/库存扣减） | 已上线 | `drawparticipationservice` |
 | 幂等链上回执查询（QueryMintToken） | 已上线 | `ChainClient.QueryMintToken` |
 | 司法增强存证（至信链） | 未启动 | 长期规划 |
@@ -346,7 +346,7 @@ Stage 3A: 至信链司法增强               (长期规划)
                                                └─────────────┘
 ```
 
-### 8.3 数字卡片发放完整流程
+### 8.3 提货卡发放完整流程
 
 ```text
 1. 抽卡活动参与
@@ -417,7 +417,7 @@ Stage 3A: 至信链司法增强               (长期规划)
 | 表名 | 用途 | 关键字段 |
 |------|------|---------|
 | `sms_card_mint_task` | 链上发放任务 | task_status, mint_status, chain_status, token_id, chain_tx_id |
-| `sms_card_instance` | 数字卡片资产实例 | asset_status, mint_status, chain_status, display_status, compliance_status |
+| `sms_card_instance` | 提货卡资产实例 | asset_status, mint_status, chain_status, display_status, compliance_status |
 | `sms_card_asset_log` | 资产操作日志（审计轨迹） | operation_type, from_status, to_status |
 | `sms_draw_activity` | 抽卡活动配置 | status, real_name_required, probability_rule |
 | `sms_draw_pool` | 奖池配置 | probability_rule |
@@ -461,10 +461,10 @@ CREATE TABLE sms_card_mint_task (
   create_time             DATETIME      NOT NULL,
   update_time             DATETIME,
   is_deleted              TINYINT       NOT NULL DEFAULT 0
-) COMMENT '数字卡片链上发放任务';
+) COMMENT '提货卡链上发放任务';
 ```
 
-### 9.3 `sms_card_instance` 表（数字卡片资产实例）
+### 9.3 `sms_card_instance` 表（提货卡资产实例）
 
 ```sql
 CREATE TABLE sms_card_instance (
@@ -501,7 +501,7 @@ CREATE TABLE sms_card_instance (
   update_by               BIGINT,
   update_time             DATETIME,
   is_deleted              TINYINT       NOT NULL DEFAULT 0
-) COMMENT '数字卡片资产实例';
+) COMMENT '提货卡资产实例';
 ```
 
 ### 9.4 `sms_card_asset_log` 表（资产操作日志）
@@ -520,7 +520,7 @@ CREATE TABLE sms_card_asset_log (
   reason_text             VARCHAR(512),
   payload_json            TEXT          COMMENT '操作上下文快照 (JSON)',
   create_time             DATETIME      NOT NULL
-) COMMENT '数字卡片资产操作日志';
+) COMMENT '提货卡资产操作日志';
 ```
 
 ### 9.5 设计要点
@@ -544,7 +544,7 @@ pkg/
 │   ├── types.go                       # Config, MintTokenRequest/Response, QueryMintTokenRequest
 │   └── mock.go                        # MockClient (用于单元测试)
 │
-├── digitalcardmint/                   # 数字卡片发放核心服务
+├── digitalcardmint/                   # 提货卡发放核心服务
 │   ├── constants.go                   # 状态常量 (TaskStatus*, MintStatus*, ChainStatus*, Operation*, Event*)
 │   ├── asset_constants.go             # 资产合规常量 (DisplayStatus*, ComplianceStatus*)
 │   ├── model.go                       # GORM 模型 + RPC DTO (CardMintTaskRow, CardInstanceRow, ...)
@@ -554,7 +554,7 @@ pkg/
 │   ├── service_test.go                # 核心状态机单元测试
 │   └── asset_service_test.go          # 资产服务单元测试
 │
-rpc/sms/                               # 营销 RPC 服务 (承载数字卡片链路)
+rpc/sms/                               # 营销 RPC 服务 (承载提货卡链路)
 ├── internal/
 │   ├── config/config.go               # Blockchain (FISCO/AntChain) + Rabbitmq 配置
 │   ├── svc/service_context.go         # 初始化 ChainClient + digitalcardmint.Service
@@ -583,7 +583,7 @@ api/admin/internal/logic/sms/
     └── recycledigitalcardassetlogic.go
 
 api/front/internal/logic/digital_card/
-├── digital_card_asset/                # 会员数字资产 (我的卡片)
+├── digital_card_asset/                # 会员提货卡 (我的卡片)
 │   ├── query_my_digital_card_asset_list_logic.go
 │   └── query_my_digital_card_asset_detail_logic.go
 └── draw_activity/                     # 抽卡活动 (落地页/资格/参与/记录)
@@ -698,12 +698,12 @@ var defaultRegistry = Registry{
 
 ### 11.1 核心原则：FISCO 与蚂蚁链并存，后台随时可切
 
-FISCO 与蚂蚁链都服务于同一业务领域——**数字资产发放、卡片铸造、权益凭证**。初期使用 FISCO（开源免费）控制成本，有能力后随时切换到蚂蚁链（商业 BaaS，合规背书更强），**无需修改代码、无需重新部署**。
+FISCO 与蚂蚁链都服务于同一业务领域——**提货卡发放、卡片铸造、权益凭证**。初期使用 FISCO（开源免费）控制成本，有能力后随时切换到蚂蚁链（商业 BaaS，合规背书更强），**无需修改代码、无需重新部署**。
 
 ```text
 ┌──────────────────────────────────────────────────────────┐
 │ 业务层 (Logic)                                            │
-│ 数字资产发放 / 卡片铸造 / 权益凭证                          │
+│ 提货卡发放 / 卡片铸造 / 权益凭证                          │
 │ 不关心底层用的是哪条链，只调用 ChainClient 接口               │
 └───────────────────────┬──────────────────────────────────┘
                         │
@@ -791,7 +791,7 @@ Blockchain:
 
 | 风险 | 对策 |
 |------|------|
-| 发行数字资产被认定为代币 | **禁止二级市场**、禁止任何形式的流通 / 交易 |
+| 发行提货卡被认定为代币 | **禁止二级市场**、禁止任何形式的流通 / 交易 |
 | 数藏业务监管收紧 | 阶段三 B 才真正接入，到时用合规 BaaS |
 | 跨境业务 | 不使用海外公链，不在境外节点留存数据 |
 | 个人信息上链 | **只上哈希，不上原始数据**；原始数据留在 MySQL 加密存储 |
@@ -828,7 +828,7 @@ Blockchain:
 
 ### 13.3 阶段三 B（蚂蚁链 / 长安链 BaaS）
 
-> **备注**：当前数字卡片场景通过 FISCO 运行。蚂蚁链 Adapter 已在代码中实现，当营收支撑时可切换，届时费用取决于蚂蚁链合同条款。
+> **备注**：当前提货卡场景通过 FISCO 运行。蚂蚁链 Adapter 已在代码中实现，当营收支撑时可切换，届时费用取决于蚂蚁链合同条款。
 
 - 蚂蚁链：9,900 元/月起，年 ≥ 12 万
 - 长安链 BaaS（腾讯云 / 华为云）：3,000~8,000 元/月，年 ≈ 4~10 万
@@ -839,14 +839,14 @@ Blockchain:
 
 ### 已完成
 
-- [x] 确定首个区块链场景：数字卡片链上发放（初期 FISCO，蚂蚁链作为升级路径）
+- [x] 确定首个区块链场景：提货卡链上发放（初期 FISCO，蚂蚁链作为升级路径）
 - [x] 实现 `pkg/antchain` 蚂蚁链客户端（Client 接口 + httpClient + disabledClient + MockClient）——升级路径预留
 - [x] 实现 `pkg/digitalcardmint` 核心服务（任务状态机 / MQ 派发 / 链上铸造 / 超时补偿）
 - [x] 实现资产管理服务（会员资产查询 / 审计列表 / 合规处置）
 - [x] 在 `rpc/sms` 中集成 CardMintAdminService gRPC 服务
 - [x] 实现 admin-api 链路管理（查询/重试/冻结/升级）
 - [x] 实现 admin-api 资产合规管理（审核/下线/回收）
-- [x] 实现 front-api 会员数字资产查看（列表/详情/时间线）
+- [x] 实现 front-api 会员提货卡查看（列表/详情/时间线）
 - [x] 实现抽卡活动系统（资格校验/概率抽奖/库存扣减/发放触发）
 - [x] 实现 consumer MQ 消费者（MintRequested → ExecuteTask）
 - [x] 实现 job 定时任务（HandleCardMintTimeout → ScanDueTasks）
@@ -889,7 +889,7 @@ Blockchain:
 | **DDC** | Distributed Digital Certificate，分布式数字凭证，BSN 的 NFT 规范 |
 | **Adapter** | 适配器模式，本文指每条链对应的实现类 |
 | **切换点（Cut-over）** | 从旧方案切到新方案的时间点 |
-| **MintToken** | 链上铸造 / 发放数字资产，初期通过 FISCO，升级后可切换为蚂蚁链 BaaS |
+| **MintToken** | 链上铸造 / 发放提货卡，初期通过 FISCO，升级后可切换为蚂蚁链 BaaS |
 | **GovernanceScope** | 多租户治理范围（platform/tenant/merchant） |
 | **状态机** | 发放任务的生命周期转换（pending_dispatch → ... → succeeded/frozen） |
 | **ChainClient** | 抽象的链客户端接口 |

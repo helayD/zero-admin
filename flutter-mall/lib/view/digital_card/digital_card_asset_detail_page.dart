@@ -98,7 +98,7 @@ class _DigitalCardAssetDetailPageState
         return;
       }
       setState(() {
-        _errorMessage = '加载数字卡片详情失败，请稍后重试';
+        _errorMessage = '加载提货卡详情失败，请稍后重试';
         _detail = null;
         _isLoading = false;
       });
@@ -371,7 +371,7 @@ class _DigitalCardAssetDetailPageState
         ? _detail!.item.templateName
         : widget.initialItem?.templateName.trim().isNotEmpty == true
             ? widget.initialItem!.templateName
-            : '数字卡片详情';
+            : '提货卡详情';
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -613,7 +613,7 @@ class _DigitalCardAssetDetailPageState
                   children: <Widget>[
                     Text(
                       item.templateName.trim().isEmpty
-                          ? '数字卡片'
+                          ? '提货卡'
                           : item.templateName,
                       style:
                           Theme.of(context).textTheme.headlineSmall?.copyWith(

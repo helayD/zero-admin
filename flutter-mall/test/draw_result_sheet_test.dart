@@ -45,7 +45,7 @@ void main() {
     );
 
     expect(find.text('到账中'), findsOneWidget);
-    expect(find.textContaining('卡片正在到账，稍后会同步到我的数字卡片。唯一编号 CARD202604170001'),
+    expect(find.textContaining('提货卡正在到账，稍后会同步到我的提货卡。唯一编号 CARD202604170001'),
         findsOneWidget);
     expect(find.text('资产已创建，处理中'), findsNothing);
     expect(find.text('资产已创建，链上处理中'), findsNothing);
@@ -95,7 +95,7 @@ void main() {
     );
 
     expect(find.text('到账中'), findsOneWidget);
-    expect(find.textContaining('卡片正在到账，稍后会同步到我的数字卡片。'), findsOneWidget);
+    expect(find.textContaining('提货卡正在到账，稍后会同步到我的提货卡。'), findsOneWidget);
     expect(find.text('可以先关闭弹窗，稍后在卡包查看。'), findsOneWidget);
     expect(find.text('资产已创建，处理中'), findsNothing);
     expect(find.text('资产已创建，链上处理中'), findsNothing);
@@ -147,7 +147,7 @@ void main() {
     );
 
     expect(find.text('待实名兑卡'), findsOneWidget);
-    expect(find.textContaining('完成实名认证后可继续兑卡并发放到我的数字卡片'), findsOneWidget);
+    expect(find.textContaining('完成实名认证后可继续兑卡并发放到我的提货卡'), findsOneWidget);
     expect(find.text('到账中'), findsNothing);
     expect(find.text('资产已创建，链上处理中'), findsNothing);
     expect(find.text('获取时间'), findsNothing);

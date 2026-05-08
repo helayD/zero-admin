@@ -128,7 +128,7 @@ func (l *QueryProductFulfillmentConflictLogic) QueryProductFulfillmentConflict(r
 			continue
 		}
 
-		// 只检查已上架的数字资产模式商品
+		// 只检查已上架的提货卡模式商品
 		if product.PublishStatus != 1 || product.FulfillmentMode != "digital_asset" {
 			item.HasConflict = false
 			items = append(items, item)
@@ -153,7 +153,7 @@ func (l *QueryProductFulfillmentConflictLogic) QueryProductFulfillmentConflict(r
 func (l *QueryProductFulfillmentConflictLogic) checkFulfillmentRuleConflict(product *productConflictRow) string {
 	// 检查是否绑定发卡规则
 	if product.FulfillmentRuleID <= 0 {
-		return "数字资产模式商品未绑定发卡规则"
+		return "提货卡模式商品未绑定发卡规则"
 	}
 
 	// 查询发卡规则

@@ -92,7 +92,7 @@ CREATE TABLE IF NOT EXISTS `sms_card_template` (
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_card_template_code` (`platform_id`, `tenant_id`, `merchant_id`, `template_code`, `is_deleted`),
     KEY `idx_card_template_scope_status` (`platform_id`, `tenant_id`, `merchant_id`, `status`, `id`)
-) COMMENT='数字卡片模板表';
+) COMMENT='提货卡模板表';
 
 CREATE TABLE IF NOT EXISTS `sms_draw_pool_template` (
     `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '编号',

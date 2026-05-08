@@ -68,6 +68,6 @@ void main() {
     final DigitalCardStatusCopy copy = digitalCardDrawResultCopy(record);
 
     expect(copy.label, '到账中');
-    expect(copy.description, '卡片正在到账，稍后会同步到我的数字卡片。');
+    expect(copy.description, '提货卡正在到账，稍后会同步到我的提货卡。');
   });
 }

@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS `ums_member_lottery_grant_log` (
 
 UPDATE `sms_draw_activity`
 SET
-    `rule_summary` = '每日首次登录赠送 3 次抽卡机会；每完成 1 笔订单额外赠送 1 次。每次抽卡消耗 1 次机会，卡池总中奖率 30%，中奖后兑卡和发放数字卡片资产时需要完成实名认证。',
+    `rule_summary` = '每日首次登录赠送 3 次抽卡机会；每完成 1 笔订单额外赠送 1 次。每次抽卡消耗 1 次机会，卡池总中奖率 30%，中奖后兑卡和发放提货卡资产时需要完成实名认证。',
     `participant_condition_summary` = '会员登录后即可获得每日 3 次抽卡机会；订单完成后每单额外获得 1 次抽卡机会',
     `consume_rule_summary` = '每次抽卡消耗 1 次抽卡机会；每日登录机会当天首次登录发放，订单完成机会按订单幂等发放',
     `probability_rule` = '总中奖率 30%：SSR 5%，SR 25%，未中奖 70%',
