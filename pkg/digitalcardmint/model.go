@@ -172,6 +172,15 @@ type MintRequestedEvent struct {
 	TraceID         string `json:"traceId"`
 }
 
+type RedemptionRequestedEvent struct {
+	EventName       string `json:"eventName"`
+	OrderID         int64  `json:"orderId"`
+	CardInstanceID  int64  `json:"cardInstanceId"`
+	HolderID        int64  `json:"holderId"`
+	RequestID       string `json:"requestId"`
+	TraceID         string `json:"traceId"`
+}
+
 type QueryFilter struct {
 	PageNum        int32
 	PageSize       int32

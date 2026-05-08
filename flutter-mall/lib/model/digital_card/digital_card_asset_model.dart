@@ -97,6 +97,9 @@ class DigitalCardAssetItem {
   final String complianceStatusText;
   final String tokenStatusText;
   final String complianceRuleSummary;
+  final bool transferable;
+  final String? redemptionStatus;
+  final String? shareTokenStatus;
 
   const DigitalCardAssetItem({
     required this.assetInstanceId,
@@ -118,6 +121,9 @@ class DigitalCardAssetItem {
     required this.complianceStatusText,
     required this.tokenStatusText,
     required this.complianceRuleSummary,
+    this.transferable = false,
+    this.redemptionStatus,
+    this.shareTokenStatus,
   });
 
   factory DigitalCardAssetItem.fromJson(Map<String, dynamic> json) {
@@ -141,6 +147,9 @@ class DigitalCardAssetItem {
       complianceStatusText: json['complianceStatusText']?.toString() ?? '',
       tokenStatusText: json['tokenStatusText']?.toString() ?? '',
       complianceRuleSummary: json['complianceRuleSummary']?.toString() ?? '',
+      transferable: json['transferable'] == true || json['transferable'] == 1,
+      redemptionStatus: json['redemptionStatus']?.toString(),
+      shareTokenStatus: json['shareTokenStatus']?.toString(),
     );
   }
 

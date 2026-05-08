@@ -155,9 +155,340 @@ class _DigitalCardAssetDetailPageState
     }
   }
 
+  Future<void> _openRedemptionSheet(DigitalCardAssetItem item) async {
+    final TextEditingController nameController = TextEditingController();
+    final TextEditingController phoneController = TextEditingController();
+    final TextEditingController addressController = TextEditingController();
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (BuildContext sheetContext) {
+        bool isSubmitting = false;
+        String? message;
+        // 实时验证状态
+        String? nameError;
+        String? phoneError;
+        String? addressError;
+
+        // 手机号验证正则
+        final RegExp phoneRegExp = RegExp(r'^1[3-9]\d{9}$');
+
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setSheetState) {
+            // 实时验证函数
+            void validateFields() {
+              final String name = nameController.text.trim();
+              final String phone = phoneController.text.trim();
+              final String address = addressController.text.trim();
+
+              setSheetState(() {
+                nameError = name.isEmpty ? '请输入收货人姓名' : null;
+                phoneError = phone.isEmpty
+                    ? '请输入手机号'
+                    : (!phoneRegExp.hasMatch(phone) ? '请输入有效的11位手机号' : null);
+                addressError = address.isEmpty ? '请输入详细收货地址' : null;
+              });
+            }
+
+              Future<void> submit() async {
+              validateFields();
+              if (nameError != null || phoneError != null || addressError != null) {
+                return;
+              }
+              if (isSubmitting) return;
+
+              // 显示确认对话框
+              final bool? confirmed = await showDialog<bool>(
+                context: sheetContext,
+                builder: (BuildContext dialogContext) {
+                  return AlertDialog(
+                    title: const Text('确认提货'),
+                    content: const Text('提交后将创建提货单，确认要提货吗？'),
+                    actions: <Widget>[
+                      TextButton(
+                        onPressed: () => Navigator.pop(dialogContext, false),
+                        child: const Text('取消'),
+                      ),
+                      FilledButton(
+                        onPressed: () => Navigator.pop(dialogContext, true),
+                        child: const Text('确认提货'),
+                      ),
+                    ],
+                  );
+                },
+              );
+              if (confirmed != true) return;
+
+              setSheetState(() {
+                isSubmitting = true;
+                message = null;
+              });
+              try {
+                await HttpUtil.post(
+                  createRedemptionOrderUrl,
+                  data: <String, dynamic>{
+                    'cardInstanceId': item.assetInstanceId,
+                    'holderId': item.assetInstanceId,
+                    'receiverName': nameController.text.trim(),
+                    'receiverPhone': phoneController.text.trim(),
+                    'receiverAddress': addressController.text.trim(),
+                    'requestId': 'redemption-${DateTime.now().millisecondsSinceEpoch}',
+                  },
+                );
+                if (!mounted) return;
+                _showSnack('提货单创建成功');
+                await _loadDetail();
+                if (!mounted) return;
+                if (mounted) {
+                  Navigator.pop(sheetContext);
+                }
+              } catch (e) {
+                setSheetState(() {
+                  isSubmitting = false;
+                  message = _getErrorMessage(e);
+                });
+              }
+            }
+
+            return SafeArea(
+              top: false,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  20,
+                  8,
+                  20,
+                  20 + MediaQuery.of(context).viewInsets.bottom,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text('我要提货', style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      '填写收货信息，我们将为您配送实体卡片。',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    TextField(
+                      controller: nameController,
+                      decoration: InputDecoration(
+                        labelText: '收货人姓名',
+                        border: const OutlineInputBorder(),
+                        errorText: nameError,
+                      ),
+                      onChanged: (_) => validateFields(),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    TextField(
+                      controller: phoneController,
+                      keyboardType: TextInputType.phone,
+                      maxLength: 11,
+                      decoration: InputDecoration(
+                        labelText: '收货人手机号',
+                        border: const OutlineInputBorder(),
+                        errorText: phoneError,
+                        counterText: '',
+                      ),
+                      onChanged: (_) => validateFields(),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    TextField(
+                      controller: addressController,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        labelText: '详细收货地址',
+                        border: const OutlineInputBorder(),
+                        errorText: addressError,
+                      ),
+                      onChanged: (_) => validateFields(),
+                    ),
+                    if (message != null) ...<Widget>[
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        message!,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppColors.price,
+                            ),
+                      ),
+                    ],
+                    const SizedBox(height: AppSpacing.md),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: isSubmitting ? null : submit,
+                        icon: isSubmitting
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.local_mall_outlined),
+                        label: const Text('提交提货申请'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+    nameController.dispose();
+    phoneController.dispose();
+    addressController.dispose();
+  }
+
+  String _getErrorMessage(dynamic error) {
+    if (error is DioException) {
+      if (error.response?.statusCode == 400) {
+        return '请求参数错误，请检查输入信息';
+      } else if (error.response?.statusCode == 401) {
+        return '登录已过期，请重新登录';
+      } else if (error.response?.statusCode == 403) {
+        return '您没有权限执行此操作';
+      } else if (error.response?.statusCode == 409) {
+        return '该卡片状态已变更，请刷新后重试';
+      } else if (error.type == DioExceptionType.connectionTimeout ||
+          error.type == DioExceptionType.receiveTimeout) {
+        return '网络连接超时，请检查网络后重试';
+      } else if (error.type == DioExceptionType.connectionError) {
+        return '网络连接失败，请检查网络设置';
+      }
+    }
+    return '操作失败，请稍后重试';
+  }
+
+  Future<void> _openShareSheet(DigitalCardAssetItem item) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (BuildContext sheetContext) {
+        bool isGenerating = false;
+        String? shareLink;
+        String? message;
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setSheetState) {
+            Future<void> generateLink() async {
+              if (isGenerating) return;
+              setSheetState(() {
+                isGenerating = true;
+                message = null;
+              });
+              try {
+                final Response response = await HttpUtil.post(
+                  generateShareLinkUrl,
+                  data: <String, dynamic>{
+                    'cardInstanceId': item.assetInstanceId,
+                    'holderId': item.assetInstanceId,
+                    'requestId': 'share-${DateTime.now().millisecondsSinceEpoch}',
+                  },
+                );
+                final Map<String, dynamic> data = _responseData(response.data);
+                setSheetState(() {
+                  isGenerating = false;
+                  shareLink = data['shareUrl']?.toString();
+                });
+              } catch (e) {
+                setSheetState(() {
+                  isGenerating = false;
+                  message = '生成分享链接失败，请稍后重试';
+                });
+              }
+            }
+
+            Future<void> copyLink() async {
+              if (shareLink == null) return;
+              await Clipboard.setData(ClipboardData(text: shareLink!));
+              if (!mounted) return;
+              _showSnack('分享链接已复制');
+            }
+
+            return SafeArea(
+              top: false,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  20,
+                  8,
+                  20,
+                  20 + MediaQuery.of(context).viewInsets.bottom,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text('分享给朋友', style: Theme.of(context).textTheme.titleLarge),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      '生成分享链接，发送给朋友领取这张卡片。',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    if (shareLink != null) ...<Widget>[
+                      Container(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        decoration: BoxDecoration(
+                          color: AppColors.background,
+                          borderRadius: BorderRadius.circular(AppRadii.md),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Row(
+                          children: <Widget>[
+                            Expanded(
+                              child: Text(
+                                shareLink!,
+                                style: Theme.of(context).textTheme.bodySmall,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: copyLink,
+                              icon: const Icon(Icons.copy_outlined),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ] else ...<Widget>[
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: isGenerating ? null : generateLink,
+                          icon: isGenerating
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.link_outlined),
+                          label: const Text('生成分享链接'),
+                        ),
+                      ),
+                    ],
+                    if (message != null) ...<Widget>[
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        message!,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppColors.price,
+                            ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _openTransferSheet(DigitalCardAssetItem item) async {
     final TextEditingController controller = TextEditingController();
-    final BuildContext pageContext = context;
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -190,22 +521,24 @@ class _DigitalCardAssetDetailPageState
                 }
                 final bool? confirmed = await showDialog<bool>(
                   context: sheetContext,
-                  builder: (BuildContext context) => AlertDialog(
-                    title: const Text('确认转赠'),
-                    content: Text(
-                      '确认转赠给 ${recipient['recipientMobileMasked'] ?? mobile} 吗？',
-                    ),
-                    actions: <Widget>[
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('取消'),
+                  builder: (BuildContext dialogContext) {
+                    return AlertDialog(
+                      title: const Text('确认转赠'),
+                      content: Text(
+                        '确认转赠给 ${recipient['recipientMobileMasked'] ?? mobile} 吗？',
                       ),
-                      FilledButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        child: const Text('确认转赠'),
-                      ),
-                    ],
-                  ),
+                      actions: <Widget>[
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogContext, false),
+                          child: const Text('取消'),
+                        ),
+                        FilledButton(
+                          onPressed: () => Navigator.pop(dialogContext, true),
+                          child: const Text('确认转赠'),
+                        ),
+                      ],
+                    );
+                  },
                 );
                 if (confirmed != true) return;
                 await _transferAsset(item, mobile);
@@ -217,10 +550,13 @@ class _DigitalCardAssetDetailPageState
                   setSheetState(() => isChecking = false);
                 }
               }
-              if (transferCompleted && mounted) {
-                Navigator.pop(sheetContext);
-                _showSnack('转赠成功');
-                Navigator.of(pageContext).pop();
+              if (transferCompleted) {
+                if (mounted) {
+                  _showSnack('转赠成功');
+                }
+                if (mounted) {
+                  Navigator.pop(sheetContext);
+                }
               }
             }
 
@@ -384,7 +720,22 @@ class _DigitalCardAssetDetailPageState
 
   Widget _buildBody() {
     if (_isLoading && _detail == null) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            CircularProgressIndicator(),
+            SizedBox(height: AppSpacing.lg),
+            Text(
+              '正在加载...',
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      );
     }
     if (_errorMessage != null && _detail == null) {
       return Center(
@@ -415,7 +766,29 @@ class _DigitalCardAssetDetailPageState
     final DigitalCardAssetDetailData? detail = _detail;
     final DigitalCardAssetItem? item = detail?.item ?? widget.initialItem;
     if (item == null) {
-      return const SizedBox.shrink();
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              const Icon(Icons.inbox_outlined,
+                  size: 52, color: AppColors.textSecondary),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                '暂无数据',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              FilledButton(
+                onPressed: _loadDetail,
+                child: const Text('重新加载'),
+              ),
+            ],
+          ),
+        ),
+      );
     }
     final DigitalCardStatusCopy statusCopy = digitalCardAssetPrimaryCopy(
       item,
@@ -463,6 +836,18 @@ class _DigitalCardAssetDetailPageState
 
   Widget _buildAssetActionCard(DigitalCardAssetItem item) {
     final bool actionsAvailable = item.mintStatus == 'mint_success';
+    final bool canRedeem = actionsAvailable;
+    final bool canShare = actionsAvailable && item.transferable == true;
+    final bool hasActiveRedemption = item.redemptionStatus != null && item.redemptionStatus != '';
+    final bool hasActiveShare = item.shareTokenStatus == 'active';
+
+    String actionHint = '';
+    if (hasActiveRedemption) {
+      actionHint = '该卡片正在提货中，暂不能分享';
+    } else if (hasActiveShare) {
+      actionHint = '该卡片已分享给朋友，暂不能提货';
+    }
+
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
@@ -481,34 +866,74 @@ class _DigitalCardAssetDetailPageState
                 : '待发放完成后，可支付邮费、提交提现申请或转赠给已注册用户。',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
+          if (actionHint.isNotEmpty) ...<Widget>[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              actionHint,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.price,
+                  ),
+            ),
+          ],
           const SizedBox(height: AppSpacing.md),
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: <Widget>[
-              FilledButton.icon(
-                onPressed: _isActionSubmitting || !actionsAvailable
+          // 主要操作按钮（全宽）
+          if (canRedeem && !hasActiveShare)
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _isActionSubmitting
                     ? null
-                    : () => _openPhysicalFulfillment(item),
-                icon: const Icon(Icons.local_shipping_outlined),
-                label: const Text('支付邮费'),
+                    : () => _openRedemptionSheet(item),
+                icon: const Icon(Icons.local_mall_outlined),
+                label: const Text('我要提货'),
               ),
-              OutlinedButton.icon(
-                onPressed: _isActionSubmitting || !actionsAvailable
+            ),
+          if (canShare && !hasActiveRedemption) ...[
+            if (canRedeem && !hasActiveShare) const SizedBox(height: AppSpacing.sm),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _isActionSubmitting
                     ? null
-                    : () => _requestWithdraw(item),
-                icon: const Icon(Icons.account_balance_wallet_outlined),
-                label: const Text('提现'),
+                    : () => _openShareSheet(item),
+                icon: const Icon(Icons.share_outlined),
+                label: const Text('分享给朋友'),
               ),
-              OutlinedButton.icon(
-                onPressed: _isActionSubmitting || !actionsAvailable
-                    ? null
-                    : () => _openTransferSheet(item),
-                icon: const Icon(Icons.ios_share_outlined),
-                label: const Text('转赠'),
-              ),
-            ],
-          ),
+            ),
+          ],
+          // 次要操作按钮
+          if (actionsAvailable) ...[
+            const SizedBox(height: AppSpacing.md),
+            const Divider(),
+            const SizedBox(height: AppSpacing.sm),
+            Wrap(
+              spacing: AppSpacing.md,
+              runSpacing: AppSpacing.sm,
+              children: <Widget>[
+                TextButton.icon(
+                  onPressed: _isActionSubmitting
+                      ? null
+                      : () => _openPhysicalFulfillment(item),
+                  icon: const Icon(Icons.local_shipping_outlined, size: 18),
+                  label: const Text('支付邮费'),
+                ),
+                TextButton.icon(
+                  onPressed: _isActionSubmitting
+                      ? null
+                      : () => _requestWithdraw(item),
+                  icon: const Icon(Icons.account_balance_wallet_outlined, size: 18),
+                  label: const Text('提现'),
+                ),
+                TextButton.icon(
+                  onPressed: _isActionSubmitting
+                      ? null
+                      : () => _openTransferSheet(item),
+                  icon: const Icon(Icons.ios_share_outlined, size: 18),
+                  label: const Text('转赠'),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );

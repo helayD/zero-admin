@@ -37,6 +37,8 @@ import (
 	"github.com/feihua/zero-admin/rpc/pms/client/productspuservice"
 	"github.com/feihua/zero-admin/rpc/pms/client/productvertifyrecordservice"
 	"github.com/feihua/zero-admin/rpc/search/search_client"
+	"github.com/feihua/zero-admin/rpc/sms/client/cardclaimtokenservice"
+	"github.com/feihua/zero-admin/rpc/sms/client/cardredemptionorderservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/couponrecordservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/couponscopeservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/couponservice"
@@ -139,17 +141,19 @@ type ServiceContext struct {
 	OrderService             orderservice.OrderService
 	OrderSettingService      ordersettingservice.OrderSettingService
 	// 营销相关
-	CouponRecordService       couponrecordservice.CouponRecordService
-	CouponScopeService        couponscopeservice.CouponScopeService
-	CouponService             couponservice.CouponService
-	CouponTypeService         coupontypeservice.CouponTypeService
-	DrawParticipationService  drawparticipationservice.DrawParticipationService
-	HomeAdvertiseService      homeadvertiseservice.HomeAdvertiseService
-	OperateDashboardService   operatedashboardservice.OperateDashboardService
-	SeckillActivityService    seckillactivityservice.SeckillActivityService
-	SeckillProductService     seckillproductservice.SeckillProductService
-	SeckillReservationService seckillreservationservice.SeckillReservationService
-	SeckillSessionService     seckillsessionservice.SeckillSessionService
+	CouponRecordService           couponrecordservice.CouponRecordService
+	CouponScopeService            couponscopeservice.CouponScopeService
+	CouponService                 couponservice.CouponService
+	CouponTypeService             coupontypeservice.CouponTypeService
+	DrawParticipationService      drawparticipationservice.DrawParticipationService
+	HomeAdvertiseService          homeadvertiseservice.HomeAdvertiseService
+	OperateDashboardService       operatedashboardservice.OperateDashboardService
+	SeckillActivityService        seckillactivityservice.SeckillActivityService
+	SeckillProductService         seckillproductservice.SeckillProductService
+	SeckillReservationService     seckillreservationservice.SeckillReservationService
+	SeckillSessionService         seckillsessionservice.SeckillSessionService
+	CardRedemptionOrderService    cardredemptionorderservice.CardRedemptionOrderService
+	CardClaimTokenService         cardclaimtokenservice.CardClaimTokenService
 	// 内容相关
 	SubjectService                      subjectservice.SubjectService
 	SubjectProductRelationService       subjectproductrelationservice.SubjectProductRelationService
@@ -271,6 +275,8 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		SeckillProductService:     seckillproductservice.NewSeckillProductService(smsClient),
 		SeckillReservationService: seckillreservationservice.NewSeckillReservationService(smsClient),
 		SeckillSessionService:     seckillsessionservice.NewSeckillSessionService(smsClient),
+		CardRedemptionOrderService: cardredemptionorderservice.NewCardRedemptionOrderService(smsClient),
+		CardClaimTokenService:      cardclaimtokenservice.NewCardClaimTokenService(smsClient),
 
 		SubjectService:                      subjectservice.NewSubjectService(cmsClient),
 		SubjectProductRelationService:       subjectproductrelationservice.NewSubjectProductRelationService(cmsClient),

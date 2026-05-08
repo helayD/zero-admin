@@ -21,6 +21,7 @@ import (
 	"github.com/feihua/zero-admin/rpc/pms/client/productskuservice"
 	"github.com/feihua/zero-admin/rpc/pms/client/productspuservice"
 	"github.com/feihua/zero-admin/rpc/search/search_client"
+	"github.com/feihua/zero-admin/rpc/sms/client/cardredemptionorderservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/couponrecordservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/couponservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/coupontypeservice"
@@ -63,6 +64,9 @@ type ServiceContext struct {
 
 	// 搜索相关
 	Search search_client.Search
+
+	// 提货卡相关
+	CardRedemptionOrderService cardredemptionorderservice.CardRedemptionOrderService
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -106,6 +110,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	spuService := productspuservice.NewProductSpuService(pmsClient)
 	orderService := orderservice.NewOrderService(omsClient)
 	search := search_client.NewSearch(searchClient)
+	cardRedemptionOrderService := cardredemptionorderservice.NewCardRedemptionOrderService(smsClient)
 	s := &ServiceContext{
 		Config:                 c,
 		RabbitMQ:               rabbitmq,
@@ -124,6 +129,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		ProductSpuService:      spuService,
 		OrderService:           orderService,
 		Search:                 search,
+		CardRedemptionOrderService: cardRedemptionOrderService,
 	}
 
 	go func() {
@@ -218,6 +224,12 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	go func() {
 		rabbitmq.ConsumeSimpleWithAck(digitalcardmint.EventQueue, func(body []byte) error {
 			return digitalcardconsumer.MintRequested(context.Background(), body, cardMintService)
+		})
+	}()
+
+	go func() {
+		rabbitmq.ConsumeSimpleWithAck(digitalcardmint.EventQueueRedemption, func(body []byte) error {
+			return digitalcardconsumer.RedemptionRequested(context.Background(), body, db, cardRedemptionOrderService, orderService)
 		})
 	}()
 

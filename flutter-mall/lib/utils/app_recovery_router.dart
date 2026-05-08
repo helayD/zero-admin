@@ -18,6 +18,7 @@ import 'package:flutter_mall/view/mine/setting/settings.dart';
 import 'package:flutter_mall/view/digital_card/draw_activity_page.dart';
 import 'package:flutter_mall/view/digital_card/my_digital_card_page.dart';
 import 'package:flutter_mall/view/digital_card/digital_card_asset_detail_page.dart';
+import 'package:flutter_mall/view/digital_card/digital_card_claim_page.dart';
 
 class AppRecoveryRouter {
   static Widget buildTarget(AppRecentContext context) {
@@ -98,6 +99,15 @@ class AppRecoveryRouter {
           assetInstanceId: assetInstanceId,
           intentSource: context.source,
         );
+      case AppRecentTargetType.digitalCardClaim:
+        final token = context.source;
+        if (token.isEmpty) {
+          return buildFallback(context);
+        }
+        return DigitalCardClaimPage(
+          token: token,
+          cardInstanceId: context.targetId,
+        );
       case AppRecentTargetType.subject:
       case AppRecentTargetType.preferredArea:
         return buildFallback(context);
@@ -146,6 +156,15 @@ class AppRecoveryRouter {
           return DigitalCardAssetDetailPage(
             assetInstanceId: context.fallbackTargetId!,
             intentSource: context.source,
+          );
+        }
+        return MainTab(intentSource: context.source);
+      case AppRecentTargetType.digitalCardClaim:
+        final token = context.source;
+        if (token.isNotEmpty) {
+          return DigitalCardClaimPage(
+            token: token,
+            cardInstanceId: context.fallbackTargetId,
           );
         }
         return MainTab(intentSource: context.source);

@@ -12,6 +12,7 @@ enum AppRecentTargetType {
   activity,
   digitalCardAssetList,
   digitalCardAssetDetail,
+  digitalCardClaim,
   subject,
   preferredArea,
 }
@@ -44,6 +45,8 @@ AppRecentTargetType? appRecentTargetTypeFromValue(String? value) {
       return AppRecentTargetType.digitalCardAssetList;
     case 'digital_card_asset_detail':
       return AppRecentTargetType.digitalCardAssetDetail;
+    case 'digital_card_claim':
+      return AppRecentTargetType.digitalCardClaim;
     case 'subject':
       return AppRecentTargetType.subject;
     case 'preferred_area':
@@ -81,6 +84,8 @@ String appRecentTargetTypeToValue(AppRecentTargetType type) {
       return 'digital_card_asset_list';
     case AppRecentTargetType.digitalCardAssetDetail:
       return 'digital_card_asset_detail';
+    case AppRecentTargetType.digitalCardClaim:
+      return 'digital_card_claim';
     case AppRecentTargetType.subject:
       return 'subject';
     case AppRecentTargetType.preferredArea:
@@ -431,12 +436,10 @@ class AppRecentContext {
       case AppRecentTargetType.couponCenter:
       case AppRecentTargetType.digitalCardAssetList:
         return targetId == null || targetId > 0;
-      case AppRecentTargetType.productDetail:
-      case AppRecentTargetType.orderDetail:
-      case AppRecentTargetType.commentCompose:
-      case AppRecentTargetType.afterSalesApply:
       case AppRecentTargetType.digitalCardAssetDetail:
         return targetId != null && targetId > 0;
+      case AppRecentTargetType.digitalCardClaim:
+        return targetId == null || targetId > 0;
       case AppRecentTargetType.activity:
       case AppRecentTargetType.subject:
       case AppRecentTargetType.preferredArea:
@@ -463,61 +466,11 @@ class AppRecentContext {
       case AppRecentTargetType.activity:
       case AppRecentTargetType.digitalCardAssetList:
       case AppRecentTargetType.digitalCardAssetDetail:
-      case AppRecentTargetType.subject:
-      case AppRecentTargetType.preferredArea:
-        return tabIndex == null;
-    }
-  }
-
-  static bool _isValidFallback(
-    AppRecentTargetType fallbackType,
-    int? fallbackTargetId,
-    int? fallbackTabIndex,
-  ) {
-    switch (fallbackType) {
+      case AppRecentTargetType.digitalCardClaim:
       case AppRecentTargetType.activity:
       case AppRecentTargetType.subject:
       case AppRecentTargetType.preferredArea:
         return false;
-      default:
-        return _isValidTarget(fallbackType, fallbackTargetId, fallbackTabIndex);
-    }
-  }
-
-  static int? _parseInt(dynamic value) {
-    if (value is int) {
-      return value;
-    }
-    return int.tryParse(value?.toString() ?? '');
-  }
-
-  static int? _normalizeTargetId(AppRecentTargetType type, int? value) {
-    if (value == null) {
-      return null;
-    }
-    if (value > 0) {
-      return value;
-    }
-    if (_targetIdCanBeOmitted(type)) {
-      return null;
-    }
-    return value;
-  }
-
-  static bool _targetIdCanBeOmitted(AppRecentTargetType type) {
-    switch (type) {
-      case AppRecentTargetType.home:
-      case AppRecentTargetType.cart:
-      case AppRecentTargetType.orderList:
-      case AppRecentTargetType.settings:
-      case AppRecentTargetType.couponList:
-      case AppRecentTargetType.couponCenter:
-      case AppRecentTargetType.digitalCardAssetList:
-      case AppRecentTargetType.digitalCardAssetDetail:
-      case AppRecentTargetType.activity:
-      case AppRecentTargetType.subject:
-      case AppRecentTargetType.preferredArea:
-        return true;
       case AppRecentTargetType.productDetail:
       case AppRecentTargetType.orderDetail:
       case AppRecentTargetType.commentCompose:
@@ -556,9 +509,12 @@ class AppRecentContext {
       case AppRecentTargetType.activity:
       case AppRecentTargetType.digitalCardAssetList:
       case AppRecentTargetType.digitalCardAssetDetail:
+      case AppRecentTargetType.digitalCardClaim:
       case AppRecentTargetType.subject:
       case AppRecentTargetType.preferredArea:
         return false;
+      default:
+        return _isValidTarget(fallbackType, fallbackTargetId, fallbackTabIndex);
     }
   }
 

@@ -139,7 +139,7 @@ development_status:
   10-4-链上-token-发放复用既有蚂蚁链-fisco-链路: review
   10-5-提货卡资产展示-审计检索与合规处置: review
   10-6-商品履约模式与既有提货卡入账: review  # 代码审查完成，已修复 HIGH/MEDIUM 问题，Task 8 测试保护网待补充
-  10-7-提货卡提货与转赠: ready-for-dev
+  10-7-提货卡提货与转赠: review  # 对抗性代码审查完成：修复 4 个 CRITICAL（CAS 并发漏洞、审计日志缺陷、SSRF 风险、订单号冲突），3 个 HIGH（OMS 集成待实现、Flutter 页面缺失、redirect_uri 待补充），状态保持 review
   10-8-提货状态流转-履约对账与-c-端合规展示: backlog
   10-9-实体卡制作-物流履约与签收闭环: in-progress
   epic-10-retrospective: optional

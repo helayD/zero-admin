@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	digitalcardassethandler "github.com/feihua/zero-admin/api/front/internal/handler/digital_card/digital_card_asset"
+	"github.com/feihua/zero-admin/api/front/internal/middleware"
 	physicalfulfillmenthandler "github.com/feihua/zero-admin/api/front/internal/handler/digital_card/physical_fulfillment"
 	membermessagehandler "github.com/feihua/zero-admin/api/front/internal/handler/member/message"
 	"github.com/feihua/zero-admin/api/front/internal/svc"
@@ -38,9 +39,51 @@ func RegisterExtraHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Path:    "/requestDigitalCardWithdraw",
 				Handler: digitalcardassethandler.RequestDigitalCardWithdrawHandler(serverCtx),
 			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/createRedemptionOrder",
+				Handler: digitalcardassethandler.CreateRedemptionOrderHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodGet,
+				Path:    "/queryRedemptionOrder",
+				Handler: digitalcardassethandler.QueryRedemptionOrderHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/generateShareLink",
+				Handler: digitalcardassethandler.GenerateShareLinkHandler(serverCtx),
+			},
 		},
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
 		rest.WithPrefix("/api/digitalCard/asset"),
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodPost,
+				Path:    "/validateClaimToken",
+				Handler: digitalcardassethandler.ValidateClaimTokenHandler(serverCtx),
+			},
+		},
+		rest.WithPrefix("/api/digitalCard"),
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodPost,
+				Path:    "/claim",
+				Handler: middleware.DigitalCardRateLimitMiddleware(serverCtx.Redis)(
+					middleware.AbnormalDetectionMiddleware(serverCtx.Redis)(
+						digitalcardassethandler.ClaimDigitalCardHandler(serverCtx),
+					),
+				),
+			},
+		},
+		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/digitalCard"),
 	)
 
 	server.AddRoutes(

@@ -39,11 +39,14 @@ const (
 	OperatorJob    = "job"
 	OperatorManual = "manual"
 
-	EventNameMintRequested = "sms.digital_card.mint_requested.v1"
-	EventExchange          = "sms.event.exchange"
-	EventExchangeType      = "topic"
-	EventQueue             = "sms.digital_card.mint.queue"
-	EventRoutingKey        = "sms.digital_card.mint_requested.key"
+	EventNameMintRequested      = "sms.digital_card.mint_requested.v1"
+	EventNameRedemptionRequested = "sms.card.redemption_requested.v1"
+	EventExchange               = "sms.event.exchange"
+	EventExchangeType           = "topic"
+	EventQueue                  = "sms.digital_card.mint.queue"
+	EventQueueRedemption        = "sms.card.redemption.queue"
+	EventRoutingKey             = "sms.digital_card.mint_requested.key"
+	EventRoutingKeyRedemption   = "sms.card.redemption_requested.key"
 
 	DefaultMaxRetryCount int32 = 3
 

@@ -9,7 +9,9 @@ import (
 	"github.com/feihua/zero-admin/rpc/sms/cardmintadminrpc"
 	"github.com/feihua/zero-admin/rpc/sms/internal/config"
 	cardassetserviceServer "github.com/feihua/zero-admin/rpc/sms/internal/server/cardassetservice"
+	cardclaimtokenserviceServer "github.com/feihua/zero-admin/rpc/sms/internal/server/cardclaimtokenservice"
 	cardmintadminserviceServer "github.com/feihua/zero-admin/rpc/sms/internal/server/cardmintadminservice"
+	cardredemptionorderserviceServer "github.com/feihua/zero-admin/rpc/sms/internal/server/cardredemptionorderservice"
 	couponrecordserviceServer "github.com/feihua/zero-admin/rpc/sms/internal/server/couponrecordservice"
 	couponscopeserviceServer "github.com/feihua/zero-admin/rpc/sms/internal/server/couponscopeservice"
 	couponserviceServer "github.com/feihua/zero-admin/rpc/sms/internal/server/couponservice"
@@ -46,6 +48,8 @@ func main() {
 
 	s := zrpc.MustNewServer(c.RpcServerConf, func(grpcServer *grpc.Server) {
 		smsclient.RegisterCardAssetServiceServer(grpcServer, cardassetserviceServer.NewCardAssetServiceServer(ctx))
+		smsclient.RegisterCardClaimTokenServiceServer(grpcServer, cardclaimtokenserviceServer.NewCardClaimTokenServiceServer(ctx))
+		smsclient.RegisterCardRedemptionOrderServiceServer(grpcServer, cardredemptionorderserviceServer.NewCardRedemptionOrderServiceServer(ctx))
 		cardmintadminrpc.RegisterCardMintAdminServiceServer(grpcServer, cardmintadminserviceServer.NewCardMintAdminServiceServer(ctx))
 		smsclient.RegisterCouponRecordServiceServer(grpcServer, couponrecordserviceServer.NewCouponRecordServiceServer(ctx))
 		smsclient.RegisterCouponScopeServiceServer(grpcServer, couponscopeserviceServer.NewCouponScopeServiceServer(ctx))

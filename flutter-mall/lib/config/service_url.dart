@@ -174,6 +174,21 @@ const confirmPhysicalFulfillmentShippingFeeUrl =
 const confirmPhysicalCardReceiptUrl =
     "$baseUrl/api/digitalCard/physicalFulfillment/confirmPhysicalCardReceipt";
 
+// ==================== 提货卡提货与转赠（Story 10.7）====================
+// 创建提货单
+const createRedemptionOrderUrl =
+    "$baseUrl/api/digitalCard/asset/createRedemptionOrder";
+// 查询提货单详情
+const queryRedemptionOrderUrl =
+    "$baseUrl/api/digitalCard/asset/queryRedemptionOrder";
+// 生成分享链接
+const generateShareLinkUrl =
+    "$baseUrl/api/digitalCard/asset/generateShareLink";
+// 校验分享凭证（匿名）
+const validateClaimTokenUrl = "$baseUrl/api/digitalCard/validateClaimToken";
+// 领取分享卡片
+const claimDigitalCardUrl = "$baseUrl/api/digitalCard/claim";
+
 // ==================== 支付相关（Story 5.5 Task 11）====================
 // 发起支付
 const orderPayUrl = "$baseUrl/api/order/orderPay";
