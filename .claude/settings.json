@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "sandbox": {
+    "network": {
+      "allowedDomains": [
+        "github.com",
+        "*.github.com",
+        "api.github.com",
+        "raw.githubusercontent.com",
+        "registry.npmjs.org",
+        "*.npmjs.org",
+        "goproxy.cn",
+        "proxy.golang.org",
+        "sum.golang.org",
+        "storage.googleapis.com",
+        "maven.apache.org",
+        "repo.maven.apache.org",
+        "plugins.gradle.org",
+        "services.gradle.org",
+        "dl.google.com",
+        "developer.android.com",
+        "repo1.maven.org",
+        "central.maven.org",
+        "jcenter.bintray.com",
+        "repo.spring.io",
+        "packages.aliyun.com"
+      ],
+      "allowLocalBinding": true,
+      "httpProxyPort": 7890
+    }
+  }
+}

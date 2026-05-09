@@ -53,5 +53,6 @@ target
 .gitnexus
 
 # Local Claude config
-.claude/
+.claude/*
+!.claude/settings.json
 CLAUDE.md
