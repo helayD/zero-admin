@@ -3,6 +3,7 @@ import type {
   AddProductFulfillmentRuleParams,
   CheckProductFulfillmentRuleBindingResponse,
   ProductFulfillmentRuleDetailResponse,
+  ProductFulfillmentRuleListItem,
   ProductFulfillmentRuleListParams,
   UpdateProductFulfillmentRuleParams,
   UpdateProductFulfillmentRuleStatusParams,
@@ -15,11 +16,32 @@ type GovernancePayload = {
   merchantId?: number;
 };
 
+type QueryProductFulfillmentRuleListResp = {
+  code?: string;
+  message?: string;
+  data?: {
+    list?: ProductFulfillmentRuleListItem[];
+    total?: number;
+  };
+};
+
 export async function queryProductFulfillmentRuleList(params: ProductFulfillmentRuleListParams) {
-  return request('/api/sms/productFulfillmentRule/queryProductFulfillmentRuleList', {
-    method: 'GET',
-    params,
-  });
+  const response = await request<QueryProductFulfillmentRuleListResp>(
+    '/api/sms/productFulfillmentRule/queryProductFulfillmentRuleList',
+    {
+      method: 'GET',
+      params,
+    },
+  );
+
+  const list = Array.isArray(response?.data?.list) ? response.data.list : [];
+  const total = Number(response?.data?.total ?? 0);
+
+  return {
+    data: list,
+    total,
+    success: true,
+  };
 }
 
 export async function queryProductFulfillmentRuleDetail(id: number, scope?: GovernancePayload) {
