@@ -92,6 +92,12 @@ Redis:
 Mysql:
   Datasource: root:12341qweqfsd2356@tcp(127.0.0.1:3306)/gozero?charset=utf8mb4&parseTime=true&loc=Asia%2FShanghai
 
+Share:
+  AllowedDomains:
+    - example.com
+    - mall.example.com
+    # 生产环境请在配置中心或环境变量中注入真实域名
+
 UpgradePolicy:
   CurrentVersion: "1.0.0"
   MinSupportedVersion: "1.0.0"

@@ -14,11 +14,6 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-// allowedShareDomains 分享链接允许的域名白名单
-var allowedShareDomains = []string{
-	"example.com",
-	"mall.example.com",
-}
 
 type CreateRedemptionOrderLogic struct {
 	logx.Logger
@@ -114,7 +109,7 @@ func NewGenerateShareLinkLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 }
 
 // validateShareDomain 校验分享链接域名是否在白名单内，防止 SSRF 和钓鱼链接
-func validateShareDomain(domain string) error {
+func validateShareDomain(domain string, allowedDomains []string) error {
 	if domain == "" {
 		return errors.New("域名不能为空")
 	}
@@ -122,7 +117,7 @@ func validateShareDomain(domain string) error {
 	if strings.ContainsAny(domain, "/?#&=\\") {
 		return errors.New("域名格式非法")
 	}
-	for _, allowed := range allowedShareDomains {
+	for _, allowed := range allowedDomains {
 		if domain == allowed || strings.HasSuffix(domain, "."+allowed) {
 			return nil
 		}
@@ -136,7 +131,7 @@ func (l *GenerateShareLinkLogic) GenerateShareLink(req *types.GenerateShareLinkR
 		return nil, err
 	}
 
-	if err := validateShareDomain(req.Domain); err != nil {
+	if err := validateShareDomain(req.Domain, l.svcCtx.Config.Share.AllowedDomains); err != nil {
 		return nil, err
 	}
 
@@ -214,16 +209,8 @@ func (l *ClaimDigitalCardLogic) ClaimDigitalCard(req *types.ClaimDigitalCardReq)
 		return nil, err
 	}
 
-	validateResp, err := l.svcCtx.CardClaimTokenService.ValidateClaimToken(l.ctx, &cardclaimtokenservice.ValidateClaimTokenReq{
-		Token: req.Token,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("校验凭证失败: %w", err)
-	}
-	if !validateResp.Valid {
-		return nil, errors.New(validateResp.FailureReason)
-	}
-
+	// ConsumeClaimToken 内部已包含完整的校验逻辑（token 有效性、过期、claimed_count、卡片状态等）
+	// 直接调用即可消除 Validate+Consume 之间的竞态窗口
 	consumeResp, err := l.svcCtx.CardClaimTokenService.ConsumeClaimToken(l.ctx, &cardclaimtokenservice.ConsumeClaimTokenReq{
 		Token:     req.Token,
 		ClaimedBy: memberID,

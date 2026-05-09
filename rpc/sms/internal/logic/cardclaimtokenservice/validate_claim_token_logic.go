@@ -103,8 +103,14 @@ func (l *ValidateClaimTokenLogic) ValidateClaimToken(in *smsclient.ValidateClaim
 		}, nil
 	}
 
+	data := buildClaimTokenData(&row)
+	// 匿名接口不暴露分享人敏感信息
+	if data != nil {
+		data.IssuerId = 0
+		data.IssuerType = ""
+	}
 	return &smsclient.ValidateClaimTokenResp{
 		Valid: true,
-		Token: buildClaimTokenData(&row),
+		Token: data,
 	}, nil
 }

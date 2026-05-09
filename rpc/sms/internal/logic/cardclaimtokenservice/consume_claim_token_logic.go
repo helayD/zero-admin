@@ -113,14 +113,23 @@ func (l *ConsumeClaimTokenLogic) consumeClaimTokenInTx(tx *gorm.DB, in *smsclien
 		return nil, errors.New("不能领取自己的卡片")
 	}
 
-	var existingClaimCount int64
+	// 快速路径：如果用户已经是当前卡片持有人，直接拒绝（无需查历史记录）
+	if instance.MemberID == in.ClaimedBy {
+		return nil, errors.New("您已持有该卡片")
+	}
+
+	// 检查历史领取记录：使用 LIMIT 1 尽早终止扫描
+	// 建议为 sms_card_asset_log 增加复合索引 (asset_instance_id, operation_type) 优化此查询
+	var existingLog cardAssetLogRow
 	if err := tx.WithContext(l.ctx).
 		Table(cardAssetLogRow{}.TableName()).
 		Where("asset_instance_id = ? AND operation_type = ? AND payload_json LIKE ?", token.CardInstanceID, cardAssetOperationHolderTransferred, fmt.Sprintf("%%\"toHolderId\":%d%%", in.ClaimedBy)).
-		Count(&existingClaimCount).Error; err != nil {
-		return nil, err
-	}
-	if existingClaimCount > 0 {
+		Limit(1).
+		Take(&existingLog).Error; err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, err
+		}
+	} else {
 		return nil, errors.New("您已领取过该卡片")
 	}
 
@@ -199,7 +208,19 @@ func (l *ConsumeClaimTokenLogic) recordClaimAttempt(in *smsclient.ConsumeClaimTo
 	if token != nil {
 		cardInstanceIDVal = token.CardInstanceID
 	}
-	
+
+	// 当 token 为 nil 但 in.Token 不为空时，尝试反查数据库获取凭证信息
+	// 确保审计日志能关联到具体凭证
+	if token == nil && in.Token != "" {
+		var found claimTokenRow
+		if err := l.svcCtx.DB.WithContext(l.ctx).Table(found.TableName()).
+			Where("token = ? AND is_deleted = 0", in.Token).
+			Take(&found).Error; err == nil {
+			token = &found
+			cardInstanceIDVal = found.CardInstanceID
+		}
+	}
+
 	logRow := &cardAssetLogRow{
 		AssetInstanceID:       cardInstanceIDVal,
 		ParticipationRecordID: 0,
@@ -215,7 +236,7 @@ func (l *ConsumeClaimTokenLogic) recordClaimAttempt(in *smsclient.ConsumeClaimTo
 	if token != nil {
 		logRow.PayloadJSON = fmt.Sprintf(`{"token":"%s","tokenId":%d,"claimedBy":%d,"result":"%s","failureReason":"%s"}`, in.Token, token.ID, in.ClaimedBy, result, failureReason)
 	}
-	
+
 	if err := l.svcCtx.DB.WithContext(l.ctx).Table(logRow.TableName()).Create(logRow).Error; err != nil {
 		logc.Errorf(l.ctx, "记录领取尝试日志失败: %v", err)
 	}

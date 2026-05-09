@@ -54,6 +54,10 @@ type Config struct {
 		Datasource string
 	}
 
+	Share struct {
+		AllowedDomains []string
+	}
+
 	UpgradePolicy struct {
 		CurrentVersion       string
 		MinSupportedVersion  string

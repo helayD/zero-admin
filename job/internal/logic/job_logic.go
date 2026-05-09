@@ -32,6 +32,10 @@ func (l *JobLogic) Job(req *types.Request) (resp *types.Response, err error) {
 		l.HandleCardMintTimeout()
 	case "reconcile_order_card_fulfillment":
 		l.ReconcileOrderCardFulfillment()
+	case "cleanup_expired_claim_tokens":
+		l.CleanupExpiredClaimTokens()
+	case "check_redemption_order_timeout":
+		l.CheckRedemptionOrderTimeout()
 	default:
 		logx.Errorf("unknown job name: %s", req.Name)
 	}
@@ -52,4 +56,12 @@ func (l *JobLogic) HandleCardMintTimeout() {
 
 func (l *JobLogic) ReconcileOrderCardFulfillment() {
 	jobs.ReconcileOrderCardFulfillment(l.ctx, l.svcCtx.DB, l.svcCtx.CardMintService)
+}
+
+func (l *JobLogic) CleanupExpiredClaimTokens() {
+	jobs.CleanupExpiredClaimTokens(l.ctx, l.svcCtx.DB)
+}
+
+func (l *JobLogic) CheckRedemptionOrderTimeout() {
+	jobs.CheckRedemptionOrderTimeout(l.ctx, l.svcCtx.DB)
 }

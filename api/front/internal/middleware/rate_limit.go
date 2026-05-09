@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/zeromicro/go-zero/core/stores/redis"
@@ -123,7 +124,7 @@ func DigitalCardRateLimitMiddleware(rds *redis.Redis) func(http.HandlerFunc) htt
 		return func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 			// 使用 IP + 用户ID 作为限流键
-			clientIP := r.RemoteAddr
+			clientIP := getClientIP(r)
 			memberID := r.Header.Get("X-Member-Id")
 			key := fmt.Sprintf("%s:%s", clientIP, memberID)
 
@@ -160,7 +161,7 @@ func AbnormalDetectionMiddleware(rds *redis.Redis) func(http.HandlerFunc) http.H
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
-			clientIP := r.RemoteAddr
+			clientIP := getClientIP(r)
 			memberID := r.Header.Get("X-Member-Id")
 
 			// 检查IP是否被封禁
@@ -177,6 +178,17 @@ func AbnormalDetectionMiddleware(rds *redis.Redis) func(http.HandlerFunc) http.H
 				w.WriteHeader(http.StatusForbidden)
 				w.Write([]byte(`{"code":403,"message":"您的账号已被临时封禁，请联系客服"}`))
 				return
+			}
+
+			// 对 /claim 接口进行异常行为检测
+			if strings.Contains(r.URL.Path, "/claim") {
+				if isAbnormalClaim(ctx, rds, clientIP, r) {
+					_ = BlockIP(ctx, rds, clientIP, 1*time.Hour)
+					w.Header().Set("Content-Type", "application/json")
+					w.WriteHeader(http.StatusForbidden)
+					w.Write([]byte(`{"code":403,"message":"检测到异常领取行为，您的IP已被临时封禁"}`))
+					return
+				}
 			}
 
 			next(w, r)
@@ -214,4 +226,55 @@ func BlockIP(ctx context.Context, rds *redis.Redis, ip string, duration time.Dur
 func BlockUser(ctx context.Context, rds *redis.Redis, memberID string, duration time.Duration) error {
 	key := fmt.Sprintf("block:user:%s", memberID)
 	return rds.SetexCtx(ctx, key, "1", int(duration.Seconds()))
+}
+
+// getClientIP 获取真实客户端 IP，优先读取 X-Forwarded-For / X-Real-IP，兼容反向代理
+func getClientIP(r *http.Request) string {
+	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+		parts := strings.Split(xff, ",")
+		if len(parts) > 0 {
+			ip := strings.TrimSpace(parts[0])
+			if ip != "" {
+				return ip
+			}
+		}
+	}
+	if xri := r.Header.Get("X-Real-Ip"); xri != "" {
+		return xri
+	}
+	return r.RemoteAddr
+}
+
+// isAbnormalClaim 检测异常领取行为
+// 规则：同一 IP 在 5 分钟内 claim 请求超过 20 次，或连续使用空 token  probing
+func isAbnormalClaim(ctx context.Context, rds *redis.Redis, clientIP string, r *http.Request) bool {
+	claimKey := fmt.Sprintf("claim:abnormal:%s", clientIP)
+	now := time.Now().Unix()
+	windowStart := now - int64(5*time.Minute.Seconds())
+
+	// 记录本次请求
+	_, _ = rds.ZaddCtx(ctx, claimKey, now, fmt.Sprintf("%d:%s", now, r.URL.RawQuery))
+	_ = rds.ExpireCtx(ctx, claimKey, int(5*time.Minute.Seconds()))
+	_, _ = rds.ZremrangebyscoreCtx(ctx, claimKey, 0, windowStart)
+
+	count, err := rds.ZcardCtx(ctx, claimKey)
+	if err != nil {
+		return false
+	}
+	if int(count) > 20 {
+		return true
+	}
+
+	// 检测连续空 token  probing（5 分钟内超过 5 次空 token）
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		emptyKey := fmt.Sprintf("claim:empty:%s", clientIP)
+		emptyCount, _ := rds.IncrCtx(ctx, emptyKey)
+		_ = rds.ExpireCtx(ctx, emptyKey, int(5*time.Minute.Seconds()))
+		if emptyCount > 5 {
+			return true
+		}
+	}
+
+	return false
 }
