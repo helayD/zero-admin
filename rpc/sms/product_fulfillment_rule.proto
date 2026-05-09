@@ -1,0 +1,141 @@
+syntax = "proto3";
+
+package smsclient;
+option go_package = "./smsclient";
+
+import "sms.proto";
+
+message ProductFulfillmentRuleData {
+  int64 id = 1;
+  string rule_name = 2;
+  int32 rule_status = 3;
+  int64 card_template_id = 4;
+  string card_template_name = 5;
+  int32 expire_days = 6;
+  int32 transferable = 7;
+  int32 transfer_limit = 8;
+  string claim_condition = 9;
+  string redemption_condition = 10;
+  string refund_policy = 11;
+  string refund_policy_text = 12;
+  int64 platform_id = 13;
+  int64 tenant_id = 14;
+  int64 merchant_id = 15;
+  string create_by = 16;
+  string update_by = 17;
+  string create_time = 18;
+  string update_time = 19;
+  int32 binding_count = 20;
+}
+
+message AddProductFulfillmentRuleReq {
+  string rule_name = 1;
+  int64 card_template_id = 2;
+  int32 expire_days = 3;
+  int32 transferable = 4;
+  int32 transfer_limit = 5;
+  string claim_condition = 6;
+  string redemption_condition = 7;
+  string refund_policy = 8;
+  GovernanceScope scope = 9;
+  string operator_type = 10;
+}
+
+message AddProductFulfillmentRuleResp {
+  ProductFulfillmentRuleData rule = 1;
+}
+
+message UpdateProductFulfillmentRuleReq {
+  int64 id = 1;
+  string rule_name = 2;
+  int64 card_template_id = 3;
+  int32 expire_days = 4;
+  int32 transferable = 5;
+  int32 transfer_limit = 6;
+  string claim_condition = 7;
+  string redemption_condition = 8;
+  string refund_policy = 9;
+  GovernanceScope scope = 10;
+  string operator_type = 11;
+}
+
+message UpdateProductFulfillmentRuleResp {
+  ProductFulfillmentRuleData rule = 1;
+}
+
+message QueryProductFulfillmentRuleListReq {
+  string rule_name = 1;
+  int64 card_template_id = 2;
+  int32 rule_status = 3;
+  int32 page = 4;
+  int32 page_size = 5;
+  GovernanceScope scope = 6;
+}
+
+message QueryProductFulfillmentRuleListResp {
+  repeated ProductFulfillmentRuleData list = 1;
+  int64 total = 2;
+}
+
+message QueryProductFulfillmentRuleDetailReq {
+  int64 id = 1;
+  GovernanceScope scope = 2;
+}
+
+message QueryProductFulfillmentRuleDetailResp {
+  ProductFulfillmentRuleData rule = 1;
+}
+
+message UpdateProductFulfillmentRuleStatusReq {
+  int64 id = 1;
+  int32 rule_status = 2;
+  GovernanceScope scope = 3;
+  string operator_type = 4;
+}
+
+message UpdateProductFulfillmentRuleStatusResp {
+  ProductFulfillmentRuleData rule = 1;
+}
+
+message DeleteProductFulfillmentRuleReq {
+  int64 id = 1;
+  GovernanceScope scope = 2;
+  string operator_type = 3;
+}
+
+message DeleteProductFulfillmentRuleResp {
+  int32 code = 1;
+  string message = 2;
+}
+
+message CheckProductFulfillmentRuleBindingReq {
+  int64 id = 1;
+  GovernanceScope scope = 2;
+}
+
+message CheckProductFulfillmentRuleBindingResp {
+  int32 binding_count = 1;
+  repeated string binding_product_names = 2;
+  bool can_disable = 3;
+  bool can_delete = 4;
+  string message = 5;
+}
+
+message EnsureOrderPurchaseCardInstanceReq {
+  int64 order_id = 1;
+  int64 order_item_id = 2;
+  int64 product_id = 3;
+  int64 sku_id = 4;
+  int64 member_id = 5;
+  int64 fulfillment_rule_id = 6;
+  int64 platform_id = 7;
+  int64 tenant_id = 8;
+  int64 merchant_id = 9;
+  string request_id = 10;
+  string trace_id = 11;
+  string operator_type = 12;
+}
+
+message EnsureOrderPurchaseCardInstanceResp {
+  CardInstanceData asset = 1;
+}
