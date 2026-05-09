@@ -47,6 +47,41 @@ END $$
 
 DELIMITER ;
 
+-- 历史 seed/导入数据中存在 product_sn 共用同一占位符（如 'fsef'）的情况，
+-- 在创建 unique 索引前必须先去重，否则索引创建会因 Duplicate entry 失败。
+-- 策略：每个 (platform_id, tenant_id, merchant_id, product_sn, is_deleted) 分组里
+-- 保留 id 最小的不变，其余追加 '-dup-' || id 后缀，保证不丢数据但唯一。
+UPDATE pms_product_spu spu
+JOIN (
+    SELECT id
+    FROM (
+        SELECT id,
+               ROW_NUMBER() OVER (
+                   PARTITION BY platform_id, tenant_id, merchant_id, product_sn, is_deleted
+                   ORDER BY id
+               ) AS rn
+        FROM pms_product_spu
+    ) ranked
+    WHERE ranked.rn > 1
+) dup ON dup.id = spu.id
+SET spu.product_sn = CONCAT(spu.product_sn, '-dup-', spu.id);
+
+-- pms_product_sku 同步去重，避免后面 sku_code unique 索引在历史数据上失败
+UPDATE pms_product_sku sku
+JOIN (
+    SELECT id
+    FROM (
+        SELECT id,
+               ROW_NUMBER() OVER (
+                   PARTITION BY platform_id, tenant_id, merchant_id, sku_code, is_deleted
+                   ORDER BY id
+               ) AS rn
+        FROM pms_product_sku
+    ) ranked
+    WHERE ranked.rn > 1
+) dup ON dup.id = sku.id
+SET sku.sku_code = CONCAT(sku.sku_code, '-dup-', sku.id);
+
 -- pms_product_spu 索引
 CALL pms_draft_scope_add_index_if_missing('pms_product_spu', 'uk_pms_product_spu_scope_sn',
     'CREATE UNIQUE INDEX uk_pms_product_spu_scope_sn ON pms_product_spu (platform_id, tenant_id, merchant_id, product_sn, is_deleted)');
