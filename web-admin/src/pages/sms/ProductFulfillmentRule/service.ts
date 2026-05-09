@@ -34,7 +34,7 @@ export async function queryProductFulfillmentRuleList(params: ProductFulfillment
     },
   );
 
-  const list = Array.isArray(response?.data?.list) ? response.data.list : [];
+  const list = Array.isArray(response?.data?.list) ? response.data!.list : [];
   const total = Number(response?.data?.total ?? 0);
 
   return {

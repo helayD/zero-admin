@@ -19,6 +19,7 @@ import {
   updateProductFulfillmentRuleStatus,
   checkProductFulfillmentRuleBinding,
 } from './service';
+import RuleForm from './components/RuleForm';
 import GovernanceScopeBar from '@/pages/system/components/GovernanceScopeBar';
 import {
   buildGovernanceScopeLabel,
@@ -278,34 +279,20 @@ const ProductFulfillmentRuleList: React.FC = () => {
         pagination={{ pageSize: 10 }}
       />
 
-      {/* TODO: 添加创建/编辑表单弹窗 */}
-      {showDetail && currentRow && (
-        <Modal
-          title="编辑发卡规则"
-          visible={showDetail}
-          onCancel={() => {
-            setShowDetail(false);
-            setCurrentRow(undefined);
-          }}
-          footer={null}
-          width={800}
-        >
-          <p>编辑功能待实现：{currentRow.ruleName}</p>
-        </Modal>
-      )}
-      {showDetail && !currentRow && (
-        <Modal
-          title="新增发卡规则"
-          visible={showDetail}
-          onCancel={() => {
-            setShowDetail(false);
-          }}
-          footer={null}
-          width={800}
-        >
-          <p>新增功能待实现</p>
-        </Modal>
-      )}
+      <RuleForm
+        visible={showDetail}
+        record={currentRow}
+        scope={scope}
+        onCancel={() => {
+          setShowDetail(false);
+          setCurrentRow(undefined);
+        }}
+        onSuccess={() => {
+          setShowDetail(false);
+          setCurrentRow(undefined);
+          actionRef.current?.reload();
+        }}
+      />
     </PageContainer>
   );
 };
