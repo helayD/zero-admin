@@ -65,6 +65,36 @@ make lint-fix  # 自动修复
 - 如确需生成类操作，必须先得到用户明确许可；未获许可前一律视为禁止。
 ```
 
+### Git Commit 命令规则（zsh 兼容性）
+
+```text
+严禁在 run_command 中使用包含真实换行的多行 git commit -m "..." 字符串。
+zsh 在引号未闭合时会进入 dquote> 续行提示，命令会无限卡住等待输入，导致工作流死锁。
+
+正确做法（按优先级）：
+1. 单行简短 message：
+   git commit -m "Story 10.10: card template + review fixes"
+
+2. 需要多段 message 时使用多个 -m（每个 -m 自动转为段落）：
+   git commit -m "Story 10.10: card template" -m "实现: ..." -m "Review: ..."
+
+3. message 较长（>200 字符或需要列表）时写入临时文件，用 -F：
+   cat > /tmp/commit-msg.txt <<'EOF'
+   Story 10.10: ...
+   
+   实现:
+   - ...
+   EOF
+   git commit -F /tmp/commit-msg.txt
+   rm /tmp/commit-msg.txt
+
+绝对禁止：
+- git commit -m "line1<\n>line2"  ← 真实换行，zsh 卡死
+- git commit -m "...$'\n'..."     ← 同上
+
+提交信息建议中文，遵循已有 commit log 风格（feat/fix/chore/deploy 前缀 + 模块）。
+```
+
 ### C 端监管约束（提货卡）
 
 ```text
