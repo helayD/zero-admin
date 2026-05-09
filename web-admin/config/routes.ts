@@ -404,6 +404,12 @@
         path: '/sms/digitalCardPhysicalFulfillment/list',
         component: './sms/DigitalCardPhysicalFulfillmentWorkbench',
       },
+      {
+        name: '商品发卡规则',
+        icon: 'table',
+        path: '/sms/productFulfillmentRule/list',
+        component: './sms/ProductFulfillmentRule',
+      },
     ],
   },
   {

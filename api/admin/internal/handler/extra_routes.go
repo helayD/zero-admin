@@ -6,6 +6,7 @@ import (
 	digitalcardassethandler "github.com/feihua/zero-admin/api/admin/internal/handler/sms/digital_card_asset"
 	digitalcardchainhandler "github.com/feihua/zero-admin/api/admin/internal/handler/sms/digital_card_chain"
 	digitalcardphysicalfulfillmenthandler "github.com/feihua/zero-admin/api/admin/internal/handler/sms/digital_card_physical_fulfillment"
+	productfulfillmentrulehandler "github.com/feihua/zero-admin/api/admin/internal/handler/sms/product_fulfillment_rule"
 	channelintegrationtemplatehandler "github.com/feihua/zero-admin/api/admin/internal/handler/sys/channel_integration_template"
 	systemconfighandler "github.com/feihua/zero-admin/api/admin/internal/handler/sys/system_config"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
@@ -191,5 +192,50 @@ func RegisterExtraHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		),
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
 		rest.WithPrefix("/api/sms/digitalCardPhysicalFulfillment"),
+	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.CheckUrl},
+			[]rest.Route{
+				{
+					Method:  http.MethodPost,
+					Path:    "/addProductFulfillmentRule",
+					Handler: productfulfillmentrulehandler.AddProductFulfillmentRuleHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/updateProductFulfillmentRule",
+					Handler: productfulfillmentrulehandler.UpdateProductFulfillmentRuleHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/updateProductFulfillmentRuleStatus",
+					Handler: productfulfillmentrulehandler.UpdateProductFulfillmentRuleStatusHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/deleteProductFulfillmentRule",
+					Handler: productfulfillmentrulehandler.DeleteProductFulfillmentRuleHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryProductFulfillmentRuleList",
+					Handler: productfulfillmentrulehandler.QueryProductFulfillmentRuleListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryProductFulfillmentRuleDetail",
+					Handler: productfulfillmentrulehandler.QueryProductFulfillmentRuleDetailHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/checkProductFulfillmentRuleBinding",
+					Handler: productfulfillmentrulehandler.CheckProductFulfillmentRuleBindingHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/sms/productFulfillmentRule"),
 	)
 }
