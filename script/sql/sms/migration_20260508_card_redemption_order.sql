@@ -1,4 +1,6 @@
-CREATE TABLE sms_card_redemption_order
+-- sms_card_redemption_order（MySQL 兼容、幂等）
+
+CREATE TABLE IF NOT EXISTS sms_card_redemption_order
 (
     id               bigint auto_increment primary key,
     order_no         varchar(64)                           not null,
@@ -21,8 +23,40 @@ CREATE TABLE sms_card_redemption_order
     constraint uk_redemption_order_no unique (order_no, is_deleted)
 );
 
-CREATE INDEX idx_redemption_card_instance ON sms_card_redemption_order (card_instance_id, is_deleted);
-CREATE INDEX idx_redemption_holder ON sms_card_redemption_order (holder_id, status, is_deleted);
-CREATE INDEX idx_redemption_status ON sms_card_redemption_order (status, created_at, is_deleted);
-CREATE INDEX idx_redemption_oms_order ON sms_card_redemption_order (oms_order_id, is_deleted);
-CREATE INDEX idx_redemption_scope ON sms_card_redemption_order (platform_id, tenant_id, merchant_id, is_deleted);
+DROP PROCEDURE IF EXISTS sms_redemption_add_index_if_missing;
+
+DELIMITER $$
+
+CREATE PROCEDURE sms_redemption_add_index_if_missing(
+    IN p_table VARCHAR(64),
+    IN p_index VARCHAR(64),
+    IN p_statement TEXT
+)
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = p_table
+          AND INDEX_NAME = p_index
+    ) THEN
+        SET @sql = p_statement;
+        PREPARE stmt FROM @sql;
+        EXECUTE stmt;
+        DEALLOCATE PREPARE stmt;
+    END IF;
+END $$
+
+DELIMITER ;
+
+CALL sms_redemption_add_index_if_missing('sms_card_redemption_order', 'idx_redemption_card_instance',
+    'CREATE INDEX idx_redemption_card_instance ON sms_card_redemption_order (card_instance_id, is_deleted)');
+CALL sms_redemption_add_index_if_missing('sms_card_redemption_order', 'idx_redemption_holder',
+    'CREATE INDEX idx_redemption_holder ON sms_card_redemption_order (holder_id, status, is_deleted)');
+CALL sms_redemption_add_index_if_missing('sms_card_redemption_order', 'idx_redemption_status',
+    'CREATE INDEX idx_redemption_status ON sms_card_redemption_order (status, created_at, is_deleted)');
+CALL sms_redemption_add_index_if_missing('sms_card_redemption_order', 'idx_redemption_oms_order',
+    'CREATE INDEX idx_redemption_oms_order ON sms_card_redemption_order (oms_order_id, is_deleted)');
+CALL sms_redemption_add_index_if_missing('sms_card_redemption_order', 'idx_redemption_scope',
+    'CREATE INDEX idx_redemption_scope ON sms_card_redemption_order (platform_id, tenant_id, merchant_id, is_deleted)');
+
+DROP PROCEDURE IF EXISTS sms_redemption_add_index_if_missing;

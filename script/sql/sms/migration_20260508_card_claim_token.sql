@@ -1,4 +1,6 @@
-CREATE TABLE sms_card_claim_token
+-- sms_card_claim_token（MySQL 兼容、幂等）
+
+CREATE TABLE IF NOT EXISTS sms_card_claim_token
 (
     id               bigint auto_increment primary key,
     token            varchar(64)                           not null,
@@ -21,7 +23,38 @@ CREATE TABLE sms_card_claim_token
     constraint uk_token unique (token, is_deleted)
 );
 
-CREATE INDEX idx_claim_token_card_instance ON sms_card_claim_token (card_instance_id, is_deleted);
-CREATE INDEX idx_claim_token_status_expire ON sms_card_claim_token (status, expire_at, is_deleted);
-CREATE INDEX idx_claim_token_issuer ON sms_card_claim_token (issuer_id, is_deleted);
-CREATE INDEX idx_claim_token_scope ON sms_card_claim_token (platform_id, tenant_id, merchant_id, is_deleted);
+DROP PROCEDURE IF EXISTS sms_claim_token_add_index_if_missing;
+
+DELIMITER $$
+
+CREATE PROCEDURE sms_claim_token_add_index_if_missing(
+    IN p_table VARCHAR(64),
+    IN p_index VARCHAR(64),
+    IN p_statement TEXT
+)
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = p_table
+          AND INDEX_NAME = p_index
+    ) THEN
+        SET @sql = p_statement;
+        PREPARE stmt FROM @sql;
+        EXECUTE stmt;
+        DEALLOCATE PREPARE stmt;
+    END IF;
+END $$
+
+DELIMITER ;
+
+CALL sms_claim_token_add_index_if_missing('sms_card_claim_token', 'idx_claim_token_card_instance',
+    'CREATE INDEX idx_claim_token_card_instance ON sms_card_claim_token (card_instance_id, is_deleted)');
+CALL sms_claim_token_add_index_if_missing('sms_card_claim_token', 'idx_claim_token_status_expire',
+    'CREATE INDEX idx_claim_token_status_expire ON sms_card_claim_token (status, expire_at, is_deleted)');
+CALL sms_claim_token_add_index_if_missing('sms_card_claim_token', 'idx_claim_token_issuer',
+    'CREATE INDEX idx_claim_token_issuer ON sms_card_claim_token (issuer_id, is_deleted)');
+CALL sms_claim_token_add_index_if_missing('sms_card_claim_token', 'idx_claim_token_scope',
+    'CREATE INDEX idx_claim_token_scope ON sms_card_claim_token (platform_id, tenant_id, merchant_id, is_deleted)');
+
+DROP PROCEDURE IF EXISTS sms_claim_token_add_index_if_missing;

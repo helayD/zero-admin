@@ -1,22 +1,92 @@
--- Migration for Story 1.4: 作用域角色、菜单模板与数据授权
+-- Migration for Story 1.4: 作用域角色、菜单模板与数据授权（MySQL 兼容、幂等）
 -- 在现有数据库上增量执行，不 drop 已有表
 
+DROP PROCEDURE IF EXISTS sys_role_scope_add_column_if_missing;
+DROP PROCEDURE IF EXISTS sys_role_scope_add_index_if_missing;
+DROP PROCEDURE IF EXISTS sys_role_scope_drop_index_if_exists;
+
+DELIMITER $$
+
+CREATE PROCEDURE sys_role_scope_add_column_if_missing(
+    IN p_table VARCHAR(64),
+    IN p_column VARCHAR(64),
+    IN p_definition TEXT
+)
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = p_table
+          AND COLUMN_NAME = p_column
+    ) THEN
+        SET @sql = CONCAT('ALTER TABLE `', p_table, '` ADD COLUMN ', p_definition);
+        PREPARE stmt FROM @sql;
+        EXECUTE stmt;
+        DEALLOCATE PREPARE stmt;
+    END IF;
+END $$
+
+CREATE PROCEDURE sys_role_scope_add_index_if_missing(
+    IN p_table VARCHAR(64),
+    IN p_index VARCHAR(64),
+    IN p_statement TEXT
+)
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = p_table
+          AND INDEX_NAME = p_index
+    ) THEN
+        SET @sql = p_statement;
+        PREPARE stmt FROM @sql;
+        EXECUTE stmt;
+        DEALLOCATE PREPARE stmt;
+    END IF;
+END $$
+
+CREATE PROCEDURE sys_role_scope_drop_index_if_exists(
+    IN p_table VARCHAR(64),
+    IN p_index VARCHAR(64)
+)
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = p_table
+          AND INDEX_NAME = p_index
+    ) THEN
+        SET @sql = CONCAT('ALTER TABLE `', p_table, '` DROP INDEX `', p_index, '`');
+        PREPARE stmt FROM @sql;
+        EXECUTE stmt;
+        DEALLOCATE PREPARE stmt;
+    END IF;
+END $$
+
+DELIMITER ;
+
 -- 1. 扩展 sys_role 表：增加作用域字段
-ALTER TABLE sys_role
-    ADD COLUMN scope_type  varchar(20)  DEFAULT 'platform' NOT NULL COMMENT '作用域类型（platform:平台级 tenant:租户级 merchant:商户级）' AFTER role_key,
-    ADD COLUMN platform_id bigint       DEFAULT 1          NOT NULL COMMENT '平台ID' AFTER scope_type,
-    ADD COLUMN tenant_id   bigint       DEFAULT 0          NOT NULL COMMENT '租户ID（0表示非租户级）' AFTER platform_id,
-    ADD COLUMN merchant_id bigint       DEFAULT 0          NOT NULL COMMENT '商户ID（0表示非商户级）' AFTER tenant_id,
-    ADD COLUMN is_admin    tinyint      DEFAULT 0          NOT NULL COMMENT '是否超级管理员角色（1:是 0:否）' AFTER merchant_id;
+CALL sys_role_scope_add_column_if_missing('sys_role', 'scope_type',
+    "`scope_type` varchar(20) DEFAULT 'platform' NOT NULL COMMENT '作用域类型（platform:平台级 tenant:租户级 merchant:商户级）' AFTER `role_key`");
+CALL sys_role_scope_add_column_if_missing('sys_role', 'platform_id',
+    "`platform_id` bigint DEFAULT 1 NOT NULL COMMENT '平台ID' AFTER `scope_type`");
+CALL sys_role_scope_add_column_if_missing('sys_role', 'tenant_id',
+    "`tenant_id` bigint DEFAULT 0 NOT NULL COMMENT '租户ID（0表示非租户级）' AFTER `platform_id`");
+CALL sys_role_scope_add_column_if_missing('sys_role', 'merchant_id',
+    "`merchant_id` bigint DEFAULT 0 NOT NULL COMMENT '商户ID（0表示非商户级）' AFTER `tenant_id`");
+CALL sys_role_scope_add_column_if_missing('sys_role', 'is_admin',
+    "`is_admin` tinyint DEFAULT 0 NOT NULL COMMENT '是否超级管理员角色（1:是 0:否）' AFTER `merchant_id`");
 
 -- 2. 删除旧的 role_name 全局唯一约束，改为联合唯一
-ALTER TABLE sys_role DROP INDEX role_name;
-ALTER TABLE sys_role ADD CONSTRAINT uk_role_name_scope UNIQUE (role_name, scope_type, tenant_id, merchant_id);
+CALL sys_role_scope_drop_index_if_exists('sys_role', 'role_name');
+CALL sys_role_scope_add_index_if_missing('sys_role', 'uk_role_name_scope',
+    'ALTER TABLE sys_role ADD CONSTRAINT uk_role_name_scope UNIQUE (role_name, scope_type, tenant_id, merchant_id)');
 
 -- 3. 新增作用域索引
-CREATE INDEX idx_role_scope ON sys_role (scope_type, tenant_id, merchant_id);
+CALL sys_role_scope_add_index_if_missing('sys_role', 'idx_role_scope',
+    'CREATE INDEX idx_role_scope ON sys_role (scope_type, tenant_id, merchant_id)');
 
--- 4. 为现有种子角色补充默认值
+-- 4. 为现有种子角色补充默认值（UPDATE 幂等）
 UPDATE sys_role SET scope_type = 'platform', platform_id = 1, tenant_id = 0, merchant_id = 0, is_admin = 1 WHERE id = 1;
 UPDATE sys_role SET scope_type = 'platform', platform_id = 1, tenant_id = 0, merchant_id = 0, is_admin = 0 WHERE id != 1 AND scope_type = 'platform';
 
@@ -38,7 +108,8 @@ CREATE TABLE IF NOT EXISTS sys_menu_template
         UNIQUE (name, scope_type)
 ) COMMENT '菜单模板';
 
-CREATE INDEX idx_template_scope ON sys_menu_template (scope_type, platform_id);
+CALL sys_role_scope_add_index_if_missing('sys_menu_template', 'idx_template_scope',
+    'CREATE INDEX idx_template_scope ON sys_menu_template (scope_type, platform_id)');
 
 -- 6. 创建菜单模板关联表
 CREATE TABLE IF NOT EXISTS sys_menu_template_item
@@ -51,14 +122,15 @@ CREATE TABLE IF NOT EXISTS sys_menu_template_item
         UNIQUE (template_id, menu_id)
 ) COMMENT '菜单模板与菜单关联表';
 
-CREATE INDEX idx_template_id ON sys_menu_template_item (template_id);
+CALL sys_role_scope_add_index_if_missing('sys_menu_template_item', 'idx_template_id',
+    'CREATE INDEX idx_template_id ON sys_menu_template_item (template_id)');
 
--- 7. 插入默认菜单模板种子数据
-INSERT INTO sys_menu_template (id, name, scope_type, platform_id, status, remark) VALUES (1, '租户默认菜单模板', 'tenant', 1, 1, '租户管理员可使用的默认菜单集合');
-INSERT INTO sys_menu_template (id, name, scope_type, platform_id, status, remark) VALUES (2, '商户默认菜单模板', 'merchant', 1, 1, '商户管理员可使用的默认菜单集合');
+-- 7. 插入默认菜单模板种子数据（INSERT IGNORE 幂等）
+INSERT IGNORE INTO sys_menu_template (id, name, scope_type, platform_id, status, remark) VALUES (1, '租户默认菜单模板', 'tenant', 1, 1, '租户管理员可使用的默认菜单集合');
+INSERT IGNORE INTO sys_menu_template (id, name, scope_type, platform_id, status, remark) VALUES (2, '商户默认菜单模板', 'merchant', 1, 1, '商户管理员可使用的默认菜单集合');
 
 -- 租户默认模板：系统管理 + 子菜单
-INSERT INTO sys_menu_template_item (template_id, menu_id) VALUES
+INSERT IGNORE INTO sys_menu_template_item (template_id, menu_id) VALUES
     (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 33),
     (1, 34), (1, 35), (1, 36), (1, 37), (1, 38), (1, 39),
     (1, 40), (1, 41), (1, 42), (1, 43), (1, 44),
@@ -66,8 +138,12 @@ INSERT INTO sys_menu_template_item (template_id, menu_id) VALUES
     (1, 8), (1, 9), (1, 10), (1, 298), (1, 299);
 
 -- 商户默认模板：商品管理 + 子菜单
-INSERT INTO sys_menu_template_item (template_id, menu_id) VALUES
+INSERT IGNORE INTO sys_menu_template_item (template_id, menu_id) VALUES
     (2, 16), (2, 17), (2, 18), (2, 19),
     (2, 63), (2, 64), (2, 65), (2, 66), (2, 67), (2, 68),
     (2, 69), (2, 70), (2, 71),
     (2, 8), (2, 298), (2, 299);
+
+DROP PROCEDURE IF EXISTS sys_role_scope_add_column_if_missing;
+DROP PROCEDURE IF EXISTS sys_role_scope_add_index_if_missing;
+DROP PROCEDURE IF EXISTS sys_role_scope_drop_index_if_exists;

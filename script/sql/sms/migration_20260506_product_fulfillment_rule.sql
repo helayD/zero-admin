@@ -1,9 +1,6 @@
--- Story 10.6: 商品履约模式与既有提货卡入账
--- Task 1.2: 创建 sms_product_fulfillment_rule 发卡规则配置表
--- 日期: 2026-05-06
--- 说明: 将发卡规则作为独立配置对象,与商品/SKU 建立绑定关系
+-- Story 10.6 Task 1.2: sms_product_fulfillment_rule 发卡规则配置表（MySQL 兼容、幂等）
 
-CREATE TABLE sms_product_fulfillment_rule
+CREATE TABLE IF NOT EXISTS sms_product_fulfillment_rule
 (
     id                   bigint auto_increment primary key comment '规则ID',
     platform_id          bigint      default 1                 not null comment '平台ID',
@@ -26,14 +23,7 @@ CREATE TABLE sms_product_fulfillment_rule
     constraint uk_rule_name_scope unique (platform_id, tenant_id, merchant_id, rule_name, is_deleted)
 ) comment '商品发卡规则配置表';
 
--- 作用域索引
-CREATE INDEX idx_rule_scope ON sms_product_fulfillment_rule (platform_id, tenant_id, merchant_id, rule_status, is_deleted);
-
--- 卡片模板关联索引
-CREATE INDEX idx_rule_template ON sms_product_fulfillment_rule (card_template_id, rule_status, is_deleted);
-
--- 商品与发卡规则绑定关系表 (支持一个规则绑定多个商品)
-CREATE TABLE sms_product_fulfillment_binding
+CREATE TABLE IF NOT EXISTS sms_product_fulfillment_binding
 (
     id                  bigint auto_increment primary key comment '绑定ID',
     rule_id             bigint                             not null comment '发卡规则ID',
@@ -48,7 +38,40 @@ CREATE TABLE sms_product_fulfillment_binding
     constraint uk_rule_product unique (rule_id, product_spu_id, product_sku_id, is_deleted)
 ) comment '商品与发卡规则绑定关系表';
 
--- 绑定关系索引
-CREATE INDEX idx_binding_rule ON sms_product_fulfillment_binding (rule_id, is_deleted);
-CREATE INDEX idx_binding_product ON sms_product_fulfillment_binding (product_spu_id, product_sku_id, is_deleted);
-CREATE INDEX idx_binding_scope ON sms_product_fulfillment_binding (platform_id, tenant_id, merchant_id, is_deleted);
+DROP PROCEDURE IF EXISTS sms_fulfillment_rule_add_index_if_missing;
+
+DELIMITER $$
+
+CREATE PROCEDURE sms_fulfillment_rule_add_index_if_missing(
+    IN p_table VARCHAR(64),
+    IN p_index VARCHAR(64),
+    IN p_statement TEXT
+)
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = p_table
+          AND INDEX_NAME = p_index
+    ) THEN
+        SET @sql = p_statement;
+        PREPARE stmt FROM @sql;
+        EXECUTE stmt;
+        DEALLOCATE PREPARE stmt;
+    END IF;
+END $$
+
+DELIMITER ;
+
+CALL sms_fulfillment_rule_add_index_if_missing('sms_product_fulfillment_rule', 'idx_rule_scope',
+    'CREATE INDEX idx_rule_scope ON sms_product_fulfillment_rule (platform_id, tenant_id, merchant_id, rule_status, is_deleted)');
+CALL sms_fulfillment_rule_add_index_if_missing('sms_product_fulfillment_rule', 'idx_rule_template',
+    'CREATE INDEX idx_rule_template ON sms_product_fulfillment_rule (card_template_id, rule_status, is_deleted)');
+CALL sms_fulfillment_rule_add_index_if_missing('sms_product_fulfillment_binding', 'idx_binding_rule',
+    'CREATE INDEX idx_binding_rule ON sms_product_fulfillment_binding (rule_id, is_deleted)');
+CALL sms_fulfillment_rule_add_index_if_missing('sms_product_fulfillment_binding', 'idx_binding_product',
+    'CREATE INDEX idx_binding_product ON sms_product_fulfillment_binding (product_spu_id, product_sku_id, is_deleted)');
+CALL sms_fulfillment_rule_add_index_if_missing('sms_product_fulfillment_binding', 'idx_binding_scope',
+    'CREATE INDEX idx_binding_scope ON sms_product_fulfillment_binding (platform_id, tenant_id, merchant_id, is_deleted)');
+
+DROP PROCEDURE IF EXISTS sms_fulfillment_rule_add_index_if_missing;
