@@ -24,14 +24,44 @@ CREATE TABLE IF NOT EXISTS sms_operate_funnel_event
 )
     comment '经营漏斗事件事实表';
 
-CREATE INDEX IF NOT EXISTS idx_operate_funnel_scope_time
-    ON sms_operate_funnel_event (platform_id, tenant_id, merchant_id, stat_time);
+-- Story 2.x 经营漏斗事件事实表索引（MySQL 兼容、幂等）
 
-CREATE INDEX IF NOT EXISTS idx_operate_funnel_activity_time
-    ON sms_operate_funnel_event (activity_type, activity_id, stat_time);
+DROP PROCEDURE IF EXISTS sms_funnel_add_index_if_missing;
 
-CREATE INDEX IF NOT EXISTS idx_operate_funnel_channel_time
-    ON sms_operate_funnel_event (channel, stat_time);
+DELIMITER $$
 
-CREATE INDEX IF NOT EXISTS idx_operate_funnel_event_time
-    ON sms_operate_funnel_event (event_type, stat_time);
+CREATE PROCEDURE sms_funnel_add_index_if_missing(
+    IN p_table VARCHAR(64),
+    IN p_index VARCHAR(64),
+    IN p_statement TEXT
+)
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.STATISTICS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = p_table
+          AND INDEX_NAME = p_index
+    ) THEN
+        SET @sql = p_statement;
+        PREPARE stmt FROM @sql;
+        EXECUTE stmt;
+        DEALLOCATE PREPARE stmt;
+    END IF;
+END $$
+
+DELIMITER ;
+
+CALL sms_funnel_add_index_if_missing('sms_operate_funnel_event', 'idx_operate_funnel_scope_time',
+    'CREATE INDEX idx_operate_funnel_scope_time ON sms_operate_funnel_event (platform_id, tenant_id, merchant_id, stat_time)');
+
+CALL sms_funnel_add_index_if_missing('sms_operate_funnel_event', 'idx_operate_funnel_activity_time',
+    'CREATE INDEX idx_operate_funnel_activity_time ON sms_operate_funnel_event (activity_type, activity_id, stat_time)');
+
+CALL sms_funnel_add_index_if_missing('sms_operate_funnel_event', 'idx_operate_funnel_channel_time',
+    'CREATE INDEX idx_operate_funnel_channel_time ON sms_operate_funnel_event (channel, stat_time)');
+
+CALL sms_funnel_add_index_if_missing('sms_operate_funnel_event', 'idx_operate_funnel_event_time',
+    'CREATE INDEX idx_operate_funnel_event_time ON sms_operate_funnel_event (event_type, stat_time)');
+
+DROP PROCEDURE IF EXISTS sms_funnel_add_index_if_missing;
