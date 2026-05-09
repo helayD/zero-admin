@@ -21,8 +21,8 @@ RED='\033[0;31m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-log_pass() { ((PASS++)); ((TOTAL++)); echo -e "  ${GREEN}✅ PASS${NC} $1"; }
-log_fail() { ((FAIL++)); ((TOTAL++)); echo -e "  ${RED}❌ FAIL${NC} $1"; }
+log_pass() { ((PASS++)) || true; ((TOTAL++)) || true; echo -e "  ${GREEN}✅ PASS${NC} $1"; }
+log_fail() { ((FAIL++)) || true; ((TOTAL++)) || true; echo -e "  ${RED}❌ FAIL${NC} $1"; }
 log_info() { echo -e "${YELLOW}▶${NC} $1"; }
 
 json_val() {
@@ -116,10 +116,10 @@ fi
 
 if [ -n "$AVAIL_ID" ] && [ "$AVAIL_ID" != "None" ]; then
   echo "    尝试领取优惠券 ID=$AVAIL_ID"
-  ADD_HTTP=$(curl -s --max-time $TIMEOUT -o /tmp/add_resp.txt -w "%{http_code}" -X POST "$BASE_URL/api/member/coupon/addCoupon" \
+  ADD_HTTP=$(curl -s --max-time $TIMEOUT -o ${TMPDIR:-/tmp}/add_resp.txt -w "%{http_code}" -X POST "$BASE_URL/api/member/coupon/addCoupon" \
     -H "$AUTH" -H 'Content-Type: application/json' \
     -d "{\"couponId\":$AVAIL_ID}")
-  ADD_BODY=$(cat /tmp/add_resp.txt)
+  ADD_BODY=$(cat ${TMPDIR:-/tmp}/add_resp.txt)
   # 尝试解析 JSON，失败则保留纯文本作为错误信息
   ADD_CODE=$(python3 -c "
 import sys,json
@@ -152,10 +152,10 @@ fi
 # 3. 重复领取同一优惠券 - AC#2: 幂等保护
 log_info "3. 重复领取测试（幂等保护）"
 if [ -n "$AVAIL_ID" ] && [ "$AVAIL_ID" != "None" ]; then
-  ADD_RESP2=$(curl -s --max-time $TIMEOUT -o /tmp/add_resp2.txt -w "%{http_code}" -X POST "$BASE_URL/api/member/coupon/addCoupon" \
+  ADD_RESP2=$(curl -s --max-time $TIMEOUT -o ${TMPDIR:-/tmp}/add_resp2.txt -w "%{http_code}" -X POST "$BASE_URL/api/member/coupon/addCoupon" \
     -H "$AUTH" -H 'Content-Type: application/json' \
     -d "{\"couponId\":$AVAIL_ID}")
-  ADD_BODY2=$(cat /tmp/add_resp2.txt)
+  ADD_BODY2=$(cat ${TMPDIR:-/tmp}/add_resp2.txt)
   ADD_CODE2=$(python3 -c "
 import sys,json
 try:
@@ -183,10 +183,10 @@ fi
 
 # 4. 领取无效优惠券 - AC#2: 非法 couponId 拒绝
 log_info "4. 领取非法优惠券 ID=999999"
-BAD_ADD_RESP=$(curl -s --max-time $TIMEOUT -o /tmp/bad_add.txt -w "%{http_code}" -X POST "$BASE_URL/api/member/coupon/addCoupon" \
+BAD_ADD_RESP=$(curl -s --max-time $TIMEOUT -o ${TMPDIR:-/tmp}/bad_add.txt -w "%{http_code}" -X POST "$BASE_URL/api/member/coupon/addCoupon" \
   -H "$AUTH" -H 'Content-Type: application/json' \
   -d '{"couponId":999999}')
-BAD_BODY=$(cat /tmp/bad_add.txt)
+BAD_BODY=$(cat ${TMPDIR:-/tmp}/bad_add.txt)
 BAD_CODE=$(python3 -c "
 import sys,json
 try:
