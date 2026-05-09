@@ -20,8 +20,8 @@ RED='\033[0;31m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-log_pass() { ((PASS++)); ((TOTAL++)); echo -e "  ${GREEN}✅ PASS${NC} $1"; }
-log_fail() { ((FAIL++)); ((TOTAL++)); echo -e "  ${RED}❌ FAIL${NC} $1"; }
+log_pass() { ((PASS++)) || true; ((TOTAL++)) || true; echo -e "  ${GREEN}✅ PASS${NC} $1"; }
+log_fail() { ((FAIL++)) || true; ((TOTAL++)) || true; echo -e "  ${RED}❌ FAIL${NC} $1"; }
 log_info() { echo -e "${YELLOW}▶${NC} $1"; }
 
 json_val() {
