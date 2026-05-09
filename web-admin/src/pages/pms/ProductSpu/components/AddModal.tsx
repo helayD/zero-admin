@@ -6,6 +6,8 @@ import NestedDraftSections from './NestedDraftSections';
 import { useCatalogOptions } from './useCatalogOptions';
 import type { CatalogActionError } from '@/pages/pms/errorFeedback';
 import type { GovernanceScopeValue } from '@/pages/system/components/governance';
+import { toGovernancePayload } from '@/pages/system/components/governance';
+import { queryProductFulfillmentRuleList } from '@/pages/sms/ProductFulfillmentRule/service';
 import UploadFileComponents from '@/components/common/UploadFileComponents';
 
 const fulfillmentModeOptions = [
@@ -46,6 +48,7 @@ const initialValues: ProductSpuDraftFormValues = {
 const AddModal: React.FC<AddModalProps> = (props) => {
   const [form] = Form.useForm();
   const [fulfillmentMode, setFulfillmentMode] = useState<string>('physical_delivery');
+  const [ruleOptions, setRuleOptions] = useState<{ label: string; value: number }[]>([]);
 
   const { onSubmit, onCancel, addVisible, scope, submitError } = props;
   const {
@@ -61,6 +64,27 @@ const AddModal: React.FC<AddModalProps> = (props) => {
       form.resetFields();
     }
   }, [addVisible, form]);
+
+  useEffect(() => {
+    if (!addVisible || !scope) {
+      setRuleOptions([]);
+      return;
+    }
+    queryProductFulfillmentRuleList({
+      pageSize: 999,
+      ...toGovernancePayload(scope),
+    })
+      .then((res) => {
+        const options = (res.data || []).map((item) => ({
+          label: `${item.ruleName} (ID: ${item.id})`,
+          value: item.id,
+        }));
+        setRuleOptions(options);
+      })
+      .catch(() => {
+        setRuleOptions([]);
+      });
+  }, [addVisible, scope]);
 
   useEffect(() => {
     if (!submitError) {
@@ -314,14 +338,16 @@ const AddModal: React.FC<AddModalProps> = (props) => {
         {fulfillmentMode === 'digital_asset' && (
           <FormItem
             name="fulfillmentRuleId"
-            label="发卡规则ID"
-            rules={[{ required: true, message: '请输入发卡规则ID!' }]}
+            label="发卡规则"
+            rules={[{ required: true, message: '请选择发卡规则!' }]}
             tooltip="提货卡模式下必须关联一个有效的发卡规则"
           >
-            <InputNumber
+            <Select
+              options={ruleOptions}
+              placeholder="请选择发卡规则"
+              showSearch
+              optionFilterProp="label"
               style={{ width: '100%' }}
-              placeholder="请输入发卡规则ID"
-              min={1}
             />
           </FormItem>
         )}

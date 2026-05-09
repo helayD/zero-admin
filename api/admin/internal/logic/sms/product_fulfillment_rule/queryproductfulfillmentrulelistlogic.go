@@ -4,9 +4,13 @@ import (
 	"context"
 
 	"github.com/feihua/zero-admin/api/admin/internal/common"
+	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
 	"github.com/feihua/zero-admin/api/admin/internal/types"
+	"github.com/feihua/zero-admin/rpc/sms/smsclient"
 	"github.com/zeromicro/go-zero/core/logc"
+	"google.golang.org/grpc/status"
+
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -42,74 +46,56 @@ func (l *QueryProductFulfillmentRuleListLogic) QueryProductFulfillmentRuleList(r
 		return nil, err
 	}
 
-	// TODO: 调用 RPC 服务查询发卡规则列表
-	// 当 RPC 服务创建后，替换为真实的调用
-	logc.Infof(l.ctx, "查询发卡规则列表，治理范围：%+v，查询条件：%+v", readScope, req)
+	ruleReq := &smsclient.QueryProductFulfillmentRuleListReq{
+		RuleName:       req.RuleName,
+		CardTemplateId: req.CardTemplateId,
+		RuleStatus:     req.RuleStatus,
+		Page:           req.Page,
+		PageSize:       req.PageSize,
+		Scope:          common.SMSGovernanceScope(readScope),
+	}
 
-	// 临时返回空列表
+	result, err := l.svcCtx.ProductFulfillmentRuleService.QueryProductFulfillmentRuleList(l.ctx, ruleReq)
+	if err != nil {
+		logc.Errorf(l.ctx, "查询发卡规则列表失败,参数：%+v,响应：%s", req, err.Error())
+		s, _ := status.FromError(err)
+		return nil, errorx.NewDefaultError(s.Message())
+	}
+
+	var list []types.ProductFulfillmentRuleData
+	for _, item := range result.List {
+		list = append(list, types.ProductFulfillmentRuleData{
+			Id:                  item.Id,
+			RuleName:            item.RuleName,
+			RuleStatus:          item.RuleStatus,
+			CardTemplateId:      item.CardTemplateId,
+			CardTemplateName:    item.CardTemplateName,
+			ExpireDays:          item.ExpireDays,
+			Transferable:        item.Transferable,
+			TransferLimit:       item.TransferLimit,
+			ClaimCondition:      item.ClaimCondition,
+			RedemptionCondition: item.RedemptionCondition,
+			RefundPolicy:        item.RefundPolicy,
+			RefundPolicyText:    item.RefundPolicyText,
+			PlatformId:          item.PlatformId,
+			TenantId:            item.TenantId,
+			MerchantId:          item.MerchantId,
+			CreateBy:            item.CreateBy,
+			UpdateBy:            item.UpdateBy,
+			CreateTime:          item.CreateTime,
+			UpdateTime:          item.UpdateTime,
+			BindingCount:        item.BindingCount,
+		})
+	}
+
 	return &types.QueryProductFulfillmentRuleListResp{
 		Code:    "000000",
 		Message: "查询成功",
 		Data: types.ProductFulfillmentRuleListData{
-			List:     []types.ProductFulfillmentRuleData{},
-			Total:    0,
+			List:     list,
+			Total:    result.Total,
 			Page:     req.Page,
 			PageSize: req.PageSize,
 		},
 	}, nil
-
-	// 以下是 RPC 调用的示例代码，待 RPC 服务创建后启用
-	/*
-		ruleReq := &smsclient.QueryProductFulfillmentRuleListReq{
-			RuleName:       req.RuleName,
-			CardTemplateId: req.CardTemplateId,
-			RuleStatus:     req.RuleStatus,
-			Page:           req.Page,
-			PageSize:       req.PageSize,
-			Scope:          common.SMSGovernanceScope(readScope),
-		}
-
-		result, err := l.svcCtx.ProductFulfillmentRuleService.QueryProductFulfillmentRuleList(l.ctx, ruleReq)
-		if err != nil {
-			logc.Errorf(l.ctx, "查询发卡规则列表失败,参数：%+v,响应：%s", req, err.Error())
-			return nil, err
-		}
-
-		var list []types.ProductFulfillmentRuleData
-		for _, item := range result.List {
-			list = append(list, types.ProductFulfillmentRuleData{
-				Id:                  item.Id,
-				RuleName:            item.RuleName,
-				RuleStatus:          item.RuleStatus,
-				CardTemplateId:      item.CardTemplateId,
-				CardTemplateName:    item.CardTemplateName,
-				ExpireDays:          item.ExpireDays,
-				Transferable:        item.Transferable,
-				TransferLimit:       item.TransferLimit,
-				ClaimCondition:      item.ClaimCondition,
-				RedemptionCondition: item.RedemptionCondition,
-				RefundPolicy:        item.RefundPolicy,
-				RefundPolicyText:    item.RefundPolicyText,
-				PlatformId:          item.PlatformId,
-				TenantId:            item.TenantId,
-				MerchantId:          item.MerchantId,
-				CreateBy:            item.CreateBy,
-				UpdateBy:            item.UpdateBy,
-				CreateTime:          item.CreateTime,
-				UpdateTime:          item.UpdateTime,
-				BindingCount:        item.BindingCount,
-			})
-		}
-
-		return &types.QueryProductFulfillmentRuleListResp{
-			Code:    "000000",
-			Message: "查询成功",
-			Data: types.ProductFulfillmentRuleListData{
-				List:     list,
-				Total:    result.Total,
-				Page:     req.Page,
-				PageSize: req.PageSize,
-			},
-		}, nil
-	*/
 }

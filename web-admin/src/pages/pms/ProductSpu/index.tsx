@@ -41,6 +41,7 @@ import {
   updateProductSpu,
   updateProductSpuStatus,
 } from './service';
+import { queryProductFulfillmentRuleList } from '@/pages/sms/ProductFulfillmentRule/service';
 import SkuModal from '@/pages/pms/ProductSpu/components/SkuModal';
 import { buildCatalogActionError, type CatalogActionError } from '@/pages/pms/errorFeedback';
 import GovernanceScopeBar from '@/pages/system/components/GovernanceScopeBar';
@@ -321,6 +322,7 @@ const ProductSpuList: React.FC = () => {
   const [quickView, setQuickView] = useState<
     'all' | 'pendingReview' | 'onShelf' | 'offShelf' | 'recommended'
   >('all');
+  const [ruleMap, setRuleMap] = useState<Record<number, string>>({});
 
   const quickViewParams =
     quickView === 'pendingReview'
@@ -332,6 +334,23 @@ const ProductSpuList: React.FC = () => {
           : quickView === 'recommended'
             ? { recommendStatus: 1 }
             : {};
+
+  React.useEffect(() => {
+    queryProductFulfillmentRuleList({
+      pageSize: 999,
+      ...toGovernancePayload(scope),
+    })
+      .then((res) => {
+        const map: Record<number, string> = {};
+        (res.data || []).forEach((item) => {
+          map[item.id] = item.ruleName;
+        });
+        setRuleMap(map);
+      })
+      .catch(() => {
+        setRuleMap({});
+      });
+  }, [scope]);
 
   const openUpdateModal = async (record: ProductSpuListItem) => {
     setSubmitError(undefined);
@@ -751,6 +770,16 @@ const ProductSpuList: React.FC = () => {
       hideInSearch: true,
       render: (dom, entity) => {
         return renderFulfillmentModeTag(entity.fulfillmentMode);
+      },
+    },
+    {
+      title: '发卡规则',
+      dataIndex: 'fulfillmentRuleId',
+      hideInSearch: true,
+      render: (_, entity) => {
+        if (!entity.fulfillmentRuleId) return '-';
+        const name = ruleMap[entity.fulfillmentRuleId];
+        return <span>{name || `规则ID: ${entity.fulfillmentRuleId}`}</span>;
       },
     },
 

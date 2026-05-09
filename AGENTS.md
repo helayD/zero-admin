@@ -401,7 +401,7 @@ count, err := query.SysUser.WithContext(l.ctx).Where(query.SysUser.ID.Eq(in.User
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **zero-admin** (76186 symbols, 169109 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **zero-admin** (77256 symbols, 171704 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -439,25 +439,25 @@ This project is indexed by GitNexus as **zero-admin** (76186 symbols, 169109 rel
 | Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
 | Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
 | Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
-| Work in the Static area (1332 symbols) | `.claude/skills/generated/static/SKILL.md` |
-| Work in the User area (983 symbols) | `.claude/skills/generated/user/SKILL.md` |
-| Work in the Query area (732 symbols) | `.claude/skills/generated/query/SKILL.md` |
-| Work in the Order area (577 symbols) | `.claude/skills/generated/order/SKILL.md` |
-| Work in the Userservice area (452 symbols) | `.claude/skills/generated/userservice/SKILL.md` |
-| Work in the Digitalcardmint area (152 symbols) | `.claude/skills/generated/digitalcardmint/SKILL.md` |
-| Work in the Orderservice area (125 symbols) | `.claude/skills/generated/orderservice/SKILL.md` |
+| Work in the Static area (1324 symbols) | `.claude/skills/generated/static/SKILL.md` |
+| Work in the User area (994 symbols) | `.claude/skills/generated/user/SKILL.md` |
+| Work in the Query area (735 symbols) | `.claude/skills/generated/query/SKILL.md` |
+| Work in the Order area (564 symbols) | `.claude/skills/generated/order/SKILL.md` |
+| Work in the Userservice area (456 symbols) | `.claude/skills/generated/userservice/SKILL.md` |
+| Work in the Digitalcardmint area (154 symbols) | `.claude/skills/generated/digitalcardmint/SKILL.md` |
+| Work in the Orderservice area (123 symbols) | `.claude/skills/generated/orderservice/SKILL.md` |
+| Work in the Digital_card area (88 symbols) | `.claude/skills/generated/digital-card/SKILL.md` |
 | Work in the Productspuservice area (82 symbols) | `.claude/skills/generated/productspuservice/SKILL.md` |
-| Work in the Digital_card area (80 symbols) | `.claude/skills/generated/digital-card/SKILL.md` |
-| Work in the Merchantservice area (67 symbols) | `.claude/skills/generated/merchantservice/SKILL.md` |
-| Work in the Cardassetservice area (56 symbols) | `.claude/skills/generated/cardassetservice/SKILL.md` |
+| Work in the Svc area (81 symbols) | `.claude/skills/generated/svc/SKILL.md` |
+| Work in the Merchantservice area (69 symbols) | `.claude/skills/generated/merchantservice/SKILL.md` |
+| Work in the Digital_card_asset area (59 symbols) | `.claude/skills/generated/digital-card-asset/SKILL.md` |
+| Work in the Cardassetservice area (57 symbols) | `.claude/skills/generated/cardassetservice/SKILL.md` |
 | Work in the Channelintegrationtemplateservice area (55 symbols) | `.claude/skills/generated/channelintegrationtemplateservice/SKILL.md` |
-| Work in the Drawparticipationservice area (54 symbols) | `.claude/skills/generated/drawparticipationservice/SKILL.md` |
+| Work in the Provider area (53 symbols) | `.claude/skills/generated/provider/SKILL.md` |
+| Work in the Drawparticipationservice area (52 symbols) | `.claude/skills/generated/drawparticipationservice/SKILL.md` |
+| Work in the Test area (52 symbols) | `.claude/skills/generated/test/SKILL.md` |
+| Work in the Drawactivityservice area (52 symbols) | `.claude/skills/generated/drawactivityservice/SKILL.md` |
+| Work in the Message area (52 symbols) | `.claude/skills/generated/message/SKILL.md` |
 | Work in the Commentservice area (51 symbols) | `.claude/skills/generated/commentservice/SKILL.md` |
-| Work in the Memberinfoservice area (51 symbols) | `.claude/skills/generated/memberinfoservice/SKILL.md` |
-| Work in the Scope area (50 symbols) | `.claude/skills/generated/scope/SKILL.md` |
-| Work in the Message area (50 symbols) | `.claude/skills/generated/message/SKILL.md` |
-| Work in the Drawactivityservice area (47 symbols) | `.claude/skills/generated/drawactivityservice/SKILL.md` |
-| Work in the Middleware area (46 symbols) | `.claude/skills/generated/middleware/SKILL.md` |
-| Work in the Productcategoryservice area (46 symbols) | `.claude/skills/generated/productcategoryservice/SKILL.md` |
 
 <!-- gitnexus:end -->

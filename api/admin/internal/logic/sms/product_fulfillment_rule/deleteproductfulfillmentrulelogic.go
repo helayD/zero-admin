@@ -4,9 +4,13 @@ import (
 	"context"
 
 	"github.com/feihua/zero-admin/api/admin/internal/common"
+	"github.com/feihua/zero-admin/api/admin/internal/common/errorx"
 	"github.com/feihua/zero-admin/api/admin/internal/svc"
 	"github.com/feihua/zero-admin/api/admin/internal/types"
+	"github.com/feihua/zero-admin/rpc/sms/smsclient"
 	"github.com/zeromicro/go-zero/core/logc"
+	"google.golang.org/grpc/status"
+
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
@@ -47,34 +51,23 @@ func (l *DeleteProductFulfillmentRuleLogic) DeleteProductFulfillmentRule(req *ty
 		return nil, err
 	}
 
-	// TODO: 调用 RPC 服务删除发卡规则
-	// 当 RPC 服务创建后，替换为真实的调用
 	logc.Infof(l.ctx, "删除发卡规则，操作人：%d，规则ID：%d，治理范围：%+v", userId, req.Id, writeScope)
 
-	// 临时返回成功响应
+	ruleReq := &smsclient.DeleteProductFulfillmentRuleReq{
+		Id:           req.Id,
+		Scope:        common.SMSGovernanceScope(writeScope),
+		OperatorType: "admin",
+	}
+
+	_, err = l.svcCtx.ProductFulfillmentRuleService.DeleteProductFulfillmentRule(l.ctx, ruleReq)
+	if err != nil {
+		logc.Errorf(l.ctx, "删除发卡规则失败,参数：%+v,响应：%s", req, err.Error())
+		s, _ := status.FromError(err)
+		return nil, errorx.NewDefaultError(s.Message())
+	}
+
 	return &types.BaseResp{
 		Code:    "000000",
 		Message: "删除发卡规则成功",
 	}, nil
-
-	// 以下是 RPC 调用的示例代码，待 RPC 服务创建后启用
-	/*
-		ruleReq := &smsclient.DeleteProductFulfillmentRuleReq{
-			Id:           req.Id,
-			Scope:        common.SMSGovernanceScope(writeScope),
-			OperatorType: "admin",
-		}
-
-		_, err = l.svcCtx.ProductFulfillmentRuleService.DeleteProductFulfillmentRule(l.ctx, ruleReq)
-		if err != nil {
-			logc.Errorf(l.ctx, "删除发卡规则失败,参数：%+v,响应：%s", req, err.Error())
-			s, _ := status.FromError(err)
-			return nil, errorx.NewDefaultError(s.Message())
-		}
-
-		return &types.BaseResp{
-			Code:    "000000",
-			Message: "删除发卡规则成功",
-		}, nil
-	*/
 }
