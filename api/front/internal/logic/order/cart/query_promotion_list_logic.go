@@ -392,6 +392,10 @@ func fillCartPromotionSnapshot(item *types.CarItemtPromotionListData, product *p
 	if item.ProductAttr == "" && skuStock != nil {
 		item.ProductAttr = skuStock.SpecData
 	}
+	if item.FulfillmentMode == "" {
+		// Story 10.6: 透出商品履约模式，确认订单页据此条件展示提货卡履约提示
+		item.FulfillmentMode = product.FulfillmentMode
+	}
 }
 
 // 获取sku（L1 修复：找不到时返回 nil，调用方需判空）

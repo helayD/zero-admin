@@ -109,6 +109,7 @@ type CarItemtPromotionListData {
 	RealStock         int32   `json:"realStock"` //商品的真实库存（剩余库存-锁定库存）
 	Integration       int32   `json:"integration"` //购买商品赠送积分
 	Growth            int32   `json:"growth"` //购买商品赠送成长值
+	FulfillmentMode   string  `json:"fulfillmentMode"` //履约模式：physical_delivery-实物发货 / digital_asset-提货卡
 }
 
 type CartProductReq {

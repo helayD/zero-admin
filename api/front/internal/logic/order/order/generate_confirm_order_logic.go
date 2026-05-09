@@ -82,6 +82,7 @@ func (l *GenerateConfirmOrderLogic) GenerateConfirmOrder(req *types.GenerateConf
 			RealStock:         item.RealStock,
 			Integration:       item.Integration,
 			Growth:            item.Growth,
+			FulfillmentMode:   item.FulfillmentMode, // Story 10.6: 透出履约模式（physical_delivery / digital_asset）
 		})
 	}
 

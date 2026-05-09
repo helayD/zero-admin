@@ -356,6 +356,24 @@ func (l *PaymentOperationsUtils) SimulatePaySuccess(outTradeNo string) error {
 		}
 		if fulfillErr := l.ensurePaidOrderPurchaseAssets(eventCtx); fulfillErr != nil {
 			l.Logger.Errorf("SimulatePaySuccess 提货卡履约失败 outTradeNo=%s orderId=%d err=%v", outTradeNo, orderId, fulfillErr)
+			// Story 10.6 Fix #10: 履约失败必须把订单和支付状态回滚到待支付，否则订单
+			// 会停在 "已支付但卡片未建账" 的不一致状态，且 reconcile 兜底也只能补卡片，
+			// 无法补订单状态。
+			if paymentId > 0 {
+				if _, rollbackErr := l.svcCtx.OrderPaymentService.UpdateOrderPaymentStatus(l.ctx, &omsclient.UpdateOrderPaymentStatusReq{
+					Ids:       []int64{paymentId},
+					PayStatus: order.PayStatusPending,
+				}); rollbackErr != nil {
+					l.Logger.Errorf("SimulatePaySuccess 履约失败后回滚支付状态失败 outTradeNo=%s err=%v", outTradeNo, rollbackErr)
+				}
+			}
+			if _, rollbackErr := l.svcCtx.OrderService.UpdateOrder(l.ctx, &omsclient.UpdateOrderReq{
+				Id:          orderId,
+				OrderNo:     outTradeNo,
+				OrderStatus: order.OrderStatusPendingPayment,
+			}); rollbackErr != nil {
+				l.Logger.Errorf("SimulatePaySuccess 履约失败后回滚订单状态失败 outTradeNo=%s orderId=%d err=%v", outTradeNo, orderId, rollbackErr)
+			}
 			return fmt.Errorf("提货卡履约失败: %w", fulfillErr)
 		}
 		if publishErr := l.publishPaySuccessEventWithContext(outTradeNo, eventCtx); publishErr != nil {
