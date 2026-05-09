@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 
+	cardtemplatehandler "github.com/feihua/zero-admin/api/admin/internal/handler/sms/card_template"
 	digitalcardassethandler "github.com/feihua/zero-admin/api/admin/internal/handler/sms/digital_card_asset"
 	digitalcardchainhandler "github.com/feihua/zero-admin/api/admin/internal/handler/sms/digital_card_chain"
 	digitalcardphysicalfulfillmenthandler "github.com/feihua/zero-admin/api/admin/internal/handler/sms/digital_card_physical_fulfillment"
@@ -237,5 +238,51 @@ func RegisterExtraHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		),
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
 		rest.WithPrefix("/api/sms/productFulfillmentRule"),
+	)
+
+	// 卡片模板（Story 10.10）
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.CheckUrl},
+			[]rest.Route{
+				{
+					Method:  http.MethodPost,
+					Path:    "/addCardTemplate",
+					Handler: cardtemplatehandler.AddCardTemplateHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/updateCardTemplate",
+					Handler: cardtemplatehandler.UpdateCardTemplateHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/updateCardTemplateStatus",
+					Handler: cardtemplatehandler.UpdateCardTemplateStatusHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/deleteCardTemplate",
+					Handler: cardtemplatehandler.DeleteCardTemplateHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryCardTemplateList",
+					Handler: cardtemplatehandler.QueryCardTemplateListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryCardTemplateDetail",
+					Handler: cardtemplatehandler.QueryCardTemplateDetailHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/checkCardTemplateUsage",
+					Handler: cardtemplatehandler.CheckCardTemplateUsageHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/sms/cardTemplate"),
 	)
 }

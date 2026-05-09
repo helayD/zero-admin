@@ -3,8 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/zeromicro/go-zero/core/logx"
 	"os"
+
+	"github.com/zeromicro/go-zero/core/logx"
 
 	"github.com/feihua/zero-admin/rpc/sms/cardmintadminrpc"
 	"github.com/feihua/zero-admin/rpc/sms/internal/config"
@@ -12,6 +13,7 @@ import (
 	cardclaimtokenserviceServer "github.com/feihua/zero-admin/rpc/sms/internal/server/cardclaimtokenservice"
 	cardmintadminserviceServer "github.com/feihua/zero-admin/rpc/sms/internal/server/cardmintadminservice"
 	cardredemptionorderserviceServer "github.com/feihua/zero-admin/rpc/sms/internal/server/cardredemptionorderservice"
+	cardtemplateserviceServer "github.com/feihua/zero-admin/rpc/sms/internal/server/cardtemplateservice"
 	couponrecordserviceServer "github.com/feihua/zero-admin/rpc/sms/internal/server/couponrecordservice"
 	couponscopeserviceServer "github.com/feihua/zero-admin/rpc/sms/internal/server/couponscopeservice"
 	couponserviceServer "github.com/feihua/zero-admin/rpc/sms/internal/server/couponservice"
@@ -50,6 +52,7 @@ func main() {
 		smsclient.RegisterCardAssetServiceServer(grpcServer, cardassetserviceServer.NewCardAssetServiceServer(ctx))
 		smsclient.RegisterCardClaimTokenServiceServer(grpcServer, cardclaimtokenserviceServer.NewCardClaimTokenServiceServer(ctx))
 		smsclient.RegisterCardRedemptionOrderServiceServer(grpcServer, cardredemptionorderserviceServer.NewCardRedemptionOrderServiceServer(ctx))
+		smsclient.RegisterCardTemplateServiceServer(grpcServer, cardtemplateserviceServer.NewCardTemplateServiceServer(ctx))
 		cardmintadminrpc.RegisterCardMintAdminServiceServer(grpcServer, cardmintadminserviceServer.NewCardMintAdminServiceServer(ctx))
 		smsclient.RegisterCouponRecordServiceServer(grpcServer, couponrecordserviceServer.NewCouponRecordServiceServer(ctx))
 		smsclient.RegisterCouponScopeServiceServer(grpcServer, couponscopeserviceServer.NewCouponScopeServiceServer(ctx))

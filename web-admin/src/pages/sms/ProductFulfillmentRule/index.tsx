@@ -136,6 +136,20 @@ const ProductFulfillmentRuleList: React.FC = () => {
       title: '关联卡片模板',
       dataIndex: 'cardTemplateName',
       hideInSearch: true,
+      // Story 10.10 Task 4.4: 后端 JOIN 取 templateName 后这里直接展示；如为空降级为带警示的 ID
+      render: (_, entity) => {
+        if (entity.cardTemplateName) {
+          return <span>{entity.cardTemplateName}</span>;
+        }
+        if (entity.cardTemplateId) {
+          return (
+            <span style={{ color: '#cf1322' }}>
+              模板ID:{entity.cardTemplateId}（已禁用/丢失）
+            </span>
+          );
+        }
+        return '-';
+      },
     },
     {
       title: '有效期（天）',

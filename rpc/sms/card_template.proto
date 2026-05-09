@@ -1,0 +1,147 @@
+syntax = "proto3";
+
+package smsclient;
+option go_package = "./smsclient";
+
+import "sms.proto";
+
+message CardTemplateData {
+  int64 id = 1;
+  string template_code = 2;
+  string template_name = 3;
+  string card_face_image = 4;
+  string copyright_owner = 5;
+  string copyright_proof_summary = 6;
+  string rarity = 7;
+  int64 issue_limit = 8;
+  string display_copy = 9;
+  string circulation_limit_summary = 10;
+  int32 display_status = 11;
+  int32 content_audit_status = 12;
+  string provider_code = 13;
+  string credential_ref = 14;
+  int32 status = 15;
+  int32 audit_status = 16;
+  int64 platform_id = 17;
+  int64 tenant_id = 18;
+  int64 merchant_id = 19;
+  string create_by = 20;
+  string update_by = 21;
+  string create_time = 22;
+  string update_time = 23;
+  int32 ref_rule_count = 24;
+}
+
+message AddCardTemplateReq {
+  string template_code = 1;
+  string template_name = 2;
+  string card_face_image = 3;
+  string copyright_owner = 4;
+  string copyright_proof_summary = 5;
+  string rarity = 6;
+  int64 issue_limit = 7;
+  string display_copy = 8;
+  string circulation_limit_summary = 9;
+  int32 display_status = 10;
+  int32 content_audit_status = 11;
+  string provider_code = 12;
+  string credential_ref = 13;
+  GovernanceScope scope = 14;
+  string operator_type = 15;
+}
+
+message AddCardTemplateResp {
+  CardTemplateData template = 1;
+}
+
+message UpdateCardTemplateReq {
+  int64 id = 1;
+  string template_name = 2;
+  string card_face_image = 3;
+  string copyright_owner = 4;
+  string copyright_proof_summary = 5;
+  string rarity = 6;
+  int64 issue_limit = 7;
+  string display_copy = 8;
+  string circulation_limit_summary = 9;
+  int32 display_status = 10;
+  int32 content_audit_status = 11;
+  string provider_code = 12;
+  string credential_ref = 13;
+  GovernanceScope scope = 14;
+  string operator_type = 15;
+}
+
+message UpdateCardTemplateResp {
+  CardTemplateData template = 1;
+}
+
+message QueryCardTemplateListReq {
+  string template_name = 1;
+  string template_code = 2;
+  string rarity = 3;
+  int32 status = 4;
+  int32 display_status = 5;
+  int32 page = 6;
+  int32 page_size = 7;
+  GovernanceScope scope = 8;
+}
+
+message QueryCardTemplateListResp {
+  repeated CardTemplateData list = 1;
+  int64 total = 2;
+}
+
+message QueryCardTemplateDetailReq {
+  int64 id = 1;
+  GovernanceScope scope = 2;
+}
+
+message QueryCardTemplateDetailResp {
+  CardTemplateData template = 1;
+}
+
+message UpdateCardTemplateStatusReq {
+  int64 id = 1;
+  int32 status = 2;
+  GovernanceScope scope = 3;
+  string operator_type = 4;
+}
+
+message UpdateCardTemplateStatusResp {
+  CardTemplateData template = 1;
+}
+
+message DeleteCardTemplateReq {
+  int64 id = 1;
+  GovernanceScope scope = 2;
+  string operator_type = 3;
+}
+
+message DeleteCardTemplateResp {
+  int32 code = 1;
+  string message = 2;
+}
+
+message CheckCardTemplateUsageReq {
+  int64 id = 1;
+  GovernanceScope scope = 2;
+}
+
+message CheckCardTemplateUsageResp {
+  int32 ref_rule_count = 1;
+  repeated string ref_rule_names = 2;
+  bool can_disable = 3;
+  bool can_delete = 4;
+  string message = 5;
+}
+
+service CardTemplateService {
+  rpc AddCardTemplate(AddCardTemplateReq) returns (AddCardTemplateResp){}
+  rpc UpdateCardTemplate(UpdateCardTemplateReq) returns (UpdateCardTemplateResp){}
+  rpc QueryCardTemplateList(QueryCardTemplateListReq) returns (QueryCardTemplateListResp){}
+  rpc QueryCardTemplateDetail(QueryCardTemplateDetailReq) returns (QueryCardTemplateDetailResp){}
+  rpc UpdateCardTemplateStatus(UpdateCardTemplateStatusReq) returns (UpdateCardTemplateStatusResp){}
+  rpc DeleteCardTemplate(DeleteCardTemplateReq) returns (DeleteCardTemplateResp){}
+  rpc CheckCardTemplateUsage(CheckCardTemplateUsageReq) returns (CheckCardTemplateUsageResp){}
+}

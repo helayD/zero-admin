@@ -3,7 +3,6 @@ package productfulfillmentruleservice
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/feihua/zero-admin/rpc/sms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/sms/smsclient"
@@ -37,12 +36,13 @@ func (l *QueryProductFulfillmentRuleDetailLogic) QueryProductFulfillmentRuleDeta
 		merchantId = in.Scope.MerchantId
 	}
 
-	// 2. 查询规则详情
+	// 2. 查询规则详情（Story 10.10 Task 3.6: LEFT JOIN sms_card_template 取 template_name）
 	type ruleRow struct {
 		Id                  int64  `gorm:"column:id"`
 		RuleName            string `gorm:"column:rule_name"`
 		RuleStatus          int32  `gorm:"column:rule_status"`
 		CardTemplateId      int64  `gorm:"column:card_template_id"`
+		CardTemplateName    string `gorm:"column:card_template_name"`
 		ExpireDays          int32  `gorm:"column:expire_days"`
 		Transferable        int32  `gorm:"column:transferable"`
 		TransferLimit       int32  `gorm:"column:transfer_limit"`
@@ -60,9 +60,12 @@ func (l *QueryProductFulfillmentRuleDetailLogic) QueryProductFulfillmentRuleDeta
 
 	var row ruleRow
 	err := l.svcCtx.DB.WithContext(l.ctx).
-		Table("sms_product_fulfillment_rule").
-		Select("id, rule_name, rule_status, card_template_id, expire_days, transferable, transfer_limit, claim_condition, redemption_condition, refund_policy, platform_id, tenant_id, merchant_id, create_by, create_time, update_by, update_time").
-		Where("id = ? AND platform_id = ? AND tenant_id = ? AND merchant_id = ? AND is_deleted = 0",
+		Table("sms_product_fulfillment_rule AS r").
+		Joins("LEFT JOIN sms_card_template AS t ON t.id = r.card_template_id AND t.is_deleted = 0").
+		Select("r.id, r.rule_name, r.rule_status, r.card_template_id, t.template_name AS card_template_name, "+
+			"r.expire_days, r.transferable, r.transfer_limit, r.claim_condition, r.redemption_condition, r.refund_policy, "+
+			"r.platform_id, r.tenant_id, r.merchant_id, r.create_by, r.create_time, r.update_by, r.update_time").
+		Where("r.id = ? AND r.platform_id = ? AND r.tenant_id = ? AND r.merchant_id = ? AND r.is_deleted = 0",
 			in.Id, platformId, tenantId, merchantId).
 		Take(&row).Error
 	if err != nil {
@@ -87,6 +90,7 @@ func (l *QueryProductFulfillmentRuleDetailLogic) QueryProductFulfillmentRuleDeta
 			RuleName:            row.RuleName,
 			RuleStatus:          row.RuleStatus,
 			CardTemplateId:      row.CardTemplateId,
+			CardTemplateName:    row.CardTemplateName,
 			ExpireDays:          row.ExpireDays,
 			Transferable:        row.Transferable,
 			TransferLimit:       row.TransferLimit,
@@ -96,9 +100,9 @@ func (l *QueryProductFulfillmentRuleDetailLogic) QueryProductFulfillmentRuleDeta
 			PlatformId:          row.PlatformId,
 			TenantId:            row.TenantId,
 			MerchantId:          row.MerchantId,
-			CreateBy:            fmt.Sprintf("%d", row.CreateBy),
+			CreateBy:            int64ToString(row.CreateBy),
 			CreateTime:          row.CreateTime,
-			UpdateBy:            fmt.Sprintf("%d", row.UpdateBy),
+			UpdateBy:            int64ToString(row.UpdateBy),
 			UpdateTime:          row.UpdateTime,
 			BindingCount:        int32(bindingCount),
 		},

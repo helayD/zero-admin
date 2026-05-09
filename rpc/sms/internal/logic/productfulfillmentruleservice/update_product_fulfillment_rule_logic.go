@@ -65,6 +65,10 @@ func (l *UpdateProductFulfillmentRuleLogic) UpdateProductFulfillmentRule(in *sms
 		updates["rule_name"] = in.RuleName
 	}
 	if in.CardTemplateId > 0 {
+		// Story 10.10 Task 8.1: 切换 cardTemplateId 时也要校验
+		if err := validateCardTemplateForRule(l.ctx, l.svcCtx.DB, in.CardTemplateId, platformId, tenantId, merchantId); err != nil {
+			return nil, err
+		}
 		updates["card_template_id"] = in.CardTemplateId
 	}
 	if in.ExpireDays > 0 {

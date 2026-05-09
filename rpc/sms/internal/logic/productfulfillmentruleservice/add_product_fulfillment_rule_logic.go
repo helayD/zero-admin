@@ -62,6 +62,11 @@ func (l *AddProductFulfillmentRuleLogic) AddProductFulfillmentRule(in *smsclient
 		return nil, errors.New("规则名称已存在")
 	}
 
+	// Story 10.10 Task 8.1: 校验关联的卡片模板存在、未被禁用、与当前 scope 匹配
+	if err := validateCardTemplateForRule(l.ctx, l.svcCtx.DB, in.CardTemplateId, platformId, tenantId, merchantId); err != nil {
+		return nil, err
+	}
+
 	// 4. 插入数据库
 	now := time.Now()
 	rule := map[string]interface{}{

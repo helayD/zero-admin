@@ -767,7 +767,12 @@ const ProductSpuList: React.FC = () => {
     {
       title: '履约模式',
       dataIndex: 'fulfillmentMode',
-      hideInSearch: true,
+      // Story 10.10 Task 7: 履约模式可作为搜索条件，服务端过滤
+      valueType: 'select',
+      valueEnum: {
+        physical_delivery: { text: '实物发货' },
+        digital_asset: { text: '提货卡' },
+      },
       render: (dom, entity) => {
         return renderFulfillmentModeTag(entity.fulfillmentMode);
       },

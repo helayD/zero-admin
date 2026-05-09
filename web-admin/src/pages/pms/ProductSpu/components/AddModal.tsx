@@ -72,6 +72,7 @@ const AddModal: React.FC<AddModalProps> = (props) => {
     }
     queryProductFulfillmentRuleList({
       pageSize: 999,
+      ruleStatus: 1, // Story 10.10 Task 4.5: 只展示启用规则，避免运营选到已禁用规则
       ...toGovernancePayload(scope),
     })
       .then((res) => {
@@ -351,9 +352,6 @@ const AddModal: React.FC<AddModalProps> = (props) => {
             />
           </FormItem>
         )}
-        <FormItem name="fulfillmentRuleId" hidden>
-          <Input id="create-fulfillmentRuleId" />
-        </FormItem>
         <FormItem
           name="detailHtml"
           label="产品详情网页内容"

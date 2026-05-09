@@ -410,6 +410,12 @@
         path: '/sms/productFulfillmentRule/list',
         component: './sms/ProductFulfillmentRule',
       },
+      {
+        name: '卡片模板',
+        icon: 'table',
+        path: '/sms/cardTemplate/list',
+        component: './sms/CardTemplate',
+      },
     ],
   },
   {

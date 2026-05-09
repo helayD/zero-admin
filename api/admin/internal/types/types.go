@@ -1420,35 +1420,35 @@ type ProductLadderResp struct {
 }
 
 type ProductSpuData struct {
-	Id                  int64   `json:"id,optional"`          //商品SpuId
-	Name                string  `json:"name"`                 //商品名称
-	ProductSn           string  `json:"productSn"`            //商品货号
-	CategoryId          int64   `json:"categoryId"`           //商品分类ID
-	CategoryIds         string  `json:"categoryIds,optional"` //商品分类ID集合
-	CategoryName        string  `json:"categoryName"`         //商品分类名称
-	BrandId             int64   `json:"brandId"`              //品牌ID
-	BrandName           string  `json:"brandName"`            //品牌名称
-	Unit                string  `json:"unit"`                 //单位
-	Weight              float32 `json:"weight"`               //重量(kg)
-	Keywords            string  `json:"keywords"`             //关键词
-	AlbumPics           string  `json:"albumPics"`            //画册图片，最多8张，以逗号分割
-	MainPic             string  `json:"mainPic"`              //主图
-	PublishStatus       int32   `json:"publishStatus"`        //上架状态：0-下架，1-上架
-	NewStatus           int32   `json:"newStatus"`            //新品状态:0->不是新品；1->新品
-	RecommendStatus     int32   `json:"recommendStatus"`      //推荐状态；0->不推荐；1->推荐
-	VerifyStatus        int32   `json:"verifyStatus"`         //审核状态：0->未审核；1->审核通过
-	PreviewStatus       int32   `json:"previewStatus"`        //是否为预告商品：0->不是；1->是
-	Sort                int32   `json:"sort"`                 //排序
-	NewStatusSort       int32   `json:"newStatusSort"`        //新品排序
-	RecommendStatusSort int32   `json:"recommendStatusSort"`  //推荐排序
-	Stock               int32   `json:"stock"`                //库存
-	LowStock            int32   `json:"lowStock"`             //预警库存
-	PromotionType       int32   `json:"promotionType"`        //促销类型：0->没有促销使用原价;1->使用促销价；2->使用会员价；3->使用阶梯价格；4->使用满减价格；5->秒杀
-	FulfillmentMode     string  `json:"fulfillmentMode,optional"`      //履约模式: physical_delivery-实物发货, digital_asset-数字资产
-	FulfillmentRuleId   int64   `json:"fulfillmentRuleId,optional"`    //关联发卡规则ID,仅digital_asset模式时有效
-	SubTitle            string  `json:"subTitle"`             //副标题
-	DetailHtml          string  `json:"detailHtml"`           //产品详情网页内容
-	DetailMobileHtml    string  `json:"detailMobileHtml"`     //移动端网页详情
+	Id                  int64   `json:"id,optional"`                //商品SpuId
+	Name                string  `json:"name"`                       //商品名称
+	ProductSn           string  `json:"productSn"`                  //商品货号
+	CategoryId          int64   `json:"categoryId"`                 //商品分类ID
+	CategoryIds         string  `json:"categoryIds,optional"`       //商品分类ID集合
+	CategoryName        string  `json:"categoryName"`               //商品分类名称
+	BrandId             int64   `json:"brandId"`                    //品牌ID
+	BrandName           string  `json:"brandName"`                  //品牌名称
+	Unit                string  `json:"unit"`                       //单位
+	Weight              float32 `json:"weight"`                     //重量(kg)
+	Keywords            string  `json:"keywords"`                   //关键词
+	AlbumPics           string  `json:"albumPics"`                  //画册图片，最多8张，以逗号分割
+	MainPic             string  `json:"mainPic"`                    //主图
+	PublishStatus       int32   `json:"publishStatus"`              //上架状态：0-下架，1-上架
+	NewStatus           int32   `json:"newStatus"`                  //新品状态:0->不是新品；1->新品
+	RecommendStatus     int32   `json:"recommendStatus"`            //推荐状态；0->不推荐；1->推荐
+	VerifyStatus        int32   `json:"verifyStatus"`               //审核状态：0->未审核；1->审核通过
+	PreviewStatus       int32   `json:"previewStatus"`              //是否为预告商品：0->不是；1->是
+	Sort                int32   `json:"sort"`                       //排序
+	NewStatusSort       int32   `json:"newStatusSort"`              //新品排序
+	RecommendStatusSort int32   `json:"recommendStatusSort"`        //推荐排序
+	Stock               int32   `json:"stock"`                      //库存
+	LowStock            int32   `json:"lowStock"`                   //预警库存
+	PromotionType       int32   `json:"promotionType"`              //促销类型：0->没有促销使用原价;1->使用促销价；2->使用会员价；3->使用阶梯价格；4->使用满减价格；5->秒杀
+	FulfillmentMode     string  `json:"fulfillmentMode,optional"`   //履约模式: physical_delivery-实物发货, digital_asset-数字资产
+	FulfillmentRuleId   int64   `json:"fulfillmentRuleId,optional"` //关联发卡规则ID,仅digital_asset模式时有效
+	SubTitle            string  `json:"subTitle"`                   //副标题
+	DetailHtml          string  `json:"detailHtml"`                 //产品详情网页内容
+	DetailMobileHtml    string  `json:"detailMobileHtml"`           //移动端网页详情
 }
 
 type ProductSpuDetailData struct {
@@ -4442,54 +4442,54 @@ type QueryProductSpuDetailResp struct {
 }
 
 type QueryProductSpuListData struct {
-	Id                  int64   `json:"id"`                  //商品SpuId
-	Name                string  `json:"name"`                //商品名称
-	ProductSn           string  `json:"productSn"`           //商品货号
-	CategoryId          int64   `json:"categoryId"`          //商品分类ID
-	CategoryIds         string  `json:"categoryIds"`         //商品分类ID集合
-	CategoryName        string  `json:"categoryName"`        //商品分类名称
-	BrandId             int64   `json:"brandId"`             //品牌ID
-	BrandName           string  `json:"brandName"`           //品牌名称
-	Unit                string  `json:"unit"`                //单位
-	Weight              float32 `json:"weight"`              //重量(kg)
-	Keywords            string  `json:"keywords"`            //关键词
-	AlbumPics           string  `json:"albumPics"`           //画册图片，最多8张，以逗号分割
-	MainPic             string  `json:"mainPic"`             //主图
-	PriceRange          string  `json:"priceRange"`          //价格区间
-	PublishStatus       int32   `json:"publishStatus"`       //上架状态：0-下架，1-上架
-	NewStatus           int32   `json:"newStatus"`           //新品状态:0->不是新品；1->新品
-	RecommendStatus     int32   `json:"recommendStatus"`     //推荐状态；0->不推荐；1->推荐
-	VerifyStatus        int32   `json:"verifyStatus"`        //审核状态：0->未审核；1->审核通过
-	PreviewStatus       int32   `json:"previewStatus"`       //是否为预告商品：0->不是；1->是
-	Sort                int32   `json:"sort"`                //排序
-	NewStatusSort       int32   `json:"newStatusSort"`       //新品排序
-	RecommendStatusSort int32   `json:"recommendStatusSort"` //推荐排序
-	Sales               int32   `json:"sales"`               //销量
-	Stock               int32   `json:"stock"`               //库存
-	LowStock            int32   `json:"lowStock"`            //预警库存
-	PromotionType       int32   `json:"promotionType"`       //促销类型：0->没有促销使用原价;1->使用促销价；2->使用会员价；3->使用阶梯价格；4->使用满减价格；5->秒杀
-	FulfillmentMode     string  `json:"fulfillmentMode,optional"`     //履约模式: physical_delivery-实物发货, digital_asset-数字资产
-	FulfillmentRuleId   int64   `json:"fulfillmentRuleId,optional"`   //关联发卡规则ID,仅digital_asset模式时有效
-	SubTitle            string  `json:"subTitle"`            //副标题
-	DetailHtml          string  `json:"detailHtml"`          //产品详情网页内容
-	DetailMobileHtml    string  `json:"detailMobileHtml"`    //移动端网页详情
-	CreateBy            int64   `json:"createBy"`            //创建人ID
-	CreateTime          string  `json:"createTime"`          //创建时间
-	UpdateBy            int64   `json:"updateBy"`            //更新人ID
-	UpdateTime          string  `json:"updateTime"`          //更新时间
-	ScopeType           string  `json:"scopeType"`           //作用域来源(platform/tenant/merchant)
-	PlatformId          int64   `json:"platformId"`          //平台ID
-	TenantId            int64   `json:"tenantId"`            //租户ID
-	MerchantId          int64   `json:"merchantId"`          //商户ID
-	ReviewMan           string  `json:"reviewMan"`           //最近审核人
-	ReviewTime          string  `json:"reviewTime"`          //最近审核时间
-	ReviewDetail        string  `json:"reviewDetail"`        //最近审核意见
-	PublishMan          string  `json:"publishMan"`          //最近上下架操作人
-	PublishTime         string  `json:"publishTime"`         //最近上下架时间
-	PublishDetail       string  `json:"publishDetail"`       //最近上下架说明
-	RecommendMan        string  `json:"recommendMan"`        //最近推荐操作人
-	RecommendTime       string  `json:"recommendTime"`       //最近推荐时间
-	RecommendDetail     string  `json:"recommendDetail"`     //最近推荐说明
+	Id                  int64   `json:"id"`                         //商品SpuId
+	Name                string  `json:"name"`                       //商品名称
+	ProductSn           string  `json:"productSn"`                  //商品货号
+	CategoryId          int64   `json:"categoryId"`                 //商品分类ID
+	CategoryIds         string  `json:"categoryIds"`                //商品分类ID集合
+	CategoryName        string  `json:"categoryName"`               //商品分类名称
+	BrandId             int64   `json:"brandId"`                    //品牌ID
+	BrandName           string  `json:"brandName"`                  //品牌名称
+	Unit                string  `json:"unit"`                       //单位
+	Weight              float32 `json:"weight"`                     //重量(kg)
+	Keywords            string  `json:"keywords"`                   //关键词
+	AlbumPics           string  `json:"albumPics"`                  //画册图片，最多8张，以逗号分割
+	MainPic             string  `json:"mainPic"`                    //主图
+	PriceRange          string  `json:"priceRange"`                 //价格区间
+	PublishStatus       int32   `json:"publishStatus"`              //上架状态：0-下架，1-上架
+	NewStatus           int32   `json:"newStatus"`                  //新品状态:0->不是新品；1->新品
+	RecommendStatus     int32   `json:"recommendStatus"`            //推荐状态；0->不推荐；1->推荐
+	VerifyStatus        int32   `json:"verifyStatus"`               //审核状态：0->未审核；1->审核通过
+	PreviewStatus       int32   `json:"previewStatus"`              //是否为预告商品：0->不是；1->是
+	Sort                int32   `json:"sort"`                       //排序
+	NewStatusSort       int32   `json:"newStatusSort"`              //新品排序
+	RecommendStatusSort int32   `json:"recommendStatusSort"`        //推荐排序
+	Sales               int32   `json:"sales"`                      //销量
+	Stock               int32   `json:"stock"`                      //库存
+	LowStock            int32   `json:"lowStock"`                   //预警库存
+	PromotionType       int32   `json:"promotionType"`              //促销类型：0->没有促销使用原价;1->使用促销价；2->使用会员价；3->使用阶梯价格；4->使用满减价格；5->秒杀
+	FulfillmentMode     string  `json:"fulfillmentMode,optional"`   //履约模式: physical_delivery-实物发货, digital_asset-数字资产
+	FulfillmentRuleId   int64   `json:"fulfillmentRuleId,optional"` //关联发卡规则ID,仅digital_asset模式时有效
+	SubTitle            string  `json:"subTitle"`                   //副标题
+	DetailHtml          string  `json:"detailHtml"`                 //产品详情网页内容
+	DetailMobileHtml    string  `json:"detailMobileHtml"`           //移动端网页详情
+	CreateBy            int64   `json:"createBy"`                   //创建人ID
+	CreateTime          string  `json:"createTime"`                 //创建时间
+	UpdateBy            int64   `json:"updateBy"`                   //更新人ID
+	UpdateTime          string  `json:"updateTime"`                 //更新时间
+	ScopeType           string  `json:"scopeType"`                  //作用域来源(platform/tenant/merchant)
+	PlatformId          int64   `json:"platformId"`                 //平台ID
+	TenantId            int64   `json:"tenantId"`                   //租户ID
+	MerchantId          int64   `json:"merchantId"`                 //商户ID
+	ReviewMan           string  `json:"reviewMan"`                  //最近审核人
+	ReviewTime          string  `json:"reviewTime"`                 //最近审核时间
+	ReviewDetail        string  `json:"reviewDetail"`               //最近审核意见
+	PublishMan          string  `json:"publishMan"`                 //最近上下架操作人
+	PublishTime         string  `json:"publishTime"`                //最近上下架时间
+	PublishDetail       string  `json:"publishDetail"`              //最近上下架说明
+	RecommendMan        string  `json:"recommendMan"`               //最近推荐操作人
+	RecommendTime       string  `json:"recommendTime"`              //最近推荐时间
+	RecommendDetail     string  `json:"recommendDetail"`            //最近推荐说明
 }
 
 type QueryProductSpuListReq struct {
@@ -4506,6 +4506,7 @@ type QueryProductSpuListReq struct {
 	VerifyStatus    int32  `form:"verifyStatus,default=2"`    //审核状态：0->未审核；1->审核通过
 	PreviewStatus   int32  `form:"previewStatus,default=2"`   //是否为预告商品：0->不是；1->是
 	PromotionType   int32  `form:"promotionType,default=6"`   //促销类型：0->没有促销使用原价;1->使用促销价；2->使用会员价；3->使用阶梯价格；4->使用满减价格；5->秒杀
+	FulfillmentMode string `form:"fulfillmentMode,optional"`  //履约模式: physical_delivery-实物发货, digital_asset-数字资产 (Story 10.10 Task 7)
 	ScopeType       string `form:"scopeType,optional"`        //治理范围(platform/tenant/merchant)
 	PlatformId      int64  `form:"platformId,optional"`       //平台ID
 	TenantId        int64  `form:"tenantId,optional"`         //租户ID
@@ -6130,219 +6131,219 @@ type UserInfoResp struct {
 // 发卡规则管理相关类型
 
 type AddProductFulfillmentRuleReq struct {
-	RuleName            string `json:"ruleName"`                      // 规则名称
-	CardTemplateId      int64  `json:"cardTemplateId"`                // 关联卡片模板ID
-	ExpireDays          int32  `json:"expireDays"`                    // 卡片有效期天数
-	Transferable        int32  `json:"transferable"`                  // 是否可转赠：0-否，1-是
-	TransferLimit       int32  `json:"transferLimit"`                 // 最大转赠次数
-	ClaimCondition      string `json:"claimCondition,optional"`       // 领取条件（JSON）
-	RedemptionCondition string `json:"redemptionCondition,optional"`  // 提货条件
-	RefundPolicy        string `json:"refundPolicy"`                  // 退款处置策略：freeze_card/recycle_card/manual_review
-	ScopeType           string `json:"scopeType,optional"`            // 治理范围(platform/tenant/merchant)
-	PlatformId          int64  `json:"platformId,optional"`           // 平台ID
-	TenantId            int64  `json:"tenantId,optional"`             // 租户ID
-	MerchantId          int64  `json:"merchantId,optional"`           // 商户ID
+	RuleName            string `json:"ruleName"`                     // 规则名称
+	CardTemplateId      int64  `json:"cardTemplateId"`               // 关联卡片模板ID
+	ExpireDays          int32  `json:"expireDays"`                   // 卡片有效期天数
+	Transferable        int32  `json:"transferable"`                 // 是否可转赠：0-否，1-是
+	TransferLimit       int32  `json:"transferLimit"`                // 最大转赠次数
+	ClaimCondition      string `json:"claimCondition,optional"`      // 领取条件（JSON）
+	RedemptionCondition string `json:"redemptionCondition,optional"` // 提货条件
+	RefundPolicy        string `json:"refundPolicy"`                 // 退款处置策略：freeze_card/recycle_card/manual_review
+	ScopeType           string `json:"scopeType,optional"`           // 治理范围(platform/tenant/merchant)
+	PlatformId          int64  `json:"platformId,optional"`          // 平台ID
+	TenantId            int64  `json:"tenantId,optional"`            // 租户ID
+	MerchantId          int64  `json:"merchantId,optional"`          // 商户ID
 }
 
 type UpdateProductFulfillmentRuleReq struct {
-	Id                  int64  `json:"id"`                            // 规则ID
-	RuleName            string `json:"ruleName,optional"`             // 规则名称
-	CardTemplateId      int64  `json:"cardTemplateId,optional"`       // 关联卡片模板ID
-	ExpireDays          int32  `json:"expireDays,optional"`           // 卡片有效期天数
-	Transferable        int32  `json:"transferable,optional"`         // 是否可转赠：0-否，1-是
-	TransferLimit       int32  `json:"transferLimit,optional"`        // 最大转赠次数
-	ClaimCondition      string `json:"claimCondition,optional"`       // 领取条件（JSON）
-	RedemptionCondition string `json:"redemptionCondition,optional"`  // 提货条件
-	RefundPolicy        string `json:"refundPolicy,optional"`         // 退款处置策略
-	ScopeType           string `json:"scopeType,optional"`            // 治理范围
-	PlatformId          int64  `json:"platformId,optional"`           // 平台ID
-	TenantId            int64  `json:"tenantId,optional"`             // 租户ID
-	MerchantId          int64  `json:"merchantId,optional"`           // 商户ID
+	Id                  int64  `json:"id"`                           // 规则ID
+	RuleName            string `json:"ruleName,optional"`            // 规则名称
+	CardTemplateId      int64  `json:"cardTemplateId,optional"`      // 关联卡片模板ID
+	ExpireDays          int32  `json:"expireDays,optional"`          // 卡片有效期天数
+	Transferable        int32  `json:"transferable,optional"`        // 是否可转赠：0-否，1-是
+	TransferLimit       int32  `json:"transferLimit,optional"`       // 最大转赠次数
+	ClaimCondition      string `json:"claimCondition,optional"`      // 领取条件（JSON）
+	RedemptionCondition string `json:"redemptionCondition,optional"` // 提货条件
+	RefundPolicy        string `json:"refundPolicy,optional"`        // 退款处置策略
+	ScopeType           string `json:"scopeType,optional"`           // 治理范围
+	PlatformId          int64  `json:"platformId,optional"`          // 平台ID
+	TenantId            int64  `json:"tenantId,optional"`            // 租户ID
+	MerchantId          int64  `json:"merchantId,optional"`          // 商户ID
 }
 
 type ProductFulfillmentRuleData struct {
-	Id                  int64  `json:"id"`                            // 规则ID
-	RuleName            string `json:"ruleName"`                      // 规则名称
-	RuleStatus          int32  `json:"ruleStatus"`                    // 规则状态：0-禁用，1-启用
-	CardTemplateId      int64  `json:"cardTemplateId"`                // 关联卡片模板ID
-	CardTemplateName    string `json:"cardTemplateName"`              // 关联卡片模板名称
-	ExpireDays          int32  `json:"expireDays"`                    // 卡片有效期天数
-	Transferable        int32  `json:"transferable"`                  // 是否可转赠：0-否，1-是
-	TransferLimit       int32  `json:"transferLimit"`                 // 最大转赠次数
-	ClaimCondition      string `json:"claimCondition"`                // 领取条件（JSON）
-	RedemptionCondition string `json:"redemptionCondition"`           // 提货条件
-	RefundPolicy        string `json:"refundPolicy"`                  // 退款处置策略
-	RefundPolicyText    string `json:"refundPolicyText"`              // 退款处置策略文案
-	PlatformId          int64  `json:"platformId"`                    // 平台ID
-	TenantId            int64  `json:"tenantId"`                      // 租户ID
-	MerchantId          int64  `json:"merchantId"`                    // 商户ID
-	CreateBy            string `json:"createBy"`                      // 创建人
-	UpdateBy            string `json:"updateBy"`                      // 更新人
-	CreateTime          string `json:"createTime"`                    // 创建时间
-	UpdateTime          string `json:"updateTime"`                    // 更新时间
-	BindingCount        int32  `json:"bindingCount"`                  // 绑定商品数量
+	Id                  int64  `json:"id"`                  // 规则ID
+	RuleName            string `json:"ruleName"`            // 规则名称
+	RuleStatus          int32  `json:"ruleStatus"`          // 规则状态：0-禁用，1-启用
+	CardTemplateId      int64  `json:"cardTemplateId"`      // 关联卡片模板ID
+	CardTemplateName    string `json:"cardTemplateName"`    // 关联卡片模板名称
+	ExpireDays          int32  `json:"expireDays"`          // 卡片有效期天数
+	Transferable        int32  `json:"transferable"`        // 是否可转赠：0-否，1-是
+	TransferLimit       int32  `json:"transferLimit"`       // 最大转赠次数
+	ClaimCondition      string `json:"claimCondition"`      // 领取条件（JSON）
+	RedemptionCondition string `json:"redemptionCondition"` // 提货条件
+	RefundPolicy        string `json:"refundPolicy"`        // 退款处置策略
+	RefundPolicyText    string `json:"refundPolicyText"`    // 退款处置策略文案
+	PlatformId          int64  `json:"platformId"`          // 平台ID
+	TenantId            int64  `json:"tenantId"`            // 租户ID
+	MerchantId          int64  `json:"merchantId"`          // 商户ID
+	CreateBy            string `json:"createBy"`            // 创建人
+	UpdateBy            string `json:"updateBy"`            // 更新人
+	CreateTime          string `json:"createTime"`          // 创建时间
+	UpdateTime          string `json:"updateTime"`          // 更新时间
+	BindingCount        int32  `json:"bindingCount"`        // 绑定商品数量
 }
 
 type QueryProductFulfillmentRuleListReq struct {
-	RuleName       string `json:"ruleName,optional"`       // 规则名称（模糊查询）
-	CardTemplateId int64  `json:"cardTemplateId,optional"` // 关联卡片模板ID
-	RuleStatus     int32  `json:"ruleStatus,optional"`     // 规则状态：-1-全部，0-禁用，1-启用
-	Page           int32  `json:"page,optional"`           // 页码
-	PageSize       int32  `json:"pageSize,optional"`       // 每页数量
-	ScopeType      string `json:"scopeType,optional"`      // 治理范围
-	PlatformId     int64  `json:"platformId,optional"`     // 平台ID
-	TenantId       int64  `json:"tenantId,optional"`       // 租户ID
-	MerchantId     int64  `json:"merchantId,optional"`     // 商户ID
+	RuleName       string `json:"ruleName,optional"`              // 规则名称（模糊查询）
+	CardTemplateId int64  `json:"cardTemplateId,optional"`        // 关联卡片模板ID
+	RuleStatus     int32  `json:"ruleStatus,optional,default=-1"` // 规则状态：-1-全部（默认）, 0-禁用, 1-启用 (Story 10.10 修复 C2: 默认 -1 防止 RPC 把零值当过滤条件)
+	Page           int32  `json:"page,optional"`                  // 页码
+	PageSize       int32  `json:"pageSize,optional"`              // 每页数量
+	ScopeType      string `json:"scopeType,optional"`             // 治理范围
+	PlatformId     int64  `json:"platformId,optional"`            // 平台ID
+	TenantId       int64  `json:"tenantId,optional"`              // 租户ID
+	MerchantId     int64  `json:"merchantId,optional"`            // 商户ID
 }
 
 type QueryProductFulfillmentRuleListResp struct {
-	Code    string                        `json:"code"`
-	Message string                        `json:"message"`
+	Code    string                         `json:"code"`
+	Message string                         `json:"message"`
 	Data    ProductFulfillmentRuleListData `json:"data"`
 }
 
 type ProductFulfillmentRuleListData struct {
 	List     []ProductFulfillmentRuleData `json:"list"`     // 规则列表
-	Total    int64                         `json:"total"`    // 总数
-	Page     int32                         `json:"page"`     // 页码
-	PageSize int32                         `json:"pageSize"` // 每页数量
+	Total    int64                        `json:"total"`    // 总数
+	Page     int32                        `json:"page"`     // 页码
+	PageSize int32                        `json:"pageSize"` // 每页数量
 }
 
 type QueryProductFulfillmentRuleDetailReq struct {
-	Id         int64  `json:"id"`                   // 规则ID
-	ScopeType  string `json:"scopeType,optional"`   // 治理范围
-	PlatformId int64  `json:"platformId,optional"`  // 平台ID
-	TenantId   int64  `json:"tenantId,optional"`    // 租户ID
-	MerchantId int64  `json:"merchantId,optional"`  // 商户ID
+	Id         int64  `json:"id"`                  // 规则ID
+	ScopeType  string `json:"scopeType,optional"`  // 治理范围
+	PlatformId int64  `json:"platformId,optional"` // 平台ID
+	TenantId   int64  `json:"tenantId,optional"`   // 租户ID
+	MerchantId int64  `json:"merchantId,optional"` // 商户ID
 }
 
 type QueryProductFulfillmentRuleDetailResp struct {
-	Code    string                       `json:"code"`
-	Message string                       `json:"message"`
-	Data    ProductFulfillmentRuleData   `json:"data"`
+	Code    string                     `json:"code"`
+	Message string                     `json:"message"`
+	Data    ProductFulfillmentRuleData `json:"data"`
 }
 
 type UpdateProductFulfillmentRuleStatusReq struct {
-	Id         int64  `json:"id"`                   // 规则ID
-	RuleStatus int32  `json:"ruleStatus"`           // 规则状态：0-禁用，1-启用
-	ScopeType  string `json:"scopeType,optional"`   // 治理范围
-	PlatformId int64  `json:"platformId,optional"`  // 平台ID
-	TenantId   int64  `json:"tenantId,optional"`    // 租户ID
-	MerchantId int64  `json:"merchantId,optional"`  // 商户ID
+	Id         int64  `json:"id"`                  // 规则ID
+	RuleStatus int32  `json:"ruleStatus"`          // 规则状态：0-禁用，1-启用
+	ScopeType  string `json:"scopeType,optional"`  // 治理范围
+	PlatformId int64  `json:"platformId,optional"` // 平台ID
+	TenantId   int64  `json:"tenantId,optional"`   // 租户ID
+	MerchantId int64  `json:"merchantId,optional"` // 商户ID
 }
 
 type DeleteProductFulfillmentRuleReq struct {
-	Id         int64  `json:"id"`                   // 规则ID
-	ScopeType  string `json:"scopeType,optional"`   // 治理范围
-	PlatformId int64  `json:"platformId,optional"`  // 平台ID
-	TenantId   int64  `json:"tenantId,optional"`    // 租户ID
-	MerchantId int64  `json:"merchantId,optional"`  // 商户ID
+	Id         int64  `json:"id"`                  // 规则ID
+	ScopeType  string `json:"scopeType,optional"`  // 治理范围
+	PlatformId int64  `json:"platformId,optional"` // 平台ID
+	TenantId   int64  `json:"tenantId,optional"`   // 租户ID
+	MerchantId int64  `json:"merchantId,optional"` // 商户ID
 }
 
 type CheckProductFulfillmentRuleBindingResp struct {
-	Code    string                           `json:"code"`
-	Message string                           `json:"message"`
-	Data    CheckProductFulfillmentRuleData  `json:"data"`
+	Code    string                          `json:"code"`
+	Message string                          `json:"message"`
+	Data    CheckProductFulfillmentRuleData `json:"data"`
 }
 
 type CheckProductFulfillmentRuleData struct {
-	BindingCount       int32    `json:"bindingCount"`       // 绑定商品数量
+	BindingCount        int32    `json:"bindingCount"`        // 绑定商品数量
 	BindingProductNames []string `json:"bindingProductNames"` // 绑定的商品名称列表
-	CanDisable         bool     `json:"canDisable"`         // 是否可以禁用
-	CanDelete          bool     `json:"canDelete"`          // 是否可以删除
-	Message            string   `json:"message"`            // 提示信息
+	CanDisable          bool     `json:"canDisable"`          // 是否可以禁用
+	CanDelete           bool     `json:"canDelete"`           // 是否可以删除
+	Message             string   `json:"message"`             // 提示信息
 }
 
 // 公司退货地址相关类型别名（兼容旧代码）
 type CompanyAddressListReq struct {
-	Current     int32  `form:"current,default=1"`       //第几页
-	PageSize    int32  `form:"pageSize,default=20"`     //每页的数量
-	AddressName string `form:"addressName,optional"`    //地址名称
-	Name        string `form:"name,optional"`           //收发货人姓名
-	Phone       string `form:"phone,optional"`          //收货人电话
-	ScopeType   string `form:"scopeType,optional"`      //治理范围
-	PlatformId  int64  `form:"platformId,optional"`     //平台ID
-	TenantId    int64  `form:"tenantId,optional"`       //租户ID
-	MerchantId  int64  `form:"merchantId,optional"`     //商户ID
+	Current     int32  `form:"current,default=1"`    //第几页
+	PageSize    int32  `form:"pageSize,default=20"`  //每页的数量
+	AddressName string `form:"addressName,optional"` //地址名称
+	Name        string `form:"name,optional"`        //收发货人姓名
+	Phone       string `form:"phone,optional"`       //收货人电话
+	ScopeType   string `form:"scopeType,optional"`   //治理范围
+	PlatformId  int64  `form:"platformId,optional"`  //平台ID
+	TenantId    int64  `form:"tenantId,optional"`    //租户ID
+	MerchantId  int64  `form:"merchantId,optional"`  //商户ID
 }
 
 type CompanyAddressListResp struct {
-	Code     string               `json:"code"`
-	Message  string               `json:"message"`
+	Code     string                `json:"code"`
+	Message  string                `json:"message"`
 	Data     []*CompanyAddressItem `json:"data"`
-	Total    int64                `json:"total"`
-	Current  int32                `json:"current"`
-	PageSize int32                `json:"pageSize"`
-	Success  bool                 `json:"success"`
+	Total    int64                 `json:"total"`
+	Current  int32                 `json:"current"`
+	PageSize int32                 `json:"pageSize"`
+	Success  bool                  `json:"success"`
 }
 
 type CompanyAddressItem struct {
-	Id             int64  `json:"id"`             //主键ID
-	AddressName    string `json:"addressName"`    //地址名称
-	ReceiverName   string `json:"receiverName"`   //收发货人姓名
-	Phone          string `json:"phone"`          //收货人电话
-	Province       string `json:"province"`       //省/直辖市
-	City           string `json:"city"`           //市
-	Region         string `json:"region"`         //区
-	DetailAddress  string `json:"detailAddress"`  //详细地址
-	FullAddress    string `json:"fullAddress"`    //完整地址
-	DefaultStatus  int32  `json:"defaultStatus"`  //默认状态
-	SendStatus     int32  `json:"sendStatus"`     //默认发货地址：0->否；1->是
-	ReceiveStatus  int32  `json:"receiveStatus"`  //默认收货地址：0->否；1->是
-	CreateTime     string `json:"createTime"`     //创建时间
+	Id            int64  `json:"id"`            //主键ID
+	AddressName   string `json:"addressName"`   //地址名称
+	ReceiverName  string `json:"receiverName"`  //收发货人姓名
+	Phone         string `json:"phone"`         //收货人电话
+	Province      string `json:"province"`      //省/直辖市
+	City          string `json:"city"`          //市
+	Region        string `json:"region"`        //区
+	DetailAddress string `json:"detailAddress"` //详细地址
+	FullAddress   string `json:"fullAddress"`   //完整地址
+	DefaultStatus int32  `json:"defaultStatus"` //默认状态
+	SendStatus    int32  `json:"sendStatus"`    //默认发货地址：0->否；1->是
+	ReceiveStatus int32  `json:"receiveStatus"` //默认收货地址：0->否；1->是
+	CreateTime    string `json:"createTime"`    //创建时间
 }
 
 // 客服工作台订单相关类型别名（兼容旧代码）
 type CustomerServiceOrderListReq struct {
-	Current      int32  `form:"current,default=1"`
-	PageSize     int32  `form:"pageSize,default=20"`
-	OrderNo      string `form:"orderNo,optional"`
-	OrderStatus  int32  `form:"orderStatus,optional"`
-	ReturnStatus int32  `form:"returnStatus,optional"`
-	ReceiverName string `form:"receiverName,optional"`
+	Current       int32  `form:"current,default=1"`
+	PageSize      int32  `form:"pageSize,default=20"`
+	OrderNo       string `form:"orderNo,optional"`
+	OrderStatus   int32  `form:"orderStatus,optional"`
+	ReturnStatus  int32  `form:"returnStatus,optional"`
+	ReceiverName  string `form:"receiverName,optional"`
 	ReceiverPhone string `form:"receiverPhone,optional"`
-	Status       int32  `form:"status,optional"`
-	ScopeType    string `form:"scopeType,optional"`
-	PlatformId   int64  `form:"platformId,optional"`
-	TenantId     int64  `form:"tenantId,optional"`
-	MerchantId   int64  `form:"merchantId,optional"`
+	Status        int32  `form:"status,optional"`
+	ScopeType     string `form:"scopeType,optional"`
+	PlatformId    int64  `form:"platformId,optional"`
+	TenantId      int64  `form:"tenantId,optional"`
+	MerchantId    int64  `form:"merchantId,optional"`
 }
 
 type CustomerServiceOrderListResp struct {
-	Code     string                        `json:"code"`
-	Message  string                        `json:"message"`
-	Data     []*CustomerServiceOrderItem   `json:"data"`
-	Total    int64                         `json:"total"`
-	Current  int32                         `json:"current"`
-	PageSize int32                         `json:"pageSize"`
-	Success  bool                          `json:"success"`
+	Code     string                      `json:"code"`
+	Message  string                      `json:"message"`
+	Data     []*CustomerServiceOrderItem `json:"data"`
+	Total    int64                       `json:"total"`
+	Current  int32                       `json:"current"`
+	PageSize int32                       `json:"pageSize"`
+	Success  bool                        `json:"success"`
 }
 
 type CustomerServiceOrderItem struct {
-	Id               int64                  `json:"id"`
-	OrderNo          string                 `json:"orderNo"`
-	OrderStatus      int32                  `json:"orderStatus"`
-	OrderStatusText  string                 `json:"orderStatusText"`
-	PayStatus        int32                  `json:"payStatus"`
-	PayStatusText    string                 `json:"payStatusText"`
-	ReturnStatus     int32                  `json:"returnStatus"`
-	ReturnStatusText string                 `json:"returnStatusText"`
-	MemberId         int64                  `json:"memberId"`
-	MemberName       string                 `json:"memberName"`
-	ReceiverName     string                 `json:"receiverName"`
-	ReceiverPhone    string                 `json:"receiverPhone"`
-	ReceiverAddress  string                 `json:"receiverAddress"`
-	TotalAmount      float32                `json:"totalAmount"`
-	PayAmount        float32                `json:"payAmount"`
-	DeliveryCompany  string                 `json:"deliveryCompany"`
-	DeliverySn       string                 `json:"deliverySn"`
-	CreateTime       string                 `json:"createTime"`
-	PayTime          string                 `json:"payTime"`
-	DeliveryTime     string                 `json:"deliveryTime"`
-	ReceiveTime      string                 `json:"receiveTime"`
-	OrderItemData    []*OrderItemData       `json:"orderItemData"`
-	Status           int32                  `json:"status"`
-	StatusText       string                 `json:"statusText"`
+	Id               int64            `json:"id"`
+	OrderNo          string           `json:"orderNo"`
+	OrderStatus      int32            `json:"orderStatus"`
+	OrderStatusText  string           `json:"orderStatusText"`
+	PayStatus        int32            `json:"payStatus"`
+	PayStatusText    string           `json:"payStatusText"`
+	ReturnStatus     int32            `json:"returnStatus"`
+	ReturnStatusText string           `json:"returnStatusText"`
+	MemberId         int64            `json:"memberId"`
+	MemberName       string           `json:"memberName"`
+	ReceiverName     string           `json:"receiverName"`
+	ReceiverPhone    string           `json:"receiverPhone"`
+	ReceiverAddress  string           `json:"receiverAddress"`
+	TotalAmount      float32          `json:"totalAmount"`
+	PayAmount        float32          `json:"payAmount"`
+	DeliveryCompany  string           `json:"deliveryCompany"`
+	DeliverySn       string           `json:"deliverySn"`
+	CreateTime       string           `json:"createTime"`
+	PayTime          string           `json:"payTime"`
+	DeliveryTime     string           `json:"deliveryTime"`
+	ReceiveTime      string           `json:"receiveTime"`
+	OrderItemData    []*OrderItemData `json:"orderItemData"`
+	Status           int32            `json:"status"`
+	StatusText       string           `json:"statusText"`
 }
 
 // 商户工作台订单相关类型别名（兼容旧代码）
@@ -6362,42 +6363,42 @@ type MerchantOrderListReq struct {
 }
 
 type MerchantOrderListResp struct {
-	Code     string              `json:"code"`
-	Message  string              `json:"message"`
+	Code     string               `json:"code"`
+	Message  string               `json:"message"`
 	Data     []*MerchantOrderItem `json:"data"`
-	Total    int64               `json:"total"`
-	Current  int32               `json:"current"`
-	PageSize int32               `json:"pageSize"`
-	Success  bool                `json:"success"`
+	Total    int64                `json:"total"`
+	Current  int32                `json:"current"`
+	PageSize int32                `json:"pageSize"`
+	Success  bool                 `json:"success"`
 }
 
 type MerchantOrderItem struct {
-	Id               int64   `json:"id"`
-	OrderNo          string  `json:"orderNo"`
-	OrderStatus      int32   `json:"orderStatus"`
-	OrderStatusText  string  `json:"orderStatusText"`
-	PayStatus        int32   `json:"payStatus"`
-	PayStatusText    string  `json:"payStatusText"`
-	ReturnStatus     int32   `json:"returnStatus"`
-	ReturnStatusText string  `json:"returnStatusText"`
-	MemberId         int64   `json:"memberId"`
-	MemberName       string  `json:"memberName"`
-	MemberNickname   string  `json:"memberNickname"`
-	ReceiverName     string  `json:"receiverName"`
-	ReceiverPhone    string  `json:"receiverPhone"`
-	ReceiverAddress  string  `json:"receiverAddress"`
-	TotalAmount      float32 `json:"totalAmount"`
-	PayAmount        float32 `json:"payAmount"`
-	DeliveryCompany  string  `json:"deliveryCompany"`
-	DeliverySn       string  `json:"deliverySn"`
-	CreateTime       string  `json:"createTime"`
-	PayTime          string  `json:"payTime"`
-	DeliveryTime     string  `json:"deliveryTime"`
-	ReceiveTime      string  `json:"receiveTime"`
-	MerchantNotes    string  `json:"merchantNotes"`
+	Id               int64            `json:"id"`
+	OrderNo          string           `json:"orderNo"`
+	OrderStatus      int32            `json:"orderStatus"`
+	OrderStatusText  string           `json:"orderStatusText"`
+	PayStatus        int32            `json:"payStatus"`
+	PayStatusText    string           `json:"payStatusText"`
+	ReturnStatus     int32            `json:"returnStatus"`
+	ReturnStatusText string           `json:"returnStatusText"`
+	MemberId         int64            `json:"memberId"`
+	MemberName       string           `json:"memberName"`
+	MemberNickname   string           `json:"memberNickname"`
+	ReceiverName     string           `json:"receiverName"`
+	ReceiverPhone    string           `json:"receiverPhone"`
+	ReceiverAddress  string           `json:"receiverAddress"`
+	TotalAmount      float32          `json:"totalAmount"`
+	PayAmount        float32          `json:"payAmount"`
+	DeliveryCompany  string           `json:"deliveryCompany"`
+	DeliverySn       string           `json:"deliverySn"`
+	CreateTime       string           `json:"createTime"`
+	PayTime          string           `json:"payTime"`
+	DeliveryTime     string           `json:"deliveryTime"`
+	ReceiveTime      string           `json:"receiveTime"`
+	MerchantNotes    string           `json:"merchantNotes"`
 	OrderItemData    []*OrderItemData `json:"orderItemData"`
-	Status           int32   `json:"status"`
-	StatusText       string  `json:"statusText"`
+	Status           int32            `json:"status"`
+	StatusText       string           `json:"statusText"`
 }
 
 // 订单操作日志相关类型别名（兼容旧代码）
@@ -6423,16 +6424,165 @@ type QueryOrderOperationLogListResp struct {
 }
 
 type OrderOperationLogItem struct {
-	Id               int64  `json:"id"`
-	OrderId          int64  `json:"orderId"`
-	OrderNo          string `json:"orderNo"`
-	OperationType    int32  `json:"operationType"`
+	Id                int64  `json:"id"`
+	OrderId           int64  `json:"orderId"`
+	OrderNo           string `json:"orderNo"`
+	OperationType     int32  `json:"operationType"`
 	OperationTypeText string `json:"operationTypeText"`
-	OperationDesc    string `json:"operationDesc"`
-	OperatorId       int64  `json:"operatorId"`
-	OperatorName     string `json:"operatorName"`
-	OperatorType     int32  `json:"operatorType"`
-	OperatorTypeText string `json:"operatorTypeText"`
-	OperatorNote     string `json:"operatorNote"`
-	CreateTime       string `json:"createTime"`
+	OperationDesc     string `json:"operationDesc"`
+	OperatorId        int64  `json:"operatorId"`
+	OperatorName      string `json:"operatorName"`
+	OperatorType      int32  `json:"operatorType"`
+	OperatorTypeText  string `json:"operatorTypeText"`
+	OperatorNote      string `json:"operatorNote"`
+	CreateTime        string `json:"createTime"`
+}
+
+// 卡片模板管理相关类型 (Story 10.10)
+
+type AddCardTemplateReq struct {
+	TemplateCode            string `json:"templateCode"`                     // 模板编码
+	TemplateName            string `json:"templateName"`                     // 模板名称
+	CardFaceImage           string `json:"cardFaceImage,optional"`           // 卡面资源
+	CopyrightOwner          string `json:"copyrightOwner,optional"`          // 版权归属
+	CopyrightProofSummary   string `json:"copyrightProofSummary,optional"`   // 版权凭证摘要
+	Rarity                  string `json:"rarity,optional"`                  // 稀有度
+	IssueLimit              int64  `json:"issueLimit,optional"`              // 发行上限
+	DisplayCopy             string `json:"displayCopy,optional"`             // 展示文案
+	CirculationLimitSummary string `json:"circulationLimitSummary,optional"` // 默认流转限制
+	DisplayStatus           int32  `json:"displayStatus,optional"`           // 展示状态
+	ContentAuditStatus      int32  `json:"contentAuditStatus,optional"`      // 内容审核状态
+	ProviderCode            string `json:"providerCode,optional"`            // 接入方编码
+	CredentialRef           string `json:"credentialRef,optional"`           // 实名/版权凭证引用
+	ScopeType               string `json:"scopeType,optional"`               // 治理范围(platform/tenant/merchant)
+	PlatformId              int64  `json:"platformId,optional"`              // 平台ID
+	TenantId                int64  `json:"tenantId,optional"`                // 租户ID
+	MerchantId              int64  `json:"merchantId,optional"`              // 商户ID
+}
+
+type UpdateCardTemplateReq struct {
+	Id                      int64  `json:"id"`                                     // 模板ID
+	TemplateName            string `json:"templateName,optional"`                  // 模板名称
+	CardFaceImage           string `json:"cardFaceImage,optional"`                 // 卡面资源
+	CopyrightOwner          string `json:"copyrightOwner,optional"`                // 版权归属
+	CopyrightProofSummary   string `json:"copyrightProofSummary,optional"`         // 版权凭证摘要
+	Rarity                  string `json:"rarity,optional"`                        // 稀有度
+	IssueLimit              int64  `json:"issueLimit,optional,default=-1"`         // 发行上限：-1-不更新（默认）, 0-不限, >0-限量 (Story 10.10 修复 M1)
+	DisplayCopy             string `json:"displayCopy,optional"`                   // 展示文案
+	CirculationLimitSummary string `json:"circulationLimitSummary,optional"`       // 默认流转限制
+	DisplayStatus           int32  `json:"displayStatus,optional,default=-1"`      // 展示状态：-1-不更新（默认）, 0-下架, 1-上架 (Story 10.10 修复 H3)
+	ContentAuditStatus      int32  `json:"contentAuditStatus,optional,default=-1"` // 内容审核状态：-1-不更新（默认）, 0~3-枚举 (Story 10.10 修复 H3)
+	ProviderCode            string `json:"providerCode,optional"`                  // 接入方编码
+	CredentialRef           string `json:"credentialRef,optional"`                 // 实名/版权凭证引用
+	ScopeType               string `json:"scopeType,optional"`                     // 治理范围
+	PlatformId              int64  `json:"platformId,optional"`                    // 平台ID
+	TenantId                int64  `json:"tenantId,optional"`                      // 租户ID
+	MerchantId              int64  `json:"merchantId,optional"`                    // 商户ID
+}
+
+type CardTemplateData struct {
+	Id                      int64  `json:"id"`                      // 模板ID
+	TemplateCode            string `json:"templateCode"`            // 模板编码
+	TemplateName            string `json:"templateName"`            // 模板名称
+	CardFaceImage           string `json:"cardFaceImage"`           // 卡面资源
+	CopyrightOwner          string `json:"copyrightOwner"`          // 版权归属
+	CopyrightProofSummary   string `json:"copyrightProofSummary"`   // 版权凭证摘要
+	Rarity                  string `json:"rarity"`                  // 稀有度
+	IssueLimit              int64  `json:"issueLimit"`              // 发行上限
+	DisplayCopy             string `json:"displayCopy"`             // 展示文案
+	CirculationLimitSummary string `json:"circulationLimitSummary"` // 默认流转限制
+	DisplayStatus           int32  `json:"displayStatus"`           // 展示状态
+	ContentAuditStatus      int32  `json:"contentAuditStatus"`      // 内容审核状态
+	ProviderCode            string `json:"providerCode"`            // 接入方编码
+	CredentialRef           string `json:"credentialRef"`           // 实名/版权凭证引用
+	Status                  int32  `json:"status"`                  // 启停状态：0-禁用，1-启用
+	AuditStatus             int32  `json:"auditStatus"`             // 审批状态
+	PlatformId              int64  `json:"platformId"`              // 平台ID
+	TenantId                int64  `json:"tenantId"`                // 租户ID
+	MerchantId              int64  `json:"merchantId"`              // 商户ID
+	CreateBy                string `json:"createBy"`                // 创建人
+	UpdateBy                string `json:"updateBy"`                // 更新人
+	CreateTime              string `json:"createTime"`              // 创建时间
+	UpdateTime              string `json:"updateTime"`              // 更新时间
+	RefRuleCount            int32  `json:"refRuleCount"`            // 引用此模板的发卡规则数量
+}
+
+type QueryCardTemplateListReq struct {
+	TemplateName  string `form:"templateName,optional"`             // 模板名称（模糊查询）
+	TemplateCode  string `form:"templateCode,optional"`             // 模板编码（精确）
+	Rarity        string `form:"rarity,optional"`                   // 稀有度
+	Status        int32  `form:"status,optional,default=-1"`        // 启停状态：-1-全部（默认）, 0-禁用, 1-启用 (Story 10.10 修复 C1)
+	DisplayStatus int32  `form:"displayStatus,optional,default=-1"` // 展示状态：-1-全部（默认）, 0-下架, 1-上架 (Story 10.10 修复 C1)
+	Page          int32  `form:"page,optional"`                     // 页码
+	PageSize      int32  `form:"pageSize,optional"`                 // 每页数量
+	ScopeType     string `form:"scopeType,optional"`                // 治理范围
+	PlatformId    int64  `form:"platformId,optional"`               // 平台ID
+	TenantId      int64  `form:"tenantId,optional"`                 // 租户ID
+	MerchantId    int64  `form:"merchantId,optional"`               // 商户ID
+}
+
+type QueryCardTemplateListResp struct {
+	Code    string               `json:"code"`
+	Message string               `json:"message"`
+	Data    CardTemplateListData `json:"data"`
+}
+
+type CardTemplateListData struct {
+	List     []CardTemplateData `json:"list"`     // 模板列表
+	Total    int64              `json:"total"`    // 总数
+	Page     int32              `json:"page"`     // 页码
+	PageSize int32              `json:"pageSize"` // 每页数量
+}
+
+type QueryCardTemplateDetailReq struct {
+	Id         int64  `form:"id"`                  // 模板ID
+	ScopeType  string `form:"scopeType,optional"`  // 治理范围
+	PlatformId int64  `form:"platformId,optional"` // 平台ID
+	TenantId   int64  `form:"tenantId,optional"`   // 租户ID
+	MerchantId int64  `form:"merchantId,optional"` // 商户ID
+}
+
+type QueryCardTemplateDetailResp struct {
+	Code    string           `json:"code"`
+	Message string           `json:"message"`
+	Data    CardTemplateData `json:"data"`
+}
+
+type UpdateCardTemplateStatusReq struct {
+	Id         int64  `json:"id"`                  // 模板ID
+	Status     int32  `json:"status"`              // 启停状态：0-禁用，1-启用
+	ScopeType  string `json:"scopeType,optional"`  // 治理范围
+	PlatformId int64  `json:"platformId,optional"` // 平台ID
+	TenantId   int64  `json:"tenantId,optional"`   // 租户ID
+	MerchantId int64  `json:"merchantId,optional"` // 商户ID
+}
+
+type DeleteCardTemplateReq struct {
+	Id         int64  `form:"id"`                  // 模板ID
+	ScopeType  string `form:"scopeType,optional"`  // 治理范围
+	PlatformId int64  `form:"platformId,optional"` // 平台ID
+	TenantId   int64  `form:"tenantId,optional"`   // 租户ID
+	MerchantId int64  `form:"merchantId,optional"` // 商户ID
+}
+
+type CheckCardTemplateUsageReq struct {
+	Id         int64  `form:"id"`                  // 模板ID
+	ScopeType  string `form:"scopeType,optional"`  // 治理范围
+	PlatformId int64  `form:"platformId,optional"` // 平台ID
+	TenantId   int64  `form:"tenantId,optional"`   // 租户ID
+	MerchantId int64  `form:"merchantId,optional"` // 商户ID
+}
+
+type CheckCardTemplateUsageResp struct {
+	Code    string                 `json:"code"`
+	Message string                 `json:"message"`
+	Data    CheckCardTemplateUsage `json:"data"`
+}
+
+type CheckCardTemplateUsage struct {
+	RefRuleCount int32    `json:"refRuleCount"` // 引用此模板的发卡规则数量
+	RefRuleNames []string `json:"refRuleNames"` // 引用此模板的发卡规则名称
+	CanDisable   bool     `json:"canDisable"`   // 是否可以禁用
+	CanDelete    bool     `json:"canDelete"`    // 是否可以删除
+	Message      string   `json:"message"`      // 提示信息
 }

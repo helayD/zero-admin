@@ -1,0 +1,146 @@
+syntax = "proto3";
+
+package main;
+
+option go_package = "./proto";
+
+message CardTemplateData {
+  int64 id = 1; // 模板ID
+  string template_code = 2; // 模板编码
+  string template_name = 3; // 模板名称
+  string card_face_image = 4; // 卡面资源
+  string copyright_owner = 5; // 版权归属
+  string copyright_proof_summary = 6; // 版权凭证摘要
+  string rarity = 7; // 稀有度
+  int64 issue_limit = 8; // 发行上限
+  string display_copy = 9; // 展示文案
+  string circulation_limit_summary = 10; // 默认流转限制
+  int32 display_status = 11; // 展示状态：0-下架，1-上架
+  int32 content_audit_status = 12; // 内容审核状态：0-待审，1-审核中，2-通过，3-驳回
+  string provider_code = 13; // 接入方编码
+  string credential_ref = 14; // 实名/版权凭证引用
+  int32 status = 15; // 启停状态：0-禁用，1-启用
+  int32 audit_status = 16; // 审批状态
+  int64 platform_id = 17; // 平台ID
+  int64 tenant_id = 18; // 租户ID
+  int64 merchant_id = 19; // 商户ID
+  string create_by = 20; // 创建人
+  string update_by = 21; // 更新人
+  string create_time = 22; // 创建时间
+  string update_time = 23; // 更新时间
+  int32 ref_rule_count = 24; // 引用此模板的发卡规则数量（查询时填充）
+}
+
+message AddCardTemplateReq {
+  string template_code = 1; // 模板编码
+  string template_name = 2; // 模板名称
+  string card_face_image = 3; // 卡面资源
+  string copyright_owner = 4; // 版权归属
+  string copyright_proof_summary = 5; // 版权凭证摘要
+  string rarity = 6; // 稀有度
+  int64 issue_limit = 7; // 发行上限
+  string display_copy = 8; // 展示文案
+  string circulation_limit_summary = 9; // 默认流转限制
+  int32 display_status = 10; // 展示状态
+  int32 content_audit_status = 11; // 内容审核状态
+  string provider_code = 12; // 接入方编码
+  string credential_ref = 13; // 实名/版权凭证引用
+  GovernanceScope scope = 14; // 治理范围
+  string operator_type = 15; // 操作者类型
+}
+
+message AddCardTemplateResp {
+  CardTemplateData template = 1; // 创建的模板
+}
+
+message UpdateCardTemplateReq {
+  int64 id = 1; // 模板ID
+  string template_name = 2; // 模板名称
+  string card_face_image = 3; // 卡面资源
+  string copyright_owner = 4; // 版权归属
+  string copyright_proof_summary = 5; // 版权凭证摘要
+  string rarity = 6; // 稀有度
+  int64 issue_limit = 7; // 发行上限
+  string display_copy = 8; // 展示文案
+  string circulation_limit_summary = 9; // 默认流转限制
+  int32 display_status = 10; // 展示状态
+  int32 content_audit_status = 11; // 内容审核状态
+  string provider_code = 12; // 接入方编码
+  string credential_ref = 13; // 实名/版权凭证引用
+  GovernanceScope scope = 14; // 治理范围
+  string operator_type = 15; // 操作者类型
+}
+
+message UpdateCardTemplateResp {
+  CardTemplateData template = 1; // 更新后的模板
+}
+
+message QueryCardTemplateListReq {
+  string template_name = 1; // 模板名称（模糊查询）
+  string template_code = 2; // 模板编码（精确查询）
+  string rarity = 3; // 稀有度
+  int32 status = 4; // 启停状态：-1-全部，0-禁用，1-启用
+  int32 display_status = 5; // 展示状态：-1-全部，0-下架，1-上架
+  int32 page = 6; // 页码
+  int32 page_size = 7; // 每页数量
+  GovernanceScope scope = 8; // 治理范围
+}
+
+message QueryCardTemplateListResp {
+  repeated CardTemplateData list = 1; // 模板列表
+  int64 total = 2; // 总数
+}
+
+message QueryCardTemplateDetailReq {
+  int64 id = 1; // 模板ID
+  GovernanceScope scope = 2; // 治理范围
+}
+
+message QueryCardTemplateDetailResp {
+  CardTemplateData template = 1; // 模板详情
+}
+
+message UpdateCardTemplateStatusReq {
+  int64 id = 1; // 模板ID
+  int32 status = 2; // 启停状态：0-禁用，1-启用
+  GovernanceScope scope = 3; // 治理范围
+  string operator_type = 4; // 操作者类型
+}
+
+message UpdateCardTemplateStatusResp {
+  CardTemplateData template = 1; // 更新后的模板
+}
+
+message DeleteCardTemplateReq {
+  int64 id = 1; // 模板ID
+  GovernanceScope scope = 2; // 治理范围
+  string operator_type = 3; // 操作者类型
+}
+
+message DeleteCardTemplateResp {
+  int32 code = 1; // 状态码：0-成功
+  string message = 2; // 提示信息
+}
+
+message CheckCardTemplateUsageReq {
+  int64 id = 1; // 模板ID
+  GovernanceScope scope = 2; // 治理范围
+}
+
+message CheckCardTemplateUsageResp {
+  int32 ref_rule_count = 1; // 引用模板的发卡规则数量
+  repeated string ref_rule_names = 2; // 引用此模板的发卡规则名称列表
+  bool can_disable = 3; // 是否可以禁用
+  bool can_delete = 4; // 是否可以删除
+  string message = 5; // 提示信息
+}
+
+service CardTemplateService {
+  rpc AddCardTemplate(AddCardTemplateReq) returns (AddCardTemplateResp){}
+  rpc UpdateCardTemplate(UpdateCardTemplateReq) returns (UpdateCardTemplateResp){}
+  rpc QueryCardTemplateList(QueryCardTemplateListReq) returns (QueryCardTemplateListResp){}
+  rpc QueryCardTemplateDetail(QueryCardTemplateDetailReq) returns (QueryCardTemplateDetailResp){}
+  rpc UpdateCardTemplateStatus(UpdateCardTemplateStatusReq) returns (UpdateCardTemplateStatusResp){}
+  rpc DeleteCardTemplate(DeleteCardTemplateReq) returns (DeleteCardTemplateResp){}
+  rpc CheckCardTemplateUsage(CheckCardTemplateUsageReq) returns (CheckCardTemplateUsageResp){}
+}

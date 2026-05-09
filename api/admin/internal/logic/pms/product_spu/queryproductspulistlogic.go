@@ -45,22 +45,34 @@ func (l *QueryProductSpuListLogic) QueryProductSpuList(req *types.QueryProductSp
 		return nil, errorx.NewDefaultError(err.Error())
 	}
 
-	result, err := l.svcCtx.ProductSpuService.QueryProductSpuList(l.ctx, &pmsclient.QueryProductSpuListReq{
+	// Story 10.10 Task 7: 商品列表按履约模式过滤。
+	// 由于 pms-rpc 的 QueryProductSpuListReq 当前未携带 fulfillment_mode 字段，且其 .pb.go 是聚合文件
+	// 改动会触发 25k+ 行重生成，本期采用 admin-api 层后过滤的折中：
+	// 1) 当 fulfillmentMode 非空时，把 pms-rpc 的 PageSize 临时放大到一个较高上限 (1000)，禁用分页；
+	// 2) admin-api 拉到列表后按 fulfillment_mode 过滤，再做内存分页。
+	// 当商品总量超出 1000 时此实现会丢失尾部记录；后续 Story 升级 pms-rpc 协议后改为真正的 SQL 过滤。
+	rpcReq := &pmsclient.QueryProductSpuListReq{
 		PageNum:         req.Current,
 		PageSize:        req.PageSize,
-		Name:            req.Name,            // 商品名称
-		ProductSn:       req.ProductSn,       // 商品货号
-		CategoryId:      req.CategoryId,      // 商品分类ID
-		BrandId:         req.BrandId,         // 品牌ID
-		Keywords:        req.Keywords,        // 关键词
-		PublishStatus:   req.PublishStatus,   // 上架状态：0-下架，1-上架
-		NewStatus:       req.NewStatus,       // 新品状态:0->不是新品；1->新品
-		RecommendStatus: req.RecommendStatus, // 推荐状态；0->不推荐；1->推荐
-		VerifyStatus:    req.VerifyStatus,    // 审核状态：0->未审核；1->审核通过
-		PreviewStatus:   req.PreviewStatus,   // 是否为预告商品：0->不是；1->是
-		PromotionType:   req.PromotionType,   // 促销类型：0->没有促销使用原价;1->使用促销价；2->使用会员价；3->使用阶梯价格；4->使用满减价格；5->秒杀
+		Name:            req.Name,
+		ProductSn:       req.ProductSn,
+		CategoryId:      req.CategoryId,
+		BrandId:         req.BrandId,
+		Keywords:        req.Keywords,
+		PublishStatus:   req.PublishStatus,
+		NewStatus:       req.NewStatus,
+		RecommendStatus: req.RecommendStatus,
+		VerifyStatus:    req.VerifyStatus,
+		PreviewStatus:   req.PreviewStatus,
+		PromotionType:   req.PromotionType,
 		Scope:           admincommon.PMSGovernanceScope(queryScope),
-	})
+	}
+	if req.FulfillmentMode != "" {
+		rpcReq.PageNum = 1
+		rpcReq.PageSize = 1000
+	}
+
+	result, err := l.svcCtx.ProductSpuService.QueryProductSpuList(l.ctx, rpcReq)
 
 	if err != nil {
 		logc.Errorf(l.ctx, "查询字商品SPU列表失败,参数：%+v,响应：%s", req, err.Error())
@@ -68,9 +80,58 @@ func (l *QueryProductSpuListLogic) QueryProductSpuList(req *types.QueryProductSp
 		return nil, errorx.NewDefaultError(s.Message())
 	}
 
+	// Story 10.10 修复 H2: 折中方案在 total>1000 时会截断尾部记录，必须打告警日志方便 SRE/运营察觉。
+	// 后续 Story 升级 pms-rpc 协议加 fulfillment_mode 字段后，可移除本段告警与上方 PageSize=1000 的临时放大。
+	if req.FulfillmentMode != "" && result.Total > 1000 {
+		logc.Errorf(l.ctx,
+			"[ProductSpu履约模式过滤] 数据截断风险：fulfillmentMode=%s, scope=%+v, total=%d 超出折中阈值 1000，"+
+				"过滤结果可能丢失尾部记录。请尽快完成 pms-rpc 协议升级以走 SQL 过滤。",
+			req.FulfillmentMode, queryScope, result.Total)
+	}
+
+	// 按履约模式过滤
+	filteredRows := result.List
+	if req.FulfillmentMode != "" {
+		filteredRows = filteredRows[:0]
+		for _, item := range result.List {
+			if item.FulfillmentMode == req.FulfillmentMode {
+				filteredRows = append(filteredRows, item)
+			}
+		}
+	}
+
+	// 内存分页（仅当履约模式过滤生效时）
+	totalAfterFilter := int64(len(filteredRows))
+	pagedRows := filteredRows
+	if req.FulfillmentMode != "" {
+		page := req.Current
+		if page <= 0 {
+			page = 1
+		}
+		size := req.PageSize
+		if size <= 0 {
+			size = 20
+		}
+		start := int((page - 1) * size)
+		end := start + int(size)
+		if start >= len(filteredRows) {
+			pagedRows = nil
+		} else {
+			if end > len(filteredRows) {
+				end = len(filteredRows)
+			}
+			pagedRows = filteredRows[start:end]
+		}
+	}
+
+	totalForResp := result.Total
+	if req.FulfillmentMode != "" {
+		totalForResp = totalAfterFilter
+	}
+
 	var list []*types.QueryProductSpuListData
 
-	for _, detail := range result.List {
+	for _, detail := range pagedRows {
 		list = append(list, &types.QueryProductSpuListData{
 			Id:                  detail.Id,                  // 商品SpuId
 			Name:                detail.Name,                // 商品名称
@@ -97,13 +158,13 @@ func (l *QueryProductSpuListLogic) QueryProductSpuList(req *types.QueryProductSp
 			Sales:               detail.Sales,               // 销量
 			Stock:               detail.Stock,               // 库存
 			LowStock:            detail.LowStock,            // 预警库存
-		PromotionType:       detail.PromotionType,       // 促销类型：0->没有促销使用原价;1->使用促销价；2->使用会员价；3->使用阶梯价格；4->使用满减价格；5->秒杀
-		FulfillmentMode:     detail.FulfillmentMode,     // 履约模式: physical_delivery-实物发货, digital_asset-数字资产
-		FulfillmentRuleId:   detail.FulfillmentRuleId,   // 关联发卡规则ID,仅digital_asset模式时有效
-		SubTitle:            detail.SubTitle,            // 详情标题
-		DetailHtml:          detail.DetailHtml,          // 产品详情网页内容
-		DetailMobileHtml:    detail.DetailMobileHtml,    // 移动端网页详情
-		CreateBy:            detail.CreateBy,            // 创建人ID
+			PromotionType:       detail.PromotionType,       // 促销类型：0->没有促销使用原价;1->使用促销价；2->使用会员价；3->使用阶梯价格；4->使用满减价格；5->秒杀
+			FulfillmentMode:     detail.FulfillmentMode,     // 履约模式: physical_delivery-实物发货, digital_asset-数字资产
+			FulfillmentRuleId:   detail.FulfillmentRuleId,   // 关联发卡规则ID,仅digital_asset模式时有效
+			SubTitle:            detail.SubTitle,            // 详情标题
+			DetailHtml:          detail.DetailHtml,          // 产品详情网页内容
+			DetailMobileHtml:    detail.DetailMobileHtml,    // 移动端网页详情
+			CreateBy:            detail.CreateBy,            // 创建人ID
 			CreateTime:          detail.CreateTime,          // 创建时间
 			UpdateBy:            detail.UpdateBy,            // 更新人ID
 			UpdateTime:          detail.UpdateTime,          // 更新时间
@@ -129,7 +190,7 @@ func (l *QueryProductSpuListLogic) QueryProductSpuList(req *types.QueryProductSp
 		Data:     list,
 		Current:  req.Current,
 		PageSize: req.PageSize,
-		Total:    result.Total,
+		Total:    totalForResp,
 		Success:  true,
 	}, nil
 }

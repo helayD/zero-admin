@@ -18,6 +18,7 @@ import {
   updateProductFulfillmentRule,
   queryProductFulfillmentRuleDetail,
 } from '../service';
+import { queryCardTemplateList } from '@/pages/sms/CardTemplate/service';
 import type { GovernanceScopeValue } from '@/pages/system/components/governance';
 import { toGovernancePayload } from '@/pages/system/components/governance';
 
@@ -29,11 +30,10 @@ interface RuleFormProps {
   scope: GovernanceScopeValue;
 }
 
-const cardTemplateOptions = [
-  { label: 'SSR 银河兔', value: 920001 },
-  { label: 'SR 星云狐', value: 920002 },
-  { label: '新手欢迎徽章', value: 920003 },
-];
+interface CardTemplateOption {
+  label: string;
+  value: number;
+}
 
 const RuleForm: React.FC<RuleFormProps> = ({
   visible,
@@ -45,7 +45,41 @@ const RuleForm: React.FC<RuleFormProps> = ({
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [transferable, setTransferable] = useState(false);
+  const [cardTemplateOptions, setCardTemplateOptions] = useState<CardTemplateOption[]>([]);
   const isEdit = !!record;
+
+  // Story 10.10 Task 4.3: 替换硬编码 cardTemplateOptions，按当前 scope 拉取启用状态的真实卡片模板
+  useEffect(() => {
+    if (!visible || !scope) {
+      return;
+    }
+    queryCardTemplateList({
+      pageSize: 999,
+      status: 1, // 仅启用模板可被新规则关联
+      ...toGovernancePayload(scope),
+    })
+      .then((res) => {
+        const options: CardTemplateOption[] = (res.data || []).map((item) => ({
+          label: `${item.templateName} (${item.templateCode})${item.rarity ? ` · ${item.rarity}` : ''}`,
+          value: item.id,
+        }));
+        // 编辑场景下若当前规则关联的模板不在启用列表（例如已被禁用），追加一条 disabled 占位项让回显不丢失
+        if (record && record.cardTemplateId) {
+          const exists = options.some((opt) => opt.value === record.cardTemplateId);
+          if (!exists) {
+            options.unshift({
+              label: `${record.cardTemplateName || '未知模板'} (ID:${record.cardTemplateId} · 已禁用/超出范围)`,
+              value: record.cardTemplateId,
+            });
+          }
+        }
+        setCardTemplateOptions(options);
+      })
+      .catch(() => {
+        setCardTemplateOptions([]);
+      });
+    // Story 10.10 修复 L3: 用 record?.id 而非 record 引用，避免父组件 re-render 触发不必要 fetch
+  }, [visible, scope, record?.id, record?.cardTemplateId, record?.cardTemplateName]);
 
   useEffect(() => {
     if (visible) {

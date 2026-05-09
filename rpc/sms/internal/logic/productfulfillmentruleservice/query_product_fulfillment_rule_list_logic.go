@@ -45,20 +45,21 @@ func (l *QueryProductFulfillmentRuleListLogic) QueryProductFulfillmentRuleList(i
 		pageSize = 10
 	}
 
+	// 注意 (Story 10.10 Task 3.6): 主表别名为 r，LEFT JOIN sms_card_template 取 template_name 透出。
 	query := l.svcCtx.DB.WithContext(l.ctx).
-		Table("sms_product_fulfillment_rule").
-		Where("platform_id = ? AND tenant_id = ? AND merchant_id = ? AND is_deleted = 0",
+		Table("sms_product_fulfillment_rule AS r").
+		Where("r.platform_id = ? AND r.tenant_id = ? AND r.merchant_id = ? AND r.is_deleted = 0",
 			platformId, tenantId, merchantId)
 
 	// 3. 添加筛选条件
 	if in.RuleName != "" {
-		query = query.Where("rule_name LIKE ?", "%"+in.RuleName+"%")
+		query = query.Where("r.rule_name LIKE ?", "%"+in.RuleName+"%")
 	}
 	if in.CardTemplateId > 0 {
-		query = query.Where("card_template_id = ?", in.CardTemplateId)
+		query = query.Where("r.card_template_id = ?", in.CardTemplateId)
 	}
 	if in.RuleStatus >= 0 {
-		query = query.Where("rule_status = ?", in.RuleStatus)
+		query = query.Where("r.rule_status = ?", in.RuleStatus)
 	}
 
 	// 4. 查询总数
@@ -69,12 +70,13 @@ func (l *QueryProductFulfillmentRuleListLogic) QueryProductFulfillmentRuleList(i
 		return nil, err
 	}
 
-	// 5. 查询列表
+	// 5. 查询列表（JOIN 取 cardTemplateName）
 	type ruleRow struct {
 		Id                  int64  `gorm:"column:id"`
 		RuleName            string `gorm:"column:rule_name"`
 		RuleStatus          int32  `gorm:"column:rule_status"`
 		CardTemplateId      int64  `gorm:"column:card_template_id"`
+		CardTemplateName    string `gorm:"column:card_template_name"`
 		ExpireDays          int32  `gorm:"column:expire_days"`
 		Transferable        int32  `gorm:"column:transferable"`
 		TransferLimit       int32  `gorm:"column:transfer_limit"`
@@ -92,8 +94,11 @@ func (l *QueryProductFulfillmentRuleListLogic) QueryProductFulfillmentRuleList(i
 
 	var rows []ruleRow
 	err = query.
-		Select("id, rule_name, rule_status, card_template_id, expire_days, transferable, transfer_limit, claim_condition, redemption_condition, refund_policy, platform_id, tenant_id, merchant_id, create_by, create_time, update_by, update_time").
-		Order("id DESC").
+		Joins("LEFT JOIN sms_card_template AS t ON t.id = r.card_template_id AND t.is_deleted = 0").
+		Select("r.id, r.rule_name, r.rule_status, r.card_template_id, t.template_name AS card_template_name, " +
+			"r.expire_days, r.transferable, r.transfer_limit, r.claim_condition, r.redemption_condition, r.refund_policy, " +
+			"r.platform_id, r.tenant_id, r.merchant_id, r.create_by, r.create_time, r.update_by, r.update_time").
+		Order("r.id DESC").
 		Offset(int((page - 1) * pageSize)).
 		Limit(int(pageSize)).
 		Find(&rows).Error
@@ -102,21 +107,42 @@ func (l *QueryProductFulfillmentRuleListLogic) QueryProductFulfillmentRuleList(i
 		return nil, err
 	}
 
-	// 6. 转换结果
-	var list []*smsclient.ProductFulfillmentRuleData
-	for _, row := range rows {
-		// 查询绑定商品数量
-		var bindingCount int64
-		l.svcCtx.DB.WithContext(l.ctx).
+	// 6. Story 10.10 修复 M3: 批量回填绑定商品数量，避免 N+1。
+	ruleIds := make([]int64, 0, len(rows))
+	for i := range rows {
+		ruleIds = append(ruleIds, rows[i].Id)
+	}
+	bindingCounts := make(map[int64]int32, len(ruleIds))
+	if len(ruleIds) > 0 {
+		type bindingCountRow struct {
+			RuleId int64 `gorm:"column:rule_id"`
+			Cnt    int64 `gorm:"column:cnt"`
+		}
+		var bindingRows []bindingCountRow
+		if err := l.svcCtx.DB.WithContext(l.ctx).
 			Table("sms_product_fulfillment_binding").
-			Where("rule_id = ? AND is_deleted = 0", row.Id).
-			Count(&bindingCount)
+			Select("rule_id, COUNT(*) AS cnt").
+			Where("rule_id IN ? AND is_deleted = 0", ruleIds).
+			Group("rule_id").
+			Find(&bindingRows).Error; err != nil {
+			logc.Errorf(l.ctx, "批量查询规则绑定商品数失败: %v", err)
+			// 失败不阻塞列表，按 0 兜底
+		} else {
+			for _, b := range bindingRows {
+				bindingCounts[b.RuleId] = int32(b.Cnt)
+			}
+		}
+	}
 
+	// 7. 转换结果
+	list := make([]*smsclient.ProductFulfillmentRuleData, 0, len(rows))
+	for _, row := range rows {
 		list = append(list, &smsclient.ProductFulfillmentRuleData{
 			Id:                  row.Id,
 			RuleName:            row.RuleName,
 			RuleStatus:          row.RuleStatus,
 			CardTemplateId:      row.CardTemplateId,
+			CardTemplateName:    row.CardTemplateName,
 			ExpireDays:          row.ExpireDays,
 			Transferable:        row.Transferable,
 			TransferLimit:       row.TransferLimit,
@@ -130,7 +156,7 @@ func (l *QueryProductFulfillmentRuleListLogic) QueryProductFulfillmentRuleList(i
 			CreateTime:          row.CreateTime,
 			UpdateBy:            int64ToString(row.UpdateBy),
 			UpdateTime:          row.UpdateTime,
-			BindingCount:        int32(bindingCount),
+			BindingCount:        bindingCounts[row.Id],
 		})
 	}
 
