@@ -142,6 +142,9 @@ func newDrawParticipationTestDB(t *testing.T) *gorm.DB {
 				mint_status TEXT NOT NULL DEFAULT '',
 				token_id TEXT NOT NULL DEFAULT '',
 				chain_status TEXT NOT NULL DEFAULT '',
+				source_type TEXT NOT NULL DEFAULT 'draw',
+				source_id INTEGER NOT NULL DEFAULT 0,
+				fulfillment_rule_id INTEGER NOT NULL DEFAULT 0,
 				last_receipt_at DATETIME NULL,
 				mint_task_id INTEGER NOT NULL DEFAULT 0,
 				issued_at DATETIME NULL,
@@ -151,8 +154,8 @@ func newDrawParticipationTestDB(t *testing.T) *gorm.DB {
 			update_time DATETIME NULL,
 			is_deleted INTEGER NOT NULL DEFAULT 0
 		)`,
-		`CREATE UNIQUE INDEX uk_card_instance_participation ON sms_card_instance(participation_record_id, is_deleted)`,
 		`CREATE UNIQUE INDEX uk_card_instance_asset_no ON sms_card_instance(asset_no, is_deleted)`,
+		`CREATE UNIQUE INDEX uk_source_type_id ON sms_card_instance(source_type, source_id, is_deleted)`,
 		`CREATE TABLE sms_card_asset_log (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			asset_instance_id INTEGER NOT NULL,

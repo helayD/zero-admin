@@ -391,8 +391,13 @@ func createCardInstanceWithRetry(ctx context.Context, tx *gorm.DB, record *parti
 			AssetNo:               assetNoGenerator(issuedAt),
 			AssetStatus:           cardAssetStatusCreated,
 			MintStatus:            cardMintStatusPending,
-			IssuedAt:              &issuedAt,
-			CreateBy:              0,
+			// Story 10.7 Fix: 新 draw 行必须显式设置 source_type='draw' 和 source_id=participationRecordId，
+			// 这样 uk_source_type_id (source_type, source_id, is_deleted) 唯一索引才能正确防重，
+			// 与 migration_20260506 对存量 draw 行的回填语义对齐。
+			SourceType: sourceTypeDraw,
+			SourceID:   record.ID,
+			IssuedAt:   &issuedAt,
+			CreateBy:   0,
 		}
 		err = tx.WithContext(ctx).
 			Table(row.TableName()).

@@ -94,8 +94,8 @@ func newCardAssetTestDB(t *testing.T) *gorm.DB {
 			update_time DATETIME NULL,
 			is_deleted INTEGER NOT NULL DEFAULT 0
 		)`,
-		`CREATE UNIQUE INDEX uk_card_instance_participation ON sms_card_instance(participation_record_id, is_deleted)`,
 		`CREATE UNIQUE INDEX uk_card_instance_asset_no ON sms_card_instance(asset_no, is_deleted)`,
+		`CREATE UNIQUE INDEX uk_source_type_id ON sms_card_instance(source_type, source_id, is_deleted)`,
 		`CREATE TABLE sms_card_asset_log (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			asset_instance_id INTEGER NOT NULL,

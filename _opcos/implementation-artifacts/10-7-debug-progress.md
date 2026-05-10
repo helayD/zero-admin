@@ -1,4 +1,38 @@
-# Story 10.7 调试进度（2026-05-10 16:00 暂停点）
+# Story 10.7 调试进度（2026-05-10 16:20 找到根因 + 已修复）
+
+## 🎯 真正根因（2026-05-10 16:14 复测捕获）
+
+新 wrap 抓到的精确错误：
+
+```
+ensureOrderPurchaseAssetTx: loadOrderPurchaseAsset after duplicate(
+  itemId=30, assetNo=CARD2026051016135504DCE68A,
+  dupErr=Error 1062 (23000): Duplicate entry '0-0' for key
+         'sms_card_instance.uk_card_instance_participation'
+): record not found
+```
+
+**问题：** `sms_card_instance.uk_card_instance_participation` 唯一索引建在
+`(participation_record_id, is_deleted)` 上。订单购买流程总是写
+`participation_record_id=0`，导致第二张订单卡建账时撞 `'0-0'` 重复键。
+
+**为何 sku=33 (rule_id=1) 能成功而 sku=20 (rule_id=2) 失败？**
+sku=33 是历史上第一张 purchase 卡（占了 `(0, 0)` 唯一槽位），
+sku=20 是第二张，必撞重复键。这跟 rule_id 完全无关，只是顺序问题。
+
+## ✅ 修复（commit 待提交）
+
+1. **`rpc/sms/internal/logic/cardassetservice/card_asset_helper.go`**：
+   抽卡流程 `createCardInstanceWithRetry` 补设 `SourceType="draw", SourceID=record.ID`，
+   让新 draw 行也走 `uk_source_type_id` 唯一性保护。
+2. **`script/sql/sms/migration_20260510_drop_card_instance_participation_unique.sql`**：
+   drop 老的 `uk_card_instance_participation` 索引（已被 `uk_source_type_id` 等价覆盖）。
+3. **测试 schema 同步**：`card_asset_logic_test.go` / `draw_participation_logic_test.go`
+   去掉旧 unique index，加上 `uk_source_type_id`。
+
+---
+
+# Story 10.7 调试进度（2026-05-10 16:12 更新）
 
 > 下次继续从这里读起。已修完的不再重复，只列**当前未解决的问题 + 下次第一步该做什么**。
 
@@ -75,24 +109,36 @@ func (s *Service) ensureOrderPurchaseAssetTx(ctx context.Context, tx *gorm.DB, i
 
 3. **嫌疑 #3**：`appendAssetLogTx` 内的 `Create` 报了 record not found（基本不可能，Create 不会返回 ErrRecordNotFound）。
 
-### 下次第一步要做的
+### 已完成（commit `f230ac9b`，已部署到 47.107.224.56）
 
-继续把 `ensureOrderPurchaseAssetTx` 内 **每个 raw return 都 wrap 上 step 名**，特别是：
-- `tx.Create(instance)` 失败的 raw err → wrap `Create(instance source_id=%d, asset_no=%s): %w`
-- `isDuplicateEntryError` 后 reload 的失败 → wrap `loadOrderPurchaseAsset after dup(itemId=%d): %w`
-- `appendAssetLogTx` 后 → wrap `appendAssetLog: %w`
+把 `ensureOrderPurchaseAssetTx` 剩余 raw err 全部 wrap：
 
-然后部署，让用户重新支付，根据具体 wrap 信息精准定位。
+- ✅ `tx.Create(instance)` → `createCardInstance(itemId=%d, assetNo=%s, templateId=%d): %w`
+- ✅ dup → reload 失败 → `loadOrderPurchaseAsset after duplicate(itemId=%d, assetNo=%s, dupErr=%v): %w`
+- ✅ `appendAssetLogTx` → `appendAssetLog(assetId=%d, itemId=%d): %w`
+- ✅ `loadOrderPurchaseAsset` 非 ErrRecordNotFound → `loadOrderPurchaseAsset query(itemId=%d): %w`
+- ✅ `ensureTaskTxForAsset` 内的 `loadTaskByAssetInstance` / `EnsureTaskTx` 都 wrap
+- ✅ `EnsurePaidOrderPurchaseAssets` caller 错误信息附加 `skuId/productId/ruleId/scope=p%d/t%d/m%d`
 
-也可以**直接连远程 sms-rpc 加 zerolog logc.Errorf 打印更详细的 step + asset_no + error**。
+### 远程数据库现状（2026-05-10 16:11 直查）
 
-### 备选直接修：`asset_no` 唯一索引冲突的可能性
-
-```@/Users/helay/Documents/GitHub/zero-admin/pkg/digitalcardmint/order_purchase_asset.go:200-219
-// 查 generateOrderPurchaseAssetNo 看具体实现
+```
+sms_card_instance source_id=30: 无记录
+sms_card_instance source_type='purchase' member_id=4: 仅 970012(source_id=29)
+sms_product_fulfillment_rule id=2: rule_status=1, card_template_id=920004, platform=1/t=0/m=0, is_deleted=0 ✅
+sms_card_template id=920004: status=1, display=1, audit=2, content_audit=2, is_deleted=0, p=1/t=0/m=0 ✅
 ```
 
-读完确认是否高并发场景下会撞 asset_no。如果是，把 generation 改用 `crypto/rand + time + sequence`。
+**结论：** 嫌疑 #1（duplicate-entry → reload not found）几乎不成立——数据库就没有 source_id=30 的脏数据。
+真正的 record not found 来源更可能是 `tx.Create(instance)` 报了某个非 dup 错误（比如外键、NOT NULL 字段、字段长度），但 raw err 包成 `record not found` 字面量。等下次复测看新 wrap 内容就明白。
+
+### 下次第一步要做的
+
+**让用户重新模拟支付 sku=20（订单 28 / item 30）一次**，新错误信息会精准告诉我们是哪个 step 抛的：
+
+- 如果是 `订单明细[30](skuId=20, productId=10, ruleId=2, scope=p1/t0/m0)提货卡建账失败: ensureOrderPurchaseAssetTx: createCardInstance(itemId=30, assetNo=CARD..., templateId=920004): <真实错误>` → 字段问题，看真实错误修
+- 如果是 `... appendAssetLog(assetId=..., itemId=30): <真实错误>` → 资产已经建出来了，问题在日志写入
+- 如果是 `... ensureTaskTxForAsset(assetId=..., itemId=30): <真实错误>` → 资产 + 日志都好，问题在任务建账
 
 ---
 
@@ -103,13 +149,14 @@ func (s *Service) ensureOrderPurchaseAssetTx(ctx context.Context, tx *gorm.DB, i
 3. **`app_recent_context.dart` 5 个 pre-existing 编译 bug**（同上）
 4. **分享链路 H5 落地页 + QR + 白名单兜底**（commit `a881236d` + `5a3c04cd`）
 5. **`ensureOrderPurchaseAssetTx` 部分 step wrap**（commit `9f6bd1fb`）
+6. **`ensureOrderPurchaseAssetTx` 全 step wrap + ensureTaskTxForAsset wrap + caller 信息扩充**（commit `f230ac9b`，已部署）
 
 ---
 
 ## 远程环境状态
 
-- 当前分支：`dev` @ `9f6bd1fb`
-- 已部署服务：`sms-rpc` / `front-api` / `consumer`（最近一次部署 backup: `/root/zero-admin/deploy-backup/20260510-155815`）
+- 当前分支：`dev` @ `f230ac9b`
+- 已部署服务：`sms-rpc` / `front-api` / `consumer`（最近一次部署 backup: `/root/zero-admin/deploy-backup/20260510-160916`）
 - Flutter App：在一加 9 (4661d9aa) 上运行（command 330 RUNNING，hot reload 待命）
 - 测试账号：David / member_id=4 / mobile=16698129676
 
