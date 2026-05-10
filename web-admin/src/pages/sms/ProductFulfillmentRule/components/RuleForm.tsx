@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
+  Button,
   Form,
   Input,
   InputNumber,
@@ -9,8 +10,10 @@ import {
   message,
   Row,
   Col,
+  Space,
   Tag,
 } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 import type { ProductFulfillmentRuleListItem } from '../data.d';
 import { RefundPolicyOptions } from '../data.d';
 import {
@@ -19,6 +22,7 @@ import {
   queryProductFulfillmentRuleDetail,
 } from '../service';
 import { queryCardTemplateList } from '@/pages/sms/CardTemplate/service';
+import TemplateForm from '@/pages/sms/CardTemplate/components/TemplateForm';
 import type { GovernanceScopeValue } from '@/pages/system/components/governance';
 import { toGovernancePayload } from '@/pages/system/components/governance';
 
@@ -46,6 +50,9 @@ const RuleForm: React.FC<RuleFormProps> = ({
   const [loading, setLoading] = useState(false);
   const [transferable, setTransferable] = useState(false);
   const [cardTemplateOptions, setCardTemplateOptions] = useState<CardTemplateOption[]>([]);
+  const [templateFormVisible, setTemplateFormVisible] = useState(false);
+  const [refreshTemplateTick, setRefreshTemplateTick] = useState(0);
+  const [pendingTemplateAutoSelect, setPendingTemplateAutoSelect] = useState(false);
   const isEdit = !!record;
 
   // Story 10.10 Task 4.3: 替换硬编码 cardTemplateOptions，按当前 scope 拉取启用状态的真实卡片模板
@@ -74,12 +81,21 @@ const RuleForm: React.FC<RuleFormProps> = ({
           }
         }
         setCardTemplateOptions(options);
+        // 刚在本表单内创建了模板，fetch 完成后自动选中最新的（以 ID 最大者为准）
+        if (pendingTemplateAutoSelect && options.length > 0) {
+          const maxId = options.reduce((max, opt) => (opt.value > max ? opt.value : max), 0);
+          if (maxId > 0) {
+            form.setFieldsValue({ cardTemplateId: maxId });
+          }
+          setPendingTemplateAutoSelect(false);
+        }
       })
       .catch(() => {
         setCardTemplateOptions([]);
       });
     // Story 10.10 修复 L3: 用 record?.id 而非 record 引用，避免父组件 re-render 触发不必要 fetch
-  }, [visible, scope, record?.id, record?.cardTemplateId, record?.cardTemplateName]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, scope, record?.id, record?.cardTemplateId, record?.cardTemplateName, refreshTemplateTick]);
 
   useEffect(() => {
     if (visible) {
@@ -211,15 +227,38 @@ const RuleForm: React.FC<RuleFormProps> = ({
           <Col span={12}>
             <Form.Item
               label="关联卡片模板"
-              name="cardTemplateId"
-              rules={[{ required: true, message: '请选择卡片模板' }]}
+              required
+              extra={
+                cardTemplateOptions.length === 0 ? (
+                  <span style={{ color: '#ff4d4f' }}>
+                    当前主体范围暂无启用卡片模板，点右侧「新建模板」创建一个。
+                  </span>
+                ) : null
+              }
             >
-              <Select
-                placeholder="请选择卡片模板"
-                options={cardTemplateOptions}
-                showSearch
-                optionFilterProp="label"
-              />
+              <Space.Compact style={{ width: '100%' }}>
+                <Form.Item
+                  name="cardTemplateId"
+                  noStyle
+                  rules={[{ required: true, message: '请选择卡片模板' }]}
+                >
+                  <Select
+                    placeholder="请选择卡片模板"
+                    options={cardTemplateOptions}
+                    showSearch
+                    optionFilterProp="label"
+                    style={{ width: '100%' }}
+                    disabled={cardTemplateOptions.length === 0}
+                  />
+                </Form.Item>
+                <Button
+                  icon={<PlusOutlined />}
+                  onClick={() => setTemplateFormVisible(true)}
+                  title="新建卡片模板"
+                >
+                  新建模板
+                </Button>
+              </Space.Compact>
             </Form.Item>
           </Col>
         </Row>
@@ -307,6 +346,18 @@ const RuleForm: React.FC<RuleFormProps> = ({
           </Form.Item>
         )}
       </Form>
+
+      {/* 在规则表单内嵌套卡片模板创建 Modal，实现 商品→规则→模板 三级闭环创建 */}
+      <TemplateForm
+        visible={templateFormVisible}
+        scope={scope}
+        onCancel={() => setTemplateFormVisible(false)}
+        onSuccess={() => {
+          setTemplateFormVisible(false);
+          setPendingTemplateAutoSelect(true);
+          setRefreshTemplateTick((t) => t + 1);
+        }}
+      />
     </Modal>
   );
 };

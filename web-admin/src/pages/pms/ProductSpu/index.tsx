@@ -338,6 +338,8 @@ const ProductSpuList: React.FC = () => {
     ruleStatus?: number;
   };
   const [ruleMap, setRuleMap] = useState<Record<number, RuleBrief>>({});
+  // 控制 ruleMap 刷新：商品创建/编辑/批量设置规则 成功后递增，避免「发卡规则ID:X (未加载/不在范围)」错误提示
+  const [ruleMapTick, setRuleMapTick] = useState(0);
 
   const quickViewParams =
     quickView === 'pendingReview'
@@ -377,7 +379,7 @@ const ProductSpuList: React.FC = () => {
         setRuleMap({});
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scope]);
+  }, [scope, ruleMapTick]);
 
   const openUpdateModal = async (record: ProductSpuListItem) => {
     setSubmitError(undefined);
@@ -1188,6 +1190,8 @@ const ProductSpuList: React.FC = () => {
             if (actionRef.current) {
               actionRef.current.reload();
             }
+            // 同步刷新发卡规则映射（用户可能在商品表单内嵌套创建了新规则）
+            setRuleMapTick((t) => t + 1);
           }
         }}
         onCancel={() => {
@@ -1217,6 +1221,7 @@ const ProductSpuList: React.FC = () => {
             if (actionRef.current) {
               actionRef.current.reload();
             }
+            setRuleMapTick((t) => t + 1);
           }
         }}
         onCancel={() => {
@@ -1244,6 +1249,7 @@ const ProductSpuList: React.FC = () => {
           setBatchRuleTargets([]);
           actionRef.current?.clearSelected?.();
           actionRef.current?.reload?.();
+          setRuleMapTick((t) => t + 1);
         }}
       />
       <SkuModal
