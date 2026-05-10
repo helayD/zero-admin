@@ -1,3 +1,5 @@
+import '../utils/spec_formatter.dart';
+
 // OrderItemList 订单商品明细
 //
 // Story 6-1 Review Fix (HIGH): 合并重复 OrderItemList 类定义
@@ -86,4 +88,8 @@ class OrderItemList {
     "createTime": createTime,
     "isDeleted": isDeleted,
   };
+
+  /// Story 10.7：把 specData JSON 字符串解析成「容量: 256GB · 颜色: 金色」的可读格式。
+  /// 见 utils/spec_formatter.dart。
+  String get formattedSpec => formatSpec(specData);
 }

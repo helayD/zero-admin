@@ -666,8 +666,9 @@ class _OrderDetailState extends State<OrderDetail> with SingleTickerProviderStat
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  item.specData,
-                  maxLines: 1,
+                  item.formattedSpec,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 12,
                     color: Color(0xFF909399),

@@ -10,6 +10,7 @@ import 'package:flutter_mall/provider/comment_provider.dart';
 import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/utils/http_util.dart';
 import 'package:flutter_mall/utils/permission_broker.dart';
+import 'package:flutter_mall/utils/spec_formatter.dart';
 import 'package:flutter_mall/widgets/cached_image_widget.dart';
 import 'package:flutter_mall/widgets/empty_state_widget.dart';
 import 'package:flutter_mall/widgets/permission_prompt_sheet.dart';
@@ -1155,7 +1156,7 @@ class _CommentCard extends StatelessWidget {
           // 商品属性
           if (comment.productAttribute.isNotEmpty) ...[
             Text(
-              comment.productAttribute,
+              formatSpec(comment.productAttribute),
               style: TextStyle(fontSize: 12, color: Colors.grey[500]),
             ),
             const SizedBox(height: 4),

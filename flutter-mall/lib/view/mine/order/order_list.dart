@@ -424,7 +424,7 @@ class _OrderListItem extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  firstItem.specData.isNotEmpty ? firstItem.specData : " ",
+                  firstItem.formattedSpec.isNotEmpty ? firstItem.formattedSpec : " ",
                   maxLines: 1,
                   style: const TextStyle(
                     fontSize: 12,

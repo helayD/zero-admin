@@ -10,6 +10,7 @@ import 'package:flutter_mall/model/cart_validate.dart';
 import 'package:flutter_mall/provider/cart_model.dart';
 import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/utils/http_util.dart';
+import 'package:flutter_mall/utils/spec_formatter.dart';
 import 'package:provider/provider.dart';
 
 import '../../layout/main_tab.dart';
@@ -766,7 +767,7 @@ class _CartState extends State<Cart> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        item.productAttr,
+                        formatSpec(item.productAttr),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(

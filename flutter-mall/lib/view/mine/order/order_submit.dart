@@ -10,6 +10,7 @@ import 'package:flutter_mall/provider/cart_model.dart';
 import 'package:flutter_mall/theme/app_theme.dart';
 import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/utils/http_util.dart';
+import 'package:flutter_mall/utils/spec_formatter.dart';
 import 'package:flutter_mall/utils/upgrade_gate_service.dart';
 import 'package:flutter_mall/widgets/cached_image_widget.dart';
 import 'package:provider/provider.dart';
@@ -875,7 +876,7 @@ class _OrderSubmitState extends State<OrderSubmit> {
                             if (item.productAttr.isNotEmpty) ...[
                               const SizedBox(height: AppSpacing.xs),
                               Text(
-                                item.productAttr,
+                                formatSpec(item.productAttr),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
