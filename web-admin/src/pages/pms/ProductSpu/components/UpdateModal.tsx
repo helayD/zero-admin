@@ -1,5 +1,18 @@
-import React, { useEffect, useState } from 'react';
-import { Alert, Form, Input, InputNumber, Modal, Radio, Select, TreeSelect } from 'antd';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  Alert,
+  Descriptions,
+  Form,
+  Input,
+  InputNumber,
+  Modal,
+  Radio,
+  Select,
+  Space,
+  Typography,
+  TreeSelect,
+} from 'antd';
+import { history } from 'umi';
 import type { ProductSpuDraftFormValues } from '../data.d';
 import { buildDraftClientValidationErrors, buildDraftFieldErrors } from '../draftFeedback';
 import NestedDraftSections from './NestedDraftSections';
@@ -9,6 +22,35 @@ import type { GovernanceScopeValue } from '@/pages/system/components/governance'
 import { toGovernancePayload } from '@/pages/system/components/governance';
 import { queryProductFulfillmentRuleList } from '@/pages/sms/ProductFulfillmentRule/service';
 import UploadFileComponents from '@/components/common/UploadFileComponents';
+
+const { Link } = Typography;
+
+type RuleInfo = {
+  id: number;
+  ruleName: string;
+  cardTemplateName?: string;
+  expireDays?: number;
+  transferable?: number;
+  transferLimit?: number;
+};
+
+const buildRuleOptionLabel = (rule: RuleInfo) => {
+  const parts: string[] = [rule.ruleName];
+  if (rule.cardTemplateName) parts.push(rule.cardTemplateName);
+  if (typeof rule.expireDays === 'number' && rule.expireDays > 0) {
+    parts.push(`${rule.expireDays}天`);
+  }
+  if (rule.transferable === 1) {
+    parts.push(
+      rule.transferLimit && rule.transferLimit > 0
+        ? `可转赠·限${rule.transferLimit}次`
+        : '可转赠',
+    );
+  } else {
+    parts.push('不可转赠');
+  }
+  return parts.join(' · ');
+};
 
 const fulfillmentModeOptions = [
   { value: 'physical_delivery', label: '实物发货' },
@@ -34,7 +76,8 @@ const formLayout = {
 const UpdateModal: React.FC<UpdateModalProps> = (props) => {
   const [form] = Form.useForm();
   const [fulfillmentMode, setFulfillmentMode] = useState<string>('physical_delivery');
-  const [ruleOptions, setRuleOptions] = useState<{ label: string; value: number }[]>([]);
+  const [ruleInfos, setRuleInfos] = useState<RuleInfo[]>([]);
+  const fulfillmentRuleId = Form.useWatch('fulfillmentRuleId', form);
 
   const { onSubmit, onCancel, updateVisible, currentData, scope, submitError } = props;
   const {
@@ -64,25 +107,39 @@ const UpdateModal: React.FC<UpdateModalProps> = (props) => {
 
   useEffect(() => {
     if (!updateVisible || !scope) {
-      setRuleOptions([]);
+      setRuleInfos([]);
       return;
     }
     queryProductFulfillmentRuleList({
       pageSize: 999,
-      ruleStatus: 1, // Story 10.10 Task 4.5: 只展示启用规则，避免运营选到已禁用规则
+      ruleStatus: 1,
       ...toGovernancePayload(scope),
     })
       .then((res) => {
-        const options = (res.data || []).map((item) => ({
-          label: `${item.ruleName} (ID: ${item.id})`,
-          value: item.id,
+        const infos: RuleInfo[] = (res.data || []).map((item: any) => ({
+          id: item.id,
+          ruleName: item.ruleName,
+          cardTemplateName: item.cardTemplateName,
+          expireDays: item.expireDays,
+          transferable: item.transferable,
+          transferLimit: item.transferLimit,
         }));
-        setRuleOptions(options);
+        setRuleInfos(infos);
       })
       .catch(() => {
-        setRuleOptions([]);
+        setRuleInfos([]);
       });
   }, [updateVisible, scope]);
+
+  const ruleOptions = useMemo(
+    () => ruleInfos.map((rule) => ({ label: buildRuleOptionLabel(rule), value: rule.id })),
+    [ruleInfos],
+  );
+
+  const selectedRule = useMemo(
+    () => ruleInfos.find((rule) => rule.id === fulfillmentRuleId),
+    [ruleInfos, fulfillmentRuleId],
+  );
 
   useEffect(() => {
     if (!submitError) {
@@ -189,6 +246,94 @@ const UpdateModal: React.FC<UpdateModalProps> = (props) => {
         <FormItem name="brandName" hidden>
           <Input id="update-brandName" />
         </FormItem>
+        {/* B1: 履约模式 + 发卡规则 前置到品牌后面的基础信息区 */}
+        <FormItem
+          name="fulfillmentMode"
+          label="履约模式"
+          rules={[{ required: true, message: '请选择履约模式!' }]}
+          tooltip="实物发货：商品直接进入物流履约流程；提货卡：支付成功后生成提货卡资产并复用提货卡入账"
+        >
+          <Select
+            options={fulfillmentModeOptions}
+            placeholder="请选择履约模式"
+            onChange={(value: string) => {
+              setFulfillmentMode(value);
+              if (value !== 'digital_asset') {
+                form.setFieldsValue({ fulfillmentRuleId: undefined });
+              }
+            }}
+          />
+        </FormItem>
+        {/* B2: 切换到提货卡模式 引导 Alert */}
+        {fulfillmentMode === 'digital_asset' && (
+          <FormItem label=" " colon={false}>
+            <Alert
+              type="info"
+              showIcon
+              message="该商品将以「提货卡」方式发放"
+              description={
+                <Space direction="vertical" size={2}>
+                  <span>用户下单后不进入物流流程，而是在「数字卡包」中生成卡片，待用户发起提货后再走履约。</span>
+                  <span>请确认已在「发卡规则管理」配置好适用规则。</span>
+                </Space>
+              }
+            />
+          </FormItem>
+        )}
+        {fulfillmentMode === 'digital_asset' && (
+          <FormItem
+            name="fulfillmentRuleId"
+            label="发卡规则"
+            rules={[{ required: true, message: '请选择发卡规则!' }]}
+            tooltip="提货卡模式下必须关联一个有效的发卡规则"
+            extra={
+              ruleOptions.length === 0 ? (
+                <Space size={4}>
+                  <span style={{ color: '#ff4d4f' }}>当前主体范围暂无启用发卡规则，</span>
+                  <Link onClick={() => history.push('/sms/ProductFulfillmentRule/list')}>
+                    去创建
+                  </Link>
+                </Space>
+              ) : null
+            }
+          >
+            <Select
+              options={ruleOptions}
+              placeholder="请选择发卡规则"
+              showSearch
+              optionFilterProp="label"
+              style={{ width: '100%' }}
+              disabled={ruleOptions.length === 0}
+            />
+          </FormItem>
+        )}
+        {fulfillmentMode === 'digital_asset' && selectedRule && (
+          <FormItem label=" " colon={false}>
+            <Descriptions
+              size="small"
+              bordered
+              column={2}
+              labelStyle={{ background: '#fafafa', width: 110 }}
+            >
+              <Descriptions.Item label="规则名称">{selectedRule.ruleName}</Descriptions.Item>
+              <Descriptions.Item label="卡片模板">
+                {selectedRule.cardTemplateName || '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label="有效期">
+                {typeof selectedRule.expireDays === 'number' && selectedRule.expireDays > 0
+                  ? `${selectedRule.expireDays} 天`
+                  : '永久'}
+              </Descriptions.Item>
+              <Descriptions.Item label="是否可转赠">
+                {selectedRule.transferable === 1
+                  ? selectedRule.transferLimit && selectedRule.transferLimit > 0
+                    ? `可转赠（限 ${selectedRule.transferLimit} 次）`
+                    : '可转赠'
+                  : '不可转赠'}
+              </Descriptions.Item>
+            </Descriptions>
+          </FormItem>
+        )}
         <FormItem name="unit" label="单位" rules={[{ required: true, message: '请输入单位!' }]}>
           <Input id="update-unit" placeholder={'请输入单位!'} />
         </FormItem>
@@ -316,39 +461,6 @@ const UpdateModal: React.FC<UpdateModalProps> = (props) => {
         <FormItem name="subTitle" label="副标题">
           <Input id="update-subTitle" placeholder={'请输入副标题!'} />
         </FormItem>
-        <FormItem
-          name="fulfillmentMode"
-          label="履约模式"
-          rules={[{ required: true, message: '请选择履约模式!' }]}
-          tooltip="实物发货：商品直接进入物流履约流程；提货卡：支付成功后生成提货卡资产并复用提货卡入账"
-        >
-          <Select
-            options={fulfillmentModeOptions}
-            placeholder="请选择履约模式"
-            onChange={(value: string) => {
-              setFulfillmentMode(value);
-              if (value !== 'digital_asset') {
-                form.setFieldsValue({ fulfillmentRuleId: undefined });
-              }
-            }}
-          />
-        </FormItem>
-        {fulfillmentMode === 'digital_asset' && (
-          <FormItem
-            name="fulfillmentRuleId"
-            label="发卡规则"
-            rules={[{ required: true, message: '请选择发卡规则!' }]}
-            tooltip="提货卡模式下必须关联一个有效的发卡规则"
-          >
-            <Select
-              options={ruleOptions}
-              placeholder="请选择发卡规则"
-              showSearch
-              optionFilterProp="label"
-              style={{ width: '100%' }}
-            />
-          </FormItem>
-        )}
         <FormItem
           name="detailHtml"
           label="产品详情网页内容"

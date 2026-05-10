@@ -15,6 +15,7 @@ import {
   Space,
   Switch,
   Tag,
+  Tooltip,
   Typography,
 } from 'antd';
 import React, { useRef, useState } from 'react';
@@ -24,6 +25,7 @@ import ProTable from '@ant-design/pro-table';
 import type { ProDescriptionsItemProps } from '@ant-design/pro-descriptions';
 import ProDescriptions from '@ant-design/pro-descriptions';
 import AddModal from './components/AddModal';
+import BatchSetFulfillmentRuleModal from './components/BatchSetFulfillmentRuleModal';
 import StatusActionModal, {
   type ProductSpuStatusModalAction,
 } from './components/StatusActionModal';
@@ -319,10 +321,21 @@ const ProductSpuList: React.FC = () => {
   const [scope, setScope] = useState<GovernanceScopeValue>(defaultGovernanceScope);
   const [submitError, setSubmitError] = useState<CatalogActionError>();
   const [pendingStatusAction, setPendingStatusAction] = useState<PendingStatusAction>();
+  const [batchRuleModalVisible, setBatchRuleModalVisible] = useState(false);
+  const [batchRuleTargets, setBatchRuleTargets] = useState<ProductSpuListItem[]>([]);
   const [quickView, setQuickView] = useState<
-    'all' | 'pendingReview' | 'onShelf' | 'offShelf' | 'recommended'
+    'all' | 'pendingReview' | 'onShelf' | 'offShelf' | 'recommended' | 'digitalAsset' | 'physical'
   >('all');
-  const [ruleMap, setRuleMap] = useState<Record<number, string>>({});
+  // A3: ruleMap 存完整 rule 对象（不只名称），用于 Tooltip 展示关键属性
+  type RuleBrief = {
+    ruleName: string;
+    cardTemplateName?: string;
+    expireDays?: number;
+    transferable?: number;
+    transferLimit?: number;
+    ruleStatus?: number;
+  };
+  const [ruleMap, setRuleMap] = useState<Record<number, RuleBrief>>({});
 
   const quickViewParams =
     quickView === 'pendingReview'
@@ -333,7 +346,11 @@ const ProductSpuList: React.FC = () => {
           ? { publishStatus: 0 }
           : quickView === 'recommended'
             ? { recommendStatus: 1 }
-            : {};
+            : quickView === 'digitalAsset'
+              ? { fulfillmentMode: 'digital_asset' }
+              : quickView === 'physical'
+                ? { fulfillmentMode: 'physical_delivery' }
+                : {};
 
   React.useEffect(() => {
     queryProductFulfillmentRuleList({
@@ -341,15 +358,23 @@ const ProductSpuList: React.FC = () => {
       ...toGovernancePayload(scope),
     })
       .then((res) => {
-        const map: Record<number, string> = {};
-        (res.data || []).forEach((item) => {
-          map[item.id] = item.ruleName;
+        const map: Record<number, RuleBrief> = {};
+        (res.data || []).forEach((item: any) => {
+          map[item.id] = {
+            ruleName: item.ruleName,
+            cardTemplateName: item.cardTemplateName,
+            expireDays: item.expireDays,
+            transferable: item.transferable,
+            transferLimit: item.transferLimit,
+            ruleStatus: item.ruleStatus,
+          };
         });
         setRuleMap(map);
       })
       .catch(() => {
         setRuleMap({});
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scope]);
 
   const openUpdateModal = async (record: ProductSpuListItem) => {
@@ -569,6 +594,7 @@ const ProductSpuList: React.FC = () => {
       title: '最近上下架说明',
       dataIndex: 'publishDetail',
       hideInSearch: true,
+      hideInTable: true,
       width: 260,
       render: (_, entity) => renderPublishSummary(entity),
     },
@@ -591,8 +617,18 @@ const ProductSpuList: React.FC = () => {
         return (
           <Switch
             checked={entity.newStatus == 1}
-            onChange={(flag) => {
-              showStatusConfirm('new', [entity.id], flag ? 1 : 0);
+            onChange={async (flag) => {
+              const success = await handleStatus(
+                'new',
+                [entity.id],
+                flag ? 1 : 0,
+                scope,
+                undefined,
+                setSubmitError,
+              );
+              if (success) {
+                actionRef.current?.reload?.();
+              }
             }}
           />
         );
@@ -636,6 +672,7 @@ const ProductSpuList: React.FC = () => {
       title: '最近推荐反馈',
       dataIndex: 'recommendDetail',
       hideInSearch: true,
+      hideInTable: true,
       width: 260,
       render: (_, entity) => renderRecommendSummary(entity),
     },
@@ -673,6 +710,7 @@ const ProductSpuList: React.FC = () => {
       title: '最新审核反馈',
       dataIndex: 'reviewDetail',
       hideInSearch: true,
+      hideInTable: true,
       width: 260,
       render: (_, entity) => renderReviewSummary(entity),
     },
@@ -699,6 +737,7 @@ const ProductSpuList: React.FC = () => {
       title: '排序',
       dataIndex: 'sort',
       hideInSearch: true,
+      hideInTable: true,
     },
     {
       title: '新品排序',
@@ -716,6 +755,7 @@ const ProductSpuList: React.FC = () => {
       title: '销量',
       dataIndex: 'sales',
       hideInSearch: true,
+      hideInTable: true,
     },
     {
       title: '库存',
@@ -783,8 +823,34 @@ const ProductSpuList: React.FC = () => {
       hideInSearch: true,
       render: (_, entity) => {
         if (!entity.fulfillmentRuleId) return '-';
-        const name = ruleMap[entity.fulfillmentRuleId];
-        return <span>{name || `规则ID: ${entity.fulfillmentRuleId}`}</span>;
+        const brief = ruleMap[entity.fulfillmentRuleId];
+        if (!brief) {
+          return <Text type="warning">规则ID: {entity.fulfillmentRuleId}（未加载/不在范围）</Text>;
+        }
+        // A3: Tooltip 展示规则关键属性
+        const transferText =
+          brief.transferable === 1
+            ? brief.transferLimit && brief.transferLimit > 0
+              ? `可转赠（限 ${brief.transferLimit} 次）`
+              : '可转赠'
+            : '不可转赠';
+        return (
+          <Tooltip
+            title={
+              <Space direction="vertical" size={2}>
+                <span>规则名：{brief.ruleName}</span>
+                {brief.cardTemplateName ? <span>卡片模板：{brief.cardTemplateName}</span> : null}
+                {typeof brief.expireDays === 'number' ? (
+                  <span>有效期：{brief.expireDays > 0 ? `${brief.expireDays} 天` : '永久'}</span>
+                ) : null}
+                <span>转赠：{transferText}</span>
+                {brief.ruleStatus === 0 ? <span style={{ color: '#ff4d4f' }}>当前状态：已禁用</span> : null}
+              </Space>
+            }
+          >
+            <span style={{ borderBottom: '1px dashed #999', cursor: 'help' }}>{brief.ruleName}</span>
+          </Tooltip>
+        );
       },
     },
 
@@ -967,6 +1033,25 @@ const ProductSpuList: React.FC = () => {
             >
               推荐中
             </Button>
+            <Divider type="vertical" style={{ height: 24 }} />
+            <Button
+              type={quickView === 'digitalAsset' ? 'primary' : 'default'}
+              onClick={() => {
+                setQuickView('digitalAsset');
+                actionRef.current?.reload?.();
+              }}
+            >
+              提货卡商品
+            </Button>
+            <Button
+              type={quickView === 'physical' ? 'primary' : 'default'}
+              onClick={() => {
+                setQuickView('physical');
+                actionRef.current?.reload?.();
+              }}
+            >
+              实物商品
+            </Button>
           </Space>,
           <Button
             type="primary"
@@ -994,7 +1079,7 @@ const ProductSpuList: React.FC = () => {
         tableAlertRender={({ selectedRowKeys, selectedRows }) => {
           const ids = selectedRows.map((row) => row.id);
           return (
-            <Space size={16}>
+            <Space size={16} wrap>
               <span>已选 {selectedRowKeys.length} 项</span>
               <Button
                 icon={<EditOutlined />}
@@ -1031,6 +1116,16 @@ const ProductSpuList: React.FC = () => {
                 }}
               >
                 批量驳回
+              </Button>
+              <Button
+                icon={<EditOutlined />}
+                style={{ borderRadius: '5px' }}
+                onClick={() => {
+                  setBatchRuleTargets(selectedRows);
+                  setBatchRuleModalVisible(true);
+                }}
+              >
+                批量设置发卡规则
               </Button>
               <Button
                 icon={<DeleteOutlined />}
@@ -1129,6 +1224,21 @@ const ProductSpuList: React.FC = () => {
         currentData={currentSubmitData || currentRow || {}}
         scope={scope}
         submitError={submitError}
+      />
+      <BatchSetFulfillmentRuleModal
+        visible={batchRuleModalVisible}
+        selectedRows={batchRuleTargets}
+        scope={scope}
+        onCancel={() => {
+          setBatchRuleModalVisible(false);
+          setBatchRuleTargets([]);
+        }}
+        onSuccess={() => {
+          setBatchRuleModalVisible(false);
+          setBatchRuleTargets([]);
+          actionRef.current?.clearSelected?.();
+          actionRef.current?.reload?.();
+        }}
       />
       <SkuModal
         key={'SkuModal'}
