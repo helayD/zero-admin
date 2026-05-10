@@ -148,9 +148,13 @@ func (s *Service) ensureOrderPurchaseAssetTx(ctx context.Context, tx *gorm.DB, i
 	}
 	if err = tx.WithContext(ctx).Table(instance.TableName()).Create(instance).Error; err != nil {
 		if isDuplicateEntryError(err) {
-			return s.loadOrderPurchaseAsset(ctx, tx, input.OrderItemID)
+			reload, reloadErr := s.loadOrderPurchaseAsset(ctx, tx, input.OrderItemID)
+			if reloadErr != nil {
+				return nil, fmt.Errorf("loadOrderPurchaseAsset after duplicate(itemId=%d, assetNo=%s, dupErr=%v): %w", input.OrderItemID, instance.AssetNo, err, reloadErr)
+			}
+			return reload, nil
 		}
-		return nil, err
+		return nil, fmt.Errorf("createCardInstance(itemId=%d, assetNo=%s, templateId=%d): %w", input.OrderItemID, instance.AssetNo, instance.TemplateID, err)
 	}
 
 	if err = s.appendAssetLogTx(ctx, tx, instance, "", instance.AssetStatus, OperationAssetCreatedFromOrder, normalizeOperatorType(input.OperatorType), instance.TraceID, "order_purchase", "订单支付成功后创建数字卡片资产", map[string]interface{}{
@@ -167,7 +171,7 @@ func (s *Service) ensureOrderPurchaseAssetTx(ctx context.Context, tx *gorm.DB, i
 		"redemptionCondition": rule.RedemptionCondition,
 		"refundPolicy":        rule.RefundPolicy,
 	}); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("appendAssetLog(assetId=%d, itemId=%d): %w", instance.ID, input.OrderItemID, err)
 	}
 	return instance, nil
 }
@@ -176,9 +180,13 @@ func (s *Service) ensureTaskTxForAsset(ctx context.Context, tx *gorm.DB, assetIn
 	if existing, err := s.loadTaskByAssetInstance(ctx, tx, assetInstanceID, true); err == nil {
 		return existing, nil
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, err
+		return nil, fmt.Errorf("loadTaskByAssetInstance(assetId=%d): %w", assetInstanceID, err)
 	}
-	return s.EnsureTaskTx(ctx, tx, assetInstanceID, operatorType)
+	task, err := s.EnsureTaskTx(ctx, tx, assetInstanceID, operatorType)
+	if err != nil {
+		return nil, fmt.Errorf("EnsureTaskTx(assetId=%d): %w", assetInstanceID, err)
+	}
+	return task, nil
 }
 
 func (s *Service) loadOrderPurchaseAsset(ctx context.Context, db *gorm.DB, orderItemID int64) (*CardInstanceRow, error) {
@@ -188,7 +196,10 @@ func (s *Service) loadOrderPurchaseAsset(ctx context.Context, db *gorm.DB, order
 		Where("source_type = ? AND source_id = ? AND is_deleted = 0", sourceTypePurchase, orderItemID).
 		Take(&row).Error
 	if err != nil {
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, err
+		}
+		return nil, fmt.Errorf("loadOrderPurchaseAsset query(itemId=%d): %w", orderItemID, err)
 	}
 	return &row, nil
 }

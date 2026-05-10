@@ -85,7 +85,7 @@ func (s *Service) EnsurePaidOrderPurchaseAssets(ctx context.Context, input Ensur
 			OperatorType:      input.OperatorType,
 		})
 		if ensureErr != nil {
-			return nil, fmt.Errorf("订单明细[%d]提货卡建账失败: %w", item.ID, ensureErr)
+			return nil, fmt.Errorf("\u8ba2\u5355\u660e\u7ec6[%d](skuId=%d, productId=%d, ruleId=%d, scope=p%d/t%d/m%d)\u63d0\u8d27\u5361\u5efa\u8d26\u5931\u8d25: %w", item.ID, item.SkuID, product.ProductID, product.FulfillmentRuleID, firstPositive(input.PlatformID, product.PlatformID), firstPositive(input.TenantID, product.TenantID), firstPositive(input.MerchantID, product.MerchantID), ensureErr)
 		}
 		result.ProcessedCount++
 		if asset != nil && asset.AssetInstanceID > 0 {
