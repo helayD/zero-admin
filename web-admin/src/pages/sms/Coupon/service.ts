@@ -196,10 +196,22 @@ export async function queryProductCategoryList(params: CategoryListParams & Gove
 }
 
 export async function queryCouponHistoryList(params: CouponHistoryListParams) {
-  return request('/api/sms/couponHistory/queryCouponHistoryList', {
+  const res = await request('/api/sms/couponRecord/queryCouponRecordList', {
     method: 'GET',
     params: {
       ...params,
     },
   });
+
+  return {
+    ...res,
+    data: Array.isArray(res?.data)
+      ? res.data.map((item: Record<string, any>) => ({
+          ...item,
+          // 后端返回 status（0-未使用/1-已使用/2-已过期/3-已失效），
+          // 前端 CouponHistoryListItem 字段名为 useStatus，做一次兼容映射
+          useStatus: item.useStatus ?? item.status,
+        }))
+      : [],
+  };
 }

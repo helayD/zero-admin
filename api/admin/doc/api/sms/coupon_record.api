@@ -20,7 +20,9 @@ type (
 	QueryCouponRecordListData {
 		Id             int64   `json:"id"` //
 		CouponId       int64   `json:"couponId"` //优惠券ID
+		CouponCode     string  `json:"couponCode"` //优惠券码（从 sms_coupon 拼装）
 		MemberId       int64   `json:"memberId"` //用户ID
+		MemberNickName string  `json:"memberNickName"` //领取会员昵称（脱敏，从 ums_member 拼装）
 		GetTime        string  `json:"getTime"` //领取时间
 		GetType        int32   `json:"getType"` //获取类型：0->后台赠送；1->主动获取
 		UseTime        string  `json:"useTime"` //使用时间
