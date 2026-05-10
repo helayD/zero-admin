@@ -43,6 +43,45 @@ type orderCardSummaryRow struct {
 	IssuedAt         *time.Time `gorm:"column:issued_at"`
 }
 
+// LoadOrdersHasDigitalCards 批量查询订单是否含提货卡（Story 10.7）。
+//
+// 返回 map[orderID]bool，仅包含至少有一张卡片的订单。订单列表页可以一次性获取
+// 全页订单的「含提货卡」标识，避免 N+1 查询。结果对 C 端安全（只返回布尔值）。
+func (s *Service) LoadOrdersHasDigitalCards(ctx context.Context, orderIDs []int64, memberID int64) (map[int64]bool, error) {
+	if s == nil || s.DB == nil {
+		return nil, errors.New("digitalcardmint service 未初始化")
+	}
+	result := make(map[int64]bool, len(orderIDs))
+	if len(orderIDs) == 0 {
+		return result, nil
+	}
+
+	type batchRow struct {
+		OrderID int64 `gorm:"column:order_id"`
+	}
+	var rows []batchRow
+	query := s.DB.WithContext(ctx).
+		Table("sms_card_instance AS instance").
+		Select("DISTINCT item.order_id AS order_id").
+		Joins("JOIN oms_order_item AS item ON item.id = instance.source_id AND item.is_deleted = 0").
+		Where("instance.is_deleted = 0").
+		Where("instance.source_type = ?", sourceTypePurchase).
+		Where("item.order_id IN ?", orderIDs)
+	if memberID > 0 {
+		query = query.Where("instance.member_id = ?", memberID)
+	}
+	if err := query.Scan(&rows).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return result, nil
+		}
+		return nil, err
+	}
+	for _, row := range rows {
+		result[row.OrderID] = true
+	}
+	return result, nil
+}
+
 // LoadOrderCardSummaries 查询订单关联的提货卡摘要列表（C 端安全）。
 //
 // 仅返回 C 端可见字段，绝不返回 chain_status / token_id / chain_tx_id /

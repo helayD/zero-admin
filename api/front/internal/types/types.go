@@ -1301,6 +1301,8 @@ type QueryOrderData struct {
 	PriceBreakdown           *PriceBreakdown          `json:"priceBreakdown"` // 金额拆分
 	// Story 10.7：订单包含的提货卡摘要（C 端安全字段，仅当订单含数字卡商品时返回）
 	DigitalCards []OrderDigitalCardItem `json:"digitalCards,omitempty"`
+	// Story 10.7：订单是否含提货卡（订单列表页用，避免列表 API 拉全量摘要）
+	HasDigitalCards bool `json:"hasDigitalCards,omitempty"`
 }
 
 // OrderDigitalCardItem 订单详情的提货卡摘要（C 端安全字段）。

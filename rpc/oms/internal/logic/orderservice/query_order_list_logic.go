@@ -72,7 +72,9 @@ func (l *QueryOrderListLogic) QueryOrderList(in *omsclient.QueryOrderListReq) (*
 	)
 	err = q.Session(&gorm.Session{}).Count(&count).Error
 	if err == nil {
-		err = q.Offset(int((in.PageNum - 1) * in.PageSize)).Limit(int(in.PageSize)).Find(&result).Error
+		// Story 10.7 Fix: 必须按 id DESC 返回，否则用户看到的是最老的订单（默认 id ASC），
+		// 而不是刚刚下单的新订单，导致用户找不到自己最近支付的订单。
+		err = q.Order("id DESC").Offset(int((in.PageNum - 1) * in.PageSize)).Limit(int(in.PageSize)).Find(&result).Error
 	}
 
 	if err != nil {

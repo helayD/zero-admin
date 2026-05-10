@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/feihua/zero-admin/api/front/internal/logic/common"
+	"github.com/feihua/zero-admin/pkg/digitalcardmint"
 	"github.com/feihua/zero-admin/pkg/errorx"
 	"github.com/feihua/zero-admin/rpc/oms/omsclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -95,30 +96,30 @@ func (l *QueryOrderListLogic) QueryOrderList(req *types.OrderListReq) (resp1 *ty
 		}
 
 		elems := &types.QueryOrderData{
-			Id:               detail.Id,
-			OrderNo:          detail.OrderNo,
-			UserId:           detail.UserId,
-			OrderStatus:      detail.OrderStatus,
-			TotalAmount:      float64(detail.TotalAmount),
-			PromotionAmount:  float64(detail.PromotionAmount),
-			CouponAmount:     float64(detail.CouponAmount),
-			PointsAmount:     float64(detail.PointsAmount),
-			DiscountAmount:   float64(detail.DiscountAmount),
-			FreightAmount:    float64(detail.FreightAmount),
-			PayAmount:        float64(detail.PayAmount),
-			PayType:          detail.PayType,
-			PayTime:          detail.PayTime,
-			DeliveryTime:     detail.DeliveryTime,
-			ReceiveTime:      detail.ReceiveTime,
-			CommentTime:      detail.CommentTime,
-			SourceType:       detail.SourceType,
+			Id:                 detail.Id,
+			OrderNo:            detail.OrderNo,
+			UserId:             detail.UserId,
+			OrderStatus:        detail.OrderStatus,
+			TotalAmount:        float64(detail.TotalAmount),
+			PromotionAmount:    float64(detail.PromotionAmount),
+			CouponAmount:       float64(detail.CouponAmount),
+			PointsAmount:       float64(detail.PointsAmount),
+			DiscountAmount:     float64(detail.DiscountAmount),
+			FreightAmount:      float64(detail.FreightAmount),
+			PayAmount:          float64(detail.PayAmount),
+			PayType:            detail.PayType,
+			PayTime:            detail.PayTime,
+			DeliveryTime:       detail.DeliveryTime,
+			ReceiveTime:        detail.ReceiveTime,
+			CommentTime:        detail.CommentTime,
+			SourceType:         detail.SourceType,
 			ExpressOrderNumber: detail.ExpressOrderNumber,
-			UsePoints:        detail.UsePoints,
-			ReceiveStatus:    detail.ReceiveStatus,
-			Remark:           detail.Remark,
-			CreateTime:       detail.CreateTime,
-			UpdateTime:       detail.UpdateTime,
-			Thumbnail:        thumbnail,
+			UsePoints:          detail.UsePoints,
+			ReceiveStatus:      detail.ReceiveStatus,
+			Remark:             detail.Remark,
+			CreateTime:         detail.CreateTime,
+			UpdateTime:         detail.UpdateTime,
+			Thumbnail:          thumbnail,
 		}
 
 		// 支付状态从 OMS PaymentData 推断（Story 6-1 Task 1.3 注：OMS proto 无 pay_status 独立字段，用 PayType 推断）
@@ -154,6 +155,9 @@ func (l *QueryOrderListLogic) QueryOrderList(req *types.OrderListReq) (resp1 *ty
 		orderData = append(orderData, elems)
 	}
 
+	// Story 10.7：批量查询本页订单是否含提货卡，列表卡片可显示「含提货卡」标识
+	l.populateHasDigitalCards(orderData, memberId)
+
 	// Story 6-1 Task 1.2: 返回分页信息
 	return &types.OrderListResp{
 		Code:     0,
@@ -163,4 +167,33 @@ func (l *QueryOrderListLogic) QueryOrderList(req *types.OrderListReq) (resp1 *ty
 		Total:    res.Total,
 		Data:     orderData,
 	}, nil
+}
+
+// populateHasDigitalCards 批量填充本页订单是否含提货卡（Story 10.7）。
+//
+// 走单 SQL 批量查询，避免 N+1。失败不阻塞订单列表主流程。
+func (l *QueryOrderListLogic) populateHasDigitalCards(orders []*types.QueryOrderData, memberID int64) {
+	if l == nil || l.svcCtx == nil || l.svcCtx.DB == nil || len(orders) == 0 {
+		return
+	}
+	orderIDs := make([]int64, 0, len(orders))
+	for _, o := range orders {
+		if o != nil && o.Id > 0 {
+			orderIDs = append(orderIDs, o.Id)
+		}
+	}
+	if len(orderIDs) == 0 {
+		return
+	}
+	service := digitalcardmint.NewService(l.svcCtx.DB, nil, nil)
+	hasMap, err := service.LoadOrdersHasDigitalCards(l.ctx, orderIDs, memberID)
+	if err != nil {
+		logc.Errorf(l.ctx, "populateHasDigitalCards failed memberId=%d ids=%v err=%v", memberID, orderIDs, err)
+		return
+	}
+	for _, o := range orders {
+		if o != nil && hasMap[o.Id] {
+			o.HasDigitalCards = true
+		}
+	}
 }

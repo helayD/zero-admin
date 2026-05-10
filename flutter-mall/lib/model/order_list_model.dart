@@ -62,6 +62,8 @@ class OrderListData {
   String thumbnail;      // 首商品缩略图
   String createTime;     // 下单时间
   List<OrderItemList> orderItemData;
+  // Story 10.7：订单是否含提货卡，用于列表卡片显示「含提货卡」徽标
+  bool hasDigitalCards;
 
   OrderListData({
     required this.id,
@@ -74,6 +76,7 @@ class OrderListData {
     required this.thumbnail,
     required this.createTime,
     required this.orderItemData,
+    this.hasDigitalCards = false,
   });
 
   factory OrderListData.fromJson(Map<String, dynamic> json) => OrderListData(
@@ -89,6 +92,7 @@ class OrderListData {
     orderItemData: json["orderItemData"] != null
         ? List<OrderItemList>.from(json["orderItemData"].map((x) => OrderItemList.fromJson(x)))
         : [],
+    hasDigitalCards: json["hasDigitalCards"] == true,
   );
 
   Map<String, dynamic> toJson() => {
@@ -102,6 +106,7 @@ class OrderListData {
     "thumbnail": thumbnail,
     "createTime": createTime,
     "orderItemData": List<dynamic>.from(orderItemData.map((x) => x.toJson())),
+    "hasDigitalCards": hasDigitalCards,
   };
 
   /// 兼容旧字段名

@@ -313,25 +313,79 @@ class _OrderListItem extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(
-              data.orderNo.isNotEmpty ? data.orderSn : "订单号: ${data.id}",
-              style: const TextStyle(
-                fontSize: 13,
-                color: Color(0xFF303133),
-              ),
+            child: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    data.orderNo.isNotEmpty ? data.orderSn : "订单号: ${data.id}",
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF303133),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                // Story 10.7：含提货卡徽标
+                if (data.hasDigitalCards) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF3E0),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.card_giftcard,
+                            size: 11, color: Color(0xFFE65100)),
+                        SizedBox(width: 2),
+                        Text(
+                          "含提货卡",
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Color(0xFFE65100),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
+          // Story 10.7：状态文字按状态分色（让用户一眼区分待付/待发货/已完成/已取消）
           Text(
             statusText,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: Color(0xFFFA436A),
+              color: _orderStatusColor(data.status),
             ),
           ),
         ],
       ),
     );
+  }
+
+  // 订单状态文字颜色（Story 10.7）
+  // OMS: 1=待支付, 2=已支付/待发货, 3=已发货, 4=已完成, 5=已取消, 7=售后中
+  Color _orderStatusColor(int status) {
+    switch (status) {
+      case 1:
+        return const Color(0xFFFA436A); // 待支付 - 品牌红（最需行动）
+      case 2:
+      case 3:
+        return const Color(0xFFE65100); // 已支付/已发货 - 橙色（进行中）
+      case 4:
+        return const Color(0xFF2E7D32); // 已完成 - 绿色
+      case 5:
+        return const Color(0xFF9E9E9E); // 已取消 - 灰色
+      case 7:
+        return const Color(0xFFFFA000); // 售后中 - 黄色
+      default:
+        return const Color(0xFF606266); // 未知 - 中性灰
+    }
   }
 
   Widget _buildProductPreview() {
