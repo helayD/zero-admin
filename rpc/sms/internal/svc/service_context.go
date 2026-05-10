@@ -49,12 +49,37 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	chainClient := buildChainClient(c)
 	cardMintService := digitalcardmint.NewService(DB, rabbitmq, chainClient)
 
+	// Story 10.7 运维修复：sms-rpc 启动后立即做一次 ScanDueTasks，并每 30 秒自动扫描一次。
+	// 避免外部 job/cron 缺失时积压任务永远卡在 pending_dispatch/compensating。
+	go startMintTaskSelfScan(cardMintService)
+
 	return &ServiceContext{
 		Config:          c,
 		DB:              DB,
 		RabbitMQ:        rabbitmq,
 		ChainClient:     chainClient,
 		CardMintService: cardMintService,
+	}
+}
+
+// startMintTaskSelfScan 周期性扫描到期的提货卡发放任务。
+// 30 秒跑一次，batchSize=50，异常只记日志不 panic。
+func startMintTaskSelfScan(service *digitalcardmint.Service) {
+	if service == nil {
+		return
+	}
+	// 启动后等 5 秒让 gRPC server / MQ channel ready，再做第一次扫描
+	time.Sleep(5 * time.Second)
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+	for {
+		stats, err := service.ScanDueTasks(context.Background(), 50)
+		if err != nil {
+			logx.Errorf("sms-rpc 自循环扫描提货卡发放任务失败: %+v", err)
+		} else if stats != nil && (stats.Dispatched+stats.Executed+stats.Escalated) > 0 {
+			logx.Infof("sms-rpc 自循环扫描提货卡任务: dispatched=%d executed=%d escalated=%d", stats.Dispatched, stats.Executed, stats.Escalated)
+		}
+		<-ticker.C
 	}
 }
 
