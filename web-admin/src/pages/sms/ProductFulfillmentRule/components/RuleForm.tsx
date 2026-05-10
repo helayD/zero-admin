@@ -153,8 +153,16 @@ const RuleForm: React.FC<RuleFormProps> = ({
       };
 
       if (isEdit && record) {
+        // 诊断：确保编辑场景一定带 id，避免后端 httpx.Parse 报 field "id" is not set
+        if (!record.id || Number(record.id) <= 0) {
+          // eslint-disable-next-line no-console
+          console.error('[RuleForm] 编辑模式下 record 缺 id', record);
+          message.error('当前规则缺少 id，无法更新。请关闭弹窗、刷新列表后重试。');
+          setLoading(false);
+          return;
+        }
         await updateProductFulfillmentRule({
-          id: record.id,
+          id: Number(record.id),
           ...payload,
         });
         message.success('更新成功');
