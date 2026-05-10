@@ -68,6 +68,12 @@ func (l *QueryProductSpuDetailLogic) QueryProductSpuDetail(req *types.QueryProdu
 		return nil, errorx.NewDefaultError(s.Message())
 	}
 
+	// 旁路修复：见 fulfillment_backfill.go 注释。pms.pb.go rawDesc 缺 fulfillment_mode/rule_id
+	// 字段，wire format 不传输，必须在 admin-api 旁路 SQL 兜底。
+	if detail != nil && detail.Data != nil {
+		backfillFulfillmentFields(l.ctx, l.svcCtx.DB, []*pmsclient.ProductSpuListData{detail.Data})
+	}
+
 	// 8.查询专题关联
 	subjectIds := make([]int64, 0)
 	res, _ := l.svcCtx.SubjectProductRelationService.QuerySubjectProductRelationList(l.ctx, &cmsclient.QuerySubjectProductRelationListReq{

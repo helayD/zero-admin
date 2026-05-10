@@ -127,10 +127,6 @@ func (l *QueryProductSpuListLogic) QueryProductSpuList(in *pmsclient.QueryProduc
 		reviewMeta := reviewMetadata[item.ID]
 		scopeMeta := scopeMetadata[item.ID]
 		operationMeta := operationMetadata[item.ID]
-		// [DEBUG-FULFILLMENT] 临时诊断：检查 GORM 反序列化后 model 结构体里 fulfillment_mode 实际值
-		logc.Infof(l.ctx,
-			"[DEBUG-FULFILLMENT-RPC] model item id=%d fulfillment_mode=%q fulfillment_rule_id=%d",
-			item.ID, item.FulfillmentMode, item.FulfillmentRuleID)
 		list = append(list, &pmsclient.ProductSpuListData{
 			Id:                  item.ID,                                          // 商品SpuId
 			ProductSn:           item.ProductSn,                                   // 商品货号
@@ -181,13 +177,6 @@ func (l *QueryProductSpuListLogic) QueryProductSpuList(in *pmsclient.QueryProduc
 			RecommendTime:       operationMeta.RecommendTime,
 			RecommendDetail:     operationMeta.RecommendDetail,
 		})
-	}
-
-	// [DEBUG-FULFILLMENT-RPC] list 填充后 proto struct 实际值
-	if len(list) > 0 {
-		logc.Infof(l.ctx,
-			"[DEBUG-FULFILLMENT-RPC-PROTO] list[0] id=%d fulfillment_mode=%q fulfillment_rule_id=%d total=%d",
-			list[0].Id, list[0].FulfillmentMode, list[0].FulfillmentRuleId, count)
 	}
 
 	return &pmsclient.QueryProductSpuListResp{
