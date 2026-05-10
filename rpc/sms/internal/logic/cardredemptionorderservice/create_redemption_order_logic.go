@@ -24,7 +24,7 @@ const (
 	redemptionOrderStatusDelivered  = "delivered"
 	redemptionOrderStatusCancelled  = "cancelled"
 
-	cardAssetStatusClaimed          = "claimed"
+	cardAssetStatusClaimed           = "claimed"
 	cardAssetStatusPendingRedemption = "pending_redemption"
 
 	cardAssetOperationRedemptionOrderCreated   = "redemption_order_created"
@@ -59,21 +59,21 @@ func (redemptionOrderRow) TableName() string {
 }
 
 type cardInstanceRow struct {
-	ID                int64  `gorm:"column:id"`
-	PlatformID        int64  `gorm:"column:platform_id"`
-	TenantID          int64  `gorm:"column:tenant_id"`
-	MerchantID        int64  `gorm:"column:merchant_id"`
-	MemberID          int64  `gorm:"column:member_id"`
-	AssetStatus       string `gorm:"column:asset_status"`
-	MintStatus        string `gorm:"column:mint_status"`
-	SourceType        string `gorm:"column:source_type"`
-	SourceID          int64  `gorm:"column:source_id"`
-	FulfillmentRuleID int64  `gorm:"column:fulfillment_rule_id"`
-	Transferable      int32  `gorm:"column:transferable"`
-	TransferLimit     int32  `gorm:"column:transfer_limit"`
-	ClaimCondition    string `gorm:"column:claim_condition"`
+	ID                  int64  `gorm:"column:id"`
+	PlatformID          int64  `gorm:"column:platform_id"`
+	TenantID            int64  `gorm:"column:tenant_id"`
+	MerchantID          int64  `gorm:"column:merchant_id"`
+	MemberID            int64  `gorm:"column:member_id"`
+	AssetStatus         string `gorm:"column:asset_status"`
+	MintStatus          string `gorm:"column:mint_status"`
+	SourceType          string `gorm:"column:source_type"`
+	SourceID            int64  `gorm:"column:source_id"`
+	FulfillmentRuleID   int64  `gorm:"column:fulfillment_rule_id"`
+	Transferable        int32  `gorm:"column:transferable"`
+	TransferLimit       int32  `gorm:"column:transfer_limit"`
+	ClaimCondition      string `gorm:"column:claim_condition"`
 	RedemptionCondition string `gorm:"column:redemption_condition"`
-	IsDeleted         int32  `gorm:"column:is_deleted"`
+	IsDeleted           int32  `gorm:"column:is_deleted"`
 }
 
 func (cardInstanceRow) TableName() string {
@@ -230,7 +230,10 @@ func (l *CreateRedemptionOrderLogic) createRedemptionOrderInTx(tx *gorm.DB, in *
 		return nil, errors.New("该卡片已存在进行中的提货单")
 	}
 
-	orderNo := generateRedemptionOrderNo()
+	orderNo, err := generateRedemptionOrderNo()
+	if err != nil {
+		return nil, fmt.Errorf("生成提货单号失败: %w", err)
+	}
 	now := time.Now()
 	order := &redemptionOrderRow{
 		OrderNo:         orderNo,
@@ -281,12 +284,14 @@ func (l *CreateRedemptionOrderLogic) createRedemptionOrderInTx(tx *gorm.DB, in *
 	return order, nil
 }
 
-func generateRedemptionOrderNo() string {
+// generateRedemptionOrderNo 生成提货单号，crypto/rand 失败时直接返回 error 让事务回滚，
+// 避免回退到低熵方案导致单号冲突或掩盖 rand 故障告警。
+func generateRedemptionOrderNo() (string, error) {
 	buf := make([]byte, 8)
 	if _, err := rand.Read(buf); err != nil {
-		return fmt.Sprintf("RDO%s%012d", time.Now().Format("20060102150405"), time.Now().UnixNano()%1000000000000)
+		return "", fmt.Errorf("crypto/rand 不可用: %w", err)
 	}
-	return fmt.Sprintf("RDO%s%s", time.Now().Format("20060102150405"), hex.EncodeToString(buf))
+	return fmt.Sprintf("RDO%s%s", time.Now().Format("20060102150405"), hex.EncodeToString(buf)), nil
 }
 
 func buildRedemptionOrderData(row *redemptionOrderRow) *smsclient.RedemptionOrderData {

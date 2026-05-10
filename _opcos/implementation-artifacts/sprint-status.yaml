@@ -139,7 +139,7 @@ development_status:
   10-4-链上-token-发放复用既有蚂蚁链-fisco-链路: review
   10-5-提货卡资产展示-审计检索与合规处置: review
   10-6-商品履约模式与既有提货卡入账: in-progress  # 2026-05-09 二次审查发现并修复 5 个 HIGH/CRITICAL（reconcile SQL 列名错、退款无生产者、确认订单缺履约模式、模拟支付失败未回滚、合规字面量错），Task 8 测试保护网仍待补
-  10-7-提货卡提货与转赠: review  # 对抗性代码审查完成：修复 4 个 CRITICAL（CAS 并发漏洞、审计日志缺陷、SSRF 风险、订单号冲突），3 个 HIGH（OMS 集成待实现、Flutter 页面缺失、redirect_uri 待补充），状态保持 review
+  10-7-提货卡提货与转赠: review  # 2026-05-10 第三轮审查（Flutter 闭环专项）：修复 3 个 CRITICAL（分享 domain 缺失 + shareLink 指向后端 API + 无 H5 落地页 → 补 /h5/digital-card/claim + QR + 白名单兜底）、5 个 HIGH（hasActiveRedemption 宽松判定、支付成功页无条件提货卡提示、提货无地址簿预填、分享 sheet 无二维码/有效期、consume_claim_token LIKE 伪阳性与死代码）、3 个 MEDIUM（holderId 死字段、提货单详情页缺失、containsIgnoreCase 手工实现）、1 个 LOW（订单号生成回退风险）；后端编译通过，flutter analyze 无 error。CRITICAL-3（提货单与原购买单脱钩产生 0 元 OMS 订单）需业务决策，暂记入 Story 10.8 范围
   10-8-提货状态流转-履约对账与-c-端合规展示: ready-for-dev
   10-9-实体卡制作-物流履约与签收闭环: in-progress
   10-10-提货卡后台配置中心-商业化版: review  # 2026-05-09 dev-story 完成：Bug #1 修复 + sms-rpc CardTemplateService 全套（含 protoc 生成 .pb.go）+ admin-api 暴露 7 个接口 + 发卡规则 cardTemplateName JOIN + 菜单 SQL + web-admin CardTemplate 独立维护页 + RuleForm 替换硬编码 mock + ProTable 履约模式 valueEnum + 模板引用校验。整体编译通过。Task 5 拆为 10.11，Task 6 拆为 10.12，Task 7 pms-rpc 协议升级延后

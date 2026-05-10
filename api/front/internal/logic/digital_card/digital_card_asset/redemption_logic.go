@@ -14,7 +14,6 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
-
 type CreateRedemptionOrderLogic struct {
 	logx.Logger
 	ctx    context.Context
@@ -108,21 +107,26 @@ func NewGenerateShareLinkLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 	}
 }
 
-// validateShareDomain 校验分享链接域名是否在白名单内，防止 SSRF 和钓鱼链接
-func validateShareDomain(domain string, allowedDomains []string) error {
+// resolveShareDomain 解析并校验分享链接域名：
+// - 若客户端未传，则使用配置白名单首项作为兜底域名，避免调用方未配置时失败
+// - 若客户端传入，则必须在白名单内（支持精确匹配或作为子域名）
+// - 禁止含有路径/查询参数等非法字符，防止 SSRF 与钓鱼链接
+func resolveShareDomain(domain string, allowedDomains []string) (string, error) {
 	if domain == "" {
-		return errors.New("域名不能为空")
+		if len(allowedDomains) == 0 {
+			return "", errors.New("分享域名未配置")
+		}
+		return allowedDomains[0], nil
 	}
-	// 防止路径注入、查询参数注入等攻击
 	if strings.ContainsAny(domain, "/?#&=\\") {
-		return errors.New("域名格式非法")
+		return "", errors.New("域名格式非法")
 	}
 	for _, allowed := range allowedDomains {
 		if domain == allowed || strings.HasSuffix(domain, "."+allowed) {
-			return nil
+			return domain, nil
 		}
 	}
-	return errors.New("域名不在白名单内")
+	return "", errors.New("域名不在白名单内")
 }
 
 func (l *GenerateShareLinkLogic) GenerateShareLink(req *types.GenerateShareLinkReq) (*types.GenerateShareLinkResp, error) {
@@ -131,7 +135,8 @@ func (l *GenerateShareLinkLogic) GenerateShareLink(req *types.GenerateShareLinkR
 		return nil, err
 	}
 
-	if err := validateShareDomain(req.Domain, l.svcCtx.Config.Share.AllowedDomains); err != nil {
+	domain, err := resolveShareDomain(req.Domain, l.svcCtx.Config.Share.AllowedDomains)
+	if err != nil {
 		return nil, err
 	}
 
@@ -150,7 +155,18 @@ func (l *GenerateShareLinkLogic) GenerateShareLink(req *types.GenerateShareLinkR
 		return nil, fmt.Errorf("生成分享链接失败: %w", err)
 	}
 
-	shareLink := fmt.Sprintf("https://%s/api/digitalCard/claim?token=%s", req.Domain, resp.Token.Token)
+	// 分享链接指向 H5 领取页，朋友扫码或点击后由 H5 引导登录/注册并完成领取
+	// 若配置域名已带 scheme 则直接使用；否则按是否为内网 IP/端口动态选择 http/https
+	baseURL := domain
+	if !strings.HasPrefix(baseURL, "http://") && !strings.HasPrefix(baseURL, "https://") {
+		scheme := "https"
+		if strings.Contains(baseURL, ":") || strings.Contains(baseURL, "127.0.0.1") || strings.Contains(baseURL, "localhost") {
+			// 含端口或本地/内网地址，默认走 http，便于联调
+			scheme = "http"
+		}
+		baseURL = scheme + "://" + baseURL
+	}
+	shareLink := fmt.Sprintf("%s/h5/digital-card/claim?token=%s", baseURL, resp.Token.Token)
 
 	return &types.GenerateShareLinkResp{
 		Code:    0,

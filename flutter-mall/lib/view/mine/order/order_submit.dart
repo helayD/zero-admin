@@ -431,6 +431,10 @@ class _OrderSubmitState extends State<OrderSubmit> {
         if (!mounted) return;
 
         // === Task 8: 跳转支付页，传递完整订单信息 ===
+        // Story 10.7 Review Fix HIGH-1: 计算订单是否包含提货卡类履约商品
+        final bool hasDigitalCard = (_orderData?.cartPromotionItemList ?? [])
+            .any((ConfirmCartItem item) =>
+                item.fulfillmentMode == 'digital_asset');
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (ctx) => OrderPay(
@@ -438,6 +442,7 @@ class _OrderSubmitState extends State<OrderSubmit> {
               orderSn: orderSn,
               payType: _selectedPayType,
               amount: payAmount,
+              hasDigitalCard: hasDigitalCard,
             ),
           ),
         );

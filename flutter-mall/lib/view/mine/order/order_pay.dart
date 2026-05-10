@@ -48,12 +48,17 @@ class OrderPay extends StatefulWidget {
   /// 支付金额（元）
   final double amount;
 
+  /// Story 10.7 Review Fix HIGH-1: 订单是否包含提货卡类履约商品。
+  /// 只有为 true 时支付成功页才展示"提货卡已发放"提示和"查看我的提货卡"按钮。
+  final bool hasDigitalCard;
+
   const OrderPay({
     super.key,
     this.orderId,
     this.orderSn,
     this.payType,
     required this.amount,
+    this.hasDigitalCard = false,
   });
 
   @override
@@ -998,112 +1003,111 @@ class _OrderPayState extends State<OrderPay> with WidgetsBindingObserver {
                 ),
               ),
               const SizedBox(height: 32),
-              
-              // Story 10.6: 提货卡履约提示卡片 - 优化设计
-              Container(
-                margin: const EdgeInsets.symmetric(horizontal: 8),
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      const Color(0xFFEFF6FF),
-                      const Color(0xFFDBEAFE),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: const Color(0xFFBFDBFE),
-                    width: 1.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
+
+              // Story 10.7 Review Fix HIGH-1: 只有订单包含提货卡履约时才展示"提货卡已发放"
+              if (widget.hasDigitalCard) ...[
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 8),
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color(0xFFEFF6FF),
+                        Color(0xFFDBEAFE),
+                      ],
                     ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    // 图标容器
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.card_giftcard_rounded,
-                        size: 28,
-                        color: Color(0xFF2563EB),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      '提货卡已发放',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF1E40AF),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '您的提货卡已自动发放至卡包\n无需手动操作，可随时查看',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: const Color(0xFF1E40AF).withValues(alpha: 0.8),
-                        height: 1.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 32),
-              
-              // Story 10.6: 查看提货卡按钮 - 优化样式
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    // 跳转到提货卡页面
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => MyDigitalCardPage(),
-                      ),
-                    );
-                  },
-                  icon: const Icon(
-                    Icons.card_giftcard_rounded,
-                    size: 22,
-                  ),
-                  label: const Text(
-                    '查看我的提货卡',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF2563EB),
-                    backgroundColor: Colors.white,
-                    side: const BorderSide(
-                      color: Color(0xFF93C5FD),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: const Color(0xFFBFDBFE),
                       width: 1.5,
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.card_giftcard_rounded,
+                          size: 28,
+                          color: Color(0xFF2563EB),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        '提货卡已发放',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1E40AF),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '您的提货卡已自动发放至卡包\n无需手动操作，可随时查看',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: const Color(0xFF1E40AF).withValues(alpha: 0.8),
+                          height: 1.5,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 32),
+
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const MyDigitalCardPage(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(
+                      Icons.card_giftcard_rounded,
+                      size: 22,
+                    ),
+                    label: const Text(
+                      '查看我的提货卡',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF2563EB),
+                      backgroundColor: Colors.white,
+                      side: const BorderSide(
+                        color: Color(0xFF93C5FD),
+                        width: 1.5,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
               
               // 查看订单详情按钮 - 优化样式
               SizedBox(

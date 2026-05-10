@@ -115,7 +115,7 @@ type GenerateShareLinkReq struct {
 	CardInstanceId int64  `json:"cardInstanceId"`
 	ExpireHours    int32  `json:"expireHours,optional"`
 	MaxClaims      int32  `json:"maxClaims,optional"`
-	Domain         string `json:"domain"`
+	Domain         string `json:"domain,optional"`
 	PlatformId     int64  `json:"platformId,optional"`
 	TenantId       int64  `json:"tenantId,optional"`
 	MerchantId     int64  `json:"merchantId,optional"`

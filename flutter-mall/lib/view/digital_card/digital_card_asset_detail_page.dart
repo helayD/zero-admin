@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_mall/config/service_url.dart';
+import 'package:flutter_mall/model/address_list.dart';
 import 'package:flutter_mall/model/app_recent_context.dart';
 import 'package:flutter_mall/model/digital_card/digital_card_asset_model.dart';
 import 'package:flutter_mall/theme/app_theme.dart';
@@ -13,6 +14,9 @@ import 'package:flutter_mall/view/digital_card/compliance_rule_banner.dart';
 import 'package:flutter_mall/view/digital_card/digital_card_physical_fulfillment_page.dart';
 import 'package:flutter_mall/view/digital_card/digital_card_display_text.dart';
 import 'package:flutter_mall/view/digital_card/mint_status_timeline.dart';
+import 'package:flutter_mall/view/digital_card/physical_fulfillment_address_sheet.dart';
+import 'package:flutter_mall/view/digital_card/redemption_order_detail_page.dart';
+import 'package:flutter_mall/view/digital_card/share_digital_card_page.dart';
 import 'package:flutter_mall/widgets/cached_image_widget.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -159,6 +163,37 @@ class _DigitalCardAssetDetailPageState
     final TextEditingController nameController = TextEditingController();
     final TextEditingController phoneController = TextEditingController();
     final TextEditingController addressController = TextEditingController();
+    // Story 10.7 Review Fix: 进入提货表单时异步加载地址簿，用户可一键从默认地址填充
+    List<AddressListData> addressBook = <AddressListData>[];
+    try {
+      final Response addrResp = await HttpUtil.get(addressListDataUrl);
+      final AddressListModel model = AddressListModel.fromJson(addrResp.data);
+      if (model.code == 0) {
+        addressBook = model.data;
+        // 默认回填：优先默认地址，其次列表首项
+        final AddressListData? defaultAddr = addressBook.isEmpty
+            ? null
+            : addressBook.firstWhere(
+                (AddressListData a) => a.isDefault == 1,
+                orElse: () => addressBook.first,
+              );
+        if (defaultAddr != null) {
+          nameController.text = defaultAddr.receiverName;
+          phoneController.text = defaultAddr.receiverPhone;
+          addressController.text = defaultAddr.fullAddress;
+        }
+      }
+    } catch (_) {
+      // 地址簿加载失败不阻断流程，用户仍可手填
+    }
+    if (!mounted) {
+      nameController.dispose();
+      phoneController.dispose();
+      addressController.dispose();
+      return;
+    }
+
+    int? createdOrderId;
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -191,7 +226,34 @@ class _DigitalCardAssetDetailPageState
               });
             }
 
-              Future<void> submit() async {
+            Future<void> pickFromAddressBook() async {
+              if (addressBook.isEmpty) {
+                _showSnack('暂无已保存的收货地址');
+                return;
+              }
+              await showModalBottomSheet<void>(
+                context: sheetContext,
+                isScrollControlled: true,
+                showDragHandle: true,
+                builder: (_) => PhysicalFulfillmentAddressSheet(
+                  addresses: addressBook,
+                  selectedAddressId: null,
+                  onSelected: (AddressListData picked) {
+                    Navigator.of(sheetContext).pop();
+                    setSheetState(() {
+                      nameController.text = picked.receiverName;
+                      phoneController.text = picked.receiverPhone;
+                      addressController.text = picked.fullAddress;
+                      nameError = null;
+                      phoneError = null;
+                      addressError = null;
+                    });
+                  },
+                ),
+              );
+            }
+
+            Future<void> submit() async {
               validateFields();
               if (nameError != null || phoneError != null || addressError != null) {
                 return;
@@ -225,17 +287,19 @@ class _DigitalCardAssetDetailPageState
                 message = null;
               });
               try {
-                await HttpUtil.post(
+                final Response resp = await HttpUtil.post(
                   createRedemptionOrderUrl,
                   data: <String, dynamic>{
                     'cardInstanceId': item.assetInstanceId,
-                    'holderId': item.assetInstanceId,
+                    // Review Fix MEDIUM-1: 不再传 holderId（后端从 JWT 取 memberID）
                     'receiverName': nameController.text.trim(),
                     'receiverPhone': phoneController.text.trim(),
                     'receiverAddress': addressController.text.trim(),
                     'requestId': 'redemption-${DateTime.now().millisecondsSinceEpoch}',
                   },
                 );
+                final Map<String, dynamic> data = _responseData(resp.data);
+                createdOrderId = (data['id'] as num?)?.toInt();
                 if (!mounted) return;
                 _showSnack('提货单创建成功');
                 await _loadDetail();
@@ -264,7 +328,20 @@ class _DigitalCardAssetDetailPageState
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text('我要提货', style: Theme.of(context).textTheme.titleLarge),
+                    Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: Text('我要提货',
+                              style: Theme.of(context).textTheme.titleLarge),
+                        ),
+                        TextButton.icon(
+                          onPressed: pickFromAddressBook,
+                          icon:
+                              const Icon(Icons.location_on_outlined, size: 18),
+                          label: const Text('从地址簿选择'),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: AppSpacing.sm),
                     Text(
                       '填写收货信息，我们将为您配送实体卡片。',
@@ -339,6 +416,22 @@ class _DigitalCardAssetDetailPageState
     nameController.dispose();
     phoneController.dispose();
     addressController.dispose();
+
+    // Story 10.7 Review Fix MEDIUM-3: 提货单创建成功后跳转到提货单详情页，承载物流进度与取消入口
+    if (!mounted) return;
+    if (createdOrderId != null && createdOrderId! > 0) {
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => RedemptionOrderDetailPage(
+            orderId: createdOrderId!,
+            cardInstanceId: item.assetInstanceId,
+          ),
+        ),
+      );
+      if (mounted) {
+        await _loadDetail();
+      }
+    }
   }
 
   String _getErrorMessage(dynamic error) {
@@ -361,130 +454,22 @@ class _DigitalCardAssetDetailPageState
     return '操作失败，请稍后重试';
   }
 
+  // Story 10.7 Review Fix CRITICAL-2 / HIGH-4:
+  // 分享入口改为跳转到独立的分享页（带二维码 + 有效期 + 可领取次数）。
+  // 旧的 bottom sheet 只能复制链接，无法覆盖"扫码=H5 页面"的闭环要求。
   Future<void> _openShareSheet(DigitalCardAssetItem item) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (BuildContext sheetContext) {
-        bool isGenerating = false;
-        String? shareLink;
-        String? message;
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setSheetState) {
-            Future<void> generateLink() async {
-              if (isGenerating) return;
-              setSheetState(() {
-                isGenerating = true;
-                message = null;
-              });
-              try {
-                final Response response = await HttpUtil.post(
-                  generateShareLinkUrl,
-                  data: <String, dynamic>{
-                    'cardInstanceId': item.assetInstanceId,
-                    'holderId': item.assetInstanceId,
-                    'requestId': 'share-${DateTime.now().millisecondsSinceEpoch}',
-                  },
-                );
-                final Map<String, dynamic> data = _responseData(response.data);
-                setSheetState(() {
-                  isGenerating = false;
-                  shareLink = data['shareUrl']?.toString();
-                });
-              } catch (e) {
-                setSheetState(() {
-                  isGenerating = false;
-                  message = '生成分享链接失败，请稍后重试';
-                });
-              }
-            }
-
-            Future<void> copyLink() async {
-              if (shareLink == null) return;
-              await Clipboard.setData(ClipboardData(text: shareLink!));
-              if (!mounted) return;
-              _showSnack('分享链接已复制');
-            }
-
-            return SafeArea(
-              top: false,
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  20,
-                  8,
-                  20,
-                  20 + MediaQuery.of(context).viewInsets.bottom,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text('分享给朋友', style: Theme.of(context).textTheme.titleLarge),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      '生成分享链接，发送给朋友领取这张卡片。',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    if (shareLink != null) ...<Widget>[
-                      Container(
-                        padding: const EdgeInsets.all(AppSpacing.md),
-                        decoration: BoxDecoration(
-                          color: AppColors.background,
-                          borderRadius: BorderRadius.circular(AppRadii.md),
-                          border: Border.all(color: AppColors.border),
-                        ),
-                        child: Row(
-                          children: <Widget>[
-                            Expanded(
-                              child: Text(
-                                shareLink!,
-                                style: Theme.of(context).textTheme.bodySmall,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: copyLink,
-                              icon: const Icon(Icons.copy_outlined),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ] else ...<Widget>[
-                      SizedBox(
-                        width: double.infinity,
-                        child: FilledButton.icon(
-                          onPressed: isGenerating ? null : generateLink,
-                          icon: isGenerating
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
-                                )
-                              : const Icon(Icons.link_outlined),
-                          label: const Text('生成分享链接'),
-                        ),
-                      ),
-                    ],
-                    if (message != null) ...<Widget>[
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(
-                        message!,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.price,
-                            ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ShareDigitalCardPage(
+          assetInstanceId: item.assetInstanceId,
+          templateName: item.templateName,
+          cardFaceImage: item.cardFaceImage,
+        ),
+      ),
     );
+    if (mounted) {
+      await _loadDetail();
+    }
   }
 
   Future<void> _openTransferSheet(DigitalCardAssetItem item) async {
@@ -838,7 +823,15 @@ class _DigitalCardAssetDetailPageState
     final bool actionsAvailable = item.mintStatus == 'mint_success';
     final bool canRedeem = actionsAvailable;
     final bool canShare = actionsAvailable && item.transferable == true;
-    final bool hasActiveRedemption = item.redemptionStatus != null && item.redemptionStatus != '';
+    // Story 10.7 Review Fix HIGH-2: 只把 pending/processing/shipped 视为活跃占用，
+    // cancelled/delivered/failed 等终态不应锁定卡片，否则会永久禁用分享/提货入口。
+    const Set<String> activeRedemptionStatuses = <String>{
+      'pending',
+      'processing',
+      'shipped',
+    };
+    final bool hasActiveRedemption = item.redemptionStatus != null &&
+        activeRedemptionStatuses.contains(item.redemptionStatus);
     final bool hasActiveShare = item.shareTokenStatus == 'active';
 
     String actionHint = '';

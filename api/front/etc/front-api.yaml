@@ -94,6 +94,9 @@ Mysql:
 
 Share:
   AllowedDomains:
+    # Story 10.7 Review Fix: 首项作为客户端未传 domain 时的兜底域名，用于拼接分享链接
+    # 当前部署在 47.107.224.56:9999（front-api 直出 /h5/digital-card/claim）
+    - 47.107.224.56:9999
     - example.com
     - mall.example.com
     # 生产环境请在配置中心或环境变量中注入真实域名

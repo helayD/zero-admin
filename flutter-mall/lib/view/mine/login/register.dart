@@ -140,6 +140,8 @@ class _RegisterState extends State<Register> {
           return '注册完成后将继续查看我的提货卡。';
         case AppRecentTargetType.digitalCardAssetDetail:
           return '注册完成后将继续查看提货卡详情。';
+        case AppRecentTargetType.digitalCardClaim:
+          return '注册完成后将继续领取分享的提货卡。';
         case AppRecentTargetType.home:
         case AppRecentTargetType.activity:
         case AppRecentTargetType.subject:

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/feihua/zero-admin/pkg/digitalcardmint"
@@ -62,15 +63,15 @@ func (cardTemplateRow) TableName() string {
 }
 
 type cardAssetLogRow struct {
-	AssetInstanceID       int64  `gorm:"column:asset_instance_id"`
-	FromStatus            string `gorm:"column:from_status"`
-	ToStatus              string `gorm:"column:to_status"`
-	OperationType         string `gorm:"column:operation_type"`
-	OperatorType          string `gorm:"column:operator_type"`
-	TraceID               string `gorm:"column:trace_id"`
-	ReasonCode            string `gorm:"column:reason_code"`
-	ReasonText            string `gorm:"column:reason_text"`
-	PayloadJSON           string `gorm:"column:payload_json"`
+	AssetInstanceID int64  `gorm:"column:asset_instance_id"`
+	FromStatus      string `gorm:"column:from_status"`
+	ToStatus        string `gorm:"column:to_status"`
+	OperationType   string `gorm:"column:operation_type"`
+	OperatorType    string `gorm:"column:operator_type"`
+	TraceID         string `gorm:"column:trace_id"`
+	ReasonCode      string `gorm:"column:reason_code"`
+	ReasonText      string `gorm:"column:reason_text"`
+	PayloadJSON     string `gorm:"column:payload_json"`
 }
 
 func (cardAssetLogRow) TableName() string {
@@ -82,41 +83,14 @@ func isRetryableError(err error) bool {
 	if err == nil {
 		return false
 	}
-	errStr := err.Error()
-	retryableKeywords := []string{"timeout", "deadline exceeded", "connection refused", "no such host", "temporary", "unavailable", "EOF"}
+	errStr := strings.ToLower(err.Error())
+	retryableKeywords := []string{"timeout", "deadline exceeded", "connection refused", "no such host", "temporary", "unavailable", "eof"}
 	for _, kw := range retryableKeywords {
-		if containsIgnoreCase(errStr, kw) {
+		if strings.Contains(errStr, kw) {
 			return true
 		}
 	}
 	return false
-}
-
-func containsIgnoreCase(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(substr) > 0 && containsFold(s, substr))
-}
-
-func containsFold(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		match := true
-		for j := 0; j < len(substr); j++ {
-			if toLower(s[i+j]) != toLower(substr[j]) {
-				match = false
-				break
-			}
-		}
-		if match {
-			return true
-		}
-	}
-	return false
-}
-
-func toLower(b byte) byte {
-	if b >= 'A' && b <= 'Z' {
-		return b + ('a' - 'A')
-	}
-	return b
 }
 
 func recordRedemptionLog(db *gorm.DB, ctx context.Context, instanceID int64, fromStatus, toStatus, opType, reasonCode, reasonText, traceID, payload string) {

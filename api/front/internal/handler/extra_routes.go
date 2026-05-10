@@ -4,9 +4,9 @@ import (
 	"net/http"
 
 	digitalcardassethandler "github.com/feihua/zero-admin/api/front/internal/handler/digital_card/digital_card_asset"
-	"github.com/feihua/zero-admin/api/front/internal/middleware"
 	physicalfulfillmenthandler "github.com/feihua/zero-admin/api/front/internal/handler/digital_card/physical_fulfillment"
 	membermessagehandler "github.com/feihua/zero-admin/api/front/internal/handler/member/message"
+	"github.com/feihua/zero-admin/api/front/internal/middleware"
 	"github.com/feihua/zero-admin/api/front/internal/svc"
 	"github.com/zeromicro/go-zero/rest"
 )
@@ -73,8 +73,8 @@ func RegisterExtraHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 	server.AddRoutes(
 		[]rest.Route{
 			{
-				Method:  http.MethodPost,
-				Path:    "/claim",
+				Method: http.MethodPost,
+				Path:   "/claim",
 				Handler: middleware.DigitalCardRateLimitMiddleware(serverCtx.Redis)(
 					middleware.AbnormalDetectionMiddleware(serverCtx.Redis)(
 						digitalcardassethandler.ClaimDigitalCardHandler(serverCtx),
@@ -92,6 +92,12 @@ func RegisterExtraHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodGet,
 				Path:    "/digitalCard/register",
 				Handler: digitalcardassethandler.DigitalCardRegisterHintHandler(serverCtx),
+			},
+			{
+				// Story 10.7 Review Fix: H5 领取落地页，供微信扫码或浏览器点链后使用
+				Method:  http.MethodGet,
+				Path:    "/digital-card/claim",
+				Handler: digitalcardassethandler.DigitalCardClaimHintHandler(serverCtx),
 			},
 		},
 		rest.WithPrefix("/h5"),
