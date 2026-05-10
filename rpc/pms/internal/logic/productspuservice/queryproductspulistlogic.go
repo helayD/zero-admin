@@ -183,6 +183,13 @@ func (l *QueryProductSpuListLogic) QueryProductSpuList(in *pmsclient.QueryProduc
 		})
 	}
 
+	// [DEBUG-FULFILLMENT-RPC] list 填充后 proto struct 实际值
+	if len(list) > 0 {
+		logc.Infof(l.ctx,
+			"[DEBUG-FULFILLMENT-RPC-PROTO] list[0] id=%d fulfillment_mode=%q fulfillment_rule_id=%d total=%d",
+			list[0].Id, list[0].FulfillmentMode, list[0].FulfillmentRuleId, count)
+	}
+
 	return &pmsclient.QueryProductSpuListResp{
 		Total: count,
 		List:  list,
