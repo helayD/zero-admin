@@ -80,6 +80,14 @@ func (l *QueryProductSpuListLogic) QueryProductSpuList(req *types.QueryProductSp
 		return nil, errorx.NewDefaultError(s.Message())
 	}
 
+	// [DEBUG-FULFILLMENT] 临时诊断日志：检查 RPC 返回字段是否真的丢失
+	if len(result.List) > 0 {
+		first := result.List[0]
+		logc.Infof(l.ctx,
+			"[DEBUG-FULFILLMENT] RPC 返回首条 id=%d name=%q fulfillmentMode=%q fulfillmentRuleId=%d total=%d",
+			first.Id, first.Name, first.FulfillmentMode, first.FulfillmentRuleId, result.Total)
+	}
+
 	// Story 10.10 修复 H2: 折中方案在 total>1000 时会截断尾部记录，必须打告警日志方便 SRE/运营察觉。
 	// 后续 Story 升级 pms-rpc 协议加 fulfillment_mode 字段后，可移除本段告警与上方 PageSize=1000 的临时放大。
 	if req.FulfillmentMode != "" && result.Total > 1000 {
