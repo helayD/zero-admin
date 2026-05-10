@@ -54,6 +54,7 @@ class UpgradeGateService {
       case AppRecentTargetType.activity:
       case AppRecentTargetType.digitalCardAssetList:
       case AppRecentTargetType.digitalCardAssetDetail:
+      case AppRecentTargetType.digitalCardClaim:
       case AppRecentTargetType.subject:
       case AppRecentTargetType.preferredArea:
         return 'app_bootstrap';

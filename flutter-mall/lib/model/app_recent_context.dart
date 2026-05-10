@@ -426,8 +426,14 @@ class AppRecentContext {
     return true;
   }
 
+  // Story 10.7 Review Fix: 修复 refactor 残留的 pre-existing bugs：
+  // 1) _isValidTargetId 旧版漏列 orderDetail/productDetail/commentCompose/afterSalesApply/cart/orderList
+  // 2) _isValidTabIndex 旧版重复 case（digitalCardAssetDetail/activity/productDetail/orderDetail/commentCompose/afterSalesApply 均出现两次）
+  // 3) _targetSupportsTab 旧版 default 分支塞入了错位的 _isValidFallback body，引用 static 方法里不存在的实例字段
+  // 4) _parseInt / _isValidFallback 仅有调用点，缺实现
   static bool _isValidTargetId(AppRecentTargetType type, int? targetId) {
     switch (type) {
+      // 这些 target 可缺省（null）或需为正数
       case AppRecentTargetType.home:
       case AppRecentTargetType.cart:
       case AppRecentTargetType.orderList:
@@ -435,15 +441,18 @@ class AppRecentContext {
       case AppRecentTargetType.couponList:
       case AppRecentTargetType.couponCenter:
       case AppRecentTargetType.digitalCardAssetList:
-        return targetId == null || targetId > 0;
-      case AppRecentTargetType.digitalCardAssetDetail:
-        return targetId != null && targetId > 0;
       case AppRecentTargetType.digitalCardClaim:
-        return targetId == null || targetId > 0;
       case AppRecentTargetType.activity:
       case AppRecentTargetType.subject:
       case AppRecentTargetType.preferredArea:
         return targetId == null || targetId > 0;
+      // 这些 target 必须携带正数 targetId
+      case AppRecentTargetType.productDetail:
+      case AppRecentTargetType.orderDetail:
+      case AppRecentTargetType.commentCompose:
+      case AppRecentTargetType.afterSalesApply:
+      case AppRecentTargetType.digitalCardAssetDetail:
+        return targetId != null && targetId > 0;
     }
   }
 
@@ -457,6 +466,7 @@ class AppRecentContext {
         return tabIndex != null && tabIndex >= 0 && tabIndex <= 4;
       case AppRecentTargetType.couponList:
         return tabIndex == null || (tabIndex >= 0 && tabIndex <= 2);
+      // 其余 target 不支持 tab，不允许非空 tabIndex
       case AppRecentTargetType.productDetail:
       case AppRecentTargetType.orderDetail:
       case AppRecentTargetType.settings:
@@ -467,17 +477,29 @@ class AppRecentContext {
       case AppRecentTargetType.digitalCardAssetList:
       case AppRecentTargetType.digitalCardAssetDetail:
       case AppRecentTargetType.digitalCardClaim:
-      case AppRecentTargetType.activity:
       case AppRecentTargetType.subject:
       case AppRecentTargetType.preferredArea:
-        return false;
-      case AppRecentTargetType.productDetail:
-      case AppRecentTargetType.orderDetail:
-      case AppRecentTargetType.commentCompose:
-      case AppRecentTargetType.afterSalesApply:
-      case AppRecentTargetType.digitalCardAssetDetail:
-        return false;
+        return tabIndex == null;
     }
+  }
+
+  bool _isValidFallback(
+    AppRecentTargetType fallbackType,
+    int? fallbackTargetId,
+    int? fallbackTabIndex,
+  ) {
+    return _isValidTarget(fallbackType, fallbackTargetId, fallbackTabIndex);
+  }
+
+  static int? _normalizeTargetId(AppRecentTargetType type, int? value) {
+    if (value == null) {
+      return null;
+    }
+    // 非正数按未设置处理，防止脏数据导致 _isValidTargetId 判空失败
+    if (value <= 0) {
+      return null;
+    }
+    return value;
   }
 
   static int? _normalizeTabIndex(AppRecentTargetType type, int? value) {
@@ -487,10 +509,8 @@ class AppRecentContext {
     if (_targetSupportsTab(type)) {
       return value;
     }
-    if (value == 0) {
-      return null;
-    }
-    return value;
+    // 对于不支持 tab 的 target，忽略任何 tabIndex
+    return null;
   }
 
   static bool _targetSupportsTab(AppRecentTargetType type) {
@@ -513,9 +533,21 @@ class AppRecentContext {
       case AppRecentTargetType.subject:
       case AppRecentTargetType.preferredArea:
         return false;
-      default:
-        return _isValidTarget(fallbackType, fallbackTargetId, fallbackTabIndex);
     }
+  }
+
+  static int? _parseInt(dynamic value) {
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    final raw = value?.toString();
+    if (raw == null || raw.isEmpty) {
+      return null;
+    }
+    return int.tryParse(raw);
   }
 
   static DateTime? _parseDateTime(dynamic value) {

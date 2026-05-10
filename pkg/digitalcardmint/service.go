@@ -1477,6 +1477,9 @@ func (s *Service) appendAssetLogTx(ctx context.Context, tx *gorm.DB, instance *C
 			body = string(raw)
 		}
 	}
+	// Story 10.7 Review Fix: 显式注入 CreateTime，避免 time.Time 零值
+	// 在 MySQL NO_ZERO_DATE 严格模式下被写成 '0000-00-00 00:00:00' 而被拒绝
+	// （历史 bug：表 DDL 有 DEFAULT CURRENT_TIMESTAMP，但 GORM 仍会显式发送 '0001-01-01' 触发严格模式失败）
 	logRow := &CardAssetLogRow{
 		AssetInstanceID:       instance.ID,
 		ParticipationRecordID: instance.ParticipationRecordID,
@@ -1488,6 +1491,7 @@ func (s *Service) appendAssetLogTx(ctx context.Context, tx *gorm.DB, instance *C
 		ReasonCode:            strings.TrimSpace(reasonCode),
 		ReasonText:            strings.TrimSpace(reasonText),
 		PayloadJSON:           body,
+		CreateTime:            s.now(),
 	}
 	return tx.WithContext(ctx).Table(logRow.TableName()).Create(logRow).Error
 }
