@@ -143,4 +143,5 @@ development_status:
   10-8-提货状态流转-履约对账与-c-端合规展示: ready-for-dev
   10-9-实体卡制作-物流履约与签收闭环: in-progress
   10-10-提货卡后台配置中心-商业化版: review  # 2026-05-09 dev-story 完成：Bug #1 修复 + sms-rpc CardTemplateService 全套（含 protoc 生成 .pb.go）+ admin-api 暴露 7 个接口 + 发卡规则 cardTemplateName JOIN + 菜单 SQL + web-admin CardTemplate 独立维护页 + RuleForm 替换硬编码 mock + ProTable 履约模式 valueEnum + 模板引用校验。整体编译通过。Task 5 拆为 10.11，Task 6 拆为 10.12，Task 7 pms-rpc 协议升级延后
+  10-11-FISCO-BCOS-3x-真实上链商业化接入: ready-for-dev  # 2026-05-10 Story 新建。背景：10.4 完成蚂蚁链真实 HTTP 接入，但 pkg/fisco 仍是 tech-spec-multi-chain-adapter-refactor 明确的"阶段一免费链 mock 底座"（buildFreeChainReceipt 本地伪造回执）；客户不接受 mock + 蚂蚁链 12w+/年过高，决策走 FISCO BCOS 3.x 免费链商业化真实接入。覆盖：节点部署/合约编写部署/Go SDK 集成/证书/幂等/错误映射/灰度切换/3 张遗留卡闭环（970012/970016/970017）。依赖 Story 10.3+10.4+multi-chain-adapter-refactor。
   epic-10-retrospective: optional
