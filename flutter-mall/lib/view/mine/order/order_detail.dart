@@ -15,6 +15,7 @@ import '../../../model/order_detail.dart';
 import 'order_logistics.dart';
 import 'apply_after_sales.dart';
 import '../ping_jia/ping_jia.dart';
+import '../../digital_card/digital_card_asset_detail_page.dart';
 
 ///
 /// 订单详情页面
@@ -95,11 +96,25 @@ class _OrderDetailState extends State<OrderDetail> with SingleTickerProviderStat
     );
   }
 
-  // Story 6.2 Task 8.1+8.2+8.4: 本地追加时间线节点（status==5 取消 / status==3 确认收货）
+  // Story 6.2 Task 8.1+8.2+8.4 + Story 10.7：本地追加时间线节点。
   // Review Fix: 防止 _queryOrderDetail 重入时重复追加（flag 在 _queryOrderDetail 成功后重置）
   void _appendLocalTimelineNodes(OrderDetailData d) {
     if (_localTimelineAppended) return;
-    // 取消节点：status==5 且 timeline 中无"取消"字样节点
+    // Story 10.7：已支付节点充底。后端 pay_time 回填修复后新订单会自带该节点，
+    // 但存量订单 pay_time 可能仍为空，这里提供安全网：
+    // orderStatus >= 2 且 timeline 中不含「支付」/「付款」字样时，根据 payTime 或 updateTime 本地追加。
+    if (d.orderStatus >= 2 &&
+        d.orderStatus != 5 &&
+        !d.timeline.any((n) => n.title.contains('支付') || n.title.contains('付款'))) {
+      final paidTime = d.payTime.isNotEmpty ? d.payTime : d.updateTime;
+      d.timeline.add(TimelineNode(
+        status: d.orderStatus == 2 ? "current" : "completed",
+        title: "支付成功",
+        time: _formatTime(paidTime),
+        detail: "",
+      ));
+    }
+    // 取消节点：status==5 且 timeline 中无「取消」字样节点
     if (d.orderStatus == 5 && !d.timeline.any((n) => n.title.contains('取消'))) {
       d.timeline.add(TimelineNode(
         status: "interrupted",
@@ -108,7 +123,7 @@ class _OrderDetailState extends State<OrderDetail> with SingleTickerProviderStat
         detail: "用户主动取消",
       ));
     }
-    // 确认收货节点：status==3 且 timeline 中无"确认收货"节点
+    // 确认收货节点：status==3 且 timeline 中无「确认收货」节点
     if (d.orderStatus == 3 && !d.timeline.any((n) => n.title.contains('确认收货'))) {
       d.timeline.add(TimelineNode(
         status: "completed",
@@ -464,6 +479,9 @@ class _OrderDetailState extends State<OrderDetail> with SingleTickerProviderStat
           // 4. 商品明细（Story 6-1 Task 6.4）
           _buildProductSection(d),
           const SizedBox(height: 5),
+          // 4.5 提货卡分区（Story 10.7）— 仅订单含数字卡商品时展示
+          if (d.digitalCards.isNotEmpty) _buildDigitalCardsSection(d.digitalCards),
+          if (d.digitalCards.isNotEmpty) const SizedBox(height: 5),
           // 5. 金额拆分卡片（Story 6-1 Task 6.3）
           PriceBreakdownCard(priceBreakdown: d.priceBreakdown),
           const SizedBox(height: 5),
@@ -683,6 +701,159 @@ class _OrderDetailState extends State<OrderDetail> with SingleTickerProviderStat
     );
   }
 
+  // 提货卡分区（Story 10.7）— 仅订单含数字卡商品时展示
+  //
+  // 严守 AGENTS.md C 端监管约束：只展示模板名 / 卡号脱敏 / mintStatusText（已转换为发放/到账口径）
+  // / displayStatus / complianceTip。绝不展示 chainStatus / tokenId / chainTxId / lastReceiptJson 等链上字段。
+  Widget _buildDigitalCardsSection(List<OrderDigitalCardItem> cards) {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Icon(Icons.card_giftcard, size: 18, color: Color(0xFFFA436A)),
+              SizedBox(width: 6),
+              Text(
+                "提货卡",
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF303133),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ...cards.map((c) => _buildDigitalCardTile(c)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDigitalCardTile(OrderDigitalCardItem card) {
+    return InkWell(
+      onTap: () {
+        if (card.assetInstanceId <= 0) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => DigitalCardAssetDetailPage(
+              assetInstanceId: card.assetInstanceId,
+              intentSource: 'order_detail',
+            ),
+          ),
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            // 卡面缩略图（无图时占位灰底 + icon）
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: card.templateImage.isNotEmpty
+                  ? CachedImageWidget(56, 56, card.templateImage)
+                  : Container(
+                      width: 56,
+                      height: 56,
+                      color: const Color(0xFFF5F5F7),
+                      child: const Icon(Icons.image_outlined,
+                          color: Color(0xFFCCCCCC), size: 24),
+                    ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    card.templateName.isEmpty ? "提货卡" : card.templateName,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF303133),
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    card.assetNoMasked.isNotEmpty
+                        ? "卡片编号 ${card.assetNoMasked}"
+                        : "卡片编号待生成",
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF909399),
+                    ),
+                  ),
+                  if (card.complianceTip.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      card.complianceTip,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFFE6A23C),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: _digitalCardStatusBg(card.mintStatus),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                card.mintStatusText.isEmpty ? "处理中" : card.mintStatusText,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: _digitalCardStatusFg(card.mintStatus),
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(Icons.chevron_right,
+                size: 18, color: Color(0xFFC0C4CC)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 提货卡状态徽标颜色（C 端口径，仅 mintStatus 三态：处理/到账/异常）
+  Color _digitalCardStatusBg(String mintStatus) {
+    switch (mintStatus) {
+      case 'mint_success':
+        return const Color(0xFFE8F5E9);
+      case 'mint_failed':
+        return const Color(0xFFFDECEA);
+      case 'mint_frozen':
+        return const Color(0xFFE0E0E0);
+      default:
+        return const Color(0xFFFFF3E0);
+    }
+  }
+
+  Color _digitalCardStatusFg(String mintStatus) {
+    switch (mintStatus) {
+      case 'mint_success':
+        return const Color(0xFF2E7D32);
+      case 'mint_failed':
+        return const Color(0xFFC62828);
+      case 'mint_frozen':
+        return const Color(0xFF616161);
+      default:
+        return const Color(0xFFE65100);
+    }
+  }
+
   // 订单基本信息（Story 6-1 Task 6.6）
   Widget _buildOrderInfo(OrderDetailData d) {
     return Container(
@@ -763,12 +934,22 @@ class _OrderDetailState extends State<OrderDetail> with SingleTickerProviderStat
             // Story 6-2 实现：立即付款（OMS order_status=0=待支付）
             if (status == 0)
               _ActionButton(label: "立即付款", isPrimary: true, onTap: () => _showComingSoon("立即付款")),
+            // Story 10.7 修复：status==2 是「已支付/待发货」，不应该出现查看物流 / 确认收货。
+            // 为避免用户对未发货订单误点「确认收货」，这里只展示「等待发货」灰色提示。
+            if (status == 2)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Text(
+                  "等待商家发货",
+                  style: TextStyle(fontSize: 13, color: Color(0xFF999999)),
+                ),
+              ),
             // Story 6-3 实现：查看物流（OMS order_status=3=已发货）
-            if (status == 2)
+            if (status == 3)
               _ActionButton(label: "查看物流", isPrimary: false, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => OrderLogistics(orderId: widget.orderId)))),
-            if (status == 2) const SizedBox(width: 10),
+            if (status == 3) const SizedBox(width: 10),
             // Story 6-2 实现：确认收货（OMS order_status=3=已发货）
-            if (status == 2)
+            if (status == 3)
               _ActionButton(label: "确认收货", isPrimary: true, onTap: _confirmReceive),
             // Story 6-4 实现：申请售后（OMS order_status=4=已完成, 7=售后中）
             if (status == 4 || status == 7)

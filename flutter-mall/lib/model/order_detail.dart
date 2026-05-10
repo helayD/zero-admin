@@ -72,6 +72,8 @@ class OrderDetailData {
   // Story 6-1 新增字段
   List<TimelineNode> timeline;
   PriceBreakdown priceBreakdown;
+  // Story 10.7 新增字段：订单包含的提货卡（C 端安全字段，仅订单含数字卡商品时返回）
+  List<OrderDigitalCardItem> digitalCards;
 
   OrderDetailData({
     required this.id,
@@ -107,6 +109,7 @@ class OrderDetailData {
     required this.memberReceiveAddress,
     required this.timeline,
     required this.priceBreakdown,
+    this.digitalCards = const [],
   });
 
   /// 空数据兜底
@@ -144,6 +147,7 @@ class OrderDetailData {
     memberReceiveAddress: MemberReceiveAddress.empty(),
     timeline: [],
     priceBreakdown: PriceBreakdown.empty(),
+    digitalCards: [],
   );
 
   factory OrderDetailData.fromJson(Map<String, dynamic> json) => OrderDetailData(
@@ -188,6 +192,10 @@ class OrderDetailData {
     priceBreakdown: json["priceBreakdown"] != null
         ? PriceBreakdown.fromJson(json["priceBreakdown"])
         : PriceBreakdown.empty(),
+    digitalCards: json["digitalCards"] != null
+        ? List<OrderDigitalCardItem>.from(
+            (json["digitalCards"] as List).map((x) => OrderDigitalCardItem.fromJson(x)))
+        : [],
   );
 
   Map<String, dynamic> toJson() => {
@@ -224,6 +232,7 @@ class OrderDetailData {
     "memberReceiveAddress": memberReceiveAddress.toJson(),
     "timeline": List<dynamic>.from(timeline.map((x) => x.toJson())),
     "priceBreakdown": priceBreakdown.toJson(),
+    "digitalCards": List<dynamic>.from(digitalCards.map((x) => x.toJson())),
   };
 
   /// 兼容旧字段名
@@ -456,3 +465,66 @@ class LogisticsNodeData {
   }
 }
 
+// OrderDigitalCardItem 订单详情中的提货卡摘要（Story 10.7）。
+//
+// 严守 AGENTS.md C 端监管约束：禁止包含 chainStatus / tokenId / chainTxId /
+// lastReceiptJson / chainType 等任何区块链底层字段。
+class OrderDigitalCardItem {
+  final int assetInstanceId;
+  final String assetNoMasked;
+  final int templateId;
+  final String templateName;
+  final String templateImage;
+  final String mintStatus;
+  final String mintStatusText;
+  final String displayStatus;
+  final String complianceStatus;
+  final String complianceTip;
+  final int orderItemId;
+  final String issuedAt;
+
+  OrderDigitalCardItem({
+    required this.assetInstanceId,
+    required this.assetNoMasked,
+    required this.templateId,
+    required this.templateName,
+    required this.templateImage,
+    required this.mintStatus,
+    required this.mintStatusText,
+    required this.displayStatus,
+    required this.complianceStatus,
+    required this.complianceTip,
+    required this.orderItemId,
+    required this.issuedAt,
+  });
+
+  factory OrderDigitalCardItem.fromJson(Map<String, dynamic> json) => OrderDigitalCardItem(
+        assetInstanceId: json["assetInstanceId"] ?? 0,
+        assetNoMasked: json["assetNoMasked"] ?? "",
+        templateId: json["templateId"] ?? 0,
+        templateName: json["templateName"] ?? "",
+        templateImage: json["templateImage"] ?? "",
+        mintStatus: json["mintStatus"] ?? "",
+        mintStatusText: json["mintStatusText"] ?? "",
+        displayStatus: json["displayStatus"] ?? "",
+        complianceStatus: json["complianceStatus"] ?? "",
+        complianceTip: json["complianceTip"] ?? "",
+        orderItemId: json["orderItemId"] ?? 0,
+        issuedAt: json["issuedAt"] ?? "",
+      );
+
+  Map<String, dynamic> toJson() => {
+        "assetInstanceId": assetInstanceId,
+        "assetNoMasked": assetNoMasked,
+        "templateId": templateId,
+        "templateName": templateName,
+        "templateImage": templateImage,
+        "mintStatus": mintStatus,
+        "mintStatusText": mintStatusText,
+        "displayStatus": displayStatus,
+        "complianceStatus": complianceStatus,
+        "complianceTip": complianceTip,
+        "orderItemId": orderItemId,
+        "issuedAt": issuedAt,
+      };
+}

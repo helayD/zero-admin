@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/feihua/zero-admin/api/front/internal/logic/common"
+	"github.com/feihua/zero-admin/pkg/digitalcardmint"
 	"github.com/feihua/zero-admin/pkg/errorx"
 	"github.com/feihua/zero-admin/rpc/oms/omsclient"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -245,6 +246,9 @@ func (l *QueryOrderDetailLogic) QueryOrderDetail(req *types.OrderDetailReq) (res
 		}
 	}
 
+	// Story 10.7：附加提货卡摘要（C 端安全字段，仅订单包含数字卡商品时返回）
+	digitalCards := l.loadDigitalCardSummaries(detail.Id, memberId)
+
 	data := types.QueryOrderData{
 		Id:                       detail.Id,
 		OrderNo:                  detail.OrderNo,
@@ -275,6 +279,8 @@ func (l *QueryOrderDetailLogic) QueryOrderDetail(req *types.OrderDetailReq) (res
 		// Story 6-1 新增
 		Timeline:       timeline,
 		PriceBreakdown: pb,
+		// Story 10.7 新增
+		DigitalCards: digitalCards,
 	}
 
 	return &types.OrderDetailResp{
@@ -282,4 +288,40 @@ func (l *QueryOrderDetailLogic) QueryOrderDetail(req *types.OrderDetailReq) (res
 		Message: "操作成功",
 		Data:    data,
 	}, nil
+}
+
+// loadDigitalCardSummaries 查询订单关联的提货卡（Story 10.7）。
+//
+// 失败不阻塞订单详情主流程：拿不到时仅打日志返回 nil，让前端只展示常规订单信息。
+func (l *QueryOrderDetailLogic) loadDigitalCardSummaries(orderID int64, memberID int64) []types.OrderDigitalCardItem {
+	if l == nil || l.svcCtx == nil || l.svcCtx.DB == nil || orderID <= 0 {
+		return nil
+	}
+	service := digitalcardmint.NewService(l.svcCtx.DB, nil, nil)
+	summaries, err := service.LoadOrderCardSummaries(l.ctx, orderID, memberID)
+	if err != nil {
+		logc.Errorf(l.ctx, "loadDigitalCardSummaries failed orderId=%d memberId=%d err=%v", orderID, memberID, err)
+		return nil
+	}
+	if len(summaries) == 0 {
+		return nil
+	}
+	items := make([]types.OrderDigitalCardItem, 0, len(summaries))
+	for _, summary := range summaries {
+		items = append(items, types.OrderDigitalCardItem{
+			AssetInstanceId:  summary.AssetInstanceID,
+			AssetNoMasked:    summary.AssetNoMasked,
+			TemplateId:       summary.TemplateID,
+			TemplateName:     summary.TemplateName,
+			TemplateImage:    summary.TemplateImage,
+			MintStatus:       summary.MintStatus,
+			MintStatusText:   summary.MintStatusText,
+			DisplayStatus:    summary.DisplayStatus,
+			ComplianceStatus: summary.ComplianceStatus,
+			ComplianceTip:    summary.ComplianceTip,
+			OrderItemId:      summary.OrderItemID,
+			IssuedAt:         summary.IssuedAt,
+		})
+	}
+	return items
 }

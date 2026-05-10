@@ -1299,6 +1299,27 @@ type QueryOrderData struct {
 	MemberReceiveAddressList MemberReceiveAddressList `json:"memberReceiveAddress"`
 	Timeline                 []TimelineNode           `json:"timeline"`       // 订单时间线
 	PriceBreakdown           *PriceBreakdown          `json:"priceBreakdown"` // 金额拆分
+	// Story 10.7：订单包含的提货卡摘要（C 端安全字段，仅当订单含数字卡商品时返回）
+	DigitalCards []OrderDigitalCardItem `json:"digitalCards,omitempty"`
+}
+
+// OrderDigitalCardItem 订单详情的提货卡摘要（C 端安全字段）。
+//
+// 严守 AGENTS.md C 端监管约束：禁止包含 chainStatus / tokenId / chainTxId /
+// lastReceiptJson / chainType 等任何区块链底层字段。
+type OrderDigitalCardItem struct {
+	AssetInstanceId  int64  `json:"assetInstanceId"`
+	AssetNoMasked    string `json:"assetNoMasked"`
+	TemplateId       int64  `json:"templateId"`
+	TemplateName     string `json:"templateName"`
+	TemplateImage    string `json:"templateImage"`
+	MintStatus       string `json:"mintStatus"`
+	MintStatusText   string `json:"mintStatusText"`
+	DisplayStatus    string `json:"displayStatus"`
+	ComplianceStatus string `json:"complianceStatus"`
+	ComplianceTip    string `json:"complianceTip"`
+	OrderItemId      int64  `json:"orderItemId"`
+	IssuedAt         string `json:"issuedAt"`
 }
 
 type QueryOrderStatusSnapshotReq struct {

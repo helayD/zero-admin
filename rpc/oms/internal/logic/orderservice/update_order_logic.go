@@ -3,11 +3,12 @@ package orderservicelogic
 import (
 	"context"
 	"errors"
+	"time"
+
 	"github.com/feihua/zero-admin/rpc/oms/gen/query"
 	logiccommon "github.com/feihua/zero-admin/rpc/oms/internal/logic/common"
 	"github.com/zeromicro/go-zero/core/logc"
 	"gorm.io/gorm"
-	"time"
 
 	"github.com/feihua/zero-admin/rpc/oms/internal/svc"
 	"github.com/feihua/zero-admin/rpc/oms/omsclient"
@@ -56,6 +57,22 @@ func (l *UpdateOrderLogic) UpdateOrder(in *omsclient.UpdateOrderReq) (*omsclient
 	updateMap := make(map[string]interface{})
 	if in.OrderStatus != 0 {
 		updateMap["order_status"] = in.OrderStatus
+		// Story 10.7 Fix: 状态变更为「已支付」时若 pay_time 仍为空则自动回填，
+		// 让订单详情时间线能正确显示「支付成功」节点（buildTimeline 依赖 pay_time != ""）。
+		// 只有当 pay_time IS NULL 时才回填，避免幂等重试覆盖原始支付时间。
+		if in.OrderStatus == 2 {
+			now := time.Now()
+			var existing struct {
+				PayTime *time.Time
+			}
+			if err = l.svcCtx.DB.WithContext(l.ctx).
+				Table("oms_order_main").
+				Select("pay_time").
+				Where("id = ? AND is_deleted = 0", in.Id).
+				Scan(&existing).Error; err == nil && existing.PayTime == nil {
+				updateMap["pay_time"] = &now
+			}
+		}
 	}
 	if in.Remark != "" {
 		updateMap["remark"] = in.Remark
