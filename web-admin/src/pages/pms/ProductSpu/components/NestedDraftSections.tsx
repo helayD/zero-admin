@@ -6,6 +6,7 @@ import {
   hasDuplicateAttributeId,
   hasDuplicateSkuCode,
 } from '../draftFeedback';
+import SpecDataEditor from './SpecDataEditor';
 import type { SelectOption } from './useCatalogOptions';
 import UploadFileComponents from '@/components/common/UploadFileComponents';
 
@@ -120,7 +121,7 @@ const NestedDraftSections: FC<NestedDraftSectionsProps> = ({ attributeOptions = 
                       }),
                     ]}
                   >
-                    <Input.TextArea rows={2} placeholder='例如：{"颜色":"黑色","容量":"128G"}' />
+                    <SpecDataEditor />
                   </Form.Item>
                   <Form.Item name={[field.name, 'mainPic']} label="SKU 主图">
                     <UploadFileComponents count={1} />

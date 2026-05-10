@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
+  Button,
   Collapse,
   Descriptions,
   Form,
@@ -10,18 +11,17 @@ import {
   Select,
   Space,
   TreeSelect,
-  Typography,
 } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 import type { FormInstance } from 'antd';
-import { history } from 'umi';
 import NestedDraftSections from './NestedDraftSections';
 import { useCatalogOptions } from './useCatalogOptions';
 import type { GovernanceScopeValue } from '@/pages/system/components/governance';
 import { toGovernancePayload } from '@/pages/system/components/governance';
 import { queryProductFulfillmentRuleList } from '@/pages/sms/ProductFulfillmentRule/service';
+import RuleForm from '@/pages/sms/ProductFulfillmentRule/components/RuleForm';
 import UploadFileComponents from '@/components/common/UploadFileComponents';
 
-const { Link } = Typography;
 const { Panel } = Collapse;
 
 type RuleInfo = {
@@ -74,6 +74,9 @@ const ProductSpuFormContent: React.FC<ProductSpuFormContentProps> = ({
   scope,
 }) => {
   const [ruleInfos, setRuleInfos] = useState<RuleInfo[]>([]);
+  const [ruleFormVisible, setRuleFormVisible] = useState(false);
+  const [refreshRuleTick, setRefreshRuleTick] = useState(0);
+  const [pendingAutoSelect, setPendingAutoSelect] = useState(false);
   const fulfillmentMode = Form.useWatch('fulfillmentMode', form) ?? 'physical_delivery';
   const fulfillmentRuleId = Form.useWatch('fulfillmentRuleId', form);
 
@@ -105,11 +108,18 @@ const ProductSpuFormContent: React.FC<ProductSpuFormContentProps> = ({
           transferLimit: item.transferLimit,
         }));
         setRuleInfos(infos);
+        // 在当前表单刚创建了一条规则，fetch 完成后自动选中（以 ID 最大者为准）
+        if (pendingAutoSelect && infos.length > 0) {
+          const maxId = infos.reduce((max, r) => (r.id > max ? r.id : max), 0);
+          form.setFieldsValue({ fulfillmentRuleId: maxId });
+          setPendingAutoSelect(false);
+        }
       })
       .catch(() => {
         setRuleInfos([]);
       });
-  }, [visible, scope]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, scope, refreshRuleTick]);
 
   const ruleOptions = useMemo(
     () => ruleInfos.map((rule) => ({ label: buildRuleOptionLabel(rule), value: rule.id })),
@@ -313,29 +323,42 @@ const ProductSpuFormContent: React.FC<ProductSpuFormContentProps> = ({
           )}
           {fulfillmentMode === 'digital_asset' && (
             <FormItem
-              name="fulfillmentRuleId"
               label="发卡规则"
-              rules={[{ required: true, message: '请选择发卡规则' }]}
+              required
               tooltip="提货卡模式下必须关联一个有效的发卡规则"
               extra={
                 ruleOptions.length === 0 ? (
-                  <Space size={4}>
-                    <span style={{ color: '#ff4d4f' }}>当前主体范围暂无启用发卡规则，</span>
-                    <Link onClick={() => history.push('/sms/ProductFulfillmentRule/list')}>
-                      去创建
-                    </Link>
-                  </Space>
+                  <span style={{ color: '#ff4d4f' }}>
+                    当前主体范围暂无启用发卡规则，点右侧「新建规则」创建一个。
+                  </span>
                 ) : null
               }
+              style={{ marginBottom: 12 }}
             >
-              <Select
-                options={ruleOptions}
-                placeholder="搜索或选择发卡规则"
-                showSearch
-                optionFilterProp="label"
-                style={{ width: '100%' }}
-                disabled={ruleOptions.length === 0}
-              />
+              <Space.Compact style={{ width: '100%' }}>
+                <Form.Item
+                  name="fulfillmentRuleId"
+                  noStyle
+                  rules={[{ required: true, message: '请选择发卡规则' }]}
+                >
+                  <Select
+                    options={ruleOptions}
+                    placeholder="搜索或选择发卡规则"
+                    showSearch
+                    optionFilterProp="label"
+                    style={{ width: '100%' }}
+                    disabled={ruleOptions.length === 0}
+                  />
+                </Form.Item>
+                <Button
+                  icon={<PlusOutlined />}
+                  onClick={() => setRuleFormVisible(true)}
+                  disabled={!scope}
+                  title={scope ? '新建发卡规则' : '请先选择主体范围'}
+                >
+                  新建规则
+                </Button>
+              </Space.Compact>
             </FormItem>
           )}
           {fulfillmentMode === 'digital_asset' && selectedRule && (
@@ -430,6 +453,20 @@ const ProductSpuFormContent: React.FC<ProductSpuFormContentProps> = ({
           <NestedDraftSections attributeOptions={attributeOptions} />
         </Panel>
       </Collapse>
+
+      {/* 在商品表单内嵌套发卡规则创建 Modal，避免跳走丢失商品填写状态 */}
+      {scope && (
+        <RuleForm
+          visible={ruleFormVisible}
+          scope={scope}
+          onCancel={() => setRuleFormVisible(false)}
+          onSuccess={() => {
+            setRuleFormVisible(false);
+            setPendingAutoSelect(true);
+            setRefreshRuleTick((t) => t + 1);
+          }}
+        />
+      )}
     </>
   );
 };
