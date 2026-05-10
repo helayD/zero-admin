@@ -93,6 +93,32 @@ func ValidateProductDraft(ctx context.Context, db *gorm.DB, current pkgscope.Gov
 	if strings.TrimSpace(in.MainPic) == "" {
 		return nil, errors.New("商品主图不能为空")
 	}
+
+	// 履约模式硬校验（Story 10.10 强制）：新增/编辑时不允许为空；
+	// digital_asset 必须绑定发卡规则；绑定的规则必须在当前 scope 内启用可用。
+	if strings.TrimSpace(in.FulfillmentMode) == "" {
+		return nil, errors.New("履约模式不能为空，请选择实物发货或提货卡")
+	}
+	if in.FulfillmentMode != "physical_delivery" && in.FulfillmentMode != "digital_asset" {
+		return nil, fmt.Errorf("履约模式取值非法[%s]，仅支持 physical_delivery（实物发货）或 digital_asset（提货卡）", in.FulfillmentMode)
+	}
+	if in.FulfillmentMode == "digital_asset" {
+		if in.FulfillmentRuleId <= 0 {
+			return nil, errors.New("提货卡模式商品必须绑定发卡规则")
+		}
+		ruleErrs := NewFulfillmentValidationErrors()
+		validateFulfillmentRuleWithDetails(ctx, db, ProductVisibilityRow{
+			FulfillmentMode:   in.FulfillmentMode,
+			FulfillmentRuleID: in.FulfillmentRuleId,
+			PlatformID:        current.PlatformID,
+			TenantID:          current.TenantID,
+			MerchantID:        current.MerchantID,
+		}, ruleErrs)
+		if ruleErrs.HasErrors() {
+			return nil, ruleErrs
+		}
+	}
+
 	if err := EnsureScopedCategoryExists(ctx, db, current, in.CategoryId, "当前主体无权将商品归属到该商品分类"); err != nil {
 		return nil, err
 	}

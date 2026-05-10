@@ -53,6 +53,7 @@ func TestValidateProductDraftSuccess(t *testing.T) {
 		CategoryId:                11,
 		BrandId:                   21,
 		MainPic:                   "https://img.example.com/main.png",
+		FulfillmentMode:           "physical_delivery",
 		ProductAttributeValueList: []*pmsclient.ProductAttributeValueList{{ProductAttributeId: 31, AttributeValues: "黑色"}},
 		SkuStockList:              []*pmsclient.SkuStockList{{Name: "黑色-L", Price: 199, PromotionPrice: 99, Stock: 10, LowStock: 2, SpecData: `{"颜色":"黑色","尺码":"L"}`}, {Name: "白色-L", Price: 299, Stock: 20, LowStock: 4, SpecData: `{"颜色":"白色","尺码":"L"}`}},
 	})
@@ -76,28 +77,38 @@ func TestValidateProductDraftRejectsInvalidCases(t *testing.T) {
 		want string
 	}{
 		{
+			name: "empty fulfillment mode rejected",
+			req:  &pmsclient.ProductSpuReq{Id: 1, Name: "商品", ProductSn: "SPU-1", CategoryId: 11, BrandId: 21, MainPic: "a", SkuStockList: []*pmsclient.SkuStockList{{Name: "A", Price: 10, Stock: 1, SpecData: `{"颜色":"黑"}`}}},
+			want: "履约模式不能为空",
+		},
+		{
+			name: "digital_asset without rule_id rejected",
+			req:  &pmsclient.ProductSpuReq{Id: 1, Name: "商品", ProductSn: "SPU-1", CategoryId: 11, BrandId: 21, MainPic: "a", FulfillmentMode: "digital_asset", SkuStockList: []*pmsclient.SkuStockList{{Name: "A", Price: 10, Stock: 1, SpecData: `{"颜色":"黑"}`}}},
+			want: "提货卡模式商品必须绑定发卡规则",
+		},
+		{
 			name: "duplicate spec",
-			req:  &pmsclient.ProductSpuReq{Id: 1, Name: "商品", ProductSn: "SPU-1", CategoryId: 11, BrandId: 21, MainPic: "a", SkuStockList: []*pmsclient.SkuStockList{{Name: "A", Price: 10, Stock: 1, SpecData: `{"颜色":"黑"}`}, {Name: "B", Price: 12, Stock: 1, SpecData: `{"颜色":"黑"}`}}},
+			req:  &pmsclient.ProductSpuReq{Id: 1, Name: "商品", ProductSn: "SPU-1", CategoryId: 11, BrandId: 21, MainPic: "a", FulfillmentMode: "physical_delivery", SkuStockList: []*pmsclient.SkuStockList{{Name: "A", Price: 10, Stock: 1, SpecData: `{"颜色":"黑"}`}, {Name: "B", Price: 12, Stock: 1, SpecData: `{"颜色":"黑"}`}}},
 			want: "规格组合重复",
 		},
 		{
 			name: "illegal stock",
-			req:  &pmsclient.ProductSpuReq{Id: 1, Name: "商品", ProductSn: "SPU-1", CategoryId: 11, BrandId: 21, MainPic: "a", SkuStockList: []*pmsclient.SkuStockList{{Name: "A", Price: 10, Stock: 0, LowStock: 1, SpecData: `{"颜色":"黑"}`}}},
+			req:  &pmsclient.ProductSpuReq{Id: 1, Name: "商品", ProductSn: "SPU-1", CategoryId: 11, BrandId: 21, MainPic: "a", FulfillmentMode: "physical_delivery", SkuStockList: []*pmsclient.SkuStockList{{Name: "A", Price: 10, Stock: 0, LowStock: 1, SpecData: `{"颜色":"黑"}`}}},
 			want: "预警库存不能大于可用库存",
 		},
 		{
 			name: "disabled brand",
-			req:  &pmsclient.ProductSpuReq{Id: 1, Name: "商品", ProductSn: "SPU-1", CategoryId: 11, BrandId: 22, MainPic: "a", SkuStockList: []*pmsclient.SkuStockList{{Name: "A", Price: 10, Stock: 1, SpecData: `{"颜色":"黑"}`}}},
+			req:  &pmsclient.ProductSpuReq{Id: 1, Name: "商品", ProductSn: "SPU-1", CategoryId: 11, BrandId: 22, MainPic: "a", FulfillmentMode: "physical_delivery", SkuStockList: []*pmsclient.SkuStockList{{Name: "A", Price: 10, Stock: 1, SpecData: `{"颜色":"黑"}`}}},
 			want: "商品品牌已失效",
 		},
 		{
 			name: "cross scope category",
-			req:  &pmsclient.ProductSpuReq{Id: 1, Name: "商品", ProductSn: "SPU-1", CategoryId: 12, BrandId: 21, MainPic: "a", SkuStockList: []*pmsclient.SkuStockList{{Name: "A", Price: 10, Stock: 1, SpecData: `{"颜色":"黑"}`}}},
+			req:  &pmsclient.ProductSpuReq{Id: 1, Name: "商品", ProductSn: "SPU-1", CategoryId: 12, BrandId: 21, MainPic: "a", FulfillmentMode: "physical_delivery", SkuStockList: []*pmsclient.SkuStockList{{Name: "A", Price: 10, Stock: 1, SpecData: `{"颜色":"黑"}`}}},
 			want: "当前主体无权将商品归属到该商品分类",
 		},
 		{
 			name: "cross scope attribute",
-			req: &pmsclient.ProductSpuReq{Id: 1, Name: "商品", ProductSn: "SPU-1", CategoryId: 11, BrandId: 21, MainPic: "a",
+			req: &pmsclient.ProductSpuReq{Id: 1, Name: "商品", ProductSn: "SPU-1", CategoryId: 11, BrandId: 21, MainPic: "a", FulfillmentMode: "physical_delivery",
 				ProductAttributeValueList: []*pmsclient.ProductAttributeValueList{{ProductAttributeId: 33, AttributeValues: "越权属性"}},
 				SkuStockList:              []*pmsclient.SkuStockList{{Name: "A", Price: 10, Stock: 1, SpecData: `{"颜色":"黑"}`}},
 			},
@@ -105,7 +116,7 @@ func TestValidateProductDraftRejectsInvalidCases(t *testing.T) {
 		},
 		{
 			name: "empty stock on all sku",
-			req:  &pmsclient.ProductSpuReq{Id: 1, Name: "商品", ProductSn: "SPU-1", CategoryId: 11, BrandId: 21, MainPic: "a", SkuStockList: []*pmsclient.SkuStockList{{Name: "A", Price: 10, Stock: 0, LowStock: 0, SpecData: `{"颜色":"黑"}`}}},
+			req:  &pmsclient.ProductSpuReq{Id: 1, Name: "商品", ProductSn: "SPU-1", CategoryId: 11, BrandId: 21, MainPic: "a", FulfillmentMode: "physical_delivery", SkuStockList: []*pmsclient.SkuStockList{{Name: "A", Price: 10, Stock: 0, LowStock: 0, SpecData: `{"颜色":"黑"}`}}},
 			want: "至少一个SKU需要具备有效库存",
 		},
 	}
