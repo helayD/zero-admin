@@ -2,6 +2,7 @@ import {
   DeleteOutlined,
   EditOutlined,
   ExclamationCircleOutlined,
+  MoreOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
 import {
@@ -9,11 +10,12 @@ import {
   Button,
   Divider,
   Drawer,
+  Dropdown,
+  Menu,
   message,
   Modal,
   Select,
   Space,
-  Switch,
   Tag,
   Tooltip,
   Typography,
@@ -424,10 +426,13 @@ const ProductSpuList: React.FC = () => {
       title: '编号',
       dataIndex: 'id',
       hideInSearch: true,
+      width: 70,
     },
     {
       title: '商品名称',
       dataIndex: 'name',
+      width: 240,
+      ellipsis: true,
       render: (dom, entity) => {
         return (
           <a
@@ -444,6 +449,7 @@ const ProductSpuList: React.FC = () => {
     {
       title: '商品货号',
       dataIndex: 'productSn',
+      width: 110,
     },
 
     {
@@ -543,22 +549,26 @@ const ProductSpuList: React.FC = () => {
       dataIndex: 'mainPic',
       hideInSearch: true,
       valueType: 'image',
+      width: 100,
       fieldProps: { width: 100, height: 80 },
     },
     {
       title: '价格区间',
       dataIndex: 'priceRange',
       hideInSearch: true,
+      width: 130,
     },
     {
-      title: '作用域来源',
+      title: '作用域',
       dataIndex: 'scopeType',
       hideInSearch: true,
+      width: 110,
       render: (_, entity) => renderScopeSource(entity),
     },
     {
       title: '上架状态',
       dataIndex: 'publishStatus',
+      width: 90,
       renderFormItem: (text, row) => {
         return (
           <Select
@@ -570,25 +580,7 @@ const ProductSpuList: React.FC = () => {
           />
         );
       },
-      render: (dom, entity) => {
-        return (
-          <Space size={8}>
-            {renderPublishStatusTag(entity.publishStatus)}
-            <a
-              onClick={() => {
-                openStatusActionModal(
-                  'publish',
-                  [entity.id],
-                  entity.publishStatus === 1 ? 0 : 1,
-                  entity,
-                );
-              }}
-            >
-              {entity.publishStatus === 1 ? '下架' : '上架'}
-            </a>
-          </Space>
-        );
-      },
+      render: (_, entity) => renderPublishStatusTag(entity.publishStatus),
     },
     {
       title: '最近上下架说明',
@@ -613,30 +605,13 @@ const ProductSpuList: React.FC = () => {
           />
         );
       },
-      render: (dom, entity) => {
-        return (
-          <Switch
-            checked={entity.newStatus == 1}
-            onChange={async (flag) => {
-              const success = await handleStatus(
-                'new',
-                [entity.id],
-                flag ? 1 : 0,
-                scope,
-                undefined,
-                setSubmitError,
-              );
-              if (success) {
-                actionRef.current?.reload?.();
-              }
-            }}
-          />
-        );
-      },
+      render: (_, entity) =>
+        entity.newStatus === 1 ? <Tag color="cyan">新品</Tag> : <Tag>不是</Tag>,
     },
     {
       title: '是否推荐',
       dataIndex: 'recommendStatus',
+      width: 90,
       renderFormItem: (text, row) => {
         return (
           <Select
@@ -648,25 +623,7 @@ const ProductSpuList: React.FC = () => {
           />
         );
       },
-      render: (dom, entity) => {
-        return (
-          <Space size={8}>
-            {renderRecommendStatusTag(entity.recommendStatus)}
-            <a
-              onClick={() => {
-                openStatusActionModal(
-                  'recommend',
-                  [entity.id],
-                  entity.recommendStatus === 1 ? 0 : 1,
-                  entity,
-                );
-              }}
-            >
-              {entity.recommendStatus === 1 ? '取消推荐' : '推荐'}
-            </a>
-          </Space>
-        );
-      },
+      render: (_, entity) => renderRecommendStatusTag(entity.recommendStatus),
     },
     {
       title: '最近推荐反馈',
@@ -679,6 +636,7 @@ const ProductSpuList: React.FC = () => {
     {
       title: '审核状态',
       dataIndex: 'verifyStatus',
+      width: 100,
       renderFormItem: (text, row) => {
         return (
           <Select
@@ -691,20 +649,7 @@ const ProductSpuList: React.FC = () => {
           />
         );
       },
-      render: (dom, entity) => {
-        return (
-          <Space size={8}>
-            {renderVerifyStatusTag(entity.verifyStatus)}
-            <a
-              onClick={() => {
-                openStatusActionModal('verify', [entity.id], 1, entity);
-              }}
-            >
-              审核
-            </a>
-          </Space>
-        );
-      },
+      render: (_, entity) => renderVerifyStatusTag(entity.verifyStatus),
     },
     {
       title: '最新审核反馈',
@@ -761,6 +706,7 @@ const ProductSpuList: React.FC = () => {
       title: '库存',
       dataIndex: 'stock',
       hideInSearch: true,
+      width: 80,
     },
     {
       title: '预警库存',
@@ -771,6 +717,7 @@ const ProductSpuList: React.FC = () => {
     {
       title: '促销类型',
       dataIndex: 'promotionType',
+      width: 100,
       renderFormItem: (text, row) => {
         return (
           <Select
@@ -807,6 +754,7 @@ const ProductSpuList: React.FC = () => {
     {
       title: '履约模式',
       dataIndex: 'fulfillmentMode',
+      width: 110,
       // Story 10.10 Task 7: 履约模式可作为搜索条件，服务端过滤
       valueType: 'select',
       valueEnum: {
@@ -821,6 +769,8 @@ const ProductSpuList: React.FC = () => {
       title: '发卡规则',
       dataIndex: 'fulfillmentRuleId',
       hideInSearch: true,
+      width: 160,
+      ellipsis: true,
       render: (_, entity) => {
         if (!entity.fulfillmentRuleId) return '-';
         const brief = ruleMap[entity.fulfillmentRuleId];
@@ -903,50 +853,105 @@ const ProductSpuList: React.FC = () => {
       hideInTable: true,
     },
     {
-      title: '设置',
-      dataIndex: 'option',
-      valueType: 'option',
-      render: (_, record) => (
-        <>
-          <a
-            key="sort"
-            onClick={() => {
-              handleSkuVisible(true);
-              setCurrentRow(record);
-            }}
-          >
-            <EditOutlined /> 规格
-          </a>
-        </>
-      ),
-    },
-    {
       title: '操作',
       dataIndex: 'option',
       valueType: 'option',
-      width: 220,
-      render: (_, record) => (
-        <>
-          <a
-            key="sort"
-            onClick={() => {
-              void openUpdateModal(record);
-            }}
-          >
-            <EditOutlined /> 编辑
-          </a>
-          <Divider type="vertical" />
-          <a
-            key="delete"
-            style={{ color: '#ff4d4f' }}
-            onClick={() => {
-              showDeleteConfirm([record.id]);
-            }}
-          >
-            <DeleteOutlined /> 删除
-          </a>
-        </>
-      ),
+      width: 240,
+      fixed: 'right',
+      render: (_, record) => {
+        const moreMenu = (
+          <Menu
+            items={[
+              {
+                key: 'publish-toggle',
+                label: record.publishStatus === 1 ? '下架' : '上架',
+                onClick: () =>
+                  openStatusActionModal(
+                    'publish',
+                    [record.id],
+                    record.publishStatus === 1 ? 0 : 1,
+                    record,
+                  ),
+              },
+              {
+                key: 'verify-pass',
+                label: '审核通过',
+                disabled: record.verifyStatus === 1,
+                onClick: () => openStatusActionModal('verify', [record.id], 1, record),
+              },
+              {
+                key: 'verify-reject',
+                label: '审核驳回',
+                disabled: record.verifyStatus === 2,
+                onClick: () => openStatusActionModal('verify', [record.id], 2, record),
+              },
+              {
+                key: 'recommend-toggle',
+                label: record.recommendStatus === 1 ? '取消推荐' : '设为推荐',
+                onClick: () =>
+                  openStatusActionModal(
+                    'recommend',
+                    [record.id],
+                    record.recommendStatus === 1 ? 0 : 1,
+                    record,
+                  ),
+              },
+              {
+                key: 'new-toggle',
+                label: record.newStatus === 1 ? '取消新品' : '设为新品',
+                onClick: async () => {
+                  const success = await handleStatus(
+                    'new',
+                    [record.id],
+                    record.newStatus === 1 ? 0 : 1,
+                    scope,
+                    undefined,
+                    setSubmitError,
+                  );
+                  if (success) {
+                    actionRef.current?.reload?.();
+                  }
+                },
+              },
+            ]}
+          />
+        );
+        return (
+          <Space size={4} split={<Divider type="vertical" style={{ margin: 0 }} />}>
+            <a
+              key="edit"
+              onClick={() => {
+                void openUpdateModal(record);
+              }}
+            >
+              <EditOutlined /> 编辑
+            </a>
+            <a
+              key="sku"
+              onClick={() => {
+                handleSkuVisible(true);
+                setCurrentRow(record);
+              }}
+            >
+              规格
+            </a>
+            <Dropdown overlay={moreMenu} trigger={['click']}>
+              <a key="more">
+                <MoreOutlined /> 更多
+              </a>
+            </Dropdown>
+            <a
+              key="delete"
+              style={{ color: '#ff4d4f' }}
+              onClick={() => {
+                showDeleteConfirm([record.id]);
+              }}
+            >
+              <DeleteOutlined /> 删除
+            </a>
+          </Space>
+        );
+      },
     },
   ];
 
@@ -1076,6 +1081,7 @@ const ProductSpuList: React.FC = () => {
         columns={columns}
         rowSelection={{}}
         pagination={{ pageSize: 10 }}
+        scroll={{ x: 'max-content' }}
         tableAlertRender={({ selectedRowKeys, selectedRows }) => {
           const ids = selectedRows.map((row) => row.id);
           return (
