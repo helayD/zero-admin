@@ -84,6 +84,8 @@ func startMintTaskSelfScan(service *digitalcardmint.Service) {
 }
 
 func buildChainClient(c config.Config) chainclient.ChainClient {
+	logx.Infof("buildChainClient: Blockchain.Primary=%q Fisco.Enabled=%v AntChain.Enabled=%v Fisco.NodeAddr=%q",
+		c.Blockchain.Primary, c.Fisco.Enabled, c.AntChain.Enabled, c.Fisco.NodeAddr)
 	switch strings.ToLower(strings.TrimSpace(c.Blockchain.Primary)) {
 	case "antchain":
 		return antchain.NewClient(antchain.Config{
