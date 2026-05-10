@@ -74,11 +74,11 @@ func (s *Service) EnsureOrderPurchaseAsset(ctx context.Context, input EnsureOrde
 	err := s.DB.Transaction(func(tx *gorm.DB) error {
 		instance, txErr := s.ensureOrderPurchaseAssetTx(ctx, tx, input)
 		if txErr != nil {
-			return txErr
+			return fmt.Errorf("ensureOrderPurchaseAssetTx: %w", txErr)
 		}
 		task, txErr := s.ensureTaskTxForAsset(ctx, tx, instance.ID, normalizeOperatorType(input.OperatorType))
 		if txErr != nil {
-			return txErr
+			return fmt.Errorf("ensureTaskTxForAsset(assetId=%d): %w", instance.ID, txErr)
 		}
 		if task != nil {
 			taskID = task.ID
@@ -104,12 +104,12 @@ func (s *Service) ensureOrderPurchaseAssetTx(ctx context.Context, tx *gorm.DB, i
 	if existing, err := s.loadOrderPurchaseAsset(ctx, tx, input.OrderItemID); err == nil {
 		return existing, nil
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, err
+		return nil, fmt.Errorf("loadOrderPurchaseAsset(itemId=%d): %w", input.OrderItemID, err)
 	}
 
 	rule, err := s.loadProductFulfillmentRule(ctx, tx, input.FulfillmentRuleID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("loadProductFulfillmentRule(ruleId=%d): %w", input.FulfillmentRuleID, err)
 	}
 	if rule.RuleStatus != 1 {
 		return nil, errors.New("发卡规则已禁用")

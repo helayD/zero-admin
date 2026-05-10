@@ -86,7 +86,7 @@ func (s *Service) EnsureTaskTx(ctx context.Context, tx *gorm.DB, assetInstanceID
 
 	instance, err := s.loadCardInstance(ctx, tx, assetInstanceID, true)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("loadCardInstance(assetId=%d): %w", assetInstanceID, err)
 	}
 	if instance.IsDeleted != 0 {
 		return nil, errors.New("资产实例不存在")
@@ -105,20 +105,27 @@ func (s *Service) EnsureTaskTx(ctx context.Context, tx *gorm.DB, assetInstanceID
 					"mint_task_id": existing.ID,
 					"update_time":  now,
 				}).Error; err != nil {
-				return nil, err
+				return nil, fmt.Errorf("update mint_task_id: %w", err)
 			}
 		}
 		return existing, nil
 	} else if !errors.Is(findErr, gorm.ErrRecordNotFound) {
-		return nil, findErr
+		return nil, fmt.Errorf("loadTaskByAssetInstance: %w", findErr)
 	}
 
-	record, err := s.loadParticipationRecord(ctx, tx, instance.ParticipationRecordID)
-	if err != nil && !isOrderPurchaseAsset(instance) {
-		return nil, err
+	// Story 10.7 Review Fix: 显式吞掉 loadParticipationRecord 的 ErrRecordNotFound，
+	// 避免后续 err 残留导致 record not found 被误传到外层（订单购买卡 ParticipationRecordID=0
+	// 永远找不到记录，本就是预期行为）。
+	record, recordErr := s.loadParticipationRecord(ctx, tx, instance.ParticipationRecordID)
+	if recordErr != nil {
+		if !isOrderPurchaseAsset(instance) {
+			return nil, fmt.Errorf("loadParticipationRecord(id=%d): %w", instance.ParticipationRecordID, recordErr)
+		}
+		// 订单购买场景下 record 必为 nil，validateMintPrerequisites 内部走模板分支
+		record = nil
 	}
 	if err = s.validateMintPrerequisites(ctx, tx, instance, record); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("validateMintPrerequisites: %w", err)
 	}
 
 	currentMintStatus := normalizeMintStatus(instance.MintStatus)
