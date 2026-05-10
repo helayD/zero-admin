@@ -110,7 +110,7 @@ type (
 	jwt:        Auth
 	middleware: CheckUrl
 	group:      pms/product_spec_value
-	prefix:     /api/pms/specValue
+	prefix:     /api/pms/productSpecValue
 	tags:       "商品规格值管理"
 	authType:   apiKey
 )

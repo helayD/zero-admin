@@ -753,7 +753,7 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			}...,
 		),
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
-		rest.WithPrefix("/api/pms/spec"),
+		rest.WithPrefix("/api/pms/productSpec"),
 	)
 
 	server.AddRoutes(
@@ -793,7 +793,7 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 			}...,
 		),
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
-		rest.WithPrefix("/api/pms/specValue"),
+		rest.WithPrefix("/api/pms/productSpecValue"),
 	)
 
 	server.AddRoutes(
