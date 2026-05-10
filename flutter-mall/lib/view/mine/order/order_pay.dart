@@ -16,6 +16,7 @@ import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/utils/http_util.dart';
 import 'package:flutter_mall/utils/upgrade_gate_service.dart';
 import 'package:flutter_mall/view/digital_card/my_digital_card_page.dart';
+import 'package:flutter_mall/view/mine/order/order_detail.dart';
 
 ///
 /// 订单支付页面（Story 5.4 重构 + Story 5.5 支付发起）
@@ -1110,13 +1111,27 @@ class _OrderPayState extends State<OrderPay> with WidgetsBindingObserver {
               ],
               
               // 查看订单详情按钮 - 优化样式
+              // Story 10.7 Review Fix: 真正跳转到订单详情页（用 pushReplacement
+              // 把当前支付页替换掉，避免点完返回又回到支付成功页造成回退死循环）
               SizedBox(
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
                   onPressed: () {
-                    // 跳转订单详情
-                    Navigator.of(context).pop();
+                    final int? orderId = widget.orderId;
+                    if (orderId != null && orderId > 0) {
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(
+                          builder: (_) => OrderDetail(
+                            orderId: orderId,
+                            intentSource: 'order_pay_success',
+                          ),
+                        ),
+                      );
+                    } else {
+                      // 没有 orderId 兜底返回上一页
+                      Navigator.of(context).pop();
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF52C41A),
