@@ -2,6 +2,8 @@ package mq
 
 import (
 	"fmt"
+	"sync"
+
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/zeromicro/go-zero/core/logx"
 )
@@ -11,14 +13,35 @@ type RabbitMQ struct {
 	conn    *amqp.Connection
 	channel *amqp.Channel
 	MqUrl   string
+	mu      sync.Mutex // 保护 conn 重连过程并发安全
 }
 
+// openChannel 获取 channel；若底层 connection 已被服务端关闭（idle timeout、重启、网络抖动），
+// 自动重连后再返回新 channel。修复 sms-rpc 等长驻服务遇到 504 "channel/connection is not open" 的死链问题。
 func (r *RabbitMQ) openChannel() (*amqp.Channel, error) {
-	if r.conn == nil {
+	if r.MqUrl == "" {
 		return nil, fmt.Errorf("rabbitmq connection is not initialized")
 	}
 
-	return r.conn.Channel()
+	r.mu.Lock()
+	if r.conn == nil || r.conn.IsClosed() {
+		conn, err := amqp.Dial(r.MqUrl)
+		if err != nil {
+			r.mu.Unlock()
+			logx.Errorf("rabbitmq 重连失败: %+v", err)
+			return nil, fmt.Errorf("rabbitmq 重连失败: %w", err)
+		}
+		// 关闭旧连接（如果还存在）
+		if r.conn != nil {
+			_ = r.conn.Close()
+		}
+		r.conn = conn
+		logx.Info("rabbitmq 连接重建成功")
+	}
+	conn := r.conn
+	r.mu.Unlock()
+
+	return conn.Channel()
 }
 
 // NewRabbitMQ 创建结构体实例
