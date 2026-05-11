@@ -1167,9 +1167,16 @@ func (s *Service) validateExecutionPrerequisites(ctx context.Context, task *Card
 	if recordID <= 0 {
 		recordID = task.ParticipationRecordID
 	}
+	// Story 10.11 Fix: 与 EnsureTaskTx 第 119-126 行对称——订单购买场景下
+	// participation_record_id=0 永远查不到记录，本就是预期行为，必须吞掉
+	// gorm.ErrRecordNotFound，否则三张 purchase 卡在 ExecuteTask 路径上
+	// 永远卡死在 mint_prerequisite_rejected → manual_review。
 	record, err := s.loadParticipationRecord(ctx, s.DB, recordID)
 	if err != nil {
-		return err
+		if !isOrderPurchaseAsset(instance) {
+			return err
+		}
+		record = nil
 	}
 	return s.validateMintPrerequisites(ctx, s.DB, instance, record)
 }
