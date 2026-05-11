@@ -267,6 +267,19 @@ python3 .agents/skills/zero-admin-remote-deploy/scripts/smoke_remote.py \
 ### Target YAML RPC Client Sync
 When deploying `admin-api` or `front-api`, if the source `etc/*.yaml` has a new RPC client block (e.g. `SearchRpc`) that the remote `target/*/...yaml` is missing, the script automatically copies that block from source to target. This prevents startup failures due to missing ServiceContext dependencies.
 
+### Runtime Config Values Are NOT Synced
+配置**值**不会被部署脚本同步——`etc/*.yaml` 在 git checkout 前会被备份、之后再 restore，目的是保护远程上线后的环境特定值。
+
+实际影响：本地仓库改 `Share.AllowedDomains` / `Auth.AccessSecret` / `Mysql.Datasource` / 任何端口/域名/密钥，远程不会自动更新。
+
+**修改远程运行时配置的正确流程**：
+1. SSH 直改远程目标文件，例如 `/root/zero-admin/target/front-api/front-api.yaml`
+2. `pkill -f '<service>/<service>'` 停旧进程
+3. `cd /root/zero-admin/target && setsid nohup ./<svc>/<svc> -f ./<svc>/<svc>.yaml > ./logs/<svc>.log 2>&1 < /dev/null &` 重启
+4. 验证：`ss -tlnp \| grep <port>` 与 `tail logs/<svc>.log`
+
+**已踩过的坑**：`Share.AllowedDomains` 默认是 `example.com` 占位符，导致 Story 10.7 分享链接 `https://example.com/h5/...` 在 Flutter / H5 都无法打开，必须手动改远程为 `47.107.224.56:9999`（详见 2026-05 修复记录）。
+
 ### RPC Port Mismatch Detection
 Before deploying, the script cross-checks each API service's RPC client `Endpoints` against the actual `ListenOn` port in the corresponding RPC server config. On mismatch, a `[WARN]` is printed so the operator catches port misconfigurations before they cause runtime gRPC connection errors.
 
