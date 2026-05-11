@@ -624,16 +624,17 @@ func (s *Service) claimByMobileInTx(ctx context.Context, tx *gorm.DB, input Clai
 		"target_mobile":    row.TargetMobile,
 	})
 	logRow := map[string]interface{}{
-		"asset_instance_id": instance.ID,
-		"from_status":       cardAssetStatusClaimed,
-		"to_status":         cardAssetStatusClaimed, // holder 切换不改 asset_status
-		"operation_type":    cardAssetOperationHolderTransferred,
-		"operator_type":     "member",
-		"trace_id":          input.RequestID,
-		"reason_code":       "h5_claim_by_mobile",
-		"reason_text":       "H5 朋友端按手机号一步式领取",
-		"payload_json":      string(payloadBytes),
-		"create_time":       now,
+		"asset_instance_id":       instance.ID,
+		"participation_record_id": 0, // NOT NULL，转赠场景无关联抽卡参与，写 0
+		"from_status":             cardAssetStatusClaimed,
+		"to_status":               cardAssetStatusClaimed, // holder 切换不改 asset_status
+		"operation_type":          cardAssetOperationHolderTransferred,
+		"operator_type":           "member",
+		"trace_id":                input.RequestID,
+		"reason_code":             "h5_claim_by_mobile",
+		"reason_text":             "H5 朋友端按手机号一步式领取",
+		"payload_json":            string(payloadBytes),
+		"create_time":             now,
 	}
 	if err := tx.WithContext(ctx).
 		Table("sms_card_asset_log").
