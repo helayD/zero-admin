@@ -278,6 +278,8 @@ type ValidateClaimTokenData struct {
 	Valid         bool            `json:"valid"`
 	FailureReason string          `json:"failureReason"`
 	Token         *ClaimTokenData `json:"token"`
+	// TargetMobileMasked 接收人手机号掩码（如 138****8888），仅展示，不暴露完整号码
+	TargetMobileMasked string `json:"targetMobileMasked,omitempty"`
 }
 
 type ConsumeClaimTokenReq struct {

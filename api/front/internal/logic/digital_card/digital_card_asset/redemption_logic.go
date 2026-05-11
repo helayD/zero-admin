@@ -358,9 +358,10 @@ func (l *ValidateClaimTokenLogic) ValidateClaimToken(req *types.ValidateClaimTok
 		Code:    "0",
 		Message: "校验成功",
 		Data: types.ValidateClaimTokenData{
-			Valid:         result.Valid,
-			FailureReason: result.FailureReason,
-			Token:         tokenData,
+			Valid:              result.Valid,
+			FailureReason:      result.FailureReason,
+			Token:              tokenData,
+			TargetMobileMasked: result.TargetMobileMasked,
 		},
 	}, nil
 }
