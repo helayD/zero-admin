@@ -25,6 +25,10 @@ type DigitalCardAssetItem struct {
 	ComplianceStatusText  string `json:"complianceStatusText"`
 	TokenStatusText       string `json:"tokenStatusText"`
 	ComplianceRuleSummary string `json:"complianceRuleSummary"`
+	// Story 10.7 Task 8.x — C 端按钮显示判断依据
+	Transferable     bool   `json:"transferable"`
+	RedemptionStatus string `json:"redemptionStatus"`
+	ShareTokenStatus string `json:"shareTokenStatus"`
 }
 
 type QueryMyDigitalCardAssetListData struct {

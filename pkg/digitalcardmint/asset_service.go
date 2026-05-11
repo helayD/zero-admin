@@ -38,6 +38,10 @@ type MemberDigitalCardAssetItem struct {
 	ComplianceStatusText  string `json:"complianceStatusText"`
 	TokenStatusText       string `json:"tokenStatusText"`
 	ComplianceRuleSummary string `json:"complianceRuleSummary"`
+	// Story 10.7 Task 8.x — C 端按钮显示判断依据
+	Transferable     bool   `json:"transferable"`
+	RedemptionStatus string `json:"redemptionStatus"`
+	ShareTokenStatus string `json:"shareTokenStatus"`
 }
 
 type MemberDigitalCardAssetTimelineItem struct {
@@ -198,6 +202,10 @@ type digitalCardAssetBaseRow struct {
 	ResultStatus              string       `gorm:"column:result_status"`
 	FailureReason             string       `gorm:"column:failure_reason"`
 	ParticipationCreateTime   nullableTime `gorm:"column:participation_create_time"`
+	// Story 10.7 Task 8.x — C 端按钮显示判断
+	Transferable     int32  `gorm:"column:transferable"`
+	RedemptionStatus string `gorm:"column:redemption_status"`
+	ShareTokenStatus string `gorm:"column:share_token_status"`
 }
 
 func (s *Service) QueryMemberDigitalCardAssetList(ctx context.Context, currentScope pkgscope.GovernanceScope, memberID int64, filter MemberDigitalCardAssetFilter) (int64, []MemberDigitalCardAssetItem, error) {
@@ -494,7 +502,22 @@ func memberAssetSelectColumns() string {
 		COALESCE(record.result_type, '') AS result_type,
 		COALESCE(record.result_status, '') AS result_status,
 		COALESCE(record.failure_reason, '') AS failure_reason,
-		record.create_time AS participation_create_time`
+		record.create_time AS participation_create_time,
+		COALESCE(instance.transferable, 0) AS transferable,
+		COALESCE((
+			SELECT ro.status FROM sms_card_redemption_order ro
+			WHERE ro.card_instance_id = instance.id
+			  AND ro.is_deleted = 0
+			  AND ro.status IN ('pending','processing','shipped')
+			ORDER BY ro.id DESC LIMIT 1
+		), '') AS redemption_status,
+		COALESCE((
+			SELECT tok.status FROM sms_card_claim_token tok
+			WHERE tok.card_instance_id = instance.id
+			  AND tok.is_deleted = 0
+			  AND tok.status = 'active'
+			ORDER BY tok.id DESC LIMIT 1
+		), '') AS share_token_status`
 }
 
 func auditAssetSelectColumns() string {
@@ -524,6 +547,9 @@ func buildMemberAssetItem(row digitalCardAssetBaseRow) MemberDigitalCardAssetIte
 		ComplianceStatusText:  complianceStatusText(row.ComplianceStatus),
 		TokenStatusText:       MintStatusConsumerText(row.MintStatus),
 		ComplianceRuleSummary: complianceRuleSummary(row.ActivityComplianceSummary, row.DisplayReason, row.ComplianceReason),
+		Transferable:          row.Transferable == 1,
+		RedemptionStatus:      row.RedemptionStatus,
+		ShareTokenStatus:      row.ShareTokenStatus,
 	}
 }
 

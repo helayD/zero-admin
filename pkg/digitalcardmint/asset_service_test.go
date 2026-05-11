@@ -149,6 +149,19 @@ func newAssetServiceTestDB(t *testing.T) *gorm.DB {
 			payload_json TEXT NOT NULL DEFAULT '',
 			create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 		)`,
+		// Story 10.7 Task 8.x — member asset detail 子查询依赖
+		`CREATE TABLE sms_card_redemption_order (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			card_instance_id INTEGER NOT NULL DEFAULT 0,
+			status TEXT NOT NULL DEFAULT '',
+			is_deleted INTEGER NOT NULL DEFAULT 0
+		)`,
+		`CREATE TABLE sms_card_claim_token (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			card_instance_id INTEGER NOT NULL DEFAULT 0,
+			status TEXT NOT NULL DEFAULT '',
+			is_deleted INTEGER NOT NULL DEFAULT 0
+		)`,
 		`CREATE TABLE sms_product_fulfillment_rule (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			platform_id INTEGER NOT NULL DEFAULT 1,
