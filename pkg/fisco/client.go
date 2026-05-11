@@ -2,12 +2,29 @@
 //
 // 实现 ChainClient 接口，与 antchain.NewClient 对称。
 //
-// 关键流程（MintToken）：
+// === 设计模型：平台托管（platform-custody） ===
+//
+// 本 Story 的 mint() 接收方写死为 sms-rpc 服务私钥派生地址（c.fromAddr），
+// 即「平台账户托管所有提货卡 NFT」，会员账户层面**不**直接持有链上 token。
+// 选择该模型的原因：
+//   1. 会员注册不要求生成链上身份（避免私钥托管 / 密钥找回的合规复杂度）；
+//   2. 商业化首发阶段聚焦「可上链确权 + 可审计」，提货 / 转赠等操作仍走
+//      数据库主存储 + 链上回执旁路；
+//   3. 链上 ownerOf(tokenId) == 平台地址，业务侧通过 sms_card_instance.member_id
+//      做用户归属，链 + DB 双轨可对账；
+//   4. 转赠（Story 10.7）通过合约 transferFrom 在平台账户内部模拟，必要时
+//      升级为「会员链上身份」由后续 Story 决策。
+//
+// 这是有意设计而非缺陷；任何审计 / 监管沟通需明确这一点。
+//
+// === 关键流程（MintToken） ===
+//
 //  1. 私钥派生 from-address
-//  2. metadata JSON 组装（assetNo / activityId / templateId / memberId / scope / traceId）
-//  3. 通过合约 ABI Pack mint(to, idempotencyKey, metadataJSON) calldata
+//  2. metadata JSON 组装：仅 idempotencyKey / assetNo / assetInstanceId + 业务字段
+//     keccak256 指纹（不含 memberId / tenantId 等 PII，详见 buildMetadataURI 注释）
+//  3. 通过合约 ABI Pack mint(c.fromAddr, idempotencyKey, metadataURI) calldata
 //  4. CreateEncodedTransactionDataV1 → CreateEncodedSignature → CreateEncodedTransaction
-//  5. SendEncodedTransaction(ctx, tx, true) → 同步返回 *types.Receipt（SDK 内部已轮询）
+//  5. SendEncodedTransaction(ctx, tx, true) → SDK 同步内部已轮询并返回 *types.Receipt
 //  6. receipt.Status != 0 → classifyFiscoError 映射；duplicate mint → ErrCodeDuplicateMintReject
 //  7. 从 Receipt.Logs 中匹配 CardMinted event topic[0]，topic[2] 即 uint256 tokenId（十进制字符串）
 //  8. 构造 chainclient.MintTokenResponse（TokenID / ChainTxID / ChainStatus / ReceiptSummary / ReceiptJSON / ConfirmedAt）
@@ -27,6 +44,7 @@ package fisco
 import (
 	"context"
 	"crypto/ecdsa"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -64,6 +82,14 @@ func (disabledClient) QueryMintToken(context.Context, *chainclient.QueryMintToke
 
 func (disabledClient) ChainType() string { return ChainTypeFisco3x }
 
+// Mode 返回实现模式，供启动日志区分 disabled / invalid_config / real。
+func (disabledClient) Mode() Mode { return ModeDisabled }
+
+// HealthCheck disabled 客户端始终返回配置未启用错误（但不阐明为运行异常）。
+func (disabledClient) HealthCheck(context.Context) error {
+	return errors.New("FISCO 未启用")
+}
+
 // invalidConfigClient Enabled=true 但 Config 校验失败时的占位实现。
 // 启动不阻塞，所有调用 fail fast 并附带配置错误原因。
 type invalidConfigClient struct {
@@ -80,6 +106,12 @@ func (c *invalidConfigClient) QueryMintToken(context.Context, *chainclient.Query
 
 func (c *invalidConfigClient) ChainType() string { return ChainTypeFisco3x }
 
+func (c *invalidConfigClient) Mode() Mode { return ModeInvalidConfig }
+
+func (c *invalidConfigClient) HealthCheck(context.Context) error {
+	return &FiscoError{Code: ErrCodeConfigInvalid, Reason: "FISCO 配置非法", Err: c.cause}
+}
+
 // fiscoRealClient 真实链客户端。SDK 连接 lazy 创建。
 type fiscoRealClient struct {
 	cfg          Config
@@ -92,6 +124,12 @@ type fiscoRealClient struct {
 
 	mu        sync.RWMutex
 	sdkClient *bcosclient.Client
+
+	// blockNumberCache 缓存最近一次 GetBlockNumber 结果，5 秒 TTL。
+	// 节点 RPC 抖动时直接复用缓存值，避免单次抖动击穿整笔 mint。
+	blockMu       sync.Mutex
+	lastBlockNum  int64
+	lastBlockTime time.Time
 }
 
 // NewClient 工厂函数：根据 cfg 选择 disabled / invalidConfig / real 客户端。
@@ -154,6 +192,24 @@ func NewClient(cfg Config) chainclient.ChainClient {
 // ChainType Story 10.11 明确：使用 "fisco_bcos_3x" 区分真假链。
 func (c *fiscoRealClient) ChainType() string { return ChainTypeFisco3x }
 
+// Mode real 实现。
+func (c *fiscoRealClient) Mode() Mode { return ModeReal }
+
+// HealthCheck 主动 dial + GetBlockNumber，验证节点可达。Story 10.11 / M5。
+// 启动后启动不阻塞：调用者应走独立 goroutine 并仅用于日志预警。
+func (c *fiscoRealClient) HealthCheck(ctx context.Context) error {
+	cli, err := c.getOrConnect(ctx)
+	if err != nil {
+		return err
+	}
+	checkCtx, cancel := context.WithTimeout(ctx, c.cfg.timeout())
+	defer cancel()
+	if _, err = cli.GetBlockNumber(checkCtx); err != nil {
+		return wrapErr(fmt.Errorf("HealthCheck GetBlockNumber: %w", err))
+	}
+	return nil
+}
+
 // getOrConnect lazy 连接 FISCO 节点。每个 fiscoRealClient 持久维护一个 sdkClient。
 func (c *fiscoRealClient) getOrConnect(ctx context.Context) (*bcosclient.Client, error) {
 	c.mu.RLock()
@@ -215,9 +271,10 @@ func (c *fiscoRealClient) MintToken(ctx context.Context, req *chainclient.MintTo
 	}
 
 	// blockLimit = currentBlock + 500（FISCO 3.x 推荐窗口）
-	currentBlock, err := cli.GetBlockNumber(ctx)
+	// 抖动容错：5 秒 TTL 缓存，单次 RPC 失败时回退到缓存值。
+	currentBlock, err := c.fetchBlockNumberWithCache(ctx, cli)
 	if err != nil {
-		return nil, wrapErr(fmt.Errorf("GetBlockNumber: %w", err))
+		return nil, err
 	}
 	blockLimit := currentBlock + 500
 
@@ -296,6 +353,36 @@ func (c *fiscoRealClient) QueryMintToken(ctx context.Context, req *chainclient.Q
 	}, nil
 }
 
+// fetchBlockNumberWithCache 取当前块号；5 秒内复用上次结果。
+// 单次 RPC 失败时若缓存仍有效（<30 秒），降级返回缓存值 + 0 偏移修正。
+// 缓存彻底过期才把错误抛出。Story 10.11 / M3 修复。
+func (c *fiscoRealClient) fetchBlockNumberWithCache(ctx context.Context, cli *bcosclient.Client) (int64, error) {
+	c.blockMu.Lock()
+	lastNum := c.lastBlockNum
+	lastAt := c.lastBlockTime
+	c.blockMu.Unlock()
+
+	now := time.Now()
+	if lastNum > 0 && now.Sub(lastAt) < 5*time.Second {
+		return lastNum, nil
+	}
+
+	current, err := cli.GetBlockNumber(ctx)
+	if err != nil {
+		// 软降级：30 秒内的旧块号仍可用，因为 blockLimit 是 +500 上限不是精确值。
+		if lastNum > 0 && now.Sub(lastAt) < 30*time.Second {
+			return lastNum, nil
+		}
+		return 0, wrapErr(fmt.Errorf("GetBlockNumber: %w", err))
+	}
+
+	c.blockMu.Lock()
+	c.lastBlockNum = current
+	c.lastBlockTime = now
+	c.blockMu.Unlock()
+	return current, nil
+}
+
 // sendTx 执行 mint 交易：构造 → 签名 → 发送 → 同步等回执。
 // 返回 (*receipt, txHashHex, error)。
 func (c *fiscoRealClient) sendTx(ctx context.Context, cli *bcosclient.Client, to *common.Address, input []byte, blockLimit int64) (*bcostypes.Receipt, string, error) {
@@ -371,23 +458,43 @@ func (c *fiscoRealClient) buildMintResponse(receipt *bcostypes.Receipt, txHash, 
 	}
 }
 
-// buildMetadataURI 把请求关键字段序列化为 metadata JSON 串
-// （本 Story 暂用 inline JSON，下一 Story 改成 IPFS / 后端 API URL）。
+// buildMetadataURI 构造写入合约 _tokenURIs[tokenId] 的 metadata 串。
+//
+// === 监管 / 隐私设计（Story 10.11 / H5 修复） ===
+//
+// FISCO BCOS 虽是联盟链，但 metadataURI 经合约 tokenURI(tokenId) 公开可读。
+// 监管约束：禁止把 memberId / tenantId / merchantId / platformId / traceId /
+// requestId / scopeType 等业务侧 PII / 敏感 ID **明文**写上链。
+//
+// 因此 metadataURI 仅包含：
+//   - 公开字段：assetNo（卡号，按规则脱敏）、assetInstanceId（业务主键）
+//   - 幂等键：idempotencyKey（已在合约 _mintedByKey 中存在）
+//   - 完整业务字段的 SHA-256 指纹：用于 off-chain 反向校验「该 tokenId 对应
+//     这一组业务字段」，但不暴露明文。
+//   - 反查 URL：指向后端 API；只有持有 admin 鉴权的运维 / 审计角色可解密
+//     完整 metadata。会员侧不会从链上抓取该字段。
+//
+// 历史 token 已写入的明文 PII 无法删除（链上不可变），但本 Story 上线后
+// 新发卡片不再泄露。如有补救历史数据需求，需 Story 10.13+ 设计合约升级。
 func buildMetadataURI(req *chainclient.MintTokenRequest) (string, error) {
+	assetNo := strings.TrimSpace(req.AssetNo)
+	idem := strings.TrimSpace(req.IdempotencyKey)
+
+	// 完整字段（off-chain 校验用）的 SHA-256 指纹，反向不可逆。
+	fingerprintInput := fmt.Sprintf("%s|%d|%d|%d|%d|%s|%d|%d|%d|%s",
+		idem, req.TaskID, req.AssetInstanceID, req.ActivityID, req.TemplateID,
+		assetNo, req.PlatformID, req.TenantID, req.MerchantID,
+		strings.TrimSpace(req.ScopeType))
+	fp := sha256.Sum256([]byte(fingerprintInput))
+
 	payload := map[string]interface{}{
-		"idempotencyKey":  strings.TrimSpace(req.IdempotencyKey),
-		"taskId":          req.TaskID,
+		"v":               1,
+		"idempotencyKey":  idem,
 		"assetInstanceId": req.AssetInstanceID,
-		"activityId":      req.ActivityID,
-		"templateId":      req.TemplateID,
-		"memberId":        req.MemberID,
-		"requestId":       strings.TrimSpace(req.RequestID),
-		"traceId":         strings.TrimSpace(req.TraceID),
-		"assetNo":         strings.TrimSpace(req.AssetNo),
-		"scopeType":       strings.TrimSpace(req.ScopeType),
-		"platformId":      req.PlatformID,
-		"tenantId":        req.TenantID,
-		"merchantId":      req.MerchantID,
+		"assetNo":         assetNo,
+		"fingerprint":     "sha256:" + hex.EncodeToString(fp[:]),
+		// 反查 URL 由 admin-api 实现；只有持鉴权 token 的内部用户可访问完整字段。
+		"detailRef": fmt.Sprintf("/admin-api/v1/digital-cards/%d/chain-metadata", req.AssetInstanceID),
 	}
 	b, err := json.Marshal(payload)
 	if err != nil {

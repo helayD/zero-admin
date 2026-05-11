@@ -1,6 +1,6 @@
 # Story 10.11: FISCO BCOS 3.x 真实上链商业化接入（替换免费链 mock 底座）
 
-Status: ready-for-dev
+Status: in-progress  # 2026-05-11 code-review 后：代码主体已合入并通过 review 修复（H1/H3/H4/H5/M3/M4/M5/L1）；剩余 H2/H6/M2/M7/M8/L4 见 Review Follow-ups。AC4 仍需远程 SQL 执行 + 手机端验证。
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -247,6 +247,102 @@ so that 提货卡发放能以零链上费用的方式真正完成链上确权、
 - Tech Spec: `_opcos/implementation-artifacts/tech-spec-multi-chain-adapter-refactor.md`
 - 战略文档: `docs/blockchain-strategy.md`
 
+## Dev Agent Record
+
+### File List（本 Story 主要新增 / 修改文件 — 截至 2026-05-11 review 后）
+
+新增：
+- `pkg/fisco/client.go` — 真实客户端核心实现（`fiscoRealClient` + `disabledClient` + `invalidConfigClient`，含 lazy SDK 连接、5s TTL 块号缓存、Mode/HealthCheck）
+- `pkg/fisco/types.go` — Config + 默认值 + `Mode`/`ChainTypeFisco3x` 常量
+- `pkg/fisco/errors.go` — `FiscoError` 类型 + `classifyFiscoError` 11 类映射 + `IsRetriable`/`IsDuplicateMint`
+- `pkg/fisco/client_test.go` — 全分支单测（含 `TestBuildMetadataURI_NoPII` PII 守护、`TestClient_Mode`）
+- `pkg/fisco/cgo_smoke_test.go` — SDK CGO 烟雾测试
+- `pkg/fisco/contracts/CardToken.abi` — 合约 ABI 副本（部署后从 console2 输出回抓）
+- `pkg/chainclient/types.go` — 新增 `ClassifiedError` 接口 + 11 个 `ChainErrCode*` 常量 + `ChainErrorOf` 提取器
+- `pkg/digitalcardmint/chain_error_reason.go` — 链层错误归一化 + PEM/64hex 私钥脱敏
+- `pkg/digitalcardmint/chain_error_reason_test.go` — 9 条单测覆盖归一化与脱敏
+- `contracts/src/CardToken.sol` — ERC721 + idempotency mapping + getTokenByKey + grantMinter
+- `script/fisco/install_fisco_bcos_3x.sh / setup_console_and_deploy.sh / setup_systemd.sh / check_nodes.sh` — 节点部署 + 合约部署 + systemd 自启 + 健康检查
+- `script/sql/sms/migration_20260510_story_10_11_reset_legacy_cards.sql` — 970012/970016/970017 三张遗留卡重置 SQL
+- `scripts/check-no-free-chain.sh` — CI 守卫脚本，阻止 mock 残留回归
+- `scripts/rollback-fisco-to-disabled.sh` — 紧急回滚脚本（本地 + remote 两种模式）
+
+修改：
+- `pkg/digitalcardmint/service.go` — `ExecuteTask` 调链前 off-chain `QueryMintToken` 短路 + `duplicate_mint_rejected` fallback；`transitionFailure` 接入 `ChainErrorOf`
+- `pkg/digitalcardmint/asset_service.go / order_card_summary.go / physical_fulfillment.go` — C 端 MintStatusText 切到 `MintStatusConsumerText`
+- `rpc/sms/internal/svc/service_context.go` — `buildChainClient` 接入 fisco.NewClient + `mode` 启动日志 + 启动后 HealthCheck 异步探活
+- `consumer/internal/svc/service_context.go` — 同步改造（mode 日志）
+- `job/internal/svc/service_context.go` — 同步改造（mode 日志）
+- `rpc/sms/internal/config/config.go` / `consumer/internal/config/config.go` / `job/internal/config/config.go` — Fisco struct 扩展（删除已移除的 PollIntervalMs/PollMaxAttempts 死字段）
+- `rpc/sms/etc/sms.yaml` / `consumer/etc/consumer-api.yaml` / `job/etc/job-api.yaml` — 三服务统一 Fisco 配置块
+- `docs/blockchain-strategy.md` — 附录 B Story 索引 + 附录 C 私钥/证书轮换 SOP
+- `_opcos/implementation-artifacts/sprint-status.yaml` — 状态同步
+
+### 已完成的 Task（截至 review 后）
+
+- [x] 1. FISCO BCOS 3.x 节点部署脚本（`script/fisco/install_fisco_bcos_3x.sh` 等；远程节点是否启动需运维确认）
+- [x] 2. CardToken 合约编写（`contracts/src/CardToken.sol`，部署脚本 `setup_console_and_deploy.sh`，ABI 已落仓库）
+- [x] 3. 私钥与证书分发 SOP（写入 `docs/blockchain-strategy.md` 附录 C）
+- [x] 4. 依赖与 Config 扩展（go-sdk/v3 已 vendor，三服务 Config struct/yaml 同步）
+- [x] 5. `pkg/fisco/client.go` 真实实现 + 错误归一化 + 单测（review 后增加 platform-custody 设计文档、删除死配置、增加 mode/HealthCheck/块号缓存）
+- [x] 6. 三服务 ServiceContext 接线（review 后启动日志统一打印 `chainType + mode + nodeAddr + contract`）
+- [x] 7. 幂等与回执缓存（off-chain `QueryMintToken` 短路 + 合约 `_mintedByKey` 双重保障）
+- [x] 8. 安全与脱敏（`buildClassifiedFailureReason` 脱敏 PEM/64hex；`MintStatusConsumerText` 关键词黑名单；`scripts/check-no-free-chain.sh` CI 守卫）
+- [x] 9. 灰度切换与回滚脚本（`scripts/rollback-fisco-to-disabled.sh` 本地 + remote 模式）
+- [ ] 10. 端到端验证（**远程冒烟、节点宕机验证、AC4 三张卡闭环未执行**）
+- [ ] 11. 现存 3 张卡闭环（**SQL 已编写但未运行；手机端截图未取**）
+
+### 差异 / 风险
+
+- **AC4 / AC5 未做远程实际验证**：节点启停、订单端到端、970012/970016/970017 SQL 重置 + 手机端时间线截图均未执行。Story 10.11 的 AC4 / AC5 / AC1 端到端均依赖运维窗口，需要单独安排验证回合。
+- **合约源码 `contracts/` 当前是仓库内嵌套 git repo（独立 .git）**：`git status` 显示 untracked，主仓 `git clone` 拿不到合约源码。已加入 Review Follow-ups 待用户决策（submodule vs 合入主仓）。
+- **历史 token 已写入的明文 PII 无法删除**（链上不可变，但 Story 10.11 上线前尚未做过真实 mint，所以等于 0 张历史脏数据）。
+
+## Senior Developer Review (AI)
+
+**Reviewer**: David（通过 Cascade 执行 `/bmad-bmm-code-review`）
+**Date**: 2026-05-11
+**Outcome**: Changes Requested → 已自动修复 7/14 项后转为 in-progress；剩余 6 项作为 Review Follow-ups。
+
+### 关键发现 + 处置（详细见上一轮 review 输出）
+
+| Severity | 编号 | 问题 | 处置 |
+|---|---|---|---|
+| HIGH | H1 | Story 状态/任务勾选/sprint-status 三处不一致 | ✅ 修复：本次更新文档 + sprint-status |
+| HIGH | H2 | `contracts/` 嵌套 git repo，源码未入主仓 | ⏳ 转 Review Follow-up（需用户决策 submodule vs 直接合入） |
+| HIGH | H3 | `PollIntervalMs/PollMaxAttempts` 死配置 | ✅ 修复：删除 Config/yaml/svc 三处字段 + 文档化 SDK 内置轮询 |
+| HIGH | H4 | mint() 接收方写死 fromAddr 但平台托管模式未文档化 | ✅ 修复：`pkg/fisco/client.go` 顶部加完整设计说明 |
+| HIGH | H5 | metadataURI 把 memberId/tenantId/traceId 等 PII 明文写上链 | ✅ 修复：仅保留 idempotencyKey + assetNo + assetInstanceId + sha256 指纹 + detailRef，新增 `TestBuildMetadataURI_NoPII` 守护 |
+| HIGH | H6 | AC4 三张遗留卡未远程验证 | ⏳ 转 Review Follow-up（需运维窗口） |
+| MEDIUM | M1 | `decodeRevertReason` Output 类型疑虑 | ✅ 已通过 SDK doc 确认 `Receipt.Output string`，无需改 |
+| MEDIUM | M2 | `IsSMCrypto` ABI 后置 SetSMCrypto 时机 | ⏳ 转 Review Follow-up（当前默认 false 不阻塞） |
+| MEDIUM | M3 | `GetBlockNumber` 单次抖动击穿 mint | ✅ 修复：5s TTL 块号缓存 + 30s 软降级 |
+| MEDIUM | M4 | 启动日志只打 chainType 容易误导 | ✅ 修复：三服务统一打 `mode=disabled\|invalid_config\|real` |
+| MEDIUM | M5 | lazy 连接 → 启动无健康检查 | ✅ 修复：sms-rpc 启动后 5s 异步 HealthCheck（不阻塞） |
+| MEDIUM | M7 | go-sdk CGO 在 CI 是否就绪未验证 | ⏳ 转 Review Follow-up（需 CI 验证） |
+| MEDIUM | M8 | 三服务共享私钥并发 nonce 冲突未压测 | ⏳ 转 Review Follow-up |
+| LOW | L1 | yaml 注释错字「空字殲」 | ✅ 修复 |
+| LOW | L4 | ABI 副本无 SHA 校验 | ⏳ 转 Review Follow-up（建议 CI `forge inspect` 比对） |
+
+### 已通过的安全网
+
+- ✅ `bash scripts/check-no-free-chain.sh` 干净
+- ✅ `go build ./pkg/fisco/... ./pkg/digitalcardmint/... ./rpc/sms/... ./consumer/... ./job/...` 通过
+- ✅ `go test ./pkg/fisco/... ./pkg/digitalcardmint/... ./rpc/sms/... -count=1` 全过
+- ✅ `TestBuildMetadataURI_NoPII` 新增 PII 守护测试通过
+- ✅ `TestClient_Mode` 三种模式区分测试通过
+
+## Review Follow-ups (AI)
+
+- [ ] [AI-Review][HIGH] H2 处理 `contracts/` 嵌套仓库 — 删除 `contracts/.git` 合入主仓，或注册为 git submodule（需用户拍板）
+- [ ] [AI-Review][HIGH] H6 AC4 三张遗留卡端到端验证 — 在远程 47.107.224.56 执行 `script/sql/sms/migration_20260510_story_10_11_reset_legacy_cards.sql` + 观察 sms-rpc 自循环扫描日志 + 手机端三张卡详情页截图归档
+- [ ] [AI-Review][HIGH] AC1 + AC5 + AC6 端到端真实 mint 验证 — Task 10.2/10.3/10.4 全部需要远程节点 + 真实订单触发；当前仅本地 unit 测试覆盖
+- [ ] [AI-Review][MEDIUM] M2 `IsSMCrypto` ABI 解析时机 — `parsedABI.SetSMCrypto()` 后置生效需 SDK 文档确认或单测验证；如有问题改为 `bcosabi.JSON` 解析前注入；当前默认 false 暂不阻塞
+- [ ] [AI-Review][MEDIUM] M7 go-sdk/v3 CGO 在 CI 验证 — 需要把 `pkg/fisco/cgo_smoke_test.go` 加入 CI gating；未通过则在 makefile 注明额外工具链需求
+- [ ] [AI-Review][MEDIUM] M8 三服务共享私钥的并发 nonce 冲突压测 — 模拟 sms-rpc 自循环 + consumer MQ + job 兜底三路同时触发同 idempotencyKey；或重构为「签名集中在 sms-rpc」消除并发签名
+- [ ] [AI-Review][LOW] L4 `pkg/fisco/contracts/CardToken.abi` 与 `contracts/out/CardToken.json` 自动比对 — CI 加 `forge inspect CardToken abi` 比对，避免 sol 改后忘了刷新 ABI
+
 ## 变更日志
 
 - 2026-05-10：初稿（Cascade）—— 背景：Story 10.4 已落地蚂蚁链真实 HTTP 接入，但 `pkg/fisco` 仍是「阶段一免费链 mock 底座」；客户不接受 mock + 蚂蚁链年费 12w+ 过高，决策走 FISCO BCOS 免费链商业化真实接入。本 Story 补齐 tech-spec-multi-chain-adapter-refactor 明确 Out of Scope 的「FISCO 节点部署 + 真实 SDK 接入」部分。
+- 2026-05-11：code-review 通过自动修复 7/14 项 —— H1（Story 文档同步）+ H3（删除 PollIntervalMs/PollMaxAttempts 死配置 + 三服务 Config/yaml 清理）+ H4（platform-custody 模型文档化）+ H5（metadataURI 删除 PII，仅保留 idempotencyKey + assetInstanceId + assetNo + sha256 指纹 + detailRef，新增 PII 守护单测）+ M3（块号 5s TTL 缓存 + 30s 软降级）+ M4（三服务启动日志统一 `mode=disabled\|invalid_config\|real`）+ M5（sms-rpc 启动后异步 HealthCheck）+ L1（yaml 注释错字）。剩余 H2/H6/M2/M7/M8/L4 进入 Review Follow-ups。Status: ready-for-dev → in-progress。

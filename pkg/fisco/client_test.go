@@ -113,11 +113,11 @@ func TestConfigValidate_DisabledNoCheck(t *testing.T) {
 
 func TestConfigValidate_AllFieldsRequired(t *testing.T) {
 	cases := map[string]Config{
-		"host_missing": {Enabled: true, Port: 20200, ContractAddr: "0x1", PrivateKey: "p", ContractABI: "[]", DisableSsl: true},
-		"port_zero":    {Enabled: true, Host: "127.0.0.1", ContractAddr: "0x1", PrivateKey: "p", ContractABI: "[]", DisableSsl: true},
+		"host_missing":          {Enabled: true, Port: 20200, ContractAddr: "0x1", PrivateKey: "p", ContractABI: "[]", DisableSsl: true},
+		"port_zero":             {Enabled: true, Host: "127.0.0.1", ContractAddr: "0x1", PrivateKey: "p", ContractABI: "[]", DisableSsl: true},
 		"contract_addr_missing": {Enabled: true, Host: "127.0.0.1", Port: 20200, PrivateKey: "p", ContractABI: "[]", DisableSsl: true},
-		"private_key_missing": {Enabled: true, Host: "127.0.0.1", Port: 20200, ContractAddr: "0x1", ContractABI: "[]", DisableSsl: true},
-		"abi_missing": {Enabled: true, Host: "127.0.0.1", Port: 20200, ContractAddr: "0x1", PrivateKey: "p", DisableSsl: true},
+		"private_key_missing":   {Enabled: true, Host: "127.0.0.1", Port: 20200, ContractAddr: "0x1", ContractABI: "[]", DisableSsl: true},
+		"abi_missing":           {Enabled: true, Host: "127.0.0.1", Port: 20200, ContractAddr: "0x1", PrivateKey: "p", DisableSsl: true},
 	}
 	for name, cfg := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -154,11 +154,48 @@ func TestConfigDefaults(t *testing.T) {
 	if cfg.timeout() != DefaultTimeout {
 		t.Fatalf("默认 timeout 应为 %v", DefaultTimeout)
 	}
-	if cfg.pollIntervalDur() != DefaultPollInterval {
-		t.Fatalf("默认 PollInterval 应为 %v", DefaultPollInterval)
+}
+
+// Story 10.11 / M4: 三种实现模式必须能被启动日志区分。
+func TestClient_Mode(t *testing.T) {
+	disabled := NewClient(Config{Enabled: false})
+	if m, ok := disabled.(interface{ Mode() Mode }); !ok || m.Mode() != ModeDisabled {
+		t.Fatalf("disabled 实现应返回 Mode=disabled")
 	}
-	if cfg.pollMaxAttemptsValue() != DefaultPollMaxAttempts {
-		t.Fatalf("默认 PollMaxAttempts 应为 %d", DefaultPollMaxAttempts)
+
+	invalid := NewClient(Config{Enabled: true, ContractAddr: "0x1", PrivateKey: "bad", ContractABI: "[]", DisableSsl: true})
+	if m, ok := invalid.(interface{ Mode() Mode }); !ok || m.Mode() != ModeInvalidConfig {
+		t.Fatalf("invalid 实现应返回 Mode=invalid_config")
+	}
+}
+
+// Story 10.11 / H5: metadataURI 严禁任何 PII 明文。
+func TestBuildMetadataURI_NoPII(t *testing.T) {
+	uri, err := buildMetadataURI(&chainclient.MintTokenRequest{
+		IdempotencyKey:  "card-mint:970001",
+		AssetNo:         "ASSET-001",
+		AssetInstanceID: 970001,
+		MemberID:        12345678,
+		TraceID:         "trace-confidential",
+		RequestID:       "req-confidential",
+		TenantID:        42,
+		MerchantID:      7,
+		PlatformID:      1,
+		ScopeType:       "merchant",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, leak := range []string{"12345678", "trace-confidential", "req-confidential", "\"memberId\"", "\"tenantId\"", "\"merchantId\"", "\"platformId\"", "\"scopeType\"", "\"traceId\"", "\"requestId\""} {
+		if strings.Contains(uri, leak) {
+			t.Fatalf("metadataURI 泄漏敏感字段 %q: %s", leak, uri)
+		}
+	}
+	if !strings.Contains(uri, "sha256:") {
+		t.Fatalf("metadataURI 应包含 sha256 指纹: %s", uri)
+	}
+	if !strings.Contains(uri, "detailRef") {
+		t.Fatalf("metadataURI 应包含 detailRef 反查 URL: %s", uri)
 	}
 }
 
@@ -332,12 +369,12 @@ func TestParseTokenIDFromLogs_NoMatch(t *testing.T) {
 
 // ------------------- buildMetadataURI -------------------
 
-func TestBuildMetadataURI(t *testing.T) {
+func TestBuildMetadataURI_BasicShape(t *testing.T) {
 	uri, err := buildMetadataURI(&chainclient.MintTokenRequest{
-		IdempotencyKey: "card-mint:970001",
-		AssetNo:        "ASSET-001",
-		ActivityID:     930001,
-		TraceID:        "trace-1",
+		IdempotencyKey:  "card-mint:970001",
+		AssetNo:         "ASSET-001",
+		ActivityID:      930001,
+		AssetInstanceID: 970001,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -350,6 +387,9 @@ func TestBuildMetadataURI(t *testing.T) {
 	}
 	if !strings.Contains(uri, "ASSET-001") {
 		t.Fatalf("metadata URI 应含 assetNo")
+	}
+	if !strings.Contains(uri, "\"assetInstanceId\":970001") {
+		t.Fatalf("metadata URI 应含 assetInstanceId: %s", uri)
 	}
 }
 

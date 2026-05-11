@@ -30,7 +30,7 @@ Blockchain:
 # 节点部署在 47.107.224.56:20200-20203。生产环境 Enabled 默认 false，灰度跳闸时手动置 true。
 Fisco:
   Enabled: false
-  Host: ""                  # 例如 47.107.224.56。空字殲 + Enabled=true 会被 Validate 拦下
+  Host: ""                  # 例如 47.107.224.56。空字符 + Enabled=true 会被 Validate 拦下
   Port: 0                   # 例如 20200
   DisableSsl: false         # 生产必须 false，启用 mTLS
   IsSMCrypto: false
@@ -43,9 +43,7 @@ Fisco:
   CaCertPath: "/opt/fisco/sdk/ca.crt"
   SdkCertPath: "/opt/fisco/sdk/sdk.crt"
   SdkKeyPath: "/opt/fisco/sdk/sdk.key"
-  TimeoutSeconds: 30
-  PollIntervalMs: 500
-  PollMaxAttempts: 30
+  TimeoutSeconds: 30        # SDK SendEncodedTransaction 内部已同步轮询 receipt，本字段仅作整体超时保护
 
 Log:
   ServiceName: sms-service

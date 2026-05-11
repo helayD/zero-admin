@@ -22,12 +22,17 @@ const (
 	DefaultChainID = "chain0"
 	// DefaultTimeout 单次 RPC / 交易超时。
 	DefaultTimeout = 30 * time.Second
-	// DefaultPollInterval receipt 轮询间隔。
-	DefaultPollInterval = 500 * time.Millisecond
-	// DefaultPollMaxAttempts receipt 轮询最大次数（30 * 500ms = 15s 上限）。
-	DefaultPollMaxAttempts = 30
 	// PrivateKeyFilePrefix 私钥从文件加载的前缀，例如 "path:///opt/fisco/keys/sms-rpc.key"。
 	PrivateKeyFilePrefix = "path://"
+)
+
+// Mode 客户端实现模式，供启动日志标识实际运行状态。Story 10.11 / M4。
+type Mode string
+
+const (
+	ModeDisabled      Mode = "disabled"
+	ModeInvalidConfig Mode = "invalid_config"
+	ModeReal          Mode = "real"
 )
 
 // ChainTypeFisco3x 链类型标识，写入 sms_card_mint_task.chain_type / chain_status。
@@ -75,13 +80,9 @@ type Config struct {
 	SdkKeyPath  string
 
 	// TimeoutSeconds 单次 RPC / 交易整体超时。<=0 时取 DefaultTimeout。
+	// 备注：FISCO go-sdk/v3 的 SendEncodedTransaction 内部已同步轮询 receipt，
+	// 轮询间隔 / 最大次数由 SDK 控制，本层仅提供整体超时保护。
 	TimeoutSeconds int64
-
-	// PollIntervalMs receipt 轮询间隔毫秒。<=0 取 DefaultPollInterval。
-	PollIntervalMs int64
-
-	// PollMaxAttempts receipt 轮询最大次数。<=0 取 DefaultPollMaxAttempts。
-	PollMaxAttempts int
 }
 
 // Validate 检查 Enabled=true 时的必填项。
@@ -135,20 +136,6 @@ func (c Config) timeout() time.Duration {
 		return DefaultTimeout
 	}
 	return time.Duration(c.TimeoutSeconds) * time.Second
-}
-
-func (c Config) pollIntervalDur() time.Duration {
-	if c.PollIntervalMs <= 0 {
-		return DefaultPollInterval
-	}
-	return time.Duration(c.PollIntervalMs) * time.Millisecond
-}
-
-func (c Config) pollMaxAttemptsValue() int {
-	if c.PollMaxAttempts <= 0 {
-		return DefaultPollMaxAttempts
-	}
-	return c.PollMaxAttempts
 }
 
 // loadPrivateKey 解析 PrivateKey 字段为 secp256k1 32 字节裸私钥。

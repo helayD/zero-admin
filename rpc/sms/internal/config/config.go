@@ -46,7 +46,5 @@ type Config struct {
 		SdkCertPath     string
 		SdkKeyPath      string
 		TimeoutSeconds  int64
-		PollIntervalMs  int64
-		PollMaxAttempts int
 	}
 }

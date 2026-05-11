@@ -95,9 +95,13 @@ func NewServiceContext(c config.Config) *ServiceContext {
 
 func buildChainClient(c config.Config) chainclient.ChainClient {
 	client := buildChainClientImpl(c)
-	// Story 10.11 / Task 6.2 / AC6: 与 sms-rpc / consumer 保持一致的启动日志格式。
-	logx.Infof("buildChainClient[job]: chainType=%q nodeAddr=%s:%d contract=%s",
-		client.ChainType(), c.Fisco.Host, c.Fisco.Port, c.Fisco.ContractAddr)
+	// Story 10.11 / Task 6.2 / AC6 + M4: 与 sms-rpc / consumer 一致。
+	mode := "unknown"
+	if m, ok := client.(interface{ Mode() fisco.Mode }); ok {
+		mode = string(m.Mode())
+	}
+	logx.Infof("buildChainClient[job]: chainType=%q mode=%s nodeAddr=%s:%d contract=%s",
+		client.ChainType(), mode, c.Fisco.Host, c.Fisco.Port, c.Fisco.ContractAddr)
 	return client
 }
 
@@ -129,7 +133,5 @@ func buildChainClientImpl(c config.Config) chainclient.ChainClient {
 		SdkCertPath:     c.Fisco.SdkCertPath,
 		SdkKeyPath:      c.Fisco.SdkKeyPath,
 		TimeoutSeconds:  c.Fisco.TimeoutSeconds,
-		PollIntervalMs:  c.Fisco.PollIntervalMs,
-		PollMaxAttempts: c.Fisco.PollMaxAttempts,
 	})
 }

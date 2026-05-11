@@ -33,9 +33,7 @@ Fisco:
   CaCertPath: "/opt/fisco/sdk/ca.crt"
   SdkCertPath: "/opt/fisco/sdk/sdk.crt"
   SdkKeyPath: "/opt/fisco/sdk/sdk.key"
-  TimeoutSeconds: 30
-  PollIntervalMs: 500
-  PollMaxAttempts: 30
+  TimeoutSeconds: 30        # SDK 内部已同步轮询 receipt；本字段仅整体超时保护
 
 UmsRpc:
   Etcd:

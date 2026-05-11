@@ -143,5 +143,5 @@ development_status:
   10-8-提货状态流转-履约对账与-c-端合规展示: ready-for-dev
   10-9-实体卡制作-物流履约与签收闭环: in-progress
   10-10-提货卡后台配置中心-商业化版: review  # 2026-05-09 dev-story 完成：Bug #1 修复 + sms-rpc CardTemplateService 全套（含 protoc 生成 .pb.go）+ admin-api 暴露 7 个接口 + 发卡规则 cardTemplateName JOIN + 菜单 SQL + web-admin CardTemplate 独立维护页 + RuleForm 替换硬编码 mock + ProTable 履约模式 valueEnum + 模板引用校验。整体编译通过。Task 5 拆为 10.11，Task 6 拆为 10.12，Task 7 pms-rpc 协议升级延后
-  10-11-FISCO-BCOS-3x-真实上链商业化接入: in-progress  # 2026-05-10 dev-story 启动（选项 D 全量 Phase 1+2+3）。先做：远程服务器现状核查 + go-sdk/v3 兼容性 spike（Q1）；然后按 Task 1→11 推进。
+  10-11-FISCO-BCOS-3x-真实上链商业化接入: in-progress  # 2026-05-11 code-review 自动修复 7/14：H1/H3/H4/H5/M3/M4/M5/L1 已修；H2(contracts subrepo)/H6(AC4 远程验证)/M2/M7/M8/L4 进入 Review Follow-ups。AC1/AC4/AC5/AC6 端到端验证仍待远程窗口。
   epic-10-retrospective: optional

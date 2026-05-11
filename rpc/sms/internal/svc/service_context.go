@@ -85,11 +85,29 @@ func startMintTaskSelfScan(service *digitalcardmint.Service) {
 
 func buildChainClient(c config.Config) chainclient.ChainClient {
 	client := buildChainClientImpl(c)
-	// Story 10.11 / Task 6.2 / AC6：启动日志打印归一化的 chainType + 节点地址 + 合约地址，
-	// 便于运维一眼区分 antchain / fisco_bcos_3x 两种真实实现，
-	// 以及确认 47.107.224.56:20200 的目标节点和 0x... 合约地址是否正确。
-	logx.Infof("buildChainClient[sms-rpc]: chainType=%q nodeAddr=%s:%d contract=%s",
-		client.ChainType(), c.Fisco.Host, c.Fisco.Port, c.Fisco.ContractAddr)
+	// Story 10.11 / Task 6.2 / AC6 + M4：启动日志打印 chainType + mode + 节点 + 合约地址，
+	// mode 区分 disabled / invalid_config / real，避免「chainType=fisco_bcos_3x」误导运维
+	// 以为已接真链。
+	mode := "unknown"
+	if m, ok := client.(interface{ Mode() fisco.Mode }); ok {
+		mode = string(m.Mode())
+	}
+	logx.Infof("buildChainClient[sms-rpc]: chainType=%q mode=%s nodeAddr=%s:%d contract=%s",
+		client.ChainType(), mode, c.Fisco.Host, c.Fisco.Port, c.Fisco.ContractAddr)
+
+	// Story 10.11 / M5：启动后异步做一次 HealthCheck，仅预警，不阻塞服务启动。
+	if h, ok := client.(interface{ HealthCheck(context.Context) error }); ok && mode == string(fisco.ModeReal) {
+		go func() {
+			time.Sleep(5 * time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			if err := h.HealthCheck(ctx); err != nil {
+				logx.Errorf("sms-rpc FISCO 启动探活失败: %v", err)
+			} else {
+				logx.Infof("sms-rpc FISCO 启动探活 OK")
+			}
+		}()
+	}
 	return client
 }
 
@@ -124,8 +142,6 @@ func buildChainClientImpl(c config.Config) chainclient.ChainClient {
 			SdkCertPath:     c.Fisco.SdkCertPath,
 			SdkKeyPath:      c.Fisco.SdkKeyPath,
 			TimeoutSeconds:  c.Fisco.TimeoutSeconds,
-			PollIntervalMs:  c.Fisco.PollIntervalMs,
-			PollMaxAttempts: c.Fisco.PollMaxAttempts,
 		})
 	default:
 		return invalidChainClient{primary: c.Blockchain.Primary}
