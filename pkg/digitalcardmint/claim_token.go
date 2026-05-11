@@ -60,18 +60,18 @@ func (claimTokenRow) TableName() string {
 }
 
 type claimTokenInstanceRow struct {
-	ID             int64  `gorm:"column:id"`
-	PlatformID     int64  `gorm:"column:platform_id"`
-	TenantID       int64  `gorm:"column:tenant_id"`
-	MerchantID     int64  `gorm:"column:merchant_id"`
-	MemberID       int64  `gorm:"column:member_id"`
-	AssetStatus    string `gorm:"column:asset_status"`
-	MintStatus     string `gorm:"column:mint_status"`
-	AssetNo        string `gorm:"column:asset_no"`
-	TemplateID     int64  `gorm:"column:template_id"`
-	Transferable   int32  `gorm:"column:transferable"`
-	TransferLimit  int32  `gorm:"column:transfer_limit"`
-	IsDeleted      int32  `gorm:"column:is_deleted"`
+	ID            int64  `gorm:"column:id"`
+	PlatformID    int64  `gorm:"column:platform_id"`
+	TenantID      int64  `gorm:"column:tenant_id"`
+	MerchantID    int64  `gorm:"column:merchant_id"`
+	MemberID      int64  `gorm:"column:member_id"`
+	AssetStatus   string `gorm:"column:asset_status"`
+	MintStatus    string `gorm:"column:mint_status"`
+	AssetNo       string `gorm:"column:asset_no"`
+	TemplateID    int64  `gorm:"column:template_id"`
+	Transferable  int32  `gorm:"column:transferable"`
+	TransferLimit int32  `gorm:"column:transfer_limit"`
+	IsDeleted     int32  `gorm:"column:is_deleted"`
 }
 
 func (claimTokenInstanceRow) TableName() string {
@@ -79,7 +79,7 @@ func (claimTokenInstanceRow) TableName() string {
 }
 
 type claimTokenAssetLogRow struct {
-	AssetInstanceID int64 `gorm:"column:asset_instance_id"`
+	AssetInstanceID int64  `gorm:"column:asset_instance_id"`
 	OperationType   string `gorm:"column:operation_type"`
 }
 
@@ -194,17 +194,36 @@ func (s *Service) generateClaimTokenInTx(ctx context.Context, tx *gorm.DB, curre
 		return nil, errors.New("该卡片存在进行中的提货单,不能分享")
 	}
 
-	// 已存在 active 凭证则禁止重复签发，避免单卡多个有效 token 并发
-	var activeTokenCount int64
-	if err := tx.WithContext(ctx).
-		Table(claimTokenRow{}.TableName()).
+	// 幂等：若同卡已有 active 且未过期的凭证，直接复用而不是新建。
+	// 产品语义：朋友未接收前，分享人重新打开分享页应得到「同一条」分享链接，不应失败。
+	// 顺便把过期但状态仍为 active 的凭证修正为 expired，避免库里堆积。
+	now := time.Now()
+	var existing claimTokenRow
+	err := tx.WithContext(ctx).
+		Table(existing.TableName()).
 		Where("card_instance_id = ? AND status = ? AND is_deleted = 0",
 			input.CardInstanceID, claimTokenStatusActive).
-		Count(&activeTokenCount).Error; err != nil {
+		Order("id DESC").
+		Take(&existing).Error
+	if err == nil {
+		if existing.ExpireAt != nil && existing.ExpireAt.Before(now) {
+			// 凭证已过期 → 标记 expired，让本次走新建分支
+			if upErr := tx.WithContext(ctx).
+				Table(existing.TableName()).
+				Where("id = ?", existing.ID).
+				Updates(map[string]interface{}{
+					"status":     claimTokenStatusExpired,
+					"updated_at": now,
+				}).Error; upErr != nil {
+				return nil, fmt.Errorf("过期凭证状态更新失败: %w", upErr)
+			}
+		} else if existing.ClaimedCount < existing.MaxClaims {
+			// 未过期 + 仍可领取 → 直接复用
+			return &existing, nil
+		}
+		// 否则（已达上限）走新建分支
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, err
-	}
-	if activeTokenCount > 0 {
-		return nil, errors.New("该卡片已存在活跃的分享凭证,请先吊销后再分享")
 	}
 
 	if instance.TransferLimit > 0 {
@@ -231,11 +250,10 @@ func (s *Service) generateClaimTokenInTx(ctx context.Context, tx *gorm.DB, curre
 	}
 
 	expireAt := time.Now().Add(time.Duration(expireHours) * time.Hour)
-	tokenStr, err := generateRandomClaimToken()
-	if err != nil {
-		return nil, fmt.Errorf("生成分享凭证失败: %w", err)
+	tokenStr, tokenErr := generateRandomClaimToken()
+	if tokenErr != nil {
+		return nil, fmt.Errorf("生成分享凭证失败: %w", tokenErr)
 	}
-	now := time.Now()
 	row := &claimTokenRow{
 		Token:          tokenStr,
 		CardInstanceID: input.CardInstanceID,
