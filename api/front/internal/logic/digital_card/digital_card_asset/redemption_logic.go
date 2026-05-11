@@ -9,6 +9,7 @@ import (
 
 	"github.com/feihua/zero-admin/api/front/internal/svc"
 	"github.com/feihua/zero-admin/api/front/internal/types"
+	"github.com/feihua/zero-admin/pkg/digitalcardmint"
 	"github.com/feihua/zero-admin/rpc/sms/client/cardclaimtokenservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/cardredemptionorderservice"
 	"github.com/feihua/zero-admin/rpc/sms/smsclient"
@@ -162,16 +163,16 @@ func (l *GenerateShareLinkLogic) GenerateShareLink(req *types.GenerateShareLinkR
 	}
 
 	scope := currentGovernanceScope(l.ctx)
-	resp, err := l.svcCtx.CardClaimTokenService.GenerateClaimToken(l.ctx, &cardclaimtokenservice.GenerateClaimTokenReq{
-		CardInstanceId: req.CardInstanceId,
-		IssuerId:       memberID,
+	// Story 10.7 Task 8.x — 因 CardClaimTokenService 的手写 struct 未实现 proto.Message
+	// 跨进程 gRPC marshal 必然失败，分享凭证生成改走 pkg/digitalcardmint 的 in-process
+	// 服务，直接读写本进程 DB（与 sms-rpc 共享同一个 MySQL 实例）。
+	tokenResult, err := l.svcCtx.CardMintService.GenerateClaimToken(l.ctx, scope, digitalcardmint.GenerateClaimTokenInput{
+		CardInstanceID: req.CardInstanceId,
+		IssuerID:       memberID,
 		ExpireHours:    req.ExpireHours,
 		MaxClaims:      req.MaxClaims,
-		PlatformId:     scope.PlatformID,
-		TenantId:       scope.TenantID,
-		MerchantId:     scope.MerchantID,
-		TraceId:        req.TraceId,
-		RequestId:      req.RequestId,
+		TraceID:        req.TraceId,
+		RequestID:      req.RequestId,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("生成分享链接失败: %w", err)
@@ -188,16 +189,16 @@ func (l *GenerateShareLinkLogic) GenerateShareLink(req *types.GenerateShareLinkR
 		}
 		baseURL = scheme + "://" + baseURL
 	}
-	shareLink := fmt.Sprintf("%s/h5/digital-card/claim?token=%s", baseURL, resp.Token.Token)
+	shareLink := fmt.Sprintf("%s/h5/digital-card/claim?token=%s", baseURL, tokenResult.Token)
 
 	return &types.GenerateShareLinkResp{
 		Code:    0,
 		Message: "生成分享链接成功",
 		Data: types.ShareLinkData{
-			Token:     resp.Token.Token,
+			Token:     tokenResult.Token,
 			ShareLink: shareLink,
-			ExpireAt:  resp.Token.ExpireAt,
-			MaxClaims: resp.Token.MaxClaims,
+			ExpireAt:  tokenResult.ExpireAt,
+			MaxClaims: tokenResult.MaxClaims,
 		},
 	}, nil
 }
