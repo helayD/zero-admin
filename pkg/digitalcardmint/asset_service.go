@@ -877,6 +877,184 @@ func (s *Service) HandleRefundCardDispose(ctx context.Context, input RefundCardD
 	return result, nil
 }
 
+// DigitalCardRedemptionOrderFilter Story 10.7 Task 2.8 / S3 — 后台提货单管理过滤器
+type DigitalCardRedemptionOrderFilter struct {
+	PageNum        int64
+	PageSize       int64
+	OrderID        int64
+	OrderNo        string
+	CardInstanceID int64
+	AssetNo        string
+	HolderID       int64
+	Status         string
+	OmsOrderID     int64
+	DateFrom       string
+	DateTo         string
+}
+
+// DigitalCardRedemptionOrderItem Task 2.8 / S3 列表项
+type DigitalCardRedemptionOrderItem struct {
+	ID              int64  `json:"id"`
+	OrderNo         string `json:"orderNo"`
+	CardInstanceID  int64  `json:"cardInstanceId"`
+	AssetNo         string `json:"assetNo"`
+	TemplateName    string `json:"templateName"`
+	HolderID        int64  `json:"holderId"`
+	ReceiverName    string `json:"receiverName"`
+	ReceiverPhone   string `json:"receiverPhone"`
+	ReceiverAddress string `json:"receiverAddress"`
+	Status          string `json:"status"`
+	ShippedAt       string `json:"shippedAt"`
+	DeliveredAt     string `json:"deliveredAt"`
+	CancelReason    string `json:"cancelReason"`
+	OmsOrderID      int64  `json:"omsOrderId"`
+	PlatformID      int64  `json:"platformId"`
+	TenantID        int64  `json:"tenantId"`
+	MerchantID      int64  `json:"merchantId"`
+	CreatedAt       string `json:"createdAt"`
+	UpdatedAt       string `json:"updatedAt"`
+}
+
+// QueryDigitalCardRedemptionOrderList Story 10.7 Task 2.8 / S3 — 后台跨资产查询提货单列表，
+// 强制按 currentScope 过滤；JOIN 资产实例与模板以提供资产编号 + 模板名展示。
+func (s *Service) QueryDigitalCardRedemptionOrderList(ctx context.Context, currentScope pkgscope.GovernanceScope, filter DigitalCardRedemptionOrderFilter) (int64, []DigitalCardRedemptionOrderItem, error) {
+	if s.DB == nil {
+		return 0, nil, errors.New("数据库未初始化")
+	}
+	if filter.PageNum <= 0 {
+		filter.PageNum = 1
+	}
+	if filter.PageSize <= 0 {
+		filter.PageSize = 20
+	}
+	if filter.PageSize > 10000 {
+		filter.PageSize = 10000
+	}
+
+	base := s.DB.WithContext(ctx).
+		Table("sms_card_redemption_order AS ord").
+		Joins("LEFT JOIN sms_card_instance AS instance ON instance.id = ord.card_instance_id AND instance.is_deleted = 0").
+		Joins("LEFT JOIN sms_card_template AS template ON template.id = instance.template_id AND template.is_deleted = 0").
+		Where("ord.is_deleted = 0")
+	// 作用域：提货单自带 platform/tenant/merchant 列；优先按 ord.* 过滤
+	base = pkgscope.ApplyGovernanceScope(base, currentScope, "ord")
+
+	if filter.OrderID > 0 {
+		base = base.Where("ord.id = ?", filter.OrderID)
+	}
+	if v := strings.TrimSpace(filter.OrderNo); v != "" {
+		base = base.Where("ord.order_no LIKE ?", "%"+v+"%")
+	}
+	if filter.CardInstanceID > 0 {
+		base = base.Where("ord.card_instance_id = ?", filter.CardInstanceID)
+	}
+	if v := strings.TrimSpace(filter.AssetNo); v != "" {
+		base = base.Where("instance.asset_no LIKE ?", "%"+v+"%")
+	}
+	if filter.HolderID > 0 {
+		base = base.Where("ord.holder_id = ?", filter.HolderID)
+	}
+	if v := strings.TrimSpace(filter.Status); v != "" {
+		base = base.Where("ord.status = ?", v)
+	}
+	if filter.OmsOrderID > 0 {
+		base = base.Where("ord.oms_order_id = ?", filter.OmsOrderID)
+	}
+	if v := strings.TrimSpace(filter.DateFrom); v != "" {
+		base = base.Where("ord.created_at >= ?", v)
+	}
+	if v := strings.TrimSpace(filter.DateTo); v != "" {
+		base = base.Where("ord.created_at <= ?", v)
+	}
+
+	var total int64
+	if err := base.Session(&gorm.Session{}).Count(&total).Error; err != nil {
+		return 0, nil, err
+	}
+
+	type orderRow struct {
+		ID              int64      `gorm:"column:id"`
+		OrderNo         string     `gorm:"column:order_no"`
+		CardInstanceID  int64      `gorm:"column:card_instance_id"`
+		AssetNo         string     `gorm:"column:asset_no"`
+		TemplateName    string     `gorm:"column:template_name"`
+		HolderID        int64      `gorm:"column:holder_id"`
+		ReceiverName    string     `gorm:"column:receiver_name"`
+		ReceiverPhone   string     `gorm:"column:receiver_phone"`
+		ReceiverAddress string     `gorm:"column:receiver_address"`
+		Status          string     `gorm:"column:status"`
+		ShippedAt       *time.Time `gorm:"column:shipped_at"`
+		DeliveredAt     *time.Time `gorm:"column:delivered_at"`
+		CancelReason    string     `gorm:"column:cancel_reason"`
+		OmsOrderID      int64      `gorm:"column:oms_order_id"`
+		PlatformID      int64      `gorm:"column:platform_id"`
+		TenantID        int64      `gorm:"column:tenant_id"`
+		MerchantID      int64      `gorm:"column:merchant_id"`
+		CreatedAt       *time.Time `gorm:"column:created_at"`
+		UpdatedAt       *time.Time `gorm:"column:updated_at"`
+	}
+
+	var rows []orderRow
+	if err := base.Select(`ord.id AS id,
+		ord.order_no AS order_no,
+		ord.card_instance_id AS card_instance_id,
+		COALESCE(instance.asset_no, '') AS asset_no,
+		COALESCE(template.template_name, '') AS template_name,
+		ord.holder_id AS holder_id,
+		ord.receiver_name AS receiver_name,
+		ord.receiver_phone AS receiver_phone,
+		ord.receiver_address AS receiver_address,
+		ord.status AS status,
+		ord.shipped_at AS shipped_at,
+		ord.delivered_at AS delivered_at,
+		ord.cancel_reason AS cancel_reason,
+		ord.oms_order_id AS oms_order_id,
+		ord.platform_id AS platform_id,
+		ord.tenant_id AS tenant_id,
+		ord.merchant_id AS merchant_id,
+		ord.created_at AS created_at,
+		ord.updated_at AS updated_at`).
+		Order("ord.id DESC").
+		Offset(int((filter.PageNum - 1) * filter.PageSize)).
+		Limit(int(filter.PageSize)).
+		Find(&rows).Error; err != nil {
+		return 0, nil, err
+	}
+
+	formatTime := func(t *time.Time) string {
+		if t == nil {
+			return ""
+		}
+		return t.Format("2006-01-02 15:04:05")
+	}
+
+	items := make([]DigitalCardRedemptionOrderItem, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, DigitalCardRedemptionOrderItem{
+			ID:              row.ID,
+			OrderNo:         row.OrderNo,
+			CardInstanceID:  row.CardInstanceID,
+			AssetNo:         row.AssetNo,
+			TemplateName:    row.TemplateName,
+			HolderID:        row.HolderID,
+			ReceiverName:    row.ReceiverName,
+			ReceiverPhone:   row.ReceiverPhone,
+			ReceiverAddress: row.ReceiverAddress,
+			Status:          row.Status,
+			ShippedAt:       formatTime(row.ShippedAt),
+			DeliveredAt:     formatTime(row.DeliveredAt),
+			CancelReason:    row.CancelReason,
+			OmsOrderID:      row.OmsOrderID,
+			PlatformID:      row.PlatformID,
+			TenantID:        row.TenantID,
+			MerchantID:      row.MerchantID,
+			CreatedAt:       formatTime(row.CreatedAt),
+			UpdatedAt:       formatTime(row.UpdatedAt),
+		})
+	}
+	return total, items, nil
+}
+
 // DigitalCardTransferLogFilter Story 10.7 Task 9.1 转赠/分享/领取审计跨资产检索过滤器
 type DigitalCardTransferLogFilter struct {
 	PageNum         int64

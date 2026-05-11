@@ -110,6 +110,12 @@ func RegisterExtraHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Path:    "/queryDigitalCardTransferLogList",
 					Handler: digitalcardassethandler.QueryDigitalCardTransferLogListHandler(serverCtx),
 				},
+				{
+					// Story 10.7 Task 2.8 / S3 — 后台提货单管理
+					Method:  http.MethodGet,
+					Path:    "/queryDigitalCardRedemptionOrderList",
+					Handler: digitalcardassethandler.QueryDigitalCardRedemptionOrderListHandler(serverCtx),
+				},
 			}...,
 		),
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),

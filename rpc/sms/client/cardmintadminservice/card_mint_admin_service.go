@@ -32,6 +32,8 @@ type CardMintAdminService interface {
 	RequestPhysicalCardReissue(ctx context.Context, scope pkgscope.GovernanceScope, input digitalcardmint.PhysicalFulfillmentExceptionInput, opts ...grpc.CallOption) (*digitalcardmint.PhysicalFulfillmentResult, error)
 	// Story 10.7 Task 9.2 — 后台合规审计跨资产检索
 	QueryDigitalCardTransferLogList(ctx context.Context, scope pkgscope.GovernanceScope, filter digitalcardmint.DigitalCardTransferLogFilter, opts ...grpc.CallOption) (int64, []digitalcardmint.DigitalCardTransferLogItem, error)
+	// Story 10.7 Task 2.8 / S3 — 后台提货单管理
+	QueryDigitalCardRedemptionOrderList(ctx context.Context, scope pkgscope.GovernanceScope, filter digitalcardmint.DigitalCardRedemptionOrderFilter, opts ...grpc.CallOption) (int64, []digitalcardmint.DigitalCardRedemptionOrderItem, error)
 }
 
 type cardMintAdminService struct {
@@ -201,6 +203,18 @@ func (m *cardMintAdminService) invokeTaskAction(ctx context.Context, method stri
 func (m *cardMintAdminService) QueryDigitalCardTransferLogList(ctx context.Context, scope pkgscope.GovernanceScope, filter digitalcardmint.DigitalCardTransferLogFilter, opts ...grpc.CallOption) (int64, []digitalcardmint.DigitalCardTransferLogItem, error) {
 	var out cardmintadminrpc.QueryDigitalCardTransferLogListResponse
 	if err := m.invoke(ctx, cardmintadminrpc.MethodQueryDigitalCardTransferLogList, cardmintadminrpc.QueryDigitalCardTransferLogListRequest{
+		Scope:  scope,
+		Filter: filter,
+	}, &out, opts...); err != nil {
+		return 0, nil, err
+	}
+	return out.Total, out.List, nil
+}
+
+// QueryDigitalCardRedemptionOrderList Story 10.7 Task 2.8 / S3 — 后台提货单管理
+func (m *cardMintAdminService) QueryDigitalCardRedemptionOrderList(ctx context.Context, scope pkgscope.GovernanceScope, filter digitalcardmint.DigitalCardRedemptionOrderFilter, opts ...grpc.CallOption) (int64, []digitalcardmint.DigitalCardRedemptionOrderItem, error) {
+	var out cardmintadminrpc.QueryDigitalCardRedemptionOrderListResponse
+	if err := m.invoke(ctx, cardmintadminrpc.MethodQueryDigitalCardRedemptionOrderList, cardmintadminrpc.QueryDigitalCardRedemptionOrderListRequest{
 		Scope:  scope,
 		Filter: filter,
 	}, &out, opts...); err != nil {

@@ -287,6 +287,25 @@ func (s *CardMintAdminServiceServer) QueryDigitalCardTransferLogList(ctx context
 	})
 }
 
+// QueryDigitalCardRedemptionOrderList Story 10.7 Task 2.8 / S3 — 后台提货单管理
+func (s *CardMintAdminServiceServer) QueryDigitalCardRedemptionOrderList(ctx context.Context, in *structpb.Struct) (*structpb.Struct, error) {
+	var req cardmintadminrpc.QueryDigitalCardRedemptionOrderListRequest
+	if err := cardmintadminrpc.DecodePayload(in, &req); err != nil {
+		return nil, err
+	}
+	if err := s.ensureCardMintService(); err != nil {
+		return nil, err
+	}
+	total, list, err := s.svcCtx.CardMintService.QueryDigitalCardRedemptionOrderList(ctx, req.Scope, req.Filter)
+	if err != nil {
+		return nil, err
+	}
+	return cardmintadminrpc.EncodePayload(cardmintadminrpc.QueryDigitalCardRedemptionOrderListResponse{
+		Total: total,
+		List:  list,
+	})
+}
+
 func (s *CardMintAdminServiceServer) ensureCardMintService() error {
 	if s.svcCtx == nil || s.svcCtx.CardMintService == nil {
 		return errors.New("提货卡服务未初始化")

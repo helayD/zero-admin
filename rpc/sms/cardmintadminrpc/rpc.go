@@ -34,6 +34,8 @@ const (
 	MethodRequestPhysicalCardReissue         = "/" + ServiceName + "/RequestPhysicalCardReissue"
 	// Story 10.7 Task 9.2 — 后台合规审计跨资产检索
 	MethodQueryDigitalCardTransferLogList = "/" + ServiceName + "/QueryDigitalCardTransferLogList"
+	// Story 10.7 Task 2.8 / S3 — 后台提货单管理
+	MethodQueryDigitalCardRedemptionOrderList = "/" + ServiceName + "/QueryDigitalCardRedemptionOrderList"
 )
 
 type (
@@ -159,6 +161,17 @@ type (
 		Total int64                                        `json:"total"`
 		List  []digitalcardmint.DigitalCardTransferLogItem `json:"list"`
 	}
+
+	// Story 10.7 Task 2.8 / S3 — 后台提货单管理
+	QueryDigitalCardRedemptionOrderListRequest struct {
+		Scope  pkgscope.GovernanceScope                         `json:"scope"`
+		Filter digitalcardmint.DigitalCardRedemptionOrderFilter `json:"filter"`
+	}
+
+	QueryDigitalCardRedemptionOrderListResponse struct {
+		Total int64                                            `json:"total"`
+		List  []digitalcardmint.DigitalCardRedemptionOrderItem `json:"list"`
+	}
 )
 
 type CardMintAdminServiceServer interface {
@@ -181,6 +194,7 @@ type CardMintAdminServiceServer interface {
 	MarkPhysicalFulfillmentException(context.Context, *structpb.Struct) (*structpb.Struct, error)
 	RequestPhysicalCardReissue(context.Context, *structpb.Struct) (*structpb.Struct, error)
 	QueryDigitalCardTransferLogList(context.Context, *structpb.Struct) (*structpb.Struct, error)
+	QueryDigitalCardRedemptionOrderList(context.Context, *structpb.Struct) (*structpb.Struct, error)
 }
 
 func RegisterCardMintAdminServiceServer(registrar grpc.ServiceRegistrar, server CardMintAdminServiceServer) {
@@ -248,6 +262,9 @@ var CardMintAdminServiceDesc = grpc.ServiceDesc{
 		{MethodName: "QueryDigitalCardTransferLogList", Handler: buildUnaryHandler(func(s CardMintAdminServiceServer, ctx context.Context, in *structpb.Struct) (*structpb.Struct, error) {
 			return s.QueryDigitalCardTransferLogList(ctx, in)
 		}, MethodQueryDigitalCardTransferLogList)},
+		{MethodName: "QueryDigitalCardRedemptionOrderList", Handler: buildUnaryHandler(func(s CardMintAdminServiceServer, ctx context.Context, in *structpb.Struct) (*structpb.Struct, error) {
+			return s.QueryDigitalCardRedemptionOrderList(ctx, in)
+		}, MethodQueryDigitalCardRedemptionOrderList)},
 	},
 }
 

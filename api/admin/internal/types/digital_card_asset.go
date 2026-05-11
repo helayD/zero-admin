@@ -186,6 +186,54 @@ type QueryDigitalCardTransferLogListResp struct {
 	Success  bool                             `json:"success"`
 }
 
+// Story 10.7 Task 2.8 / S3 — 后台提货单管理
+type QueryDigitalCardRedemptionOrderListReq struct {
+	DigitalCardAssetQueryGovernanceScopeReq
+	PageSize       int    `form:"pageSize,default=20"`
+	Current        int    `form:"current,default=1"`
+	OrderId        int64  `form:"orderId,optional"`
+	OrderNo        string `form:"orderNo,optional"`
+	CardInstanceId int64  `form:"cardInstanceId,optional"`
+	AssetNo        string `form:"assetNo,optional"`
+	HolderId       int64  `form:"holderId,optional"`
+	Status         string `form:"status,optional"`
+	OmsOrderId     int64  `form:"omsOrderId,optional"`
+	DateFrom       string `form:"dateFrom,optional"`
+	DateTo         string `form:"dateTo,optional"`
+}
+
+type DigitalCardRedemptionOrderListItem struct {
+	Id              int64  `json:"id"`
+	OrderNo         string `json:"orderNo"`
+	CardInstanceId  int64  `json:"cardInstanceId"`
+	AssetNo         string `json:"assetNo"`
+	TemplateName    string `json:"templateName"`
+	HolderId        int64  `json:"holderId"`
+	ReceiverName    string `json:"receiverName"`
+	ReceiverPhone   string `json:"receiverPhone"`
+	ReceiverAddress string `json:"receiverAddress"`
+	Status          string `json:"status"`
+	ShippedAt       string `json:"shippedAt"`
+	DeliveredAt     string `json:"deliveredAt"`
+	CancelReason    string `json:"cancelReason"`
+	OmsOrderId      int64  `json:"omsOrderId"`
+	PlatformId      int64  `json:"platformId"`
+	TenantId        int64  `json:"tenantId"`
+	MerchantId      int64  `json:"merchantId"`
+	CreateTime      string `json:"createTime"`
+	UpdateTime      string `json:"updateTime"`
+}
+
+type QueryDigitalCardRedemptionOrderListResp struct {
+	Code     string                               `json:"code"`
+	Message  string                               `json:"message"`
+	Total    int64                                `json:"total"`
+	Current  int                                  `json:"current"`
+	PageSize int                                  `json:"pageSize"`
+	Data     []DigitalCardRedemptionOrderListItem `json:"data"`
+	Success  bool                                 `json:"success"`
+}
+
 type DigitalCardAssetActionReq struct {
 	DigitalCardAssetGovernanceScopeReq
 	AssetInstanceId int64  `json:"assetInstanceId"`
