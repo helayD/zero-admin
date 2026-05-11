@@ -643,7 +643,7 @@ func (s *Service) claimByMobileInTx(ctx context.Context, tx *gorm.DB, input Clai
 		return nil, fmt.Errorf("写入资产日志失败: %w", err)
 	}
 
-	// 8. 查模板名 / 卡面给 H5 显示
+	// 8. 查模板名 / 卡面（消息文案 + H5 显示都需要）
 	type templatePreviewRow struct {
 		TemplateName  string `gorm:"column:template_name"`
 		CardFaceImage string `gorm:"column:card_face_image"`
@@ -654,6 +654,27 @@ func (s *Service) claimByMobileInTx(ctx context.Context, tx *gorm.DB, input Clai
 		Select("template_name, card_face_image").
 		Where("id = ? AND is_deleted = 0", instance.TemplateID).
 		Take(&preview).Error
+
+	// 9. 写转赠站内消息（给分享人 + 接收人各一条）
+	//    与 holder 切换 / 资产日志同事务，失败回滚保证一致性。
+	//    分享人收到「转赠成功」消息可在「我的-消息」里看到反馈。
+	fromMember, err := s.loadSenderMemberByID(ctx, tx, row.IssuerID)
+	if err != nil {
+		return nil, fmt.Errorf("加载分享人信息失败 issuer_id=%d: %w", row.IssuerID, err)
+	}
+	recipient, err := s.loadTransferRecipientByMobile(ctx, tx, input.Mobile)
+	if err != nil {
+		return nil, fmt.Errorf("加载接收人信息失败 mobile=%s: %w", maskMobile(input.Mobile), err)
+	}
+	instanceForMsg := &CardInstanceRow{
+		ID:         instance.ID,
+		PlatformID: instance.PlatformID,
+		TenantID:   instance.TenantID,
+		MerchantID: instance.MerchantID,
+	}
+	if err := s.appendTransferMessagesTx(ctx, tx, instanceForMsg, fromMember, recipient, preview.TemplateName, now); err != nil {
+		return nil, err
+	}
 
 	return &ClaimByMobileResult{
 		Success: true,
