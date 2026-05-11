@@ -6452,7 +6452,7 @@ type AddCardTemplateReq struct {
 	IssueLimit              int64  `json:"issueLimit,optional"`              // 发行上限
 	DisplayCopy             string `json:"displayCopy,optional"`             // 展示文案
 	CirculationLimitSummary string `json:"circulationLimitSummary,optional"` // 默认流转限制
-	DisplayStatus           int32  `json:"displayStatus,optional"`           // 展示状态
+	DisplayStatus           int32  `json:"displayStatus,optional,default=1"` // 展示状态：默认 1-上架（Story 10.10 第二轮 Review 修复 M2：避免未传字段被静默置为下架）
 	ContentAuditStatus      int32  `json:"contentAuditStatus,optional"`      // 内容审核状态
 	ProviderCode            string `json:"providerCode,optional"`            // 接入方编码
 	CredentialRef           string `json:"credentialRef,optional"`           // 实名/版权凭证引用
@@ -6515,8 +6515,8 @@ type QueryCardTemplateListReq struct {
 	Rarity        string `form:"rarity,optional"`                   // 稀有度
 	Status        int32  `form:"status,optional,default=-1"`        // 启停状态：-1-全部（默认）, 0-禁用, 1-启用 (Story 10.10 修复 C1)
 	DisplayStatus int32  `form:"displayStatus,optional,default=-1"` // 展示状态：-1-全部（默认）, 0-下架, 1-上架 (Story 10.10 修复 C1)
-	Page          int32  `form:"page,optional"`                     // 页码
-	PageSize      int32  `form:"pageSize,optional"`                 // 每页数量
+	Current       int32  `form:"current,optional,default=1"`        // 页码（Story 10.10 第二轮 Review 修复 H1：与全仓 ProTable 约定一致，前端 ProTable 默认 ?current=N，原 page 字段无法接收导致分页失效）
+	PageSize      int32  `form:"pageSize,optional,default=10"`      // 每页数量
 	ScopeType     string `form:"scopeType,optional"`                // 治理范围
 	PlatformId    int64  `form:"platformId,optional"`               // 平台ID
 	TenantId      int64  `form:"tenantId,optional"`                 // 租户ID

@@ -60,6 +60,27 @@ func (l *UpdateProductFulfillmentRuleStatusLogic) UpdateProductFulfillmentRuleSt
 		}
 	}
 
+	// 3.1 Story 10.10 第二轮 Review 修复 H2:
+	//     启用规则时，必须再次校验当前规则关联的卡片模板仍然合法（未被删除/未被禁用/scope 仍可见），
+	//     否则会出现"规则被禁→模板被禁→规则重新启用"的脏闭环，违反 AC7 的一致性 gate。
+	if in.RuleStatus == 1 {
+		var ruleRow struct {
+			CardTemplateId int64 `gorm:"column:card_template_id"`
+		}
+		if err := l.svcCtx.DB.WithContext(l.ctx).
+			Table("sms_product_fulfillment_rule").
+			Select("card_template_id").
+			Where("id = ? AND platform_id = ? AND tenant_id = ? AND merchant_id = ? AND is_deleted = 0",
+				in.Id, platformId, tenantId, merchantId).
+			Take(&ruleRow).Error; err != nil {
+			logc.Errorf(l.ctx, "启用规则前查询关联卡片模板失败: %v", err)
+			return nil, errors.New("启用前校验关联卡片模板失败，请稍后重试")
+		}
+		if err := validateCardTemplateForRule(l.ctx, l.svcCtx.DB, ruleRow.CardTemplateId, platformId, tenantId, merchantId); err != nil {
+			return nil, err
+		}
+	}
+
 	// 4. 执行更新
 	now := time.Now()
 	err := l.svcCtx.DB.WithContext(l.ctx).
@@ -67,7 +88,7 @@ func (l *UpdateProductFulfillmentRuleStatusLogic) UpdateProductFulfillmentRuleSt
 		Where("id = ? AND platform_id = ? AND tenant_id = ? AND merchant_id = ? AND is_deleted = 0",
 			in.Id, platformId, tenantId, merchantId).
 		Updates(map[string]interface{}{
-			"rule_status":  in.RuleStatus,
+			"rule_status": in.RuleStatus,
 			"update_time": now,
 		}).Error
 	if err != nil {

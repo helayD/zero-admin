@@ -38,13 +38,14 @@ func (l *QueryCardTemplateListLogic) QueryCardTemplateList(req *types.QueryCardT
 		return nil, err
 	}
 
+	// Story 10.10 第二轮 Review 修复 H1: 前端 ProTable 用 current 字段，admin-api 接收后映射到 RPC 的 Page。
 	rpcReq := &smsclient.QueryCardTemplateListReq{
 		TemplateName:  req.TemplateName,
 		TemplateCode:  req.TemplateCode,
 		Rarity:        req.Rarity,
 		Status:        req.Status,
 		DisplayStatus: req.DisplayStatus,
-		Page:          req.Page,
+		Page:          req.Current,
 		PageSize:      req.PageSize,
 		Scope:         common.SMSGovernanceScope(readScope),
 	}
@@ -67,7 +68,7 @@ func (l *QueryCardTemplateListLogic) QueryCardTemplateList(req *types.QueryCardT
 		Data: types.CardTemplateListData{
 			List:     list,
 			Total:    result.Total,
-			Page:     req.Page,
+			Page:     req.Current,
 			PageSize: req.PageSize,
 		},
 	}, nil

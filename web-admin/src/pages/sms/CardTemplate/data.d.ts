@@ -38,7 +38,7 @@ export interface CardTemplateListParams {
   rarity?: string; // 稀有度
   status?: number; // 启停状态：-1-全部，0-禁用，1-启用
   displayStatus?: number; // 展示状态：-1-全部，0-下架，1-上架
-  page?: number;
+  current?: number; // 页码（与全仓 ProTable 约定一致，Story 10.10 第二轮 Review 修复 H1）
   pageSize?: number;
   scopeType?: 'platform' | 'tenant' | 'merchant';
   platformId?: number;

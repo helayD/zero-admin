@@ -60,19 +60,22 @@ func (l *UpdateCardTemplateStatusLogic) UpdateCardTemplateStatus(in *smsclient.U
 		return nil, err
 	}
 
-	// 2. Story 10.10 修复 H1: 禁用模板时硬拦截"被启用发卡规则引用"。
-	//    前端 checkCardTemplateUsage 是软提示，可被 curl 绕过；后端必须自校验避免不一致。
+	// 2. Story 10.10 修复 H1 + 第二轮 Review 修复 M1:
+	//    禁用模板时硬拦截"被【启用】发卡规则引用"。
+	//    第一轮 H1 SQL 漏写 rule_status=1，导致已禁用的历史规则也算引用，运营会陷入"已解绑全部启用规则但仍禁不了模板"的死锁；
+	//    第二轮收紧到只过滤 rule_status=1（仍生效的引用），与 HIGH 2 修复（启用规则时再次校验模板）配合形成一致性闭环。
+	//    前端 checkCardTemplateUsage 是软提示，可被 curl 绕过；后端必须自校验。
 	if in.Status == 0 {
 		var refRuleCount int64
 		if err := l.svcCtx.DB.WithContext(l.ctx).
 			Table("sms_product_fulfillment_rule").
-			Where("card_template_id = ? AND is_deleted = 0", in.Id).
+			Where("card_template_id = ? AND rule_status = 1 AND is_deleted = 0", in.Id).
 			Count(&refRuleCount).Error; err != nil {
 			logc.Errorf(l.ctx, "校验模板引用关系失败: %v", err)
 			return nil, errors.New("校验模板引用关系失败")
 		}
 		if refRuleCount > 0 {
-			return nil, fmt.Errorf("该模板已被 %d 条发卡规则引用，无法禁用，请先解绑或删除相关发卡规则", refRuleCount)
+			return nil, fmt.Errorf("该模板已被 %d 条启用中的发卡规则引用，无法禁用，请先停用或删除相关发卡规则", refRuleCount)
 		}
 	}
 
