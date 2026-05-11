@@ -302,14 +302,14 @@ so that 提货卡发放能以零链上费用的方式真正完成链上确权、
 
 **Reviewer**: David（通过 Cascade 执行 `/bmad-bmm-code-review`）
 **Date**: 2026-05-11
-**Outcome**: Changes Requested → 已自动修复 7/14 项后转为 in-progress；剩余 6 项作为 Review Follow-ups。
+**Outcome**: Changes Requested → 已自动修复 8/14 项后转为 in-progress；剩余 5 项作为 Review Follow-ups（其中 H6/AC 端到端依赖运维窗口）。
 
 ### 关键发现 + 处置（详细见上一轮 review 输出）
 
 | Severity | 编号 | 问题 | 处置 |
 |---|---|---|---|
 | HIGH | H1 | Story 状态/任务勾选/sprint-status 三处不一致 | ✅ 修复：本次更新文档 + sprint-status |
-| HIGH | H2 | `contracts/` 嵌套 git repo，源码未入主仓 | ⏳ 转 Review Follow-up（需用户决策 submodule vs 直接合入） |
+| HIGH | H2 | `contracts/` 嵌套 git repo，源码未入主仓 | ✅ 修复 2026-05-11：注册为 git submodule（远程 `helayD/zero-admin-contracts`），新增 `docs/blockchain-strategy.md` 附录 D submodule 工作流 |
 | HIGH | H3 | `PollIntervalMs/PollMaxAttempts` 死配置 | ✅ 修复：删除 Config/yaml/svc 三处字段 + 文档化 SDK 内置轮询 |
 | HIGH | H4 | mint() 接收方写死 fromAddr 但平台托管模式未文档化 | ✅ 修复：`pkg/fisco/client.go` 顶部加完整设计说明 |
 | HIGH | H5 | metadataURI 把 memberId/tenantId/traceId 等 PII 明文写上链 | ✅ 修复：仅保留 idempotencyKey + assetNo + assetInstanceId + sha256 指纹 + detailRef，新增 `TestBuildMetadataURI_NoPII` 守护 |
@@ -334,7 +334,7 @@ so that 提货卡发放能以零链上费用的方式真正完成链上确权、
 
 ## Review Follow-ups (AI)
 
-- [ ] [AI-Review][HIGH] H2 处理 `contracts/` 嵌套仓库 — 删除 `contracts/.git` 合入主仓，或注册为 git submodule（需用户拍板）
+- [x] [AI-Review][HIGH] H2 处理 `contracts/` 嵌套仓库 — **已完成 2026-05-11**：注册为 git submodule，远程指向 `helayD/zero-admin-contracts`，主仓新增 `.gitmodules` 跟踪 commit hash 指针。`docs/blockchain-strategy.md` 附录 D 补 clone --recursive / submodule update / ABI 同步 SOP。
 - [ ] [AI-Review][HIGH] H6 AC4 三张遗留卡端到端验证 — 在远程 47.107.224.56 执行 `script/sql/sms/migration_20260510_story_10_11_reset_legacy_cards.sql` + 观察 sms-rpc 自循环扫描日志 + 手机端三张卡详情页截图归档
 - [ ] [AI-Review][HIGH] AC1 + AC5 + AC6 端到端真实 mint 验证 — Task 10.2/10.3/10.4 全部需要远程节点 + 真实订单触发；当前仅本地 unit 测试覆盖
 - [ ] [AI-Review][MEDIUM] M2 `IsSMCrypto` ABI 解析时机 — `parsedABI.SetSMCrypto()` 后置生效需 SDK 文档确认或单测验证；如有问题改为 `bcosabi.JSON` 解析前注入；当前默认 false 暂不阻塞
@@ -346,3 +346,4 @@ so that 提货卡发放能以零链上费用的方式真正完成链上确权、
 
 - 2026-05-10：初稿（Cascade）—— 背景：Story 10.4 已落地蚂蚁链真实 HTTP 接入，但 `pkg/fisco` 仍是「阶段一免费链 mock 底座」；客户不接受 mock + 蚂蚁链年费 12w+ 过高，决策走 FISCO BCOS 免费链商业化真实接入。本 Story 补齐 tech-spec-multi-chain-adapter-refactor 明确 Out of Scope 的「FISCO 节点部署 + 真实 SDK 接入」部分。
 - 2026-05-11：code-review 通过自动修复 7/14 项 —— H1（Story 文档同步）+ H3（删除 PollIntervalMs/PollMaxAttempts 死配置 + 三服务 Config/yaml 清理）+ H4（platform-custody 模型文档化）+ H5（metadataURI 删除 PII，仅保留 idempotencyKey + assetInstanceId + assetNo + sha256 指纹 + detailRef，新增 PII 守护单测）+ M3（块号 5s TTL 缓存 + 30s 软降级）+ M4（三服务启动日志统一 `mode=disabled\|invalid_config\|real`）+ M5（sms-rpc 启动后异步 HealthCheck）+ L1（yaml 注释错字）。剩余 H2/H6/M2/M7/M8/L4 进入 Review Follow-ups。Status: ready-for-dev → in-progress。
+- 2026-05-11（第二轮）：补 H2 处置 —— `contracts/` 注册为 git submodule（远程 `helayD/zero-admin-contracts`），主仓新增 `.gitmodules`，`docs/blockchain-strategy.md` 新增附录 D（clone --recursive / submodule update / ABI 同步 SOP）。已修复 8/14。

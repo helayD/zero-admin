@@ -25,7 +25,9 @@
 - [十三、成本评估](#十三成本评估)
 - [十四、TODO / 下一步](#十四todo--下一步)
 - [附录 A：术语表](#附录-a术语表)
-- [附录 B：参考链接](#附录-b参考链接)
+- [附录 B：相关 Story 索引](#附录-b相关-story-索引)
+- [附录 C：FISCO BCOS 3.x 私钥与证书轮换 SOP](#附录-cfisco-bcos-3x-私钥与证书轮换-sop)
+- [附录 D：合约源码仓库（git submodule）](#附录-d合约源码仓库git-submodule)
 
 ---
 
@@ -1003,6 +1005,54 @@ T+30   写故障报告，提 PR 把私钥从可能泄露的位置擦除
 - HSM 硬件模块
 - 跨可用区 / 跨机房的私钥分发
 
+---
+
+## 附录 D：合约源码仓库（git submodule）
+
+Story 10.11 / Review H2 处置：合约源码仓库 `helayD/zero-admin-contracts` 作为 git submodule 挂载在主仓 `contracts/` 路径下，**与主仓双向版本控制对齐**。
+
+### D.1 Clone 主仓时同步拉取合约源码
+
+```bash
+# 推荐：clone 时一次性拉全
+git clone --recursive https://github.com/helayD/zero-admin.git
+
+# 已有 clone：补拉 submodule
+git submodule update --init --recursive
+```
+
+### D.2 升级 contracts 到最新 main
+
+```bash
+git submodule update --remote contracts
+git add contracts && git commit -m "chore: bump contracts submodule to <new-hash>"
+git push
+```
+
+升级前必须先把 contracts 仓的新 commit `git push origin main` 到独立 GitHub 仓，主仓只记录 commit hash 指针。
+
+### D.3 在 contracts 内部开发
+
+```bash
+cd contracts
+# 在 main 分支正常开发，提交并 push 到独立仓
+git checkout main && git pull
+# ...修改 src/CardToken.sol...
+git add . && git commit -m "feat: ..." && git push
+# 回到主仓，更新 submodule 指针
+cd .. && git add contracts && git commit -m "chore: bump contracts to <hash>"
+```
+
+### D.4 ABI 同步约束（Story 10.11 / Review L4）
+
+每次合约变更都必须同步刷新主仓 `pkg/fisco/contracts/CardToken.abi`，防止运行时 method selector 与合约实际不符。建议把以下校验加入 CI（见 Story 10.11 Review Follow-up L4）：
+
+```bash
+forge inspect --root contracts CardToken abi > /tmp/abi.json
+diff <(jq -S . /tmp/abi.json) <(jq -S . pkg/fisco/contracts/CardToken.abi) || \
+  { echo "CardToken.abi 与合约源码不一致"; exit 1; }
+```
+
 ## 变更记录
 
 | 日期 | 版本 | 变更 | 作者 |
@@ -1010,3 +1060,4 @@ T+30   写故障报告，提 PR 把私钥从可能泄露的位置擦除
 | 2026-04-18 | v1.0 | 初稿，基于蚂蚁链励退后的调研 | 九克城技术团队 |
 | 2026-04-23 | v2.0 | 对齐实际代码实现：新增「当前实现概述」章节，重写架构/数据模型/代码结构，更新 TODO | 九克城技术团队 |
 | 2026-05-10 | v2.1 | Story 10.11 落地：新增附录 B 相关 Story 索引，新增附录 C FISCO BCOS 3.x 私钥与证书轮换 SOP | 九克城技术团队 |
+| 2026-05-11 | v2.2 | Story 10.11 Review H2 处置：新增附录 D 合约源码 submodule 工作流（contracts/ → helayD/zero-admin-contracts） | 九克城技术团队 |
