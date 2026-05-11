@@ -3,6 +3,7 @@ package digitalcardmint
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
@@ -192,6 +193,21 @@ func (s *Service) TransferDigitalCardAsset(ctx context.Context, currentScope pkg
 			"requestId":       firstNonEmpty(input.RequestID, instance.RequestID),
 			"transferredAt":   now.Format("2006-01-02 15:04:05"),
 		}); txErr != nil {
+			return txErr
+		}
+
+		// Story 10.11 Follow-up: 转赠事务内给双方写站内消息，闭环 C 端体验。
+		// 模板名/转赠人昵称缺失时回退到「数字卡片」/ 手机号脱敏，避免空文案。
+		template, templateErr := s.loadCardTemplate(ctx, tx, instance.TemplateID)
+		templateName := ""
+		if templateErr == nil && template != nil {
+			templateName = template.TemplateName
+		}
+		fromMember, senderErr := s.loadSenderMemberByID(ctx, tx, input.FromMemberID)
+		if senderErr != nil {
+			return fmt.Errorf("loadSenderMemberByID(id=%d): %w", input.FromMemberID, senderErr)
+		}
+		if txErr = s.appendTransferMessagesTx(ctx, tx, instance, fromMember, recipient, templateName, now); txErr != nil {
 			return txErr
 		}
 

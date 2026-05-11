@@ -536,11 +536,21 @@ class _DigitalCardAssetDetailPageState
                 }
               }
               if (transferCompleted) {
-                if (mounted) {
-                  _showSnack('转赠成功');
-                }
+                // 必须先关 sheet 再 show snack，否则：
+                // (1) await transfer 期间软键盘隐藏触发 MediaQuery rebuild,
+                //     sheet 内 Element 重新注册 dependent；
+                // (2) SnackBar 与 sheet 同帧争抢 Overlay 层；
+                // (3) pop sheet 时 InheritedElement 仍有未清理 dependent →
+                //     framework.dart line 6268 `_dependents.isEmpty` assert fail (红屏)。
                 if (mounted) {
                   Navigator.pop(sheetContext);
+                }
+                // Story 10.11 Follow-up: 转赠成功后退出详情页回列表。
+                // 卡片已不属于自己，再调 _loadDetail() 必然 400 record_not_found，
+                // 用户会看到「加载提货卡详情失败」，体验断裂。直接 pop 让列表自动刷新。
+                if (mounted) {
+                  _showSnack('转赠成功');
+                  Navigator.of(context).pop();
                 }
               }
             }
