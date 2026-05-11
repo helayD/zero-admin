@@ -294,20 +294,44 @@ func NewValidateClaimTokenLogic(ctx context.Context, svcCtx *svc.ServiceContext)
 }
 
 func (l *ValidateClaimTokenLogic) ValidateClaimToken(req *types.ValidateClaimTokenReq) (*types.ValidateClaimTokenResp, error) {
-	resp, err := l.svcCtx.CardClaimTokenService.ValidateClaimToken(l.ctx, &cardclaimtokenservice.ValidateClaimTokenReq{
-		Token: req.Token,
-	})
+	// Story 10.7 Task 8.x — 同 GenerateClaimToken，绕过坏的 CardClaimTokenService gRPC，
+	// 直接走 in-process service。匿名接口（H5 朋友打开链接），不需要 scope。
+	result, err := l.svcCtx.CardMintService.ValidateClaimToken(l.ctx, req.Token)
 	if err != nil {
 		return nil, fmt.Errorf("校验凭证失败: %w", err)
+	}
+
+	var tokenData *types.ClaimTokenData
+	if result.Token != nil {
+		tokenData = &types.ClaimTokenData{
+			Id:             result.Token.ID,
+			Token:          result.Token.Token,
+			CardInstanceId: result.Token.CardInstanceID,
+			IssuerId:       result.Token.IssuerID,
+			IssuerType:     result.Token.IssuerType,
+			ExpireAt:       result.Token.ExpireAt,
+			MaxClaims:      result.Token.MaxClaims,
+			ClaimedCount:   result.Token.ClaimedCount,
+			Status:         result.Token.Status,
+			ClaimedBy:      result.Token.ClaimedBy,
+			ClaimedAt:      result.Token.ClaimedAt,
+			PlatformId:     result.Token.PlatformID,
+			TenantId:       result.Token.TenantID,
+			MerchantId:     result.Token.MerchantID,
+			CreateTime:     result.Token.CreateTime,
+			UpdateTime:     result.Token.UpdateTime,
+			TemplateName:   result.TemplateName,
+			CardFaceImage:  result.CardFaceImage,
+		}
 	}
 
 	return &types.ValidateClaimTokenResp{
 		Code:    "0",
 		Message: "校验成功",
 		Data: types.ValidateClaimTokenData{
-			Valid:         resp.Valid,
-			FailureReason: resp.FailureReason,
-			Token:         convertClaimTokenData(resp.Token),
+			Valid:         result.Valid,
+			FailureReason: result.FailureReason,
+			Token:         tokenData,
 		},
 	}, nil
 }

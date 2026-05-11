@@ -143,8 +143,8 @@ type ClaimDigitalCardReq struct {
 }
 
 type ClaimDigitalCardResp struct {
-	Code    int64              `json:"code"`
-	Message string             `json:"message"`
+	Code    int64                `json:"code"`
+	Message string               `json:"message"`
 	Data    ClaimDigitalCardData `json:"data"`
 }
 
@@ -187,6 +187,9 @@ type ClaimTokenData struct {
 	MerchantId     int64  `json:"merchantId"`
 	CreateTime     string `json:"createTime"`
 	UpdateTime     string `json:"updateTime"`
+	// Story 10.7 Task 8.x — H5 领取页 / Flutter 朋友端预览要展示卡面 + 模板名
+	TemplateName  string `json:"templateName,omitempty"`
+	CardFaceImage string `json:"cardFaceImage,omitempty"`
 }
 
 type ValidateClaimTokenReq struct {
@@ -200,8 +203,8 @@ type ValidateClaimTokenResp struct {
 }
 
 type ValidateClaimTokenData struct {
-	Valid         bool           `json:"valid"`
-	FailureReason string         `json:"failureReason"`
+	Valid         bool            `json:"valid"`
+	FailureReason string          `json:"failureReason"`
 	Token         *ClaimTokenData `json:"token"`
 }
 

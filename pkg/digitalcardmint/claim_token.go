@@ -276,6 +276,98 @@ func (s *Service) generateClaimTokenInTx(ctx context.Context, tx *gorm.DB, curre
 	return row, nil
 }
 
+// ValidateClaimTokenResult 是凭证校验结果（脱敏：不暴露 issuer 信息给陌生人）
+type ValidateClaimTokenResult struct {
+	Valid         bool
+	FailureReason string
+	Token         *ClaimTokenResult
+	TemplateName  string
+	CardFaceImage string
+	AssetNo       string
+	SenderName    string
+}
+
+// ValidateClaimToken H5 领取页 / Flutter 朋友端预览凭证。
+// 只读接口，不消费 token，可重复调用。
+//
+// 不存在 / 已吊销 / 已过期 / 已被领取完 / 关联卡片状态异常 → Valid=false + FailureReason
+func (s *Service) ValidateClaimToken(ctx context.Context, tokenStr string) (*ValidateClaimTokenResult, error) {
+	if s == nil || s.DB == nil {
+		return nil, errors.New("数据库未初始化")
+	}
+	if tokenStr == "" {
+		return &ValidateClaimTokenResult{Valid: false, FailureReason: "凭证不能为空"}, nil
+	}
+
+	var row claimTokenRow
+	err := s.DB.WithContext(ctx).
+		Table(row.TableName()).
+		Where("token = ? AND is_deleted = 0", tokenStr).
+		Take(&row).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &ValidateClaimTokenResult{Valid: false, FailureReason: "凭证不存在"}, nil
+		}
+		return nil, err
+	}
+
+	if row.Status == claimTokenStatusRevoked {
+		return &ValidateClaimTokenResult{Valid: false, FailureReason: "凭证已被吊销"}, nil
+	}
+	if row.Status == claimTokenStatusClaimed {
+		return &ValidateClaimTokenResult{Valid: false, FailureReason: "凭证已被完全领取"}, nil
+	}
+	if row.Status == claimTokenStatusExpired || (row.ExpireAt != nil && row.ExpireAt.Before(time.Now())) {
+		return &ValidateClaimTokenResult{Valid: false, FailureReason: "凭证已过期"}, nil
+	}
+	if row.Status != claimTokenStatusActive {
+		return &ValidateClaimTokenResult{Valid: false, FailureReason: "凭证状态无效"}, nil
+	}
+	if row.ClaimedCount >= row.MaxClaims {
+		return &ValidateClaimTokenResult{Valid: false, FailureReason: "凭证领取次数已达上限"}, nil
+	}
+
+	var instance claimTokenInstanceRow
+	if err := s.DB.WithContext(ctx).
+		Table(instance.TableName()).
+		Where("id = ? AND is_deleted = 0", row.CardInstanceID).
+		Take(&instance).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &ValidateClaimTokenResult{Valid: false, FailureReason: "关联的卡片实例不存在"}, nil
+		}
+		return nil, err
+	}
+	if instance.AssetStatus != cardAssetStatusClaimed {
+		return &ValidateClaimTokenResult{Valid: false, FailureReason: "卡片状态不允许领取"}, nil
+	}
+
+	// 卡面 + 模板名（H5 预览要显示）
+	type templatePreviewRow struct {
+		TemplateName  string `gorm:"column:template_name"`
+		CardFaceImage string `gorm:"column:card_face_image"`
+	}
+	var preview templatePreviewRow
+	_ = s.DB.WithContext(ctx).
+		Table("sms_card_template").
+		Select("template_name, card_face_image").
+		Where("id = ? AND is_deleted = 0", instance.TemplateID).
+		Take(&preview).Error
+
+	data := buildClaimTokenResult(&row)
+	if data != nil {
+		// 匿名接口不暴露分享人敏感信息
+		data.IssuerID = 0
+		data.IssuerType = ""
+	}
+	return &ValidateClaimTokenResult{
+		Valid:         true,
+		Token:         data,
+		TemplateName:  preview.TemplateName,
+		CardFaceImage: preview.CardFaceImage,
+		AssetNo:       instance.AssetNo,
+	}, nil
+}
+
 // generateRandomClaimToken 生成 32 字节加密安全随机 token，使用 RawURLEncoding（无 padding）。
 // crypto/rand 失败时返回 error，由调用方触发事务回滚——禁止任何可枚举/可预测的兜底，
 // 避免违反 Story 10.7 架构约束 #1（凭证必须不可枚举）。
