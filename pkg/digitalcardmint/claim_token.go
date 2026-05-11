@@ -47,6 +47,7 @@ type claimTokenRow struct {
 	Status         string     `gorm:"column:status"`
 	ClaimedBy      int64      `gorm:"column:claimed_by"`
 	ClaimedAt      *time.Time `gorm:"column:claimed_at"`
+	TargetMobile   string     `gorm:"column:target_mobile"`
 	PlatformID     int64      `gorm:"column:platform_id"`
 	TenantID       int64      `gorm:"column:tenant_id"`
 	MerchantID     int64      `gorm:"column:merchant_id"`
@@ -104,8 +105,12 @@ type GenerateClaimTokenInput struct {
 	IssuerID       int64
 	ExpireHours    int32
 	MaxClaims      int32
-	TraceID        string
-	RequestID      string
+	// TargetMobile 指定接收人手机号（11 位）。
+	// 监管约束：分享卡片必须指定接收人，只有该手机号能领取。
+	// 空字符串视为未指定（保留向后兼容，但当前业务流程要求非空）。
+	TargetMobile string
+	TraceID      string
+	RequestID    string
 }
 
 // ClaimTokenResult 生成分享凭证返回结果
@@ -121,6 +126,7 @@ type ClaimTokenResult struct {
 	Status         string
 	ClaimedBy      int64
 	ClaimedAt      string
+	TargetMobile   string // 完整手机号，仅 issuer / 后台审计可见
 	PlatformID     int64
 	TenantID       int64
 	MerchantID     int64
@@ -218,8 +224,23 @@ func (s *Service) generateClaimTokenInTx(ctx context.Context, tx *gorm.DB, curre
 				return nil, fmt.Errorf("过期凭证状态更新失败: %w", upErr)
 			}
 		} else if existing.ClaimedCount < existing.MaxClaims {
-			// 未过期 + 仍可领取 → 直接复用
-			return &existing, nil
+			// 未过期 + 仍可领取
+			// 监管约束：如果分享人重新进入分享页 *改了接收人手机号*，旧链接必须作废，
+			// 否则会出现「同一卡两个有效手机号」的歧义。
+			if input.TargetMobile != "" && existing.TargetMobile != "" && existing.TargetMobile != input.TargetMobile {
+				if upErr := tx.WithContext(ctx).
+					Table(existing.TableName()).
+					Where("id = ?", existing.ID).
+					Updates(map[string]interface{}{
+						"status":     claimTokenStatusRevoked,
+						"updated_at": now,
+					}).Error; upErr != nil {
+					return nil, fmt.Errorf("作废旧分享凭证失败: %w", upErr)
+				}
+			} else {
+				// 接收人未变 → 直接复用同一条凭证
+				return &existing, nil
+			}
 		}
 		// 否则（已达上限）走新建分支
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -263,6 +284,7 @@ func (s *Service) generateClaimTokenInTx(ctx context.Context, tx *gorm.DB, curre
 		MaxClaims:      maxClaims,
 		ClaimedCount:   0,
 		Status:         claimTokenStatusActive,
+		TargetMobile:   input.TargetMobile,
 		PlatformID:     currentScope.PlatformID,
 		TenantID:       currentScope.TenantID,
 		MerchantID:     currentScope.MerchantID,
@@ -285,6 +307,9 @@ type ValidateClaimTokenResult struct {
 	CardFaceImage string
 	AssetNo       string
 	SenderName    string
+	// TargetMobileMasked 接收人手机号（仅返回掩码，如 138****8888），
+	// H5 提示「此卡片只能由 138****8888 领取」。原始手机号永不下传给陌生人。
+	TargetMobileMasked string
 }
 
 // ValidateClaimToken H5 领取页 / Flutter 朋友端预览凭证。
@@ -355,17 +380,27 @@ func (s *Service) ValidateClaimToken(ctx context.Context, tokenStr string) (*Val
 
 	data := buildClaimTokenResult(&row)
 	if data != nil {
-		// 匿名接口不暴露分享人敏感信息
+		// 匿名接口不暴露分享人敏感信息 / 完整接收人手机号
 		data.IssuerID = 0
 		data.IssuerType = ""
+		data.TargetMobile = "" // 不下传完整手机号给陌生人
 	}
 	return &ValidateClaimTokenResult{
-		Valid:         true,
-		Token:         data,
-		TemplateName:  preview.TemplateName,
-		CardFaceImage: preview.CardFaceImage,
-		AssetNo:       instance.AssetNo,
+		Valid:              true,
+		Token:              data,
+		TemplateName:       preview.TemplateName,
+		CardFaceImage:      preview.CardFaceImage,
+		AssetNo:            instance.AssetNo,
+		TargetMobileMasked: maskMobile(row.TargetMobile),
 	}, nil
+}
+
+// maskMobile 将 11 位手机号脱敏为 138****8888 格式。
+func maskMobile(m string) string {
+	if len(m) != 11 {
+		return ""
+	}
+	return m[:3] + "****" + m[7:]
 }
 
 // generateRandomClaimToken 生成 32 字节加密安全随机 token，使用 RawURLEncoding（无 padding）。
@@ -393,6 +428,7 @@ func buildClaimTokenResult(row *claimTokenRow) *ClaimTokenResult {
 		ClaimedCount:   row.ClaimedCount,
 		Status:         row.Status,
 		ClaimedBy:      row.ClaimedBy,
+		TargetMobile:   row.TargetMobile,
 		PlatformID:     row.PlatformID,
 		TenantID:       row.TenantID,
 		MerchantID:     row.MerchantID,
@@ -410,4 +446,301 @@ func buildClaimTokenResult(row *claimTokenRow) *ClaimTokenResult {
 		r.UpdateTime = row.UpdatedAt.Format("2006-01-02 15:04:05")
 	}
 	return r
+}
+
+// ============================================================
+// 一步式领取（手机号 + 验证码 mock = 123456）
+// ============================================================
+
+// ClaimByMobileInput H5 朋友端领取入参
+type ClaimByMobileInput struct {
+	Token      string // 分享凭证
+	Mobile     string // 朋友输入的手机号（必须 == sms_card_claim_token.target_mobile）
+	VerifyCode string // 验证码（mock 阶段：必须 == "123456"）
+	RequestID  string // 幂等 ID，建议 H5 端用 timestamp + random
+	IPAddress  string // 来源 IP，写入审计日志
+}
+
+// ClaimByMobileResult H5 朋友端领取结果
+type ClaimByMobileResult struct {
+	Success       bool
+	FailureReason string             // Success=false 时填写
+	FailureCode   string             // mismatch / expired / consumed / invalid_code 等机器可读 code
+	Card          *ClaimedCardDetail // 仅 Success=true 时填写，给 H5 显示「你拿到了什么」
+}
+
+// ClaimedCardDetail 领取成功后给朋友看的最小信息（不暴露任何区块链/底层字段）
+type ClaimedCardDetail struct {
+	CardInstanceID int64
+	AssetNo        string
+	TemplateName   string
+	CardFaceImage  string
+	NewMemberID    int64 // 卡片现归属的 member_id（朋友自己）
+}
+
+// ClaimByMobile 一步式领取（H5 朋友端唯一入口）。
+//
+// 业务规则：
+//   - mock 验证码：仅当 verify_code == "123456" 通过；后期接真短信通道时改这里
+//   - mobile 必须 == sms_card_claim_token.target_mobile（命中分享指定接收人）
+//   - 不命中：返回 Success=false / FailureCode="mismatch"，让 H5 显示「领取失败 + 下载 App」
+//   - 命中：自动按手机号查 ums_member_info；不存在则在事务里创建一条新会员
+//     → 转移卡片 sms_card_instance.member_id
+//     → 标记 token claimed / claimed_by / claimed_at
+//     → 写 sms_card_asset_log holder_transferred
+//   - 全部 SQL 在同一个事务里完成，任何一步失败都回滚
+func (s *Service) ClaimByMobile(ctx context.Context, input ClaimByMobileInput) (*ClaimByMobileResult, error) {
+	if s == nil || s.DB == nil {
+		return nil, errors.New("数据库未初始化")
+	}
+	if input.Token == "" {
+		return &ClaimByMobileResult{Success: false, FailureReason: "凭证不能为空", FailureCode: "invalid_token"}, nil
+	}
+	if !isValidChineseMobile(input.Mobile) {
+		return &ClaimByMobileResult{Success: false, FailureReason: "请输入有效的手机号", FailureCode: "invalid_mobile"}, nil
+	}
+	// mock：验证码固定 "123456"，后期换真短信通道时改这里
+	if input.VerifyCode != "123456" {
+		return &ClaimByMobileResult{Success: false, FailureReason: "验证码错误", FailureCode: "invalid_code"}, nil
+	}
+
+	var (
+		result *ClaimByMobileResult
+	)
+	err := s.DB.Transaction(func(tx *gorm.DB) error {
+		var txErr error
+		result, txErr = s.claimByMobileInTx(ctx, tx, input)
+		return txErr
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (s *Service) claimByMobileInTx(ctx context.Context, tx *gorm.DB, input ClaimByMobileInput) (*ClaimByMobileResult, error) {
+	// 1. 加锁读 token 行
+	var row claimTokenRow
+	err := tx.WithContext(ctx).
+		Table(row.TableName()).
+		Where("token = ? AND is_deleted = 0", input.Token).
+		Set("gorm:query_option", "FOR UPDATE").
+		Take(&row).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &ClaimByMobileResult{Success: false, FailureReason: "凭证不存在", FailureCode: "not_found"}, nil
+		}
+		return nil, err
+	}
+
+	now := time.Now()
+	if row.Status == claimTokenStatusRevoked {
+		return &ClaimByMobileResult{Success: false, FailureReason: "凭证已被吊销", FailureCode: "revoked"}, nil
+	}
+	if row.Status == claimTokenStatusClaimed || row.ClaimedCount >= row.MaxClaims {
+		return &ClaimByMobileResult{Success: false, FailureReason: "凭证已被领取", FailureCode: "consumed"}, nil
+	}
+	if row.Status == claimTokenStatusExpired || (row.ExpireAt != nil && row.ExpireAt.Before(now)) {
+		return &ClaimByMobileResult{Success: false, FailureReason: "凭证已过期", FailureCode: "expired"}, nil
+	}
+	if row.Status != claimTokenStatusActive {
+		return &ClaimByMobileResult{Success: false, FailureReason: "凭证状态无效", FailureCode: "invalid_status"}, nil
+	}
+
+	// 2. 命中接收人手机号校验（核心业务规则）
+	if row.TargetMobile != "" && row.TargetMobile != input.Mobile {
+		// 不命中：直接 return failure，但**不**消费 token，不让外人通过暴力测试占用 token
+		return &ClaimByMobileResult{
+			Success:       false,
+			FailureReason: "此卡片仅限指定接收人领取",
+			FailureCode:   "mismatch",
+		}, nil
+	}
+
+	// 3. 查关联卡片
+	var instance claimTokenInstanceRow
+	if err := tx.WithContext(ctx).
+		Table(instance.TableName()).
+		Where("id = ? AND is_deleted = 0", row.CardInstanceID).
+		Set("gorm:query_option", "FOR UPDATE").
+		Take(&instance).Error; err != nil {
+		return nil, fmt.Errorf("查询卡片失败: %w", err)
+	}
+	if instance.AssetStatus != cardAssetStatusClaimed {
+		return &ClaimByMobileResult{Success: false, FailureReason: "卡片状态不允许领取", FailureCode: "invalid_card_status"}, nil
+	}
+
+	// 4. find-or-create 接收人会员
+	memberID, err := findOrCreateMemberByMobile(ctx, tx, input.Mobile)
+	if err != nil {
+		return nil, fmt.Errorf("接收人会员处理失败: %w", err)
+	}
+
+	// 5. 转移卡片归属
+	if updRes := tx.WithContext(ctx).
+		Table(instance.TableName()).
+		Where("id = ? AND member_id = ?", instance.ID, instance.MemberID).
+		Updates(map[string]interface{}{
+			"member_id":   memberID,
+			"update_time": now,
+		}); updRes.Error != nil {
+		return nil, fmt.Errorf("卡片归属转移失败: %w", updRes.Error)
+	} else if updRes.RowsAffected == 0 {
+		return nil, errors.New("卡片归属转移失败：CAS 冲突")
+	}
+
+	// 6. 标记 token 已领取
+	if updRes := tx.WithContext(ctx).
+		Table(row.TableName()).
+		Where("id = ? AND status = ? AND claimed_count = ?", row.ID, claimTokenStatusActive, row.ClaimedCount).
+		Updates(map[string]interface{}{
+			"status":        claimTokenStatusClaimed,
+			"claimed_count": row.ClaimedCount + 1,
+			"claimed_by":    memberID,
+			"claimed_at":    now,
+			"updated_at":    now,
+		}); updRes.Error != nil {
+		return nil, fmt.Errorf("凭证状态更新失败: %w", updRes.Error)
+	} else if updRes.RowsAffected == 0 {
+		return nil, errors.New("凭证状态更新失败：CAS 冲突，请重试")
+	}
+
+	// 7. 写资产转赠日志
+	logRow := map[string]interface{}{
+		"asset_instance_id": instance.ID,
+		"operation_type":    cardAssetOperationHolderTransferred,
+		"operator_id":       memberID,
+		"operator_type":     "member",
+		"before_member_id":  row.IssuerID,
+		"after_member_id":   memberID,
+		"trigger_source":    "h5_claim_by_mobile",
+		"request_id":        input.RequestID,
+		"ip_address":        input.IPAddress,
+		"platform_id":       row.PlatformID,
+		"tenant_id":         row.TenantID,
+		"merchant_id":       row.MerchantID,
+		"created_at":        now,
+	}
+	if err := tx.WithContext(ctx).
+		Table("sms_card_asset_log").
+		Create(logRow).Error; err != nil {
+		// 日志写入失败不应阻塞领取，但也要 fail-fast 让上层感知
+		return nil, fmt.Errorf("写入资产日志失败: %w", err)
+	}
+
+	// 8. 查模板名 / 卡面给 H5 显示
+	type templatePreviewRow struct {
+		TemplateName  string `gorm:"column:template_name"`
+		CardFaceImage string `gorm:"column:card_face_image"`
+	}
+	var preview templatePreviewRow
+	_ = tx.WithContext(ctx).
+		Table("sms_card_template").
+		Select("template_name, card_face_image").
+		Where("id = ? AND is_deleted = 0", instance.TemplateID).
+		Take(&preview).Error
+
+	return &ClaimByMobileResult{
+		Success: true,
+		Card: &ClaimedCardDetail{
+			CardInstanceID: instance.ID,
+			AssetNo:        instance.AssetNo,
+			TemplateName:   preview.TemplateName,
+			CardFaceImage:  preview.CardFaceImage,
+			NewMemberID:    memberID,
+		},
+	}, nil
+}
+
+// isValidChineseMobile 仅做最简单的格式校验：1[3-9] 开头共 11 位数字
+func isValidChineseMobile(m string) bool {
+	if len(m) != 11 {
+		return false
+	}
+	if m[0] != '1' {
+		return false
+	}
+	if m[1] < '3' || m[1] > '9' {
+		return false
+	}
+	for i := 2; i < 11; i++ {
+		if m[i] < '0' || m[i] > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+// findOrCreateMemberByMobile 按手机号查 ums_member_info；不存在则插入一条新会员，返回 member_id。
+//
+// mock 阶段策略：
+//   - nickname 用 mobile 后 4 位组成"九克城用户8888"
+//   - password 写一个安全占位 hash（用户首次正式登录前应当走"忘记密码 / 重设"流程）
+//   - source = 1 (APP)，level_id = 1（默认普通会员）
+//
+// 后期接真实注册流程时，替换这里改调 ums-rpc Register 即可，调用点只 in-process 看到 member_id。
+func findOrCreateMemberByMobile(ctx context.Context, tx *gorm.DB, mobile string) (int64, error) {
+	type memberRow struct {
+		ID       int64  `gorm:"column:id"`
+		MemberID int64  `gorm:"column:member_id"`
+		Mobile   string `gorm:"column:mobile"`
+	}
+	var existing memberRow
+	err := tx.WithContext(ctx).
+		Table("ums_member_info").
+		Select("id, member_id, mobile").
+		Where("mobile = ? AND is_deleted = 0", mobile).
+		Take(&existing).Error
+	if err == nil {
+		return existing.MemberID, nil
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return 0, err
+	}
+
+	// 生成新 member_id：用 max(member_id) + 1，简单稳妥
+	var maxRow struct {
+		MaxID int64 `gorm:"column:max_id"`
+	}
+	if err := tx.WithContext(ctx).
+		Table("ums_member_info").
+		Select("COALESCE(MAX(member_id), 1000) AS max_id").
+		Take(&maxRow).Error; err != nil {
+		return 0, err
+	}
+	newMemberID := maxRow.MaxID + 1
+
+	nickname := "九克城用户" + mobile[7:]
+	now := time.Now()
+	insertRow := map[string]interface{}{
+		"member_id":          newMemberID,
+		"wx_openid":          "",
+		"level_id":           1,
+		"nickname":           nickname,
+		"mobile":             mobile,
+		"source":             1,                                                           // APP
+		"password":           "$2a$10$placeholder.bcrypt.hash.replace.via.password.reset", // 占位，正式登录前必须重设
+		"avatar":             "",
+		"signature":          "",
+		"gender":             0,
+		"growth_point":       0,
+		"points":             0,
+		"total_points":       0,
+		"spend_amount":       0,
+		"order_count":        0,
+		"coupon_count":       0,
+		"comment_count":      0,
+		"return_count":       0,
+		"lottery_times":      0,
+		"first_login_status": 1,
+		"is_enabled":         1,
+		"create_time":        now,
+		"is_deleted":         0,
+	}
+	if err := tx.WithContext(ctx).
+		Table("ums_member_info").
+		Create(insertRow).Error; err != nil {
+		return 0, fmt.Errorf("创建会员失败: %w", err)
+	}
+	return newMemberID, nil
 }

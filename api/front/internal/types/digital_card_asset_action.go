@@ -116,11 +116,14 @@ type GenerateShareLinkReq struct {
 	ExpireHours    int32  `json:"expireHours,optional"`
 	MaxClaims      int32  `json:"maxClaims,optional"`
 	Domain         string `json:"domain,optional"`
-	PlatformId     int64  `json:"platformId,optional"`
-	TenantId       int64  `json:"tenantId,optional"`
-	MerchantId     int64  `json:"merchantId,optional"`
-	TraceId        string `json:"traceId,optional"`
-	RequestId      string `json:"requestId,optional"`
+	// TargetMobile 接收人手机号（必填，11 位）
+	// 监管约束：分享卡片必须指定接收人，只有该手机号能领取
+	TargetMobile string `json:"targetMobile"`
+	PlatformId   int64  `json:"platformId,optional"`
+	TenantId     int64  `json:"tenantId,optional"`
+	MerchantId   int64  `json:"merchantId,optional"`
+	TraceId      string `json:"traceId,optional"`
+	RequestId    string `json:"requestId,optional"`
 }
 
 type GenerateShareLinkResp struct {
@@ -134,6 +137,75 @@ type ShareLinkData struct {
 	ShareLink string `json:"shareLink"`
 	ExpireAt  string `json:"expireAt"`
 	MaxClaims int32  `json:"maxClaims"`
+	// TargetMobileMasked 给分享人确认（如 138****8888）
+	TargetMobileMasked string `json:"targetMobileMasked,omitempty"`
+}
+
+// ============================================================
+// H5 朋友端一步式领取（手机号 + 验证码）
+// ============================================================
+
+type SendClaimVerifyCodeReq struct {
+	Token  string `json:"token"`
+	Mobile string `json:"mobile"`
+}
+
+type SendClaimVerifyCodeResp struct {
+	Code    int64                       `json:"code"`
+	Message string                      `json:"message"`
+	Data    SendClaimVerifyCodeRespData `json:"data"`
+}
+
+type SendClaimVerifyCodeRespData struct {
+	// MockCode mock 阶段：直接返回固定验证码 "123456" 给前端，方便联调；
+	// 后期接真短信通道时这里返回空字符串。
+	MockCode    string `json:"mockCode,omitempty"`
+	CountdownMs int32  `json:"countdownMs"` // 前端倒计时，默认 60000ms
+}
+
+type ClaimByMobileReq struct {
+	Token      string `json:"token"`
+	Mobile     string `json:"mobile"`
+	VerifyCode string `json:"verifyCode"`
+	RequestId  string `json:"requestId,optional"`
+}
+
+type ClaimByMobileResp struct {
+	Code    int64             `json:"code"`
+	Message string            `json:"message"`
+	Data    ClaimByMobileData `json:"data"`
+}
+
+type ClaimByMobileData struct {
+	Success       bool                `json:"success"`
+	FailureReason string              `json:"failureReason,omitempty"`
+	FailureCode   string              `json:"failureCode,omitempty"`
+	Card          *ClaimedCardSummary `json:"card,omitempty"`
+	AppDownload   *AppDownloadConfig  `json:"appDownload,omitempty"` // 不论成功失败都返回，方便引导下载
+}
+
+type ClaimedCardSummary struct {
+	CardInstanceId int64  `json:"cardInstanceId"`
+	AssetNo        string `json:"assetNo"`
+	TemplateName   string `json:"templateName"`
+	CardFaceImage  string `json:"cardFaceImage"`
+}
+
+// ============================================================
+// App 下载配置（H5 / Flutter 都读这个）
+// ============================================================
+
+type AppDownloadConfig struct {
+	AndroidUrl string `json:"androidUrl"`
+	IosUrl     string `json:"iosUrl"`
+	AppName    string `json:"appName"`
+	Tagline    string `json:"tagline"`
+}
+
+type GetAppDownloadResp struct {
+	Code    int64             `json:"code"`
+	Message string            `json:"message"`
+	Data    AppDownloadConfig `json:"data"`
 }
 
 type ClaimDigitalCardReq struct {

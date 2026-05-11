@@ -12,13 +12,16 @@ type claimHintPageData struct {
 	Token string
 }
 
-// H5 领取页：朋友扫码后在浏览器（含微信内置浏览器）打开的落地页。
-// 页面职责：
-//  1. 调用 /api/digitalCard/validateClaimToken 预览卡片信息
-//  2. 提示登录/注册（未注册用户跳到 H5 注册页 /h5/digitalCard/register）
-//  3. 登录后调用 /api/digitalCard/claim 完成领取
+// H5 领取页（Story 10.7 闭环修复 2026-05-12 重写）：
 //
-// 安全说明：此页面不使用服务端注入 token（仅通过 query 回填到 JS），所有业务校验在后端完成。
+// 流程：
+//  1. 加载时调 /api/digitalCard/validateClaimToken 预览卡片信息（含接收人手机号掩码）
+//  2. 一步式：用户输入「手机号 + 验证码（mock=123456）」 → /api/digitalCard/claimByMobile
+//     - 命中接收人手机号 → 自动注册或登录 → 转赠成功 → 显示「领取成功 + 下载 App」
+//     - 不命中           → 显示「领取失败 + 下载 App 注册」
+//  3. App 下载链接来自 /api/config/appDownload（后台 sys_system_config 配置）
+//
+// 安全说明：所有业务校验仍在后端完成；HTML 仅是 UI 包装。
 var claimHintPage = template.Must(template.New("digital-card-claim").Parse(`<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -31,18 +34,31 @@ var claimHintPage = template.Must(template.New("digital-card-claim").Parse(`<!do
     section{width:100%;max-width:420px;background:#fff;border:1px solid #e4e7e0;border-radius:18px;padding:24px;box-sizing:border-box;box-shadow:0 18px 40px rgba(15,23,42,.08)}
     h1{margin:0 0 12px;font-size:22px;line-height:1.3}
     p{margin:0 0 12px;color:#525866;line-height:1.65;font-size:14px}
-    .card{display:flex;gap:14px;padding:14px;background:#fafaf7;border-radius:12px;margin:16px 0}
-    .card img{width:96px;height:128px;border-radius:8px;object-fit:cover;background:#eee}
-    .card .meta{flex:1;display:flex;flex-direction:column;justify-content:center}
-    .card .meta h2{margin:0 0 6px;font-size:17px}
+    .card{display:flex;gap:14px;padding:14px;background:#fafaf7;border-radius:12px;margin:16px 0;align-items:center}
+    .card .face{width:96px;height:128px;border-radius:8px;background:linear-gradient(135deg,#f5e6c8 0%,#e6c9a0 100%);display:flex;align-items:center;justify-content:center;color:#8b6f3a;font-size:13px;flex-shrink:0;overflow:hidden;text-align:center;padding:6px;box-sizing:border-box}
+    .card .face img{width:100%;height:100%;border-radius:8px;object-fit:cover}
+    .card .meta{flex:1;display:flex;flex-direction:column;justify-content:center;gap:6px}
+    .card .meta h2{margin:0;font-size:17px}
     .card .meta span{color:#7d8592;font-size:13px;line-height:1.5}
+    .target-hint{padding:10px 12px;background:#fff8e6;border:1px solid #ffd591;color:#a46500;border-radius:10px;font-size:13px;margin-bottom:12px;line-height:1.5}
     .btn{width:100%;box-sizing:border-box;display:block;text-align:center;border:0;border-radius:12px;padding:14px 12px;font-size:16px;font-weight:700;cursor:pointer;text-decoration:none;margin-top:10px}
     .btn-primary{background:#161616;color:#fff}
+    .btn-primary:disabled{background:#9ca3a0;cursor:not-allowed}
     .btn-outline{background:#fff;color:#161616;border:1px solid #d8ddd4}
-    .tip{margin-top:12px;font-size:13px;color:#7d8592;min-height:20px}
+    .btn-warn{background:#fff5f5;color:#b42318;border:1px solid #ffccc7}
+    .tip{margin-top:12px;font-size:13px;color:#7d8592;min-height:20px;line-height:1.5}
     .label{display:block;margin:12px 0 6px;font-size:13px;color:#525866}
+    .row{display:flex;gap:8px;align-items:stretch}
+    .row input{flex:1}
+    .row .code-btn{flex-shrink:0;border:1px solid #d8ddd4;background:#fff;border-radius:12px;padding:0 14px;font-size:14px;color:#161616;cursor:pointer;white-space:nowrap}
+    .row .code-btn:disabled{color:#9ca3a0;cursor:not-allowed;background:#f6f7f4}
     input{width:100%;box-sizing:border-box;border:1px solid #d8ddd4;border-radius:12px;padding:12px;font-size:16px;background:#fff}
     .error{color:#b42318}
+    .success{color:#1a7f37}
+    .app-block{margin-top:18px;padding:14px;background:#f0f5ff;border:1px solid #c8d8ff;border-radius:12px;text-align:center}
+    .app-block .app-name{font-size:15px;font-weight:700;margin-bottom:4px}
+    .app-block .app-tag{font-size:13px;color:#525866;margin-bottom:10px}
+    .footer{margin-top:18px;font-size:11px;color:#9ca3a0;text-align:center}
   </style>
 </head>
 <body>
@@ -50,27 +66,42 @@ var claimHintPage = template.Must(template.New("digital-card-claim").Parse(`<!do
     <section>
       <h1 id="title">正在校验分享链接...</h1>
       <p id="desc">请稍候，正在读取提货卡信息。</p>
+
       <div class="card" id="cardBox" style="display:none">
-        <img id="cardImg" alt="卡面">
+        <div class="face" id="cardFaceWrap"><span id="cardFaceFallback">卡面</span></div>
         <div class="meta">
           <h2 id="cardName">-</h2>
-          <span id="cardSender">-</span>
           <span id="cardExpire">-</span>
+          <span id="cardSender">-</span>
         </div>
       </div>
-      <div id="loginBlock" style="display:none">
+
+      <div id="targetHint" class="target-hint" style="display:none"></div>
+
+      <div id="claimBlock" style="display:none">
         <label class="label">手机号</label>
-        <input id="mobile" maxlength="11" inputmode="numeric" placeholder="请输入已注册的手机号">
-        <label class="label">密码</label>
-        <input id="password" type="password" minlength="6" placeholder="请输入密码">
-        <button class="btn btn-primary" id="loginBtn">登录并领取</button>
-        <a class="btn btn-outline" id="registerLink" href="#">没有账号？去注册</a>
+        <input id="mobile" maxlength="11" inputmode="numeric" placeholder="请输入接收卡片的手机号">
+        <label class="label">验证码</label>
+        <div class="row">
+          <input id="code" maxlength="6" inputmode="numeric" placeholder="请输入 6 位验证码">
+          <button class="code-btn" id="codeBtn" type="button">获取验证码</button>
+        </div>
+        <button class="btn btn-primary" id="claimBtn">领取卡片</button>
       </div>
+
       <div id="successBlock" style="display:none">
-        <p>领取成功！卡片已转入你的账户。</p>
-        <a class="btn btn-outline" href="javascript:void(0)" onclick="window.close()">关闭</a>
+        <p class="success" id="successMsg">领取成功！卡片已转入你的账户。</p>
       </div>
+
+      <div id="appBlock" class="app-block" style="display:none">
+        <div class="app-name" id="appName">下载 App</div>
+        <div class="app-tag" id="appTag">下载 App，查看你的提货卡</div>
+        <a class="btn btn-outline" id="androidLink" href="#" target="_blank" rel="noopener">Android 下载</a>
+        <a class="btn btn-outline" id="iosLink" href="#" target="_blank" rel="noopener">iOS 下载</a>
+      </div>
+
       <p class="tip" id="tip"></p>
+      <p class="footer">本页面由九克城提供 · 仅限指定接收人领取</p>
     </section>
   </main>
   <script>
@@ -78,25 +109,67 @@ var claimHintPage = template.Must(template.New("digital-card-claim").Parse(`<!do
     var titleEl = document.getElementById('title');
     var descEl = document.getElementById('desc');
     var cardBox = document.getElementById('cardBox');
-    var cardImg = document.getElementById('cardImg');
+    var cardFaceWrap = document.getElementById('cardFaceWrap');
+    var cardFaceFallback = document.getElementById('cardFaceFallback');
     var cardName = document.getElementById('cardName');
     var cardSender = document.getElementById('cardSender');
     var cardExpire = document.getElementById('cardExpire');
-    var loginBlock = document.getElementById('loginBlock');
+    var targetHint = document.getElementById('targetHint');
+    var claimBlock = document.getElementById('claimBlock');
     var successBlock = document.getElementById('successBlock');
+    var successMsg = document.getElementById('successMsg');
+    var appBlock = document.getElementById('appBlock');
+    var appName = document.getElementById('appName');
+    var appTag = document.getElementById('appTag');
+    var androidLink = document.getElementById('androidLink');
+    var iosLink = document.getElementById('iosLink');
     var tip = document.getElementById('tip');
-    var loginBtn = document.getElementById('loginBtn');
-    var registerLink = document.getElementById('registerLink');
+    var codeBtn = document.getElementById('codeBtn');
+    var claimBtn = document.getElementById('claimBtn');
+    var mobileInput = document.getElementById('mobile');
+    var codeInput = document.getElementById('code');
+
+    var APP_CONFIG = null;
 
     function setTip(msg, isError) {
       tip.textContent = msg || '';
       tip.className = isError ? 'tip error' : 'tip';
+    }
+    function isValidMobile(m){ return /^1[3-9]\d{9}$/.test(m); }
+    function setCardFace(url){
+      if (url) {
+        var img = document.createElement('img');
+        img.src = url;
+        img.alt = '卡面';
+        img.onerror = function(){ cardFaceWrap.innerHTML = '<span>卡面缺失</span>'; };
+        cardFaceWrap.innerHTML = '';
+        cardFaceWrap.appendChild(img);
+      } else {
+        cardFaceWrap.innerHTML = '<span>卡面缺失</span>';
+      }
+    }
+    function showAppBlock(cfg){
+      if (!cfg) return;
+      APP_CONFIG = cfg;
+      if (cfg.appName) appName.textContent = cfg.appName;
+      if (cfg.tagline) appTag.textContent = cfg.tagline;
+      if (cfg.androidUrl) androidLink.href = cfg.androidUrl; else androidLink.style.display = 'none';
+      if (cfg.iosUrl) iosLink.href = cfg.iosUrl; else iosLink.style.display = 'none';
+      appBlock.style.display = 'block';
+    }
+
+    function loadAppConfig(){
+      return fetch('/api/config/appDownload').then(function(r){return r.json()}).then(function(b){
+        if (b && b.code === 0 && b.data) { return b.data; }
+        return null;
+      }).catch(function(){ return null; });
     }
 
     function validateToken() {
       if (!TOKEN) {
         titleEl.textContent = '链接无效';
         descEl.textContent = '请联系好友重新分享。';
+        loadAppConfig().then(showAppBlock);
         return;
       }
       fetch('/api/digitalCard/validateClaimToken', {
@@ -107,66 +180,113 @@ var claimHintPage = template.Must(template.New("digital-card-claim").Parse(`<!do
         if (!body || !body.data || body.data.valid !== true) {
           titleEl.textContent = '链接已失效';
           descEl.textContent = (body && body.data && body.data.failureReason) || '该分享链接已过期、被吊销或已被领取。';
+          loadAppConfig().then(showAppBlock);
           return;
         }
         var info = body.data.token || {};
+        var masked = body.data.targetMobileMasked || '';
         titleEl.textContent = '朋友送你一张提货卡';
-        descEl.textContent = '请登录领取，没有账号可先完成注册。';
+        descEl.textContent = '请输入手机号 + 验证码完成领取。';
         cardName.textContent = info.templateName || '提货卡';
-        cardSender.textContent = '分享人：' + (info.senderName || '朋友');
         cardExpire.textContent = '有效期至：' + (info.expireAt || '-');
-        if (info.cardFaceImage) { cardImg.src = info.cardFaceImage; }
+        cardSender.textContent = '分享人：朋友';
+        setCardFace(info.cardFaceImage);
+        if (masked) {
+          targetHint.style.display = 'block';
+          targetHint.textContent = '此卡片仅限手机号 ' + masked + ' 领取';
+        }
         cardBox.style.display = 'flex';
-        loginBlock.style.display = 'block';
-        registerLink.href = '/h5/digitalCard/register?redirect=' + encodeURIComponent(location.href);
+        claimBlock.style.display = 'block';
+        loadAppConfig().then(showAppBlock);
       }).catch(function(){
         titleEl.textContent = '网络异常';
         descEl.textContent = '请检查网络后刷新重试。';
       });
     }
 
-    function login() {
-      var mobile = (document.getElementById('mobile').value || '').trim();
-      var password = document.getElementById('password').value || '';
-      if (!/^1[3-9]\d{9}$/.test(mobile)) { setTip('请输入有效的手机号', true); return; }
-      if (password.length < 6) { setTip('请输入不少于 6 位的密码', true); return; }
-      setTip('正在登录...');
-      fetch('/api/member/login', {
+    function startCountdown(){
+      var n = 60;
+      codeBtn.disabled = true;
+      codeBtn.textContent = n + 's 后重发';
+      var timer = setInterval(function(){
+        n -= 1;
+        if (n <= 0) {
+          clearInterval(timer);
+          codeBtn.disabled = false;
+          codeBtn.textContent = '获取验证码';
+        } else {
+          codeBtn.textContent = n + 's 后重发';
+        }
+      }, 1000);
+    }
+
+    function sendCode(){
+      var mobile = (mobileInput.value || '').trim();
+      if (!isValidMobile(mobile)) { setTip('请先输入正确的手机号', true); return; }
+      setTip('正在发送验证码...');
+      fetch('/api/digitalCard/sendClaimVerifyCode', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({mobile: mobile, password: password})
+        body: JSON.stringify({token: TOKEN, mobile: mobile})
       }).then(function(r){return r.json()}).then(function(body){
-        if (!body || body.code !== 0 || !body.data) {
-          setTip((body && body.message) || '登录失败，请检查手机号或密码', true);
-          return;
+        if (!body || body.code !== 0) { setTip((body && body.message) || '验证码下发失败', true); return; }
+        startCountdown();
+        var mock = body.data && body.data.mockCode;
+        if (mock) {
+          // mock 阶段：直接把验证码填进输入框，方便联调
+          codeInput.value = mock;
+          setTip('演示阶段：验证码 ' + mock + ' 已自动填入', false);
+        } else {
+          setTip('验证码已发送至 ' + mobile, false);
         }
-        var token = body.data.token || body.data.accessToken;
-        if (!token) { setTip('登录信息异常', true); return; }
-        claim(token);
       }).catch(function(){ setTip('网络异常，请稍后重试', true); });
     }
 
-    function claim(authToken) {
+    function claim(){
+      var mobile = (mobileInput.value || '').trim();
+      var code = (codeInput.value || '').trim();
+      if (!isValidMobile(mobile)) { setTip('请输入有效的手机号', true); return; }
+      if (code.length !== 6) { setTip('请输入 6 位验证码', true); return; }
+      claimBtn.disabled = true;
       setTip('正在领取...');
-      fetch('/api/digitalCard/claim', {
+      fetch('/api/digitalCard/claimByMobile', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken},
-        body: JSON.stringify({token: TOKEN, requestId: 'h5-' + Date.now()})
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({token: TOKEN, mobile: mobile, verifyCode: code, requestId: 'h5-' + Date.now()})
       }).then(function(r){return r.json()}).then(function(body){
-        if (!body || body.code !== 0) {
+        claimBtn.disabled = false;
+        if (!body || body.code !== 0 || !body.data) {
           setTip((body && body.message) || '领取失败，请稍后重试', true);
           return;
         }
-        cardBox.style.display = 'none';
-        loginBlock.style.display = 'none';
-        successBlock.style.display = 'block';
-        titleEl.textContent = '领取成功';
-        descEl.textContent = '卡片已转入你的账户，打开 App 即可查看。';
-        setTip('');
-      }).catch(function(){ setTip('网络异常，请稍后重试', true); });
+        if (body.data.appDownload) showAppBlock(body.data.appDownload);
+        if (body.data.success) {
+          claimBlock.style.display = 'none';
+          targetHint.style.display = 'none';
+          successBlock.style.display = 'block';
+          titleEl.textContent = '领取成功';
+          descEl.textContent = '卡片已发放至你的账户，打开 App 查看更多详情。';
+          var card = body.data.card;
+          if (card && card.cardFaceImage) setCardFace(card.cardFaceImage);
+          successMsg.textContent = '已领取：' + (card && card.templateName ? card.templateName : '提货卡');
+          setTip('');
+        } else {
+          // 领取失败：手机号不命中 / 已过期 / 已被领等
+          claimBlock.style.display = 'none';
+          targetHint.style.display = 'none';
+          cardBox.style.display = 'none';
+          titleEl.textContent = '领取失败';
+          descEl.textContent = body.data.failureReason || '此卡片仅限指定接收人领取';
+          successMsg.className = 'error';
+          successBlock.style.display = 'block';
+          successMsg.textContent = '建议先注册成为九克城会员';
+          setTip('');
+        }
+      }).catch(function(){ claimBtn.disabled = false; setTip('网络异常，请稍后重试', true); });
     }
 
-    loginBtn.addEventListener('click', login);
+    codeBtn.addEventListener('click', sendCode);
+    claimBtn.addEventListener('click', claim);
     validateToken();
   </script>
 </body>

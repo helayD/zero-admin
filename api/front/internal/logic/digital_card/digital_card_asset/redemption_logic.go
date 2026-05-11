@@ -157,6 +157,12 @@ func (l *GenerateShareLinkLogic) GenerateShareLink(req *types.GenerateShareLinkR
 		return nil, err
 	}
 
+	// Story 10.7 闭环修复：分享卡片必须指定接收人手机号
+	target := strings.TrimSpace(req.TargetMobile)
+	if !isValidChineseMobile(target) {
+		return nil, errors.New("请填写有效的接收人手机号")
+	}
+
 	domain, err := resolveShareDomain(req.Domain, l.svcCtx.Config.Share.AllowedDomains)
 	if err != nil {
 		return nil, err
@@ -171,6 +177,7 @@ func (l *GenerateShareLinkLogic) GenerateShareLink(req *types.GenerateShareLinkR
 		IssuerID:       memberID,
 		ExpireHours:    req.ExpireHours,
 		MaxClaims:      req.MaxClaims,
+		TargetMobile:   target,
 		TraceID:        req.TraceId,
 		RequestID:      req.RequestId,
 	})
@@ -195,12 +202,34 @@ func (l *GenerateShareLinkLogic) GenerateShareLink(req *types.GenerateShareLinkR
 		Code:    0,
 		Message: "生成分享链接成功",
 		Data: types.ShareLinkData{
-			Token:     tokenResult.Token,
-			ShareLink: shareLink,
-			ExpireAt:  tokenResult.ExpireAt,
-			MaxClaims: tokenResult.MaxClaims,
+			Token:              tokenResult.Token,
+			ShareLink:          shareLink,
+			ExpireAt:           tokenResult.ExpireAt,
+			MaxClaims:          tokenResult.MaxClaims,
+			TargetMobileMasked: maskMobile(target),
 		},
 	}, nil
+}
+
+// isValidChineseMobile 11 位 1[3-9] 开头数字
+func isValidChineseMobile(m string) bool {
+	if len(m) != 11 || m[0] != '1' || m[1] < '3' || m[1] > '9' {
+		return false
+	}
+	for i := 2; i < 11; i++ {
+		if m[i] < '0' || m[i] > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+// maskMobile 138****8888
+func maskMobile(m string) string {
+	if len(m) != 11 {
+		return ""
+	}
+	return m[:3] + "****" + m[7:]
 }
 
 func convertRedemptionOrderData(data *smsclient.RedemptionOrderData) *types.RedemptionOrderData {

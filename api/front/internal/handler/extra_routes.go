@@ -66,8 +66,31 @@ func RegisterExtraHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Path:    "/validateClaimToken",
 				Handler: digitalcardassethandler.ValidateClaimTokenHandler(serverCtx),
 			},
+			// Story 10.7 闭环修复：H5 朋友端一步式领取（匿名）
+			{
+				Method:  http.MethodPost,
+				Path:    "/sendClaimVerifyCode",
+				Handler: digitalcardassethandler.SendClaimVerifyCodeHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/claimByMobile",
+				Handler: digitalcardassethandler.ClaimByMobileHandler(serverCtx),
+			},
 		},
 		rest.WithPrefix("/api/digitalCard"),
+	)
+
+	// App 下载配置（匿名读取，H5 + Flutter 都用）
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodGet,
+				Path:    "/appDownload",
+				Handler: digitalcardassethandler.GetAppDownloadHandler(serverCtx),
+			},
+		},
+		rest.WithPrefix("/api/config"),
 	)
 
 	server.AddRoutes(

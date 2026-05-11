@@ -36,20 +36,33 @@ class ShareDigitalCardPage extends StatefulWidget {
 }
 
 class _ShareDigitalCardPageState extends State<ShareDigitalCardPage> {
-  bool _isLoading = true;
+  // Story 10.7 闭环修复：进入页面默认在「填接收人手机号」表单阶段，点「生成」后才调后端。
+  bool _isLoading = false;
   String? _errorMessage;
   String? _shareLink;
   String? _token;
   String? _expireAt;
   int? _maxClaims;
+  String? _targetMobileMasked;
+
+  // 接收人手机号输入控件
+  final TextEditingController _mobileCtrl = TextEditingController();
+  static final RegExp _mobileReg = RegExp(r'^1[3-9]\d{9}$');
 
   @override
-  void initState() {
-    super.initState();
-    _generateLink();
+  void dispose() {
+    _mobileCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _generateLink() async {
+    final String mobile = _mobileCtrl.text.trim();
+    if (!_mobileReg.hasMatch(mobile)) {
+      setState(() {
+        _errorMessage = '请输入有效的接收人手机号';
+      });
+      return;
+    }
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -59,7 +72,8 @@ class _ShareDigitalCardPageState extends State<ShareDigitalCardPage> {
         generateShareLinkUrl,
         data: <String, dynamic>{
           'cardInstanceId': widget.assetInstanceId,
-          // 不传 domain：由后端根据白名单首项兜底（Review Fix CRITICAL-1）
+          'targetMobile': mobile,
+          // 不传 domain：由后端根据白名单首项兌底（Review Fix CRITICAL-1）
           'requestId': 'share-${DateTime.now().millisecondsSinceEpoch}',
         },
       );
@@ -70,6 +84,7 @@ class _ShareDigitalCardPageState extends State<ShareDigitalCardPage> {
         _token = data['token']?.toString();
         _expireAt = data['expireAt']?.toString();
         _maxClaims = (data['maxClaims'] as num?)?.toInt();
+        _targetMobileMasked = data['targetMobileMasked']?.toString();
         _isLoading = false;
       });
     } catch (e) {
@@ -79,6 +94,17 @@ class _ShareDigitalCardPageState extends State<ShareDigitalCardPage> {
         _isLoading = false;
       });
     }
+  }
+
+  void _resetForm() {
+    setState(() {
+      _shareLink = null;
+      _token = null;
+      _expireAt = null;
+      _maxClaims = null;
+      _targetMobileMasked = null;
+      _errorMessage = null;
+    });
   }
 
   Map<String, dynamic> _responseData(dynamic raw) {
@@ -143,30 +169,9 @@ class _ShareDigitalCardPageState extends State<ShareDigitalCardPage> {
         ),
       );
     }
-    if (_errorMessage != null || _shareLink == null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              const Icon(Icons.error_outline,
-                  size: 52, color: Color(0xFFB42318)),
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                _errorMessage ?? '生成失败',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              FilledButton(
-                onPressed: _generateLink,
-                child: const Text('重新生成'),
-              ),
-            ],
-          ),
-        ),
-      );
+    // 未生成阶段：显示「接收人手机号」表单
+    if (_shareLink == null) {
+      return _buildMobileForm();
     }
 
     return SafeArea(
@@ -264,10 +269,83 @@ class _ShareDigitalCardPageState extends State<ShareDigitalCardPage> {
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
-                onPressed: _generateLink,
-                icon: const Icon(Icons.refresh_outlined),
-                label: const Text('重新生成'),
+                onPressed: _resetForm,
+                icon: const Icon(Icons.edit_outlined),
+                label: const Text('换一个接收人'),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileForm() {
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            if (widget.cardFaceImage.isNotEmpty)
+              Center(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadii.lg),
+                  child: CachedImageWidget(
+                    120,
+                    160,
+                    widget.cardFaceImage,
+                  ),
+                ),
+              ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              widget.templateName.isEmpty ? '提货卡' : widget.templateName,
+              style: Theme.of(context).textTheme.titleLarge,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF8E6),
+                borderRadius: BorderRadius.circular(AppRadii.md),
+                border: Border.all(color: const Color(0xFFFFD591)),
+              ),
+              child: const Text(
+                '监管约束：分享提货卡需指定接收人手机号，只有该手机号能领取，不能转送给其他人。',
+                style: TextStyle(fontSize: 13, color: Color(0xFFA46500), height: 1.5),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              '接收人手机号',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            TextField(
+              controller: _mobileCtrl,
+              keyboardType: TextInputType.phone,
+              maxLength: 11,
+              inputFormatters: <TextInputFormatter>[
+                FilteringTextInputFormatter.digitsOnly,
+              ],
+              decoration: const InputDecoration(
+                hintText: '请输入接收人 11 位手机号',
+                counterText: '',
+              ),
+            ),
+            if (_errorMessage != null) ...<Widget>[
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                _errorMessage!,
+                style: const TextStyle(color: Color(0xFFB42318), fontSize: 13),
+              ),
+            ],
+            const SizedBox(height: AppSpacing.lg),
+            FilledButton(
+              onPressed: _generateLink,
+              child: const Text('生成分享链接'),
             ),
           ],
         ),
@@ -291,6 +369,13 @@ class _ShareDigitalCardPageState extends State<ShareDigitalCardPage> {
           _buildLine(
             '可领取次数',
             _maxClaims != null ? '$_maxClaims 次' : '1 次',
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          _buildLine(
+            '接收人',
+            _targetMobileMasked != null && _targetMobileMasked!.isNotEmpty
+                ? _targetMobileMasked!
+                : '-',
           ),
           const SizedBox(height: AppSpacing.xs),
           _buildLine(
