@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -606,20 +607,33 @@ func (s *Service) claimByMobileInTx(ctx context.Context, tx *gorm.DB, input Clai
 	}
 
 	// 7. 写资产转赠日志
+	// sms_card_asset_log 实际表结构：asset_instance_id / from_status / to_status / operation_type /
+	//   operator_type / trace_id / reason_code / reason_text / payload_json / create_time
+	// 业务详细信息（operator_id / before_member_id / after_member_id / ip / request_id / scope）
+	// 写到 payload_json 里。
+	payloadBytes, _ := json.Marshal(map[string]interface{}{
+		"operator_id":      memberID,
+		"before_member_id": row.IssuerID,
+		"after_member_id":  memberID,
+		"trigger_source":   "h5_claim_by_mobile",
+		"request_id":       input.RequestID,
+		"ip_address":       input.IPAddress,
+		"platform_id":      row.PlatformID,
+		"tenant_id":        row.TenantID,
+		"merchant_id":      row.MerchantID,
+		"target_mobile":    row.TargetMobile,
+	})
 	logRow := map[string]interface{}{
 		"asset_instance_id": instance.ID,
+		"from_status":       cardAssetStatusClaimed,
+		"to_status":         cardAssetStatusClaimed, // holder 切换不改 asset_status
 		"operation_type":    cardAssetOperationHolderTransferred,
-		"operator_id":       memberID,
 		"operator_type":     "member",
-		"before_member_id":  row.IssuerID,
-		"after_member_id":   memberID,
-		"trigger_source":    "h5_claim_by_mobile",
-		"request_id":        input.RequestID,
-		"ip_address":        input.IPAddress,
-		"platform_id":       row.PlatformID,
-		"tenant_id":         row.TenantID,
-		"merchant_id":       row.MerchantID,
-		"created_at":        now,
+		"trace_id":          input.RequestID,
+		"reason_code":       "h5_claim_by_mobile",
+		"reason_text":       "H5 朋友端按手机号一步式领取",
+		"payload_json":      string(payloadBytes),
+		"create_time":       now,
 	}
 	if err := tx.WithContext(ctx).
 		Table("sms_card_asset_log").
