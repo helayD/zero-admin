@@ -147,6 +147,45 @@ type QueryDigitalCardAssetLogsResp struct {
 	Success bool                      `json:"success"`
 }
 
+// Story 10.7 Task 9.2 — 后台合规审计跨资产检索
+type QueryDigitalCardTransferLogListReq struct {
+	DigitalCardAssetQueryGovernanceScopeReq
+	PageSize        int    `form:"pageSize,default=20"`
+	Current         int    `form:"current,default=1"`
+	AssetInstanceId int64  `form:"assetInstanceId,optional"`
+	AssetNo         string `form:"assetNo,optional"`
+	OperationType   string `form:"operationType,optional"`
+	TraceId         string `form:"traceId,optional"`
+	DateFrom        string `form:"dateFrom,optional"`
+	DateTo          string `form:"dateTo,optional"`
+}
+
+type DigitalCardTransferLogListItem struct {
+	Id              int64  `json:"id"`
+	AssetInstanceId int64  `json:"assetInstanceId"`
+	AssetNo         string `json:"assetNo"`
+	TemplateName    string `json:"templateName"`
+	OperationType   string `json:"operationType"`
+	OperatorType    string `json:"operatorType"`
+	FromStatus      string `json:"fromStatus"`
+	ToStatus        string `json:"toStatus"`
+	ReasonCode      string `json:"reasonCode"`
+	ReasonText      string `json:"reasonText"`
+	TraceId         string `json:"traceId"`
+	PayloadJson     string `json:"payloadJson"`
+	CreateTime      string `json:"createTime"`
+}
+
+type QueryDigitalCardTransferLogListResp struct {
+	Code     string                           `json:"code"`
+	Message  string                           `json:"message"`
+	Total    int64                            `json:"total"`
+	Current  int                              `json:"current"`
+	PageSize int                              `json:"pageSize"`
+	Data     []DigitalCardTransferLogListItem `json:"data"`
+	Success  bool                             `json:"success"`
+}
+
 type DigitalCardAssetActionReq struct {
 	DigitalCardAssetGovernanceScopeReq
 	AssetInstanceId int64  `json:"assetInstanceId"`

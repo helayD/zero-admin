@@ -399,6 +399,13 @@
         component: './sms/DigitalCardAssetWorkbench',
       },
       {
+        // Story 10.7 Task 9.4 — 后台合规审计跨资产检索
+        name: '转赠审计记录',
+        icon: 'audit',
+        path: '/sms/digitalCardTransferAudit/list',
+        component: './sms/DigitalCardTransferAudit',
+      },
+      {
         name: '实体卡履约',
         icon: 'table',
         path: '/sms/digitalCardPhysicalFulfillment/list',

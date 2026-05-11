@@ -268,6 +268,25 @@ func (s *CardMintAdminServiceServer) handlePhysicalResult(handler func(*digitalc
 	return cardmintadminrpc.EncodePayload(cardmintadminrpc.PhysicalFulfillmentResultResponse{Result: result})
 }
 
+// QueryDigitalCardTransferLogList Story 10.7 Task 9.2 — 后台合规审计跨资产检索
+func (s *CardMintAdminServiceServer) QueryDigitalCardTransferLogList(ctx context.Context, in *structpb.Struct) (*structpb.Struct, error) {
+	var req cardmintadminrpc.QueryDigitalCardTransferLogListRequest
+	if err := cardmintadminrpc.DecodePayload(in, &req); err != nil {
+		return nil, err
+	}
+	if err := s.ensureCardMintService(); err != nil {
+		return nil, err
+	}
+	total, list, err := s.svcCtx.CardMintService.QueryDigitalCardTransferLogList(ctx, req.Scope, req.Filter)
+	if err != nil {
+		return nil, err
+	}
+	return cardmintadminrpc.EncodePayload(cardmintadminrpc.QueryDigitalCardTransferLogListResponse{
+		Total: total,
+		List:  list,
+	})
+}
+
 func (s *CardMintAdminServiceServer) ensureCardMintService() error {
 	if s.svcCtx == nil || s.svcCtx.CardMintService == nil {
 		return errors.New("提货卡服务未初始化")

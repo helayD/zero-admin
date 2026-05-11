@@ -104,6 +104,12 @@ func RegisterExtraHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Path:    "/recycleDigitalCardAsset",
 					Handler: digitalcardassethandler.RecycleDigitalCardAssetHandler(serverCtx),
 				},
+				{
+					// Story 10.7 Task 9.2 — 后台合规审计跨资产检索
+					Method:  http.MethodGet,
+					Path:    "/queryDigitalCardTransferLogList",
+					Handler: digitalcardassethandler.QueryDigitalCardTransferLogListHandler(serverCtx),
+				},
 			}...,
 		),
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),

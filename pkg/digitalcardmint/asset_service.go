@@ -876,3 +876,148 @@ func (s *Service) HandleRefundCardDispose(ctx context.Context, input RefundCardD
 	}
 	return result, nil
 }
+
+// DigitalCardTransferLogFilter Story 10.7 Task 9.1 转赠/分享/领取审计跨资产检索过滤器
+type DigitalCardTransferLogFilter struct {
+	PageNum         int64
+	PageSize        int64
+	AssetInstanceID int64
+	AssetNo         string
+	OperationType   string
+	TraceID         string
+	DateFrom        string
+	DateTo          string
+}
+
+// DigitalCardTransferLogItem Task 9.1 列表项，字段与 web-admin 表头对齐
+type DigitalCardTransferLogItem struct {
+	ID              int64  `json:"id"`
+	AssetInstanceID int64  `json:"assetInstanceId"`
+	AssetNo         string `json:"assetNo"`
+	TemplateName    string `json:"templateName"`
+	OperationType   string `json:"operationType"`
+	OperatorType    string `json:"operatorType"`
+	FromStatus      string `json:"fromStatus"`
+	ToStatus        string `json:"toStatus"`
+	ReasonCode      string `json:"reasonCode"`
+	ReasonText      string `json:"reasonText"`
+	TraceID         string `json:"traceId"`
+	PayloadJSON     string `json:"payloadJson"`
+	CreateTime      string `json:"createTime"`
+}
+
+// transferLogOperationTypes Story 10.7 Task 9.1 白名单：转赠/分享/领取相关事件
+var transferLogOperationTypes = []string{
+	"holder_transferred",            // ConsumeClaimToken 持有人变更
+	"claim_token_generated",         // 生成分享凭证
+	"claim_token_revoked",           // 吊销分享凭证
+	"claim_attempt_failed",          // 失败的领取尝试
+	"asset_transferred",             // 旧越权直转事件（10.7 Review #5 H1 已下线，仅历史数据）
+	"asset_transferred_rolled_back", // H1 治理回滚
+	"holder_transferred_backfilled", // H1 事后追认
+}
+
+// QueryDigitalCardTransferLogList Story 10.7 Task 9.1：跨资产查询转赠/分享/领取审计日志。
+// 强制按 currentScope 治理作用域过滤，禁止跨主体越权检索。
+func (s *Service) QueryDigitalCardTransferLogList(ctx context.Context, currentScope pkgscope.GovernanceScope, filter DigitalCardTransferLogFilter) (int64, []DigitalCardTransferLogItem, error) {
+	if s.DB == nil {
+		return 0, nil, errors.New("数据库未初始化")
+	}
+	if filter.PageNum <= 0 {
+		filter.PageNum = 1
+	}
+	if filter.PageSize <= 0 {
+		filter.PageSize = 20
+	}
+	if filter.PageSize > 10000 {
+		filter.PageSize = 10000 // CSV 导出场景的上限
+	}
+
+	base := s.DB.WithContext(ctx).
+		Table("sms_card_asset_log AS log").
+		Joins("LEFT JOIN sms_card_instance AS instance ON instance.id = log.asset_instance_id AND instance.is_deleted = 0").
+		Joins("LEFT JOIN sms_card_template AS template ON template.id = instance.template_id AND template.is_deleted = 0").
+		Where("log.operation_type IN ?", transferLogOperationTypes)
+	base = pkgscope.ApplyGovernanceScope(base, currentScope, "instance")
+
+	if filter.AssetInstanceID > 0 {
+		base = base.Where("log.asset_instance_id = ?", filter.AssetInstanceID)
+	}
+	if v := strings.TrimSpace(filter.AssetNo); v != "" {
+		base = base.Where("instance.asset_no LIKE ?", "%"+v+"%")
+	}
+	if v := strings.TrimSpace(filter.OperationType); v != "" {
+		base = base.Where("log.operation_type = ?", v)
+	}
+	if v := strings.TrimSpace(filter.TraceID); v != "" {
+		base = base.Where("log.trace_id = ?", v)
+	}
+	if v := strings.TrimSpace(filter.DateFrom); v != "" {
+		base = base.Where("log.create_time >= ?", v)
+	}
+	if v := strings.TrimSpace(filter.DateTo); v != "" {
+		base = base.Where("log.create_time <= ?", v)
+	}
+
+	var total int64
+	if err := base.Session(&gorm.Session{}).Count(&total).Error; err != nil {
+		return 0, nil, err
+	}
+
+	type transferLogRow struct {
+		ID              int64     `gorm:"column:id"`
+		AssetInstanceID int64     `gorm:"column:asset_instance_id"`
+		AssetNo         string    `gorm:"column:asset_no"`
+		TemplateName    string    `gorm:"column:template_name"`
+		OperationType   string    `gorm:"column:operation_type"`
+		OperatorType    string    `gorm:"column:operator_type"`
+		FromStatus      string    `gorm:"column:from_status"`
+		ToStatus        string    `gorm:"column:to_status"`
+		ReasonCode      string    `gorm:"column:reason_code"`
+		ReasonText      string    `gorm:"column:reason_text"`
+		TraceID         string    `gorm:"column:trace_id"`
+		PayloadJSON     string    `gorm:"column:payload_json"`
+		CreateTime      time.Time `gorm:"column:create_time"`
+	}
+
+	var rows []transferLogRow
+	if err := base.Select(`log.id AS id,
+		log.asset_instance_id AS asset_instance_id,
+		COALESCE(instance.asset_no, '') AS asset_no,
+		COALESCE(template.template_name, '') AS template_name,
+		log.operation_type AS operation_type,
+		log.operator_type AS operator_type,
+		log.from_status AS from_status,
+		log.to_status AS to_status,
+		log.reason_code AS reason_code,
+		log.reason_text AS reason_text,
+		log.trace_id AS trace_id,
+		log.payload_json AS payload_json,
+		log.create_time AS create_time`).
+		Order("log.id DESC").
+		Offset(int((filter.PageNum - 1) * filter.PageSize)).
+		Limit(int(filter.PageSize)).
+		Find(&rows).Error; err != nil {
+		return 0, nil, err
+	}
+
+	items := make([]DigitalCardTransferLogItem, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, DigitalCardTransferLogItem{
+			ID:              row.ID,
+			AssetInstanceID: row.AssetInstanceID,
+			AssetNo:         row.AssetNo,
+			TemplateName:    row.TemplateName,
+			OperationType:   row.OperationType,
+			OperatorType:    row.OperatorType,
+			FromStatus:      row.FromStatus,
+			ToStatus:        row.ToStatus,
+			ReasonCode:      row.ReasonCode,
+			ReasonText:      row.ReasonText,
+			TraceID:         row.TraceID,
+			PayloadJSON:     row.PayloadJSON,
+			CreateTime:      row.CreateTime.Format("2006-01-02 15:04:05"),
+		})
+	}
+	return total, items, nil
+}

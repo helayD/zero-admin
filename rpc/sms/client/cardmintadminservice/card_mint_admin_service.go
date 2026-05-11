@@ -30,6 +30,8 @@ type CardMintAdminService interface {
 	ShipPhysicalCard(ctx context.Context, scope pkgscope.GovernanceScope, input digitalcardmint.ShipPhysicalCardInput, opts ...grpc.CallOption) (*digitalcardmint.PhysicalFulfillmentResult, error)
 	MarkPhysicalFulfillmentException(ctx context.Context, scope pkgscope.GovernanceScope, input digitalcardmint.PhysicalFulfillmentExceptionInput, opts ...grpc.CallOption) (*digitalcardmint.PhysicalFulfillmentResult, error)
 	RequestPhysicalCardReissue(ctx context.Context, scope pkgscope.GovernanceScope, input digitalcardmint.PhysicalFulfillmentExceptionInput, opts ...grpc.CallOption) (*digitalcardmint.PhysicalFulfillmentResult, error)
+	// Story 10.7 Task 9.2 — 后台合规审计跨资产检索
+	QueryDigitalCardTransferLogList(ctx context.Context, scope pkgscope.GovernanceScope, filter digitalcardmint.DigitalCardTransferLogFilter, opts ...grpc.CallOption) (int64, []digitalcardmint.DigitalCardTransferLogItem, error)
 }
 
 type cardMintAdminService struct {
@@ -193,6 +195,18 @@ func (m *cardMintAdminService) invokeTaskAction(ctx context.Context, method stri
 		return nil, err
 	}
 	return out.Result, nil
+}
+
+// QueryDigitalCardTransferLogList Story 10.7 Task 9.2 — 后台合规审计跨资产检索
+func (m *cardMintAdminService) QueryDigitalCardTransferLogList(ctx context.Context, scope pkgscope.GovernanceScope, filter digitalcardmint.DigitalCardTransferLogFilter, opts ...grpc.CallOption) (int64, []digitalcardmint.DigitalCardTransferLogItem, error) {
+	var out cardmintadminrpc.QueryDigitalCardTransferLogListResponse
+	if err := m.invoke(ctx, cardmintadminrpc.MethodQueryDigitalCardTransferLogList, cardmintadminrpc.QueryDigitalCardTransferLogListRequest{
+		Scope:  scope,
+		Filter: filter,
+	}, &out, opts...); err != nil {
+		return 0, nil, err
+	}
+	return out.Total, out.List, nil
 }
 
 func (m *cardMintAdminService) invokeAssetAction(ctx context.Context, method string, scope pkgscope.GovernanceScope, assetInstanceID int64, operatorID int64, reason string, opts ...grpc.CallOption) (*digitalcardmint.DigitalCardAssetActionResult, error) {
