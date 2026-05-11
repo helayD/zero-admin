@@ -116,6 +116,18 @@ func RegisterExtraHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 					Path:    "/queryDigitalCardRedemptionOrderList",
 					Handler: digitalcardassethandler.QueryDigitalCardRedemptionOrderListHandler(serverCtx),
 				},
+				{
+					// Story 10.7 Task 8.8 / S5 — 后台分享凭证管理
+					Method:  http.MethodGet,
+					Path:    "/queryDigitalCardClaimTokenList",
+					Handler: digitalcardassethandler.QueryDigitalCardClaimTokenListHandler(serverCtx),
+				},
+				{
+					// Story 10.7 Task 8.8 / S5 — 后台手动吊销分享凭证
+					Method:  http.MethodPost,
+					Path:    "/adminRevokeDigitalCardClaimToken",
+					Handler: digitalcardassethandler.AdminRevokeDigitalCardClaimTokenHandler(serverCtx),
+				},
 			}...,
 		),
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),

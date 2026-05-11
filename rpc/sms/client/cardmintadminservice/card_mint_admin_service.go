@@ -34,6 +34,9 @@ type CardMintAdminService interface {
 	QueryDigitalCardTransferLogList(ctx context.Context, scope pkgscope.GovernanceScope, filter digitalcardmint.DigitalCardTransferLogFilter, opts ...grpc.CallOption) (int64, []digitalcardmint.DigitalCardTransferLogItem, error)
 	// Story 10.7 Task 2.8 / S3 — 后台提货单管理
 	QueryDigitalCardRedemptionOrderList(ctx context.Context, scope pkgscope.GovernanceScope, filter digitalcardmint.DigitalCardRedemptionOrderFilter, opts ...grpc.CallOption) (int64, []digitalcardmint.DigitalCardRedemptionOrderItem, error)
+	// Story 10.7 Task 8.8 / S5 — 后台分享凭证管理
+	QueryDigitalCardClaimTokenList(ctx context.Context, scope pkgscope.GovernanceScope, filter digitalcardmint.DigitalCardClaimTokenFilter, opts ...grpc.CallOption) (int64, []digitalcardmint.DigitalCardClaimTokenItem, error)
+	AdminRevokeDigitalCardClaimToken(ctx context.Context, scope pkgscope.GovernanceScope, input digitalcardmint.AdminRevokeClaimTokenInput, opts ...grpc.CallOption) (*digitalcardmint.AdminRevokeClaimTokenResult, error)
 }
 
 type cardMintAdminService struct {
@@ -221,6 +224,30 @@ func (m *cardMintAdminService) QueryDigitalCardRedemptionOrderList(ctx context.C
 		return 0, nil, err
 	}
 	return out.Total, out.List, nil
+}
+
+// QueryDigitalCardClaimTokenList Story 10.7 Task 8.8 / S5 — 后台分享凭证管理
+func (m *cardMintAdminService) QueryDigitalCardClaimTokenList(ctx context.Context, scope pkgscope.GovernanceScope, filter digitalcardmint.DigitalCardClaimTokenFilter, opts ...grpc.CallOption) (int64, []digitalcardmint.DigitalCardClaimTokenItem, error) {
+	var out cardmintadminrpc.QueryDigitalCardClaimTokenListResponse
+	if err := m.invoke(ctx, cardmintadminrpc.MethodQueryDigitalCardClaimTokenList, cardmintadminrpc.QueryDigitalCardClaimTokenListRequest{
+		Scope:  scope,
+		Filter: filter,
+	}, &out, opts...); err != nil {
+		return 0, nil, err
+	}
+	return out.Total, out.List, nil
+}
+
+// AdminRevokeDigitalCardClaimToken Story 10.7 Task 8.8 / S5 — 后台手动吊销分享凭证
+func (m *cardMintAdminService) AdminRevokeDigitalCardClaimToken(ctx context.Context, scope pkgscope.GovernanceScope, input digitalcardmint.AdminRevokeClaimTokenInput, opts ...grpc.CallOption) (*digitalcardmint.AdminRevokeClaimTokenResult, error) {
+	var out cardmintadminrpc.AdminRevokeDigitalCardClaimTokenResponse
+	if err := m.invoke(ctx, cardmintadminrpc.MethodAdminRevokeDigitalCardClaimToken, cardmintadminrpc.AdminRevokeDigitalCardClaimTokenRequest{
+		Scope: scope,
+		Input: input,
+	}, &out, opts...); err != nil {
+		return nil, err
+	}
+	return out.Result, nil
 }
 
 func (m *cardMintAdminService) invokeAssetAction(ctx context.Context, method string, scope pkgscope.GovernanceScope, assetInstanceID int64, operatorID int64, reason string, opts ...grpc.CallOption) (*digitalcardmint.DigitalCardAssetActionResult, error) {

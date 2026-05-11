@@ -234,6 +234,67 @@ type QueryDigitalCardRedemptionOrderListResp struct {
 	Success  bool                                 `json:"success"`
 }
 
+// Story 10.7 Task 8.8 / S5 — 后台分享凭证管理
+type QueryDigitalCardClaimTokenListReq struct {
+	DigitalCardAssetQueryGovernanceScopeReq
+	PageSize       int    `form:"pageSize,default=20"`
+	Current        int    `form:"current,default=1"`
+	TokenId        int64  `form:"tokenId,optional"`
+	CardInstanceId int64  `form:"cardInstanceId,optional"`
+	AssetNo        string `form:"assetNo,optional"`
+	IssuerId       int64  `form:"issuerId,optional"`
+	Status         string `form:"status,optional"`
+	DateFrom       string `form:"dateFrom,optional"`
+	DateTo         string `form:"dateTo,optional"`
+}
+
+type DigitalCardClaimTokenListItem struct {
+	Id             int64  `json:"id"`
+	TokenMasked    string `json:"tokenMasked"`
+	CardInstanceId int64  `json:"cardInstanceId"`
+	AssetNo        string `json:"assetNo"`
+	TemplateName   string `json:"templateName"`
+	IssuerId       int64  `json:"issuerId"`
+	IssuerType     string `json:"issuerType"`
+	ExpireAt       string `json:"expireAt"`
+	MaxClaims      int32  `json:"maxClaims"`
+	ClaimedCount   int32  `json:"claimedCount"`
+	Status         string `json:"status"`
+	ClaimedBy      int64  `json:"claimedBy"`
+	ClaimedAt      string `json:"claimedAt"`
+	PlatformId     int64  `json:"platformId"`
+	TenantId       int64  `json:"tenantId"`
+	MerchantId     int64  `json:"merchantId"`
+	CreateTime     string `json:"createTime"`
+	UpdateTime     string `json:"updateTime"`
+}
+
+type QueryDigitalCardClaimTokenListResp struct {
+	Code     string                          `json:"code"`
+	Message  string                          `json:"message"`
+	Total    int64                           `json:"total"`
+	Current  int                             `json:"current"`
+	PageSize int                             `json:"pageSize"`
+	Data     []DigitalCardClaimTokenListItem `json:"data"`
+	Success  bool                            `json:"success"`
+}
+
+type AdminRevokeDigitalCardClaimTokenReq struct {
+	DigitalCardAssetGovernanceScopeReq
+	TokenId int64  `json:"tokenId"`
+	Reason  string `json:"reason"`
+	TraceId string `json:"traceId,optional"`
+}
+
+type AdminRevokeDigitalCardClaimTokenResp struct {
+	Code       string `json:"code"`
+	Message    string `json:"message"`
+	TokenId    int64  `json:"tokenId"`
+	FromStatus string `json:"fromStatus"`
+	ToStatus   string `json:"toStatus"`
+	Success    bool   `json:"success"`
+}
+
 type DigitalCardAssetActionReq struct {
 	DigitalCardAssetGovernanceScopeReq
 	AssetInstanceId int64  `json:"assetInstanceId"`

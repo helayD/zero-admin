@@ -306,6 +306,43 @@ func (s *CardMintAdminServiceServer) QueryDigitalCardRedemptionOrderList(ctx con
 	})
 }
 
+// QueryDigitalCardClaimTokenList Story 10.7 Task 8.8 / S5 — 后台分享凭证管理
+func (s *CardMintAdminServiceServer) QueryDigitalCardClaimTokenList(ctx context.Context, in *structpb.Struct) (*structpb.Struct, error) {
+	var req cardmintadminrpc.QueryDigitalCardClaimTokenListRequest
+	if err := cardmintadminrpc.DecodePayload(in, &req); err != nil {
+		return nil, err
+	}
+	if err := s.ensureCardMintService(); err != nil {
+		return nil, err
+	}
+	total, list, err := s.svcCtx.CardMintService.QueryDigitalCardClaimTokenList(ctx, req.Scope, req.Filter)
+	if err != nil {
+		return nil, err
+	}
+	return cardmintadminrpc.EncodePayload(cardmintadminrpc.QueryDigitalCardClaimTokenListResponse{
+		Total: total,
+		List:  list,
+	})
+}
+
+// AdminRevokeDigitalCardClaimToken Story 10.7 Task 8.8 / S5 — 后台手动吊销分享凭证
+func (s *CardMintAdminServiceServer) AdminRevokeDigitalCardClaimToken(ctx context.Context, in *structpb.Struct) (*structpb.Struct, error) {
+	var req cardmintadminrpc.AdminRevokeDigitalCardClaimTokenRequest
+	if err := cardmintadminrpc.DecodePayload(in, &req); err != nil {
+		return nil, err
+	}
+	if err := s.ensureCardMintService(); err != nil {
+		return nil, err
+	}
+	result, err := s.svcCtx.CardMintService.AdminRevokeClaimToken(ctx, req.Scope, req.Input)
+	if err != nil {
+		return nil, err
+	}
+	return cardmintadminrpc.EncodePayload(cardmintadminrpc.AdminRevokeDigitalCardClaimTokenResponse{
+		Result: result,
+	})
+}
+
 func (s *CardMintAdminServiceServer) ensureCardMintService() error {
 	if s.svcCtx == nil || s.svcCtx.CardMintService == nil {
 		return errors.New("提货卡服务未初始化")

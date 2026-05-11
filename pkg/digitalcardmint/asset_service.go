@@ -1055,6 +1055,304 @@ func (s *Service) QueryDigitalCardRedemptionOrderList(ctx context.Context, curre
 	return total, items, nil
 }
 
+// DigitalCardClaimTokenFilter Story 10.7 Task 8.8 / S5 — 后台分享凭证管理过滤器
+type DigitalCardClaimTokenFilter struct {
+	PageNum        int64
+	PageSize       int64
+	TokenID        int64
+	CardInstanceID int64
+	AssetNo        string
+	IssuerID       int64
+	Status         string
+	DateFrom       string
+	DateTo         string
+}
+
+// DigitalCardClaimTokenItem Task 8.8 / S5 列表项（token 已脱敏）
+type DigitalCardClaimTokenItem struct {
+	ID             int64  `json:"id"`
+	TokenMasked    string `json:"tokenMasked"`
+	CardInstanceID int64  `json:"cardInstanceId"`
+	AssetNo        string `json:"assetNo"`
+	TemplateName   string `json:"templateName"`
+	IssuerID       int64  `json:"issuerId"`
+	IssuerType     string `json:"issuerType"`
+	ExpireAt       string `json:"expireAt"`
+	MaxClaims      int32  `json:"maxClaims"`
+	ClaimedCount   int32  `json:"claimedCount"`
+	Status         string `json:"status"`
+	ClaimedBy      int64  `json:"claimedBy"`
+	ClaimedAt      string `json:"claimedAt"`
+	PlatformID     int64  `json:"platformId"`
+	TenantID       int64  `json:"tenantId"`
+	MerchantID     int64  `json:"merchantId"`
+	CreatedAt      string `json:"createdAt"`
+	UpdatedAt      string `json:"updatedAt"`
+}
+
+// QueryDigitalCardClaimTokenList Story 10.7 Task 8.8 / S5 — 后台跨资产查询分享凭证
+// 注意：返回的 tokenMasked 仅展示首 8 位 + ***，原始 token 不暴露给后台
+func (s *Service) QueryDigitalCardClaimTokenList(ctx context.Context, currentScope pkgscope.GovernanceScope, filter DigitalCardClaimTokenFilter) (int64, []DigitalCardClaimTokenItem, error) {
+	if s.DB == nil {
+		return 0, nil, errors.New("数据库未初始化")
+	}
+	if filter.PageNum <= 0 {
+		filter.PageNum = 1
+	}
+	if filter.PageSize <= 0 {
+		filter.PageSize = 20
+	}
+	if filter.PageSize > 10000 {
+		filter.PageSize = 10000
+	}
+
+	base := s.DB.WithContext(ctx).
+		Table("sms_card_claim_token AS tok").
+		Joins("LEFT JOIN sms_card_instance AS instance ON instance.id = tok.card_instance_id AND instance.is_deleted = 0").
+		Joins("LEFT JOIN sms_card_template AS template ON template.id = instance.template_id AND template.is_deleted = 0").
+		Where("tok.is_deleted = 0")
+	base = pkgscope.ApplyGovernanceScope(base, currentScope, "tok")
+
+	if filter.TokenID > 0 {
+		base = base.Where("tok.id = ?", filter.TokenID)
+	}
+	if filter.CardInstanceID > 0 {
+		base = base.Where("tok.card_instance_id = ?", filter.CardInstanceID)
+	}
+	if v := strings.TrimSpace(filter.AssetNo); v != "" {
+		base = base.Where("instance.asset_no LIKE ?", "%"+v+"%")
+	}
+	if filter.IssuerID > 0 {
+		base = base.Where("tok.issuer_id = ?", filter.IssuerID)
+	}
+	if v := strings.TrimSpace(filter.Status); v != "" {
+		base = base.Where("tok.status = ?", v)
+	}
+	if v := strings.TrimSpace(filter.DateFrom); v != "" {
+		base = base.Where("tok.created_at >= ?", v)
+	}
+	if v := strings.TrimSpace(filter.DateTo); v != "" {
+		base = base.Where("tok.created_at <= ?", v)
+	}
+
+	var total int64
+	if err := base.Session(&gorm.Session{}).Count(&total).Error; err != nil {
+		return 0, nil, err
+	}
+
+	type tokenRow struct {
+		ID             int64      `gorm:"column:id"`
+		Token          string     `gorm:"column:token"`
+		CardInstanceID int64      `gorm:"column:card_instance_id"`
+		AssetNo        string     `gorm:"column:asset_no"`
+		TemplateName   string     `gorm:"column:template_name"`
+		IssuerID       int64      `gorm:"column:issuer_id"`
+		IssuerType     string     `gorm:"column:issuer_type"`
+		ExpireAt       *time.Time `gorm:"column:expire_at"`
+		MaxClaims      int32      `gorm:"column:max_claims"`
+		ClaimedCount   int32      `gorm:"column:claimed_count"`
+		Status         string     `gorm:"column:status"`
+		ClaimedBy      int64      `gorm:"column:claimed_by"`
+		ClaimedAt      *time.Time `gorm:"column:claimed_at"`
+		PlatformID     int64      `gorm:"column:platform_id"`
+		TenantID       int64      `gorm:"column:tenant_id"`
+		MerchantID     int64      `gorm:"column:merchant_id"`
+		CreatedAt      *time.Time `gorm:"column:created_at"`
+		UpdatedAt      *time.Time `gorm:"column:updated_at"`
+	}
+
+	var rows []tokenRow
+	if err := base.Select(`tok.id AS id,
+		tok.token AS token,
+		tok.card_instance_id AS card_instance_id,
+		COALESCE(instance.asset_no, '') AS asset_no,
+		COALESCE(template.template_name, '') AS template_name,
+		tok.issuer_id AS issuer_id,
+		tok.issuer_type AS issuer_type,
+		tok.expire_at AS expire_at,
+		tok.max_claims AS max_claims,
+		tok.claimed_count AS claimed_count,
+		tok.status AS status,
+		tok.claimed_by AS claimed_by,
+		tok.claimed_at AS claimed_at,
+		tok.platform_id AS platform_id,
+		tok.tenant_id AS tenant_id,
+		tok.merchant_id AS merchant_id,
+		tok.created_at AS created_at,
+		tok.updated_at AS updated_at`).
+		Order("tok.id DESC").
+		Offset(int((filter.PageNum - 1) * filter.PageSize)).
+		Limit(int(filter.PageSize)).
+		Find(&rows).Error; err != nil {
+		return 0, nil, err
+	}
+
+	formatTime := func(t *time.Time) string {
+		if t == nil {
+			return ""
+		}
+		return t.Format("2006-01-02 15:04:05")
+	}
+	maskToken := func(token string) string {
+		// Story 10.7 监管约束：后台只能看脱敏后的 token，原始 token 不暴露
+		if len(token) <= 8 {
+			return "***"
+		}
+		return token[:8] + "***"
+	}
+
+	items := make([]DigitalCardClaimTokenItem, 0, len(rows))
+	for _, row := range rows {
+		items = append(items, DigitalCardClaimTokenItem{
+			ID:             row.ID,
+			TokenMasked:    maskToken(row.Token),
+			CardInstanceID: row.CardInstanceID,
+			AssetNo:        row.AssetNo,
+			TemplateName:   row.TemplateName,
+			IssuerID:       row.IssuerID,
+			IssuerType:     row.IssuerType,
+			ExpireAt:       formatTime(row.ExpireAt),
+			MaxClaims:      row.MaxClaims,
+			ClaimedCount:   row.ClaimedCount,
+			Status:         row.Status,
+			ClaimedBy:      row.ClaimedBy,
+			ClaimedAt:      formatTime(row.ClaimedAt),
+			PlatformID:     row.PlatformID,
+			TenantID:       row.TenantID,
+			MerchantID:     row.MerchantID,
+			CreatedAt:      formatTime(row.CreatedAt),
+			UpdatedAt:      formatTime(row.UpdatedAt),
+		})
+	}
+	return total, items, nil
+}
+
+// AdminRevokeClaimTokenInput Story 10.7 Task 8.8 / S5 — 后台手动吊销分享凭证
+type AdminRevokeClaimTokenInput struct {
+	TokenID    int64
+	OperatorID int64
+	Reason     string
+	TraceID    string
+}
+
+// AdminRevokeClaimTokenResult Task 8.8 / S5 吊销结果
+type AdminRevokeClaimTokenResult struct {
+	TokenID    int64  `json:"tokenId"`
+	FromStatus string `json:"fromStatus"`
+	ToStatus   string `json:"toStatus"`
+	Message    string `json:"message"`
+}
+
+// AdminRevokeClaimToken Story 10.7 Task 8.8 / S5 — 后台合规手动吊销活跃分享凭证，
+// 与会员侧 RevokeClaimToken 互补：会员只能吊销自己签发的，后台可在治理范围内强制吊销任意凭证。
+// 强制事务 + CAS + 审计日志，operator_type=admin。
+func (s *Service) AdminRevokeClaimToken(ctx context.Context, currentScope pkgscope.GovernanceScope, input AdminRevokeClaimTokenInput) (*AdminRevokeClaimTokenResult, error) {
+	if s.DB == nil {
+		return nil, errors.New("数据库未初始化")
+	}
+	if input.TokenID <= 0 {
+		return nil, errors.New("凭证ID无效")
+	}
+	if input.OperatorID <= 0 {
+		return nil, errors.New("操作员ID无效")
+	}
+	reason := strings.TrimSpace(input.Reason)
+	if reason == "" {
+		return nil, errors.New("吊销原因不能为空")
+	}
+
+	const (
+		statusActive  = "active"
+		statusRevoked = "revoked"
+	)
+
+	type tokenLite struct {
+		ID             int64
+		CardInstanceID int64
+		IssuerID       int64
+		Status         string
+		PlatformID     int64
+		TenantID       int64
+		MerchantID     int64
+	}
+
+	var result AdminRevokeClaimTokenResult
+	err := s.DB.Transaction(func(tx *gorm.DB) error {
+		// 1. 取出凭证 + 检查作用域
+		var tok tokenLite
+		base := tx.WithContext(ctx).
+			Table("sms_card_claim_token").
+			Where("id = ? AND is_deleted = 0", input.TokenID)
+		base = pkgscope.ApplyGovernanceScope(base, currentScope, "")
+		if err := base.Select("id, card_instance_id, issuer_id, status, platform_id, tenant_id, merchant_id").
+			Take(&tok).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return errors.New("凭证不存在或不在当前治理范围")
+			}
+			return err
+		}
+		if tok.Status != statusActive {
+			return fmt.Errorf("当前状态[%s]不允许吊销", tok.Status)
+		}
+
+		// 2. CAS 更新
+		now := time.Now()
+		upd := tx.WithContext(ctx).
+			Table("sms_card_claim_token").
+			Where("id = ? AND status = ? AND is_deleted = 0", tok.ID, statusActive).
+			Updates(map[string]interface{}{
+				"status":     statusRevoked,
+				"updated_at": now,
+			})
+		if upd.Error != nil {
+			return upd.Error
+		}
+		if upd.RowsAffected == 0 {
+			return errors.New("凭证状态已变化，吊销失败")
+		}
+
+		// 3. 审计日志：operator_type=admin
+		payloadBytes, mErr := json.Marshal(map[string]interface{}{
+			"tokenId":       tok.ID,
+			"cardId":        tok.CardInstanceID,
+			"issuerId":      tok.IssuerID,
+			"adminOperator": input.OperatorID,
+			"reason":        reason,
+			"fromStatus":    statusActive,
+			"toStatus":      statusRevoked,
+		})
+		if mErr != nil {
+			return fmt.Errorf("序列化审计负载失败: %w", mErr)
+		}
+		logRow := map[string]interface{}{
+			"asset_instance_id":       tok.CardInstanceID,
+			"participation_record_id": 0,
+			"from_status":             "",
+			"to_status":               "",
+			"operation_type":          "claim_token_revoked",
+			"operator_type":           "admin",
+			"trace_id":                input.TraceID,
+			"reason_code":             "admin_revoke_claim_token",
+			"reason_text":             "后台合规人员手动吊销分享凭证: " + reason,
+			"payload_json":            string(payloadBytes),
+		}
+		if err := tx.WithContext(ctx).Table("sms_card_asset_log").Create(logRow).Error; err != nil {
+			return fmt.Errorf("记录吊销审计日志失败: %w", err)
+		}
+		result = AdminRevokeClaimTokenResult{
+			TokenID:    tok.ID,
+			FromStatus: statusActive,
+			ToStatus:   statusRevoked,
+			Message:    "凭证已吊销",
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
 // DigitalCardTransferLogFilter Story 10.7 Task 9.1 转赠/分享/领取审计跨资产检索过滤器
 type DigitalCardTransferLogFilter struct {
 	PageNum         int64

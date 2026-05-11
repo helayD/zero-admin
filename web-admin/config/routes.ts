@@ -406,6 +406,13 @@
         component: './sms/DigitalCardRedemptionOrder',
       },
       {
+        // Story 10.7 Task 8.8 / S5+S6 — 后台分享凭证管理
+        name: '分享凭证管理',
+        icon: 'share-alt',
+        path: '/sms/digitalCardClaimToken/list',
+        component: './sms/DigitalCardClaimToken',
+      },
+      {
         // Story 10.7 Task 9.4 — 后台合规审计跨资产检索
         name: '转赠审计记录',
         icon: 'audit',

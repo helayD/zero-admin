@@ -36,6 +36,9 @@ const (
 	MethodQueryDigitalCardTransferLogList = "/" + ServiceName + "/QueryDigitalCardTransferLogList"
 	// Story 10.7 Task 2.8 / S3 — 后台提货单管理
 	MethodQueryDigitalCardRedemptionOrderList = "/" + ServiceName + "/QueryDigitalCardRedemptionOrderList"
+	// Story 10.7 Task 8.8 / S5 — 后台分享凭证管理
+	MethodQueryDigitalCardClaimTokenList   = "/" + ServiceName + "/QueryDigitalCardClaimTokenList"
+	MethodAdminRevokeDigitalCardClaimToken = "/" + ServiceName + "/AdminRevokeDigitalCardClaimToken"
 )
 
 type (
@@ -172,6 +175,26 @@ type (
 		Total int64                                            `json:"total"`
 		List  []digitalcardmint.DigitalCardRedemptionOrderItem `json:"list"`
 	}
+
+	// Story 10.7 Task 8.8 / S5 — 后台分享凭证管理
+	QueryDigitalCardClaimTokenListRequest struct {
+		Scope  pkgscope.GovernanceScope                    `json:"scope"`
+		Filter digitalcardmint.DigitalCardClaimTokenFilter `json:"filter"`
+	}
+
+	QueryDigitalCardClaimTokenListResponse struct {
+		Total int64                                       `json:"total"`
+		List  []digitalcardmint.DigitalCardClaimTokenItem `json:"list"`
+	}
+
+	AdminRevokeDigitalCardClaimTokenRequest struct {
+		Scope pkgscope.GovernanceScope                   `json:"scope"`
+		Input digitalcardmint.AdminRevokeClaimTokenInput `json:"input"`
+	}
+
+	AdminRevokeDigitalCardClaimTokenResponse struct {
+		Result *digitalcardmint.AdminRevokeClaimTokenResult `json:"result"`
+	}
 )
 
 type CardMintAdminServiceServer interface {
@@ -195,6 +218,8 @@ type CardMintAdminServiceServer interface {
 	RequestPhysicalCardReissue(context.Context, *structpb.Struct) (*structpb.Struct, error)
 	QueryDigitalCardTransferLogList(context.Context, *structpb.Struct) (*structpb.Struct, error)
 	QueryDigitalCardRedemptionOrderList(context.Context, *structpb.Struct) (*structpb.Struct, error)
+	QueryDigitalCardClaimTokenList(context.Context, *structpb.Struct) (*structpb.Struct, error)
+	AdminRevokeDigitalCardClaimToken(context.Context, *structpb.Struct) (*structpb.Struct, error)
 }
 
 func RegisterCardMintAdminServiceServer(registrar grpc.ServiceRegistrar, server CardMintAdminServiceServer) {
@@ -265,6 +290,12 @@ var CardMintAdminServiceDesc = grpc.ServiceDesc{
 		{MethodName: "QueryDigitalCardRedemptionOrderList", Handler: buildUnaryHandler(func(s CardMintAdminServiceServer, ctx context.Context, in *structpb.Struct) (*structpb.Struct, error) {
 			return s.QueryDigitalCardRedemptionOrderList(ctx, in)
 		}, MethodQueryDigitalCardRedemptionOrderList)},
+		{MethodName: "QueryDigitalCardClaimTokenList", Handler: buildUnaryHandler(func(s CardMintAdminServiceServer, ctx context.Context, in *structpb.Struct) (*structpb.Struct, error) {
+			return s.QueryDigitalCardClaimTokenList(ctx, in)
+		}, MethodQueryDigitalCardClaimTokenList)},
+		{MethodName: "AdminRevokeDigitalCardClaimToken", Handler: buildUnaryHandler(func(s CardMintAdminServiceServer, ctx context.Context, in *structpb.Struct) (*structpb.Struct, error) {
+			return s.AdminRevokeDigitalCardClaimToken(ctx, in)
+		}, MethodAdminRevokeDigitalCardClaimToken)},
 	},
 }
 
