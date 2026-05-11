@@ -1000,14 +1000,15 @@ func buildMemberPhysicalFulfillmentDetail(row physicalFulfillmentDetailRow, logs
 	}, ""))
 	feeStatus, feeStatusText, feeAmount := resolveShippingFeeSnapshot(logs)
 	return &MemberPhysicalFulfillmentDetail{
-		FulfillmentID:         row.ID,
-		FulfillmentNo:         row.FulfillmentNo,
-		AssetInstanceID:       row.AssetInstanceID,
-		AssetNo:               row.AssetNo,
-		TemplateName:          row.TemplateName,
-		ActivityName:          row.ActivityName,
-		ObtainedAt:            formatNullableTime(row.ObtainedAt),
-		MintStatusText:        mintStatusText(row.MintStatus),
+		FulfillmentID:   row.ID,
+		FulfillmentNo:   row.FulfillmentNo,
+		AssetInstanceID: row.AssetInstanceID,
+		AssetNo:         row.AssetNo,
+		TemplateName:    row.TemplateName,
+		ActivityName:    row.ActivityName,
+		ObtainedAt:      formatNullableTime(row.ObtainedAt),
+		// Story 10.11 / Task 8.2 / AC4：C 端实物履约详情同样使用消费者口径文案。
+		MintStatusText:        MintStatusConsumerText(row.MintStatus),
 		FulfillmentStatus:     row.FulfillmentStatus,
 		FulfillmentStatusText: physicalFulfillmentStatusText(row.FulfillmentStatus),
 		ProductionStatusText:  physicalProductionStatusText(row.ProductionStatus),

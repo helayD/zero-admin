@@ -84,8 +84,18 @@ func startMintTaskSelfScan(service *digitalcardmint.Service) {
 }
 
 func buildChainClient(c config.Config) chainclient.ChainClient {
-	logx.Infof("buildChainClient: Blockchain.Primary=%q Fisco.Enabled=%v AntChain.Enabled=%v Fisco.NodeAddr=%q",
-		c.Blockchain.Primary, c.Fisco.Enabled, c.AntChain.Enabled, c.Fisco.NodeAddr)
+	client := buildChainClientImpl(c)
+	// Story 10.11 / Task 6.2 / AC6：启动日志打印归一化的 chainType + 节点地址 + 合约地址，
+	// 便于运维一眼区分 antchain / fisco_bcos_3x 两种真实实现，
+	// 以及确认 47.107.224.56:20200 的目标节点和 0x... 合约地址是否正确。
+	logx.Infof("buildChainClient[sms-rpc]: chainType=%q nodeAddr=%s:%d contract=%s",
+		client.ChainType(), c.Fisco.Host, c.Fisco.Port, c.Fisco.ContractAddr)
+	return client
+}
+
+func buildChainClientImpl(c config.Config) chainclient.ChainClient {
+	logx.Infof("buildChainClient: Blockchain.Primary=%q Fisco.Enabled=%v AntChain.Enabled=%v Fisco.Host=%q:%d",
+		c.Blockchain.Primary, c.Fisco.Enabled, c.AntChain.Enabled, c.Fisco.Host, c.Fisco.Port)
 	switch strings.ToLower(strings.TrimSpace(c.Blockchain.Primary)) {
 	case "antchain":
 		return antchain.NewClient(antchain.Config{
@@ -97,15 +107,25 @@ func buildChainClient(c config.Config) chainclient.ChainClient {
 			TimeoutSeconds:  c.AntChain.TimeoutSeconds,
 			Enabled:         c.AntChain.Enabled,
 		})
-	case "", "fisco", "free_chain":
+	case "", "fisco", "fisco_bcos_3x":
 		return fisco.NewClient(fisco.Config{
-			NodeAddr:       c.Fisco.NodeAddr,
-			GroupID:        c.Fisco.GroupID,
-			ChainID:        c.Fisco.ChainID,
-			ContractAddr:   c.Fisco.ContractAddr,
-			PrivateKey:     c.Fisco.PrivateKey,
-			TimeoutSeconds: c.Fisco.TimeoutSeconds,
-			Enabled:        c.Fisco.Enabled,
+			Enabled:         c.Fisco.Enabled,
+			Host:            c.Fisco.Host,
+			Port:            c.Fisco.Port,
+			DisableSsl:      c.Fisco.DisableSsl,
+			IsSMCrypto:      c.Fisco.IsSMCrypto,
+			GroupID:         c.Fisco.GroupID,
+			ChainID:         c.Fisco.ChainID,
+			ContractAddr:    c.Fisco.ContractAddr,
+			ContractABI:     c.Fisco.ContractABI,
+			ContractABIPath: c.Fisco.ContractABIPath,
+			PrivateKey:      c.Fisco.PrivateKey,
+			CaCertPath:      c.Fisco.CaCertPath,
+			SdkCertPath:     c.Fisco.SdkCertPath,
+			SdkKeyPath:      c.Fisco.SdkKeyPath,
+			TimeoutSeconds:  c.Fisco.TimeoutSeconds,
+			PollIntervalMs:  c.Fisco.PollIntervalMs,
+			PollMaxAttempts: c.Fisco.PollMaxAttempts,
 		})
 	default:
 		return invalidChainClient{primary: c.Blockchain.Primary}

@@ -451,6 +451,12 @@ func (s *Service) ExecuteTask(ctx context.Context, taskID int64, operatorType st
 		if s.Chain == nil {
 			return nil, errors.New("链客户端未初始化")
 		}
+		// Story 10.11 / Task 7.1：链上发交易前先 off-chain 幂等查询。
+		// 即使 MQ 重放 / 管理员 Retry / job 扫描三路竞争，也只在合约真正没有同 idempotencyKey 记录时才发交易。
+		if preReceipt, preErr := s.queryExistingReceipt(ctx, task); preErr == nil && preReceipt != nil && strings.TrimSpace(preReceipt.TokenID) != "" {
+			receipt = preReceipt
+			goto finalize
+		}
 		var mintErr error
 		receipt, mintErr = s.Chain.MintToken(ctx, &chainclient.MintTokenRequest{
 			IdempotencyKey:  task.IdempotencyKey,
@@ -468,6 +474,13 @@ func (s *Service) ExecuteTask(ctx context.Context, taskID int64, operatorType st
 			MerchantID:      task.MerchantID,
 		})
 		if mintErr != nil {
+			// Story 10.11 / Task 5.7+5.8：合约 _mintedByKey 已存在 → 走 QueryMintToken 旁路，避免重发交易。
+			if chainCode, _ := chainclient.ChainErrorOf(mintErr); chainCode == chainclient.ChainErrCodeDuplicateMintReject {
+				if fallbackReceipt, fallbackErr := s.queryExistingReceipt(ctx, task); fallbackErr == nil && fallbackReceipt != nil && strings.TrimSpace(fallbackReceipt.TokenID) != "" {
+					receipt = fallbackReceipt
+					goto finalize
+				}
+			}
 			if err = s.transitionFailure(ctx, task, instance, attempt, normalizeOperatorType(operatorType), mintErr); err != nil {
 				return nil, err
 			}
@@ -1058,13 +1071,19 @@ func (s *Service) transitionFailure(ctx context.Context, task *CardMintTaskRow, 
 		nextRetryAt = time.Time{}
 	}
 
+	// Story 10.11 / Task 5.8 + 8.1：链层错误归一化 + 私钥/证书脱敏。
+	//   - last_error_code 仍归到 ErrorCodeMintExecuteFailed 父类（保持下游统计兼容），
+	//   - last_error_reason 前缀附带链层子码（[node_unreachable] 等），便于运维快速分诊；
+	//   - 任何 PEM 块或 64 字节 hex（疑似私钥）写库前先脱敏。
+	lastErrorReason := buildClassifiedFailureReason(execErr)
+
 	return s.DB.Transaction(func(tx *gorm.DB) error {
 		updates := map[string]interface{}{
 			"task_status":       nextTaskStatus,
 			"mint_status":       nextMintStatus,
 			"chain_status":      ChainStatusFailed,
 			"last_error_code":   ErrorCodeMintExecuteFailed,
-			"last_error_reason": execErr.Error(),
+			"last_error_reason": lastErrorReason,
 			"manual_required":   manualRequired,
 			"last_execute_at":   now,
 			"update_time":       now,
@@ -1090,7 +1109,7 @@ func (s *Service) transitionFailure(ctx context.Context, task *CardMintTaskRow, 
 			}).Error; err != nil {
 			return err
 		}
-		return s.appendAssetLogTx(ctx, tx, instance, task.MintStatus, nextMintStatus, OperationMintFailed, operatorType, task.TraceID, ErrorCodeMintExecuteFailed, execErr.Error(), map[string]interface{}{
+		return s.appendAssetLogTx(ctx, tx, instance, task.MintStatus, nextMintStatus, OperationMintFailed, operatorType, task.TraceID, ErrorCodeMintExecuteFailed, lastErrorReason, map[string]interface{}{
 			"taskId":       task.ID,
 			"retryCount":   attempt,
 			"manualReview": manualRequired == 1,

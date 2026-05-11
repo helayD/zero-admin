@@ -503,24 +503,26 @@ func auditAssetSelectColumns() string {
 
 func buildMemberAssetItem(row digitalCardAssetBaseRow) MemberDigitalCardAssetItem {
 	return MemberDigitalCardAssetItem{
-		AssetInstanceID:       row.AssetInstanceID,
-		AssetNo:               row.AssetNo,
-		TemplateID:            row.TemplateID,
-		TemplateName:          row.TemplateName,
-		CardFaceImage:         row.CardFaceImage,
-		ActivityID:            row.ActivityID,
-		ActivityName:          row.ActivityName,
-		SourceType:            userFacingSourceType(row.SourceType),
-		SourceDisplayName:     userFacingSourceName(row.SourceType, row.ActivityName, row.SourceDisplayName),
-		Rarity:                row.Rarity,
-		ObtainedAt:            formatNullableTime(row.ObtainedAt),
-		MintStatus:            row.MintStatus,
-		MintStatusText:        mintStatusText(row.MintStatus),
+		AssetInstanceID:   row.AssetInstanceID,
+		AssetNo:           row.AssetNo,
+		TemplateID:        row.TemplateID,
+		TemplateName:      row.TemplateName,
+		CardFaceImage:     row.CardFaceImage,
+		ActivityID:        row.ActivityID,
+		ActivityName:      row.ActivityName,
+		SourceType:        userFacingSourceType(row.SourceType),
+		SourceDisplayName: userFacingSourceName(row.SourceType, row.ActivityName, row.SourceDisplayName),
+		Rarity:            row.Rarity,
+		ObtainedAt:        formatNullableTime(row.ObtainedAt),
+		MintStatus:        row.MintStatus,
+		// Story 10.11 / Task 8.2 / AC4：C 端文案必须脱链路化，复用 MintStatusConsumerText
+		// 把 mint_processing/链上铸造中 一类内部术语归一到「处理中/已到账/处理异常」。
+		MintStatusText:        MintStatusConsumerText(row.MintStatus),
 		DisplayStatus:         row.DisplayStatus,
 		DisplayStatusText:     displayStatusText(row.DisplayStatus),
 		ComplianceStatus:      row.ComplianceStatus,
 		ComplianceStatusText:  complianceStatusText(row.ComplianceStatus),
-		TokenStatusText:       mintStatusText(row.MintStatus),
+		TokenStatusText:       MintStatusConsumerText(row.MintStatus),
 		ComplianceRuleSummary: complianceRuleSummary(row.ActivityComplianceSummary, row.DisplayReason, row.ComplianceReason),
 	}
 }

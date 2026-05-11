@@ -31,12 +31,22 @@ type Config struct {
 	}
 
 	Fisco struct {
-		NodeAddr       string
-		GroupID        int
-		ChainID        int64
-		ContractAddr   string
-		PrivateKey     string
-		TimeoutSeconds int64
-		Enabled        bool
+		Enabled         bool
+		Host            string
+		Port            int
+		DisableSsl      bool
+		IsSMCrypto      bool
+		GroupID         string
+		ChainID         string
+		ContractAddr    string
+		ContractABI     string
+		ContractABIPath string
+		PrivateKey      string
+		CaCertPath      string
+		SdkCertPath     string
+		SdkKeyPath      string
+		TimeoutSeconds  int64
+		PollIntervalMs  int64
+		PollMaxAttempts int
 	}
 }

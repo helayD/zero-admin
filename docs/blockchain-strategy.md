@@ -895,9 +895,118 @@ Blockchain:
 | **ChainClient** | 抽象的链客户端接口 |
 | **Registry** | 链注册表 |
 
+---
+
+## 附录 B：相关 Story 索引
+
+| Story | 主题 | 状态 |
+|-------|------|------|
+| Story 10.4 | 蚂蚁链 token 发放与补偿（任务表 + consumer + job + 三层幂等） | 已上线 |
+| Story 10.5 | 资产展示与审计检索 | 已上线 |
+| Story 10.10 | 提货卡后台配置中心（商业化版） | 已上线 |
+| Story 10.11 | FISCO BCOS 3.x 真实上链商业化接入（替换免费链 mock 底座） | 已上线 |
+
+---
+
+## 附录 C：FISCO BCOS 3.x 私钥与证书轮换 SOP
+
+> **适用范围**：Story 10.11 落地后 sms-rpc / consumer / job 三服务共用的 FISCO BCOS 3.x 签名私钥（`/opt/fisco/keys/sms-rpc.key`）和 SDK mTLS 证书（`/opt/fisco/sdk/{ca.crt,sdk.crt,sdk.key}`）的运维操作规范。
+
+### C.1 触发场景
+
+| 场景 | 触发条件 | 处理优先级 |
+|------|----------|-----------|
+| 例行轮换 | 每 12 个月一次（与 SDK CA 默认有效期 825 天保持冗余）| 中 |
+| 怀疑泄露 | 私钥文件权限被改 / 服务器被入侵 / 私钥误传 git | **紧急** |
+| 证书过期 | sdk.crt 还剩 30 天到期，运维巡检告警 | 高 |
+| 合约迁移 | grantMinter 给新合约后旧私钥不再使用 | 低（直接废弃即可） |
+
+### C.2 私钥轮换标准流程（零停机）
+
+**前提**：Story 10.11 的 ChainClient 已支持配置热加载；如未支持，需要先重启服务（< 1 分钟窗口）。
+
+1. **生成新私钥**（在堡垒机或离线机器上，**不要在生产服务器**）：
+   ```bash
+   openssl ecparam -name secp256k1 -genkey -noout -out sms-rpc.key.new
+   chmod 0400 sms-rpc.key.new
+   ```
+2. **派生新地址**并记录：
+   ```bash
+   # 用 console2 或 ethers.js 都可以
+   ./console2.sh getAddressFromKey sms-rpc.key.new
+   # 输出: 0xNEW_ADDR
+   ```
+3. **on-chain 授权**：用现役私钥（旧私钥仍是 minter）调合约 `grantMinter(0xNEW_ADDR)`：
+   ```bash
+   ./console2.sh call CardToken 0xCONTRACT grantMinter 0xNEW_ADDR
+   ```
+4. **分发新私钥**到生产服务器（**通过受控渠道**，禁止 plain SCP，建议加密 zip + 单独信道传密码）：
+   ```bash
+   # 服务器上替换
+   mv /opt/fisco/keys/sms-rpc.key /opt/fisco/keys/sms-rpc.key.bak.$(date +%s)
+   install -m 0400 -o root sms-rpc.key.new /opt/fisco/keys/sms-rpc.key
+   ```
+5. **重启 sms-rpc / consumer / job**（按部署顺序）。
+6. **验证**：观察日志首行 `buildChainClient[*]: chainType="fisco_bcos_3x" ...`，等 30 秒看自循环扫描日志，确认有新交易上链且 `from = 0xNEW_ADDR`。
+7. **on-chain 撤销旧地址**：
+   ```bash
+   ./console2.sh call CardToken 0xCONTRACT revokeMinter 0xOLD_ADDR
+   ```
+8. **物理销毁旧私钥**：`shred -uvz /opt/fisco/keys/sms-rpc.key.bak.*`（保险柜留存的纸质副本除外）。
+
+### C.3 证书（CA / SDK）轮换流程
+
+> 证书轮换只影响 mTLS 通道，不影响链上数据。
+
+1. 在 FISCO 节点宿主机上重新生成证书：
+   ```bash
+   cd /opt/fisco/build_chain
+   ./build_chain.sh -l "127.0.0.1:4" -p 30300,20200,8545 -T -c
+   # 注意 -c 表示重新生成证书但保留原 nodeID/group
+   ```
+2. 把新的 `nodes/127.0.0.1/sdk/{ca.crt,sdk.crt,sdk.key}` 拷贝到 `/opt/fisco/sdk/`（保留旧版本到 `/opt/fisco/sdk.bak/`）：
+   ```bash
+   install -m 0400 -o root nodes/127.0.0.1/sdk/ca.crt /opt/fisco/sdk/ca.crt
+   install -m 0400 -o root nodes/127.0.0.1/sdk/sdk.crt /opt/fisco/sdk/sdk.crt
+   install -m 0400 -o root nodes/127.0.0.1/sdk/sdk.key /opt/fisco/sdk/sdk.key
+   ```
+3. 重启 sms-rpc / consumer / job。
+4. 验证：日志没有 `tls_handshake_failed` 错误，新 mint 交易能正常上链。
+
+### C.4 紧急吊销流程（怀疑泄露）
+
+> **窗口目标**：从发现泄露到完成吊销 ≤ 30 分钟。
+
+```
+T+0    钉钉告警 / 安全事件单进
+T+5    SRE on-call 用 grantMinter 给临时新私钥（步骤 C.2.1-3）
+T+15   把临时新私钥分发到三服务、重启
+T+20   on-chain revokeMinter 旧地址
+T+25   验证旧地址不再能 mint（用旧私钥手动签名调 mint，应得 "AccessControl: missing role"）
+T+30   写故障报告，提 PR 把私钥从可能泄露的位置擦除
+```
+
+### C.5 审计要求
+
+每次轮换后必须留下：
+- on-chain `grantMinter` / `revokeMinter` 两笔 tx 的 hash（区块浏览器永久可查）
+- `/opt/fisco/keys/` 下 `ls -la` 的截图（证明新文件权限 0400 + 旧文件已删除）
+- 三服务重启后的首屏 buildChainClient 日志截图
+
+把以上证据归档到 `_opcos/operations-evidence/fisco-key-rotation-YYYY-MM-DD.md`。
+
+### C.6 当前不在范围
+
+下列内容由 Story 10.13+ 负责，**本 SOP 不覆盖**：
+- 私钥托管到 KMS / Vault
+- 多签名（multi-sig）minter 合约
+- HSM 硬件模块
+- 跨可用区 / 跨机房的私钥分发
+
 ## 变更记录
 
 | 日期 | 版本 | 变更 | 作者 |
 |------|------|------|------|
 | 2026-04-18 | v1.0 | 初稿，基于蚂蚁链励退后的调研 | 九克城技术团队 |
 | 2026-04-23 | v2.0 | 对齐实际代码实现：新增「当前实现概述」章节，重写架构/数据模型/代码结构，更新 TODO | 九克城技术团队 |
+| 2026-05-10 | v2.1 | Story 10.11 落地：新增附录 B 相关 Story 索引，新增附录 C FISCO BCOS 3.x 私钥与证书轮换 SOP | 九克城技术团队 |

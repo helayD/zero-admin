@@ -27,14 +27,25 @@ AntChain:
 Blockchain:
   Primary: fisco
 
+# Story 10.11: FISCO BCOS 3.x 真实上链配置。
 Fisco:
-  NodeAddr: ""
-  GroupID: 1
-  ChainID: 1
-  ContractAddr: ""
-  PrivateKey: ""
-  TimeoutSeconds: 10
   Enabled: false
+  Host: ""
+  Port: 0
+  DisableSsl: false
+  IsSMCrypto: false
+  GroupID: "group0"
+  ChainID: "chain0"
+  ContractAddr: ""
+  ContractABI: ""
+  ContractABIPath: "/opt/fisco/contracts/CardToken.abi"
+  PrivateKey: ""
+  CaCertPath: "/opt/fisco/sdk/ca.crt"
+  SdkCertPath: "/opt/fisco/sdk/sdk.crt"
+  SdkKeyPath: "/opt/fisco/sdk/sdk.key"
+  TimeoutSeconds: 30
+  PollIntervalMs: 500
+  PollMaxAttempts: 30
 
 #会员
 UmsRpc:

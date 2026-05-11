@@ -13,6 +13,7 @@ import (
 	"github.com/feihua/zero-admin/rpc/pms/client/productskuservice"
 	"github.com/feihua/zero-admin/rpc/sms/client/couponrecordservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/memberinfoservice"
+	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/zrpc"
 	"gorm.io/driver/mysql"
@@ -93,6 +94,14 @@ func NewServiceContext(c config.Config) *ServiceContext {
 }
 
 func buildChainClient(c config.Config) chainclient.ChainClient {
+	client := buildChainClientImpl(c)
+	// Story 10.11 / Task 6.2 / AC6: 与 sms-rpc / consumer 保持一致的启动日志格式。
+	logx.Infof("buildChainClient[job]: chainType=%q nodeAddr=%s:%d contract=%s",
+		client.ChainType(), c.Fisco.Host, c.Fisco.Port, c.Fisco.ContractAddr)
+	return client
+}
+
+func buildChainClientImpl(c config.Config) chainclient.ChainClient {
 	if c.Blockchain.Primary == "antchain" {
 		return antchain.NewClient(antchain.Config{
 			Endpoint:        c.AntChain.Endpoint,
@@ -105,12 +114,22 @@ func buildChainClient(c config.Config) chainclient.ChainClient {
 		})
 	}
 	return fisco.NewClient(fisco.Config{
-		NodeAddr:       c.Fisco.NodeAddr,
-		GroupID:        c.Fisco.GroupID,
-		ChainID:        c.Fisco.ChainID,
-		ContractAddr:   c.Fisco.ContractAddr,
-		PrivateKey:     c.Fisco.PrivateKey,
-		TimeoutSeconds: c.Fisco.TimeoutSeconds,
-		Enabled:        c.Fisco.Enabled,
+		Enabled:         c.Fisco.Enabled,
+		Host:            c.Fisco.Host,
+		Port:            c.Fisco.Port,
+		DisableSsl:      c.Fisco.DisableSsl,
+		IsSMCrypto:      c.Fisco.IsSMCrypto,
+		GroupID:         c.Fisco.GroupID,
+		ChainID:         c.Fisco.ChainID,
+		ContractAddr:    c.Fisco.ContractAddr,
+		ContractABI:     c.Fisco.ContractABI,
+		ContractABIPath: c.Fisco.ContractABIPath,
+		PrivateKey:      c.Fisco.PrivateKey,
+		CaCertPath:      c.Fisco.CaCertPath,
+		SdkCertPath:     c.Fisco.SdkCertPath,
+		SdkKeyPath:      c.Fisco.SdkKeyPath,
+		TimeoutSeconds:  c.Fisco.TimeoutSeconds,
+		PollIntervalMs:  c.Fisco.PollIntervalMs,
+		PollMaxAttempts: c.Fisco.PollMaxAttempts,
 	})
 }

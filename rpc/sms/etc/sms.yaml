@@ -26,14 +26,26 @@ AntChain:
 Blockchain:
   Primary: fisco
 
+# Story 10.11: FISCO BCOS 3.x 真实上链配置
+# 节点部署在 47.107.224.56:20200-20203。生产环境 Enabled 默认 false，灰度跳闸时手动置 true。
 Fisco:
-  NodeAddr: ""
-  GroupID: 1
-  ChainID: 1
-  ContractAddr: ""
-  PrivateKey: ""
-  TimeoutSeconds: 10
-  Enabled: true
+  Enabled: false
+  Host: ""                  # 例如 47.107.224.56。空字殲 + Enabled=true 会被 Validate 拦下
+  Port: 0                   # 例如 20200
+  DisableSsl: false         # 生产必须 false，启用 mTLS
+  IsSMCrypto: false
+  GroupID: "group0"
+  ChainID: "chain0"
+  ContractAddr: ""          # 部署后填入：0x6849f21d1e455e9f0712b1e99fa4fcd23758e8f1
+  ContractABI: ""           # 与 ContractABIPath 二选一
+  ContractABIPath: "/opt/fisco/contracts/CardToken.abi"
+  PrivateKey: ""            # 例如 path:///opt/fisco/keys/sms-rpc.key
+  CaCertPath: "/opt/fisco/sdk/ca.crt"
+  SdkCertPath: "/opt/fisco/sdk/sdk.crt"
+  SdkKeyPath: "/opt/fisco/sdk/sdk.key"
+  TimeoutSeconds: 30
+  PollIntervalMs: 500
+  PollMaxAttempts: 30
 
 Log:
   ServiceName: sms-service

@@ -30,6 +30,7 @@ import (
 	"github.com/feihua/zero-admin/rpc/ums/client/membermessageservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/memberpointslogservice"
 	"github.com/zeromicro/go-zero/core/logc"
+	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/zrpc"
 	"gorm.io/driver/mysql"
@@ -112,23 +113,23 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	search := search_client.NewSearch(searchClient)
 	cardRedemptionOrderService := cardredemptionorderservice.NewCardRedemptionOrderService(smsClient)
 	s := &ServiceContext{
-		Config:                 c,
-		RabbitMQ:               rabbitmq,
-		Redis:                  r,
-		DB:                     db,
-		ChainClient:            chainClient,
-		CardMintService:        cardMintService,
-		MemberInfoService:      memberInfoService,
-		MemberGrowthLogService: membergrowthlogservice.NewMemberGrowthLogService(umsClient),
-		MemberPointsLogService: memberpointslogservice.NewMemberPointsLogService(umsClient),
-		MemberMessageService:   memberMessageService,
-		CouponRecordService:    couponRecordService,
-		CouponService:          couponService,
-		CouponTypeService:      coupontypeservice.NewCouponTypeService(smsClient),
-		ProductSkuService:      skuService,
-		ProductSpuService:      spuService,
-		OrderService:           orderService,
-		Search:                 search,
+		Config:                     c,
+		RabbitMQ:                   rabbitmq,
+		Redis:                      r,
+		DB:                         db,
+		ChainClient:                chainClient,
+		CardMintService:            cardMintService,
+		MemberInfoService:          memberInfoService,
+		MemberGrowthLogService:     membergrowthlogservice.NewMemberGrowthLogService(umsClient),
+		MemberPointsLogService:     memberpointslogservice.NewMemberPointsLogService(umsClient),
+		MemberMessageService:       memberMessageService,
+		CouponRecordService:        couponRecordService,
+		CouponService:              couponService,
+		CouponTypeService:          coupontypeservice.NewCouponTypeService(smsClient),
+		ProductSkuService:          skuService,
+		ProductSpuService:          spuService,
+		OrderService:               orderService,
+		Search:                     search,
 		CardRedemptionOrderService: cardRedemptionOrderService,
 	}
 
@@ -237,6 +238,15 @@ func NewServiceContext(c config.Config) *ServiceContext {
 }
 
 func buildChainClient(c config.Config) chainclient.ChainClient {
+	client := buildChainClientImpl(c)
+	// Story 10.11 / Task 6.2 / AC6: 启动日志统一打印 chainType + 节点 + 合约，
+	// 与 sms-rpc / job 保持一致格式。
+	logx.Infof("buildChainClient[consumer]: chainType=%q nodeAddr=%s:%d contract=%s",
+		client.ChainType(), c.Fisco.Host, c.Fisco.Port, c.Fisco.ContractAddr)
+	return client
+}
+
+func buildChainClientImpl(c config.Config) chainclient.ChainClient {
 	if c.Blockchain.Primary == "antchain" {
 		return antchain.NewClient(antchain.Config{
 			Endpoint:        c.AntChain.Endpoint,
@@ -249,13 +259,23 @@ func buildChainClient(c config.Config) chainclient.ChainClient {
 		})
 	}
 	return fisco.NewClient(fisco.Config{
-		NodeAddr:       c.Fisco.NodeAddr,
-		GroupID:        c.Fisco.GroupID,
-		ChainID:        c.Fisco.ChainID,
-		ContractAddr:   c.Fisco.ContractAddr,
-		PrivateKey:     c.Fisco.PrivateKey,
-		TimeoutSeconds: c.Fisco.TimeoutSeconds,
-		Enabled:        c.Fisco.Enabled,
+		Enabled:         c.Fisco.Enabled,
+		Host:            c.Fisco.Host,
+		Port:            c.Fisco.Port,
+		DisableSsl:      c.Fisco.DisableSsl,
+		IsSMCrypto:      c.Fisco.IsSMCrypto,
+		GroupID:         c.Fisco.GroupID,
+		ChainID:         c.Fisco.ChainID,
+		ContractAddr:    c.Fisco.ContractAddr,
+		ContractABI:     c.Fisco.ContractABI,
+		ContractABIPath: c.Fisco.ContractABIPath,
+		PrivateKey:      c.Fisco.PrivateKey,
+		CaCertPath:      c.Fisco.CaCertPath,
+		SdkCertPath:     c.Fisco.SdkCertPath,
+		SdkKeyPath:      c.Fisco.SdkKeyPath,
+		TimeoutSeconds:  c.Fisco.TimeoutSeconds,
+		PollIntervalMs:  c.Fisco.PollIntervalMs,
+		PollMaxAttempts: c.Fisco.PollMaxAttempts,
 	})
 }
 
