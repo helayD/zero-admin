@@ -61,83 +61,85 @@ var claimHintPage = template.Must(template.New("digital-card-claim").Parse(`<!do
       var(--bg);
       background-attachment:fixed}
 
-    main{max-width:480px;margin:0 auto;padding:0 20px 32px;min-height:100vh;display:flex;flex-direction:column}
+    main{max-width:480px;margin:0 auto;padding:0 16px 16px;min-height:100vh;display:flex;flex-direction:column}
 
-    /* Hero */
-    .hero{padding:32px 4px 20px;text-align:center;position:relative}
-    .hero .badge{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;font-size:12px;color:var(--primary);background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.16);border-radius:999px;font-weight:600;letter-spacing:.4px}
-    .hero h1{font-family:var(--font-display);font-size:30px;font-weight:400;line-height:1.25;margin:14px 0 8px;color:var(--ink)}
-    .hero p{font-size:14px;line-height:1.6;color:var(--ink-muted);margin:0 12px}
+    /* Hero - 紧凑版：badge 嵌入标题旁，去掉副标题 */
+    .hero{padding:14px 4px 6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .hero .badge{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;font-size:11px;color:var(--primary);background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.16);border-radius:999px;font-weight:600;letter-spacing:.3px;flex-shrink:0}
+    .hero .badge svg{width:12px;height:12px}
+    .hero h1{font-family:var(--font-display);font-size:22px;font-weight:400;line-height:1.2;margin:0;color:var(--ink);flex:1;min-width:0}
+    .hero p{font-size:12px;line-height:1.5;color:var(--ink-muted);margin:6px 0 0;width:100%}
+    .hero p[hidden]{display:none}
 
-    /* Card Preview */
-    .card{display:flex;gap:16px;padding:18px;border-radius:var(--radius-lg);background:rgba(255,255,255,.78);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border:1px solid var(--border);box-shadow:var(--shadow-card);margin-top:18px;position:relative;overflow:hidden}
+    /* Card Preview - 紧凑卡面 */
+    .card{display:flex;gap:12px;padding:12px;border-radius:var(--radius-lg);background:rgba(255,255,255,.78);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border:1px solid var(--border);box-shadow:var(--shadow-card);margin-top:8px;position:relative;overflow:hidden}
     .card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--primary) 0%,var(--gold) 50%,var(--accent) 100%)}
-    .card .face{width:104px;height:140px;border-radius:var(--radius-md);background:linear-gradient(135deg,#FCE7C8 0%,#F4CBA0 100%);display:flex;align-items:center;justify-content:center;color:#8B6F3A;font-size:12px;flex-shrink:0;overflow:hidden;text-align:center;padding:8px;box-shadow:0 8px 20px -10px rgba(180,120,40,.4)}
+    .card .face{width:80px;height:108px;border-radius:var(--radius-md);background:linear-gradient(135deg,#FCE7C8 0%,#F4CBA0 100%);display:flex;align-items:center;justify-content:center;color:#8B6F3A;font-size:11px;flex-shrink:0;overflow:hidden;text-align:center;padding:6px;box-shadow:0 6px 14px -8px rgba(180,120,40,.4)}
     .card .face img{width:100%;height:100%;border-radius:var(--radius-md);object-fit:cover}
-    .card .face .ph-icon{width:28px;height:28px;opacity:.5;margin-bottom:6px}
-    .card .meta{flex:1;display:flex;flex-direction:column;justify-content:space-between;min-width:0}
-    .card .meta h2{font-family:var(--font-display);font-size:18px;font-weight:400;margin:0 0 8px;color:var(--ink);line-height:1.3;word-break:break-all;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-    .card .meta-row{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-muted);line-height:1.5;margin-bottom:4px}
-    .card .meta-row svg{width:14px;height:14px;color:var(--ink-soft);flex-shrink:0}
+    .card .face .ph-icon{width:22px;height:22px;opacity:.5}
+    .card .meta{flex:1;display:flex;flex-direction:column;justify-content:center;gap:6px;min-width:0}
+    .card .meta h2{font-family:var(--font-display);font-size:16px;font-weight:400;margin:0;color:var(--ink);line-height:1.25;word-break:break-all;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .card .meta-row{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink-muted);line-height:1.4}
+    .card .meta-row svg{width:12px;height:12px;color:var(--ink-soft);flex-shrink:0}
 
     /* Target hint chip */
-    .target-hint{margin-top:14px;padding:12px 14px;background:linear-gradient(135deg,rgba(217,119,6,.08) 0%,rgba(220,38,38,.06) 100%);border:1px solid rgba(217,119,6,.2);color:var(--warn);border-radius:var(--radius-md);font-size:13px;line-height:1.5;display:flex;align-items:flex-start;gap:8px}
-    .target-hint svg{width:16px;height:16px;flex-shrink:0;margin-top:2px}
+    .target-hint{margin-top:10px;padding:9px 12px;background:linear-gradient(135deg,rgba(217,119,6,.08) 0%,rgba(220,38,38,.06) 100%);border:1px solid rgba(217,119,6,.2);color:var(--warn);border-radius:var(--radius-md);font-size:12px;line-height:1.45;display:flex;align-items:flex-start;gap:6px}
+    .target-hint svg{width:14px;height:14px;flex-shrink:0;margin-top:2px}
     .target-hint strong{color:var(--primary);font-weight:700;letter-spacing:.5px}
 
     /* Form */
-    .form{margin-top:18px;padding:20px;background:rgba(255,255,255,.85);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:0 12px 36px -16px rgba(15,23,42,.08)}
-    .form-row{margin-bottom:14px}
+    .form{margin-top:10px;padding:14px;background:rgba(255,255,255,.85);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:0 12px 36px -16px rgba(15,23,42,.08)}
+    .form-row{margin-bottom:10px}
     .form-row:last-child{margin-bottom:0}
-    .label{display:block;font-size:13px;color:var(--ink-muted);font-weight:500;margin-bottom:6px}
-    .input{width:100%;height:48px;padding:0 14px;font-size:16px;font-family:var(--font-body);color:var(--ink);background:#fff;border:1.5px solid var(--border);border-radius:var(--radius-md);outline:none;transition:border-color .2s ease,box-shadow .2s ease;-webkit-appearance:none}
+    .label{display:block;font-size:12px;color:var(--ink-muted);font-weight:500;margin-bottom:4px}
+    .input{width:100%;height:42px;padding:0 12px;font-size:15px;font-family:var(--font-body);color:var(--ink);background:#fff;border:1.5px solid var(--border);border-radius:var(--radius-md);outline:none;transition:border-color .2s ease,box-shadow .2s ease;-webkit-appearance:none}
     .input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(220,38,38,.12)}
-    .input-row{display:flex;gap:8px;align-items:stretch}
+    .input-row{display:flex;gap:6px;align-items:stretch}
     .input-row .input{flex:1}
-    .code-btn{flex-shrink:0;padding:0 16px;font-size:13px;font-weight:600;color:var(--primary);background:#fff;border:1.5px solid var(--primary);border-radius:var(--radius-md);cursor:pointer;font-family:var(--font-body);white-space:nowrap;transition:background .2s,color .2s}
+    .code-btn{flex-shrink:0;padding:0 12px;font-size:12px;font-weight:600;color:var(--primary);background:#fff;border:1.5px solid var(--primary);border-radius:var(--radius-md);cursor:pointer;font-family:var(--font-body);white-space:nowrap;transition:background .2s,color .2s}
     .code-btn:hover:not(:disabled){background:var(--primary);color:#fff}
     .code-btn:disabled{color:var(--ink-soft);border-color:var(--border);cursor:not-allowed;background:#fafafa}
 
     /* Buttons */
-    .btn{width:100%;height:52px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:16px;font-weight:700;font-family:var(--font-body);border-radius:var(--radius-md);border:0;cursor:pointer;text-decoration:none;letter-spacing:.3px;transition:transform .15s ease,box-shadow .2s ease,background .2s ease,color .2s ease}
+    .btn{width:100%;height:46px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:700;font-family:var(--font-body);border-radius:var(--radius-md);border:0;cursor:pointer;text-decoration:none;letter-spacing:.3px;transition:transform .15s ease,box-shadow .2s ease,background .2s ease,color .2s ease}
     .btn:active{transform:translateY(1px)}
     .btn-primary{background:var(--ink);color:#fff;box-shadow:0 8px 20px -10px rgba(15,23,42,.4)}
     .btn-primary:hover:not(:disabled){background:var(--primary);box-shadow:0 12px 28px -12px rgba(220,38,38,.5)}
     .btn-primary:disabled{background:var(--ink-soft);cursor:not-allowed;box-shadow:none}
     .btn-outline{background:#fff;color:var(--ink);border:1.5px solid var(--border)}
     .btn-outline:hover{border-color:var(--ink);background:#fafafa}
-    .btn svg{width:18px;height:18px}
-    .form .btn-primary{margin-top:6px}
+    .btn svg{width:16px;height:16px}
+    .form .btn-primary{margin-top:4px}
 
     /* Tip */
-    .tip{margin-top:12px;font-size:13px;color:var(--ink-muted);line-height:1.5;min-height:18px;padding:0 4px;text-align:center}
+    .tip{margin-top:8px;font-size:12px;color:var(--ink-muted);line-height:1.4;min-height:16px;padding:0 4px;text-align:center}
     .tip.error{color:var(--danger);font-weight:500}
     .tip.success{color:var(--success);font-weight:500}
 
     /* Success / Fail blocks */
-    .result-block{margin-top:18px;padding:24px 20px;background:rgba(255,255,255,.85);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-card);text-align:center}
-    .result-block .icon-wrap{width:64px;height:64px;margin:0 auto 14px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--primary) 0%,var(--accent) 100%)}
+    .result-block{margin-top:10px;padding:18px 16px;background:rgba(255,255,255,.85);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-card);text-align:center}
+    .result-block .icon-wrap{width:52px;height:52px;margin:0 auto 10px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--primary) 0%,var(--accent) 100%)}
     .result-block .icon-wrap.fail{background:linear-gradient(135deg,#fecaca 0%,#fca5a5 100%)}
-    .result-block .icon-wrap svg{width:32px;height:32px;color:#fff}
-    .result-block h3{font-family:var(--font-display);font-size:22px;font-weight:400;margin:0 0 8px;color:var(--ink)}
-    .result-block p{font-size:14px;line-height:1.65;color:var(--ink-muted);margin:0 8px}
+    .result-block .icon-wrap svg{width:26px;height:26px;color:#fff}
+    .result-block h3{font-family:var(--font-display);font-size:18px;font-weight:400;margin:0 0 6px;color:var(--ink)}
+    .result-block p{font-size:13px;line-height:1.55;color:var(--ink-muted);margin:0 4px}
 
-    /* App download block */
-    .app-block{margin-top:18px;padding:20px;background:linear-gradient(135deg,#0F172A 0%,#1E293B 100%);border-radius:var(--radius-lg);color:#fff;box-shadow:var(--shadow-card);position:relative;overflow:hidden}
-    .app-block::before{content:'';position:absolute;width:200px;height:200px;background:radial-gradient(circle,rgba(236,72,153,.3) 0%,transparent 70%);top:-80px;right:-60px;border-radius:50%}
-    .app-block .app-header{display:flex;align-items:center;gap:12px;margin-bottom:14px;position:relative;z-index:1}
-    .app-block .app-logo{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--primary) 0%,var(--gold) 100%);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 6px 16px -6px rgba(220,38,38,.5)}
-    .app-block .app-logo svg{width:22px;height:22px;color:#fff}
-    .app-block .app-info{flex:1}
-    .app-block .app-name{font-family:var(--font-display);font-size:18px;font-weight:400;line-height:1.2;margin:0}
-    .app-block .app-tag{font-size:12px;color:rgba(255,255,255,.7);margin-top:2px;line-height:1.4}
-    .app-block .app-buttons{display:grid;grid-template-columns:1fr 1fr;gap:10px;position:relative;z-index:1}
-    .app-block .app-btn{display:flex;align-items:center;justify-content:center;gap:6px;height:44px;border-radius:var(--radius-sm);background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.16);color:#fff;font-size:13px;font-weight:600;text-decoration:none;backdrop-filter:blur(8px);transition:background .2s}
+    /* App download block - 紧凑版 */
+    .app-block{margin-top:10px;padding:14px;background:linear-gradient(135deg,#0F172A 0%,#1E293B 100%);border-radius:var(--radius-lg);color:#fff;box-shadow:var(--shadow-card);position:relative;overflow:hidden}
+    .app-block::before{content:'';position:absolute;width:160px;height:160px;background:radial-gradient(circle,rgba(236,72,153,.3) 0%,transparent 70%);top:-60px;right:-40px;border-radius:50%}
+    .app-block .app-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;position:relative;z-index:1}
+    .app-block .app-logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--primary) 0%,var(--gold) 100%);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 6px 16px -6px rgba(220,38,38,.5)}
+    .app-block .app-logo svg{width:18px;height:18px;color:#fff}
+    .app-block .app-info{flex:1;min-width:0}
+    .app-block .app-name{font-family:var(--font-display);font-size:15px;font-weight:400;line-height:1.2;margin:0}
+    .app-block .app-tag{font-size:11px;color:rgba(255,255,255,.7);margin-top:2px;line-height:1.35}
+    .app-block .app-buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px;position:relative;z-index:1}
+    .app-block .app-btn{display:flex;align-items:center;justify-content:center;gap:5px;height:38px;border-radius:var(--radius-sm);background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.16);color:#fff;font-size:12px;font-weight:600;text-decoration:none;backdrop-filter:blur(8px);transition:background .2s}
     .app-block .app-btn:hover{background:rgba(255,255,255,.2)}
-    .app-block .app-btn svg{width:16px;height:16px}
+    .app-block .app-btn svg{width:14px;height:14px}
 
     /* Footer */
-    .footer{margin-top:auto;padding:18px 4px 0;font-size:11px;color:var(--ink-soft);text-align:center;line-height:1.6}
+    .footer{margin-top:10px;padding:8px 4px;font-size:10px;color:var(--ink-soft);text-align:center;line-height:1.4}
     .footer a{color:var(--ink-muted);text-decoration:none}
 
     /* Loading skeleton */
@@ -154,10 +156,10 @@ var claimHintPage = template.Must(template.New("digital-card-claim").Parse(`<!do
     <header class="hero">
       <span class="badge">
         <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm-2-7.586l1.293-1.293a1 1 0 011.414 0L12 10.414V8a1 1 0 112 0v5a1 1 0 01-1 1H8a1 1 0 110-2h2.586L8.293 9.707a1 1 0 010-1.414z"/></svg>
-        九克城提货卡
+        九克城
       </span>
       <h1 id="title">朋友送你一张提货卡</h1>
-      <p id="desc">正在为你准备...</p>
+      <p id="desc" hidden>加载中...</p>
     </header>
 
     <section class="card" id="cardBox" style="display:none">
@@ -322,10 +324,13 @@ var claimHintPage = template.Must(template.New("digital-card-claim").Parse(`<!do
       }).catch(function(){ return null; });
     }
 
+    function showDesc(text){ descEl.textContent = text; descEl.hidden = false; }
+    function hideDesc(){ descEl.hidden = true; }
+
     function validateToken() {
       if (!TOKEN) {
         titleEl.textContent = '链接无效';
-        descEl.textContent = '请联系好友重新分享。';
+        showDesc('请联系好友重新分享。');
         loadAppConfig().then(showAppBlock);
         return;
       }
@@ -336,14 +341,14 @@ var claimHintPage = template.Must(template.New("digital-card-claim").Parse(`<!do
       }).then(function(r){return r.json()}).then(function(body){
         if (!body || !body.data || body.data.valid !== true) {
           titleEl.textContent = '链接已失效';
-          descEl.textContent = (body && body.data && body.data.failureReason) || '该分享链接已过期、被吊销或已被领取。';
+          showDesc((body && body.data && body.data.failureReason) || '该分享链接已过期、被吊销或已被领取。');
           loadAppConfig().then(showAppBlock);
           return;
         }
         var info = body.data.token || {};
         var masked = body.data.targetMobileMasked || '';
         titleEl.textContent = '朋友送你一张提货卡';
-        descEl.textContent = '请输入手机号 + 验证码完成领取';
+        hideDesc();
         cardName.textContent = info.templateName || '提货卡';
         cardExpire.textContent = '有效期至 ' + (info.expireAt || '-');
         cardSender.textContent = '分享人：朋友';
@@ -357,7 +362,7 @@ var claimHintPage = template.Must(template.New("digital-card-claim").Parse(`<!do
         loadAppConfig().then(showAppBlock);
       }).catch(function(){
         titleEl.textContent = '网络异常';
-        descEl.textContent = '请检查网络后刷新重试。';
+        showDesc('请检查网络后刷新重试。');
       });
     }
 
@@ -403,7 +408,7 @@ var claimHintPage = template.Must(template.New("digital-card-claim").Parse(`<!do
       claimBlock.style.display = 'none';
       targetHint.style.display = 'none';
       titleEl.textContent = success ? '领取成功' : '领取失败';
-      descEl.textContent = success ? '卡片已发放至你的账户' : '请确认手机号与朋友分享时一致';
+      hideDesc();
       resultTitle.textContent = title;
       resultDesc.textContent = desc;
       resultIconWrap.className = 'icon-wrap' + (success ? '' : ' fail');
