@@ -199,7 +199,11 @@ func (l *GenerateClaimTokenLogic) generateClaimTokenInTx(tx *gorm.DB, in *smscli
 	}
 
 	expireAt := time.Now().Add(time.Duration(expireHours) * time.Hour)
-	token := generateClaimToken()
+	token, err := generateClaimToken()
+	if err != nil {
+		// C-4: crypto/rand 不可用时必须 fail-closed，禁止回退到可枚举值
+		return nil, fmt.Errorf("生成分享凭证失败: %w", err)
+	}
 	now := time.Now()
 	row := &claimTokenRow{
 		Token:          token,
@@ -224,12 +228,15 @@ func (l *GenerateClaimTokenLogic) generateClaimTokenInTx(tx *gorm.DB, in *smscli
 	return row, nil
 }
 
-func generateClaimToken() string {
+// generateClaimToken 生成 32 字节加密安全随机 token，使用 RawURLEncoding（无 padding）。
+// crypto/rand 失败时返回 error，由调用方触发事务回滚——禁止任何可枚举/可预测的兜底，
+// 避免违反 Story 10.7 架构约束 #1（凭证必须不可枚举）。
+func generateClaimToken() (string, error) {
 	buf := make([]byte, 32)
 	if _, err := rand.Read(buf); err != nil {
-		return base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("token_%d", time.Now().UnixNano())))
+		return "", fmt.Errorf("crypto/rand 不可用: %w", err)
 	}
-	return base64.URLEncoding.EncodeToString(buf)
+	return base64.RawURLEncoding.EncodeToString(buf), nil
 }
 
 func buildClaimTokenData(row *claimTokenRow) *smsclient.ClaimTokenData {

@@ -2,11 +2,13 @@ package middleware
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 )
 
@@ -118,19 +120,22 @@ func (rl *RateLimiter) AllowWithBurst(ctx context.Context, key string, burst int
 }
 
 // DigitalCardRateLimitMiddleware 提货卡接口限流中间件
+// H-4: memberID 只从 JWT 解析后的 ctx 取，禁止使用客户端可伪造的 X-Member-Id header；
+//
+//	若 ctx 内无 memberID（如未登录的 H5 校验接口），仅按 IP 限流。
 func DigitalCardRateLimitMiddleware(rds *redis.Redis) func(http.HandlerFunc) http.HandlerFunc {
 	limiter := NewRateLimiter(rds)
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
-			// 使用 IP + 用户ID 作为限流键
 			clientIP := getClientIP(r)
-			memberID := r.Header.Get("X-Member-Id")
+			memberID := memberIDFromCtx(ctx)
 			key := fmt.Sprintf("%s:%s", clientIP, memberID)
 
 			allowed, count, err := limiter.Allow(ctx, key)
 			if err != nil {
-				// Redis 异常时放行，避免影响正常业务
+				// H-6: Redis 异常时放行但必须告警，避免无声绕过限流
+				logc.Errorf(ctx, "限流中间件 Redis 异常，临时放行: %v, key=%s", err, key)
 				next(w, r)
 				return
 			}
@@ -157,12 +162,13 @@ func DigitalCardRateLimitMiddleware(rds *redis.Redis) func(http.HandlerFunc) htt
 
 // AbnormalDetectionMiddleware 异常行为检测中间件
 // 检测短时间内大量请求、异常IP等
+// H-4: memberID 改从 ctx 取，禁止使用客户端伪造的 header
 func AbnormalDetectionMiddleware(rds *redis.Redis) func(http.HandlerFunc) http.HandlerFunc {
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 			clientIP := getClientIP(r)
-			memberID := r.Header.Get("X-Member-Id")
+			memberID := memberIDFromCtx(ctx)
 
 			// 检查IP是否被封禁
 			if isBlocked(ctx, rds, clientIP) {
@@ -246,35 +252,50 @@ func getClientIP(r *http.Request) string {
 }
 
 // isAbnormalClaim 检测异常领取行为
-// 规则：同一 IP 在 5 分钟内 claim 请求超过 20 次，或连续使用空 token  probing
+// 规则：同一 IP 在 5 分钟内 claim 请求超过 20 次。
+// H-5: 移除原"URL.Query 空 token probing"分支——/claim 是 POST + JSON body，
+//
+//	r.URL.Query 永远不含 token，该分支为死代码且对正常请求计数失真；
+//	ZADD member 使用 RemoteAddr + nano 时间戳，避免 POST 下 RawQuery 为空导致 ZADD 合并。
 func isAbnormalClaim(ctx context.Context, rds *redis.Redis, clientIP string, r *http.Request) bool {
 	claimKey := fmt.Sprintf("claim:abnormal:%s", clientIP)
 	now := time.Now().Unix()
+	nano := time.Now().UnixNano()
 	windowStart := now - int64(5*time.Minute.Seconds())
 
-	// 记录本次请求
-	_, _ = rds.ZaddCtx(ctx, claimKey, now, fmt.Sprintf("%d:%s", now, r.URL.RawQuery))
+	// 记录本次请求；member 用 nano 时间戳 + 源端口确保唯一，避免高频请求被 ZADD 合并
+	uniqueMember := fmt.Sprintf("%d:%d:%s", now, nano, r.RemoteAddr)
+	_, _ = rds.ZaddCtx(ctx, claimKey, now, uniqueMember)
 	_ = rds.ExpireCtx(ctx, claimKey, int(5*time.Minute.Seconds()))
 	_, _ = rds.ZremrangebyscoreCtx(ctx, claimKey, 0, windowStart)
 
 	count, err := rds.ZcardCtx(ctx, claimKey)
 	if err != nil {
+		logc.Errorf(ctx, "异常领取检测 Redis 异常: %v, ip=%s", err, clientIP)
 		return false
 	}
 	if int(count) > 20 {
 		return true
 	}
-
-	// 检测连续空 token  probing（5 分钟内超过 5 次空 token）
-	token := r.URL.Query().Get("token")
-	if token == "" {
-		emptyKey := fmt.Sprintf("claim:empty:%s", clientIP)
-		emptyCount, _ := rds.IncrCtx(ctx, emptyKey)
-		_ = rds.ExpireCtx(ctx, emptyKey, int(5*time.Minute.Seconds()))
-		if emptyCount > 5 {
-			return true
-		}
-	}
-
 	return false
+}
+
+// memberIDFromCtx 从已登录 JWT 上下文取 memberID（同 frontcommon.GetMemberId 的解析逻辑）。
+// 故意复制在 middleware 包内以避免 middleware 依赖 frontcommon 形成循环导入。
+// 未登录 / 解析失败返回空字符串，调用方按"匿名"处理。
+func memberIDFromCtx(ctx context.Context) string {
+	raw := ctx.Value("memberId")
+	if raw == nil {
+		return ""
+	}
+	if jn, ok := raw.(json.Number); ok {
+		return jn.String()
+	}
+	if s, ok := raw.(string); ok {
+		return s
+	}
+	if i, ok := raw.(int64); ok {
+		return fmt.Sprintf("%d", i)
+	}
+	return ""
 }

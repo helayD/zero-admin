@@ -83,11 +83,23 @@ func (l *UpdateRedemptionOrderStatusLogic) UpdateRedemptionOrderStatus(in *smscl
 		updates["delivered_at"] = now
 	}
 
-	if err := l.svcCtx.DB.WithContext(l.ctx).
+	// Review #5 H4: 绑定 OMS 订单时使用 CAS，确保单条提货单只能绑定一次。
+	// 同一 MQ 事件被并发消费时，第二次绑定会得到 RowsAffected==0 并被识别为冲突。
+	query := l.svcCtx.DB.WithContext(l.ctx).
 		Table(order.TableName()).
-		Where("id = ?", order.ID).
-		Updates(updates).Error; err != nil {
-		return nil, fmt.Errorf("更新提货单状态失败: %w", err)
+		Where("id = ? AND is_deleted = 0", order.ID)
+	if in.OmsOrderId > 0 {
+		query = query.Where("oms_order_id = 0")
+	}
+	updRes := query.Updates(updates)
+	if updRes.Error != nil {
+		return nil, fmt.Errorf("更新提货单状态失败: %w", updRes.Error)
+	}
+	if updRes.RowsAffected == 0 {
+		if in.OmsOrderId > 0 {
+			return nil, errors.New("提货单 OMS 订单已绑定，无法重复绑定")
+		}
+		return nil, errors.New("提货单状态已变化，更新失败")
 	}
 
 	order.Status = in.Status

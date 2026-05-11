@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/feihua/zero-admin/api/front/internal/svc"
@@ -33,6 +34,8 @@ func (l *CreateRedemptionOrderLogic) CreateRedemptionOrder(req *types.CreateRede
 	if err != nil {
 		return nil, err
 	}
+	// Story 10.7 安全要求 #5/#6：作用域必须从服务端身份上下文取，禁止信任客户端入参
+	scope := currentGovernanceScope(l.ctx)
 
 	resp, err := l.svcCtx.CardRedemptionOrderService.CreateRedemptionOrder(l.ctx, &cardredemptionorderservice.CreateRedemptionOrderReq{
 		CardInstanceId:  req.CardInstanceId,
@@ -40,9 +43,9 @@ func (l *CreateRedemptionOrderLogic) CreateRedemptionOrder(req *types.CreateRede
 		ReceiverName:    req.ReceiverName,
 		ReceiverPhone:   req.ReceiverPhone,
 		ReceiverAddress: req.ReceiverAddress,
-		PlatformId:      req.PlatformId,
-		TenantId:        req.TenantId,
-		MerchantId:      req.MerchantId,
+		PlatformId:      scope.PlatformID,
+		TenantId:        scope.TenantID,
+		MerchantId:      scope.MerchantID,
 		TraceId:         req.TraceId,
 		RequestId:       req.RequestId,
 	})
@@ -77,10 +80,14 @@ func (l *QueryRedemptionOrderLogic) QueryRedemptionOrder(req *types.QueryRedempt
 		return nil, err
 	}
 
+	scope := currentGovernanceScope(l.ctx)
 	resp, err := l.svcCtx.CardRedemptionOrderService.QueryRedemptionOrder(l.ctx, &cardredemptionorderservice.QueryRedemptionOrderReq{
 		OrderId:        req.OrderId,
 		CardInstanceId: req.CardInstanceId,
 		HolderId:       memberID,
+		PlatformId:     scope.PlatformID,
+		TenantId:       scope.TenantID,
+		MerchantId:     scope.MerchantID,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("查询提货单失败: %w", err)
@@ -109,8 +116,10 @@ func NewGenerateShareLinkLogic(ctx context.Context, svcCtx *svc.ServiceContext) 
 
 // resolveShareDomain 解析并校验分享链接域名：
 // - 若客户端未传，则使用配置白名单首项作为兜底域名，避免调用方未配置时失败
-// - 若客户端传入，则必须在白名单内（支持精确匹配或作为子域名）
-// - 禁止含有路径/查询参数等非法字符，防止 SSRF 与钓鱼链接
+// - 若客户端传入，使用 url.Parse 严格解析，再与白名单精确匹配 host:port
+// - 禁止含 userinfo（user@host）、路径、查询、IPv6 字面量等可能引入解析差异的字符
+// - 仅允许：与白名单完全相等，或白名单为 a.com 时 sub.a.com 形式（不含端口）
+// - Review #5 M3: host 比较使用 strings.EqualFold，遵循 RFC 3986 host 大小写不敏感
 func resolveShareDomain(domain string, allowedDomains []string) (string, error) {
 	if domain == "" {
 		if len(allowedDomains) == 0 {
@@ -118,11 +127,23 @@ func resolveShareDomain(domain string, allowedDomains []string) (string, error) 
 		}
 		return allowedDomains[0], nil
 	}
-	if strings.ContainsAny(domain, "/?#&=\\") {
+	// 禁止任何路径/查询/认证字符，提前阻断绕过攻击向量
+	if strings.ContainsAny(domain, "/?#&=\\@[]") {
 		return "", errors.New("域名格式非法")
 	}
+	// 通过 url.Parse 严格解析 host:port，拒绝歧义 URL（host 大小写不敏感比较）
+	parsed, err := url.Parse("https://" + domain)
+	if err != nil || parsed.Host == "" || !strings.EqualFold(parsed.Host, domain) {
+		return "", errors.New("域名格式非法")
+	}
+	domainLower := strings.ToLower(domain)
 	for _, allowed := range allowedDomains {
-		if domain == allowed || strings.HasSuffix(domain, "."+allowed) {
+		allowedLower := strings.ToLower(allowed)
+		if domainLower == allowedLower {
+			return domain, nil
+		}
+		// 子域名匹配仅当白名单不含端口时生效，避免 a.com:9999 与 sub.a.com:9999 歧义
+		if !strings.Contains(allowedLower, ":") && !strings.Contains(domainLower, ":") && strings.HasSuffix(domainLower, "."+allowedLower) {
 			return domain, nil
 		}
 	}
@@ -140,14 +161,15 @@ func (l *GenerateShareLinkLogic) GenerateShareLink(req *types.GenerateShareLinkR
 		return nil, err
 	}
 
+	scope := currentGovernanceScope(l.ctx)
 	resp, err := l.svcCtx.CardClaimTokenService.GenerateClaimToken(l.ctx, &cardclaimtokenservice.GenerateClaimTokenReq{
 		CardInstanceId: req.CardInstanceId,
 		IssuerId:       memberID,
 		ExpireHours:    req.ExpireHours,
 		MaxClaims:      req.MaxClaims,
-		PlatformId:     req.PlatformId,
-		TenantId:       req.TenantId,
-		MerchantId:     req.MerchantId,
+		PlatformId:     scope.PlatformID,
+		TenantId:       scope.TenantID,
+		MerchantId:     scope.MerchantID,
 		TraceId:        req.TraceId,
 		RequestId:      req.RequestId,
 	})
@@ -227,11 +249,16 @@ func (l *ClaimDigitalCardLogic) ClaimDigitalCard(req *types.ClaimDigitalCardReq)
 
 	// ConsumeClaimToken 内部已包含完整的校验逻辑（token 有效性、过期、claimed_count、卡片状态等）
 	// 直接调用即可消除 Validate+Consume 之间的竞态窗口
+	// C-2: 携带领取人的作用域以便 RPC 端校验跨租户/平台越权
+	scope := currentGovernanceScope(l.ctx)
 	consumeResp, err := l.svcCtx.CardClaimTokenService.ConsumeClaimToken(l.ctx, &cardclaimtokenservice.ConsumeClaimTokenReq{
-		Token:     req.Token,
-		ClaimedBy: memberID,
-		TraceId:   req.TraceId,
-		RequestId: req.RequestId,
+		Token:      req.Token,
+		ClaimedBy:  memberID,
+		PlatformId: scope.PlatformID,
+		TenantId:   scope.TenantID,
+		MerchantId: scope.MerchantID,
+		TraceId:    req.TraceId,
+		RequestId:  req.RequestId,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("领取提货卡失败: %w", err)

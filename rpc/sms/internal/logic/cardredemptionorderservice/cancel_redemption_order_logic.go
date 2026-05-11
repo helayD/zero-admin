@@ -2,6 +2,7 @@ package cardredemptionorderservicelogic
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -63,35 +64,65 @@ func (l *CancelRedemptionOrderLogic) cancelRedemptionOrderInTx(tx *gorm.DB, in *
 		return nil, err
 	}
 
-
+	// Review #5 H2: 关闭 fail-open——只要提货单自身带有任意作用域，
+	// 请求必须精确匹配；若调用方未携带（全 0）将直接被拒绝。
+	orderHasScope := order.PlatformID > 0 || order.TenantID > 0 || order.MerchantID > 0
+	if orderHasScope {
+		if order.PlatformID != in.PlatformId || order.TenantID != in.TenantId || order.MerchantID != in.MerchantId {
+			return nil, errors.New("提货单作用域与当前用户不匹配")
+		}
+	}
 
 	if order.Status != redemptionOrderStatusPending {
 		return nil, fmt.Errorf("只有待提货状态的订单可以取消,当前状态:%s", order.Status)
 	}
 
-	now := time.Now()
-	if err := tx.WithContext(l.ctx).
-		Table(order.TableName()).
-		Where("id = ?", order.ID).
-		Updates(map[string]interface{}{
-			"status":       redemptionOrderStatusCancelled,
-			"cancel_reason": in.CancelReason,
-			"updated_at":   now,
-		}).Error; err != nil {
-		return nil, fmt.Errorf("更新提货单状态失败: %w", err)
+	// H-7: 已绑定 OMS 订单的提货单禁止直接取消，避免 SMS 卡片恢复 claimed 但 OMS 仍在发货
+	if order.OmsOrderID > 0 {
+		return nil, errors.New("提货单已对接发货系统，无法取消，请联系客服")
 	}
 
-	if err := tx.WithContext(l.ctx).
+	now := time.Now()
+	// 用 CAS 控制：仅当 status 仍为 pending 且 oms_order_id 仍为 0 才能取消，
+	// 防止 consumer 在状态判断与 UPDATE 之间把单子推入 processing/绑定 OMS。
+	cancelUpd := tx.WithContext(l.ctx).
+		Table(order.TableName()).
+		Where("id = ? AND status = ? AND oms_order_id = 0 AND is_deleted = 0", order.ID, redemptionOrderStatusPending).
+		Updates(map[string]interface{}{
+			"status":        redemptionOrderStatusCancelled,
+			"cancel_reason": in.CancelReason,
+			"updated_at":    now,
+		})
+	if cancelUpd.Error != nil {
+		return nil, fmt.Errorf("更新提货单状态失败: %w", cancelUpd.Error)
+	}
+	if cancelUpd.RowsAffected == 0 {
+		return nil, errors.New("提货单状态已发生变化，无法取消")
+	}
+
+	// 卡片状态恢复也加 CAS，确保 instance 仍是 pending_redemption 才回滚到 claimed
+	instanceUpd := tx.WithContext(l.ctx).
 		Table(cardInstanceRow{}.TableName()).
-		Where("id = ?", order.CardInstanceID).
+		Where("id = ? AND asset_status = ? AND is_deleted = 0", order.CardInstanceID, cardAssetStatusPendingRedemption).
 		Updates(map[string]interface{}{
 			"asset_status": cardAssetStatusClaimed,
 			"update_time":  now,
-		}).Error; err != nil {
-		return nil, fmt.Errorf("恢复卡片状态失败: %w", err)
+		})
+	if instanceUpd.Error != nil {
+		return nil, fmt.Errorf("恢复卡片状态失败: %w", instanceUpd.Error)
+	}
+	if instanceUpd.RowsAffected == 0 {
+		return nil, errors.New("卡片状态已发生变化，请重试")
 	}
 
-	payload := fmt.Sprintf(`{"orderId":%d,"cancelReason":"%s"}`, order.ID, in.CancelReason)
+	// M-3: payload 改 json.Marshal
+	payloadBytes, mErr := json.Marshal(map[string]interface{}{
+		"orderId":      order.ID,
+		"cancelReason": in.CancelReason,
+	})
+	if mErr != nil {
+		return nil, fmt.Errorf("序列化审计负载失败: %w", mErr)
+	}
 	logRow := &cardAssetLogRow{
 		AssetInstanceID:       order.CardInstanceID,
 		ParticipationRecordID: 0,
@@ -99,10 +130,10 @@ func (l *CancelRedemptionOrderLogic) cancelRedemptionOrderInTx(tx *gorm.DB, in *
 		ToStatus:              cardAssetStatusClaimed,
 		OperationType:         cardAssetOperationRedemptionOrderCancelled,
 		OperatorType:          "member",
-		TraceID:               "",
+		TraceID:               in.TraceId,
 		ReasonCode:            cardAssetReasonRedemptionCancelled,
 		ReasonText:            "持有人取消提货单",
-		PayloadJSON:           payload,
+		PayloadJSON:           string(payloadBytes),
 	}
 	if err := tx.WithContext(l.ctx).Table(logRow.TableName()).Create(logRow).Error; err != nil {
 		return nil, fmt.Errorf("记录资产日志失败: %w", err)

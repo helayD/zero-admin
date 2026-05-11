@@ -1,0 +1,110 @@
+-- Story 10.7 Review #5 H1 数据治理草稿（DRAFT — 业务确认后才能执行）
+--
+-- 背景：2026-05-11 Story 10.11 真链 mint 验证时，转赠人 David(member_id=4) 通过
+-- 已下线的 /transferDigitalCardAsset 接口把 970017、970019 两张提货卡越权直转到
+-- did(member_id=1006)，绕过 claim_token 同意机制。
+--
+-- 治理目标：把 970017、970019 的 holder 恢复到 David(4)，并在 sms_card_asset_log
+-- 写入回滚审计事件。此脚本 NOT 自动执行，需业务侧先回答：
+--
+--   1. did(1006) 是否是 David(4) 真实预期的接收人？
+--      - 是 → 不执行此脚本；改在 ConsumeClaimToken 路径补一条 holder_transferred
+--             审计日志做事后追认（参见下方"补审计日志"分支）。
+--      - 否 → 执行本脚本回滚到 David(4)。
+--
+--   2. did(1006) 自接收以来是否对这两张卡发起过任何动作（提货 / 链上 mint /
+--      分享 / 提现）？
+--      - SELECT * FROM sms_card_redemption_order WHERE card_instance_id IN (970017,970019);
+--      - SELECT * FROM sms_card_claim_token       WHERE card_instance_id IN (970017,970019);
+--      - SELECT * FROM sms_card_asset_log         WHERE asset_instance_id IN (970017,970019) ORDER BY id DESC;
+--      - 如有进行中提货单 / 已 mint 真链 → 必须先回滚关联事务再跑此脚本。
+--
+--   3. 是否需要通知 did(1006)？建议至少在 ums_member_message 写一条
+--      「您接收的 1 张提货卡因系统升级被回滚到原持有人，详情请联系客服」。
+--
+-- 执行前置：业务确认 + DBA 备份 sms_card_instance / sms_card_asset_log 当前快照。
+-- 执行时机：远程部署 H1 修复（关闭 410 接口）之后，确保不再有新越权产生。
+
+-- ============================================================================
+-- 分支 A：业务侧确认需回滚（默认草稿，已注释，需手动启用）
+-- ============================================================================
+-- START TRANSACTION;
+--
+-- UPDATE sms_card_instance
+-- SET member_id = 4,
+--     update_by = 0,
+--     update_time = NOW()
+-- WHERE id IN (970017, 970019)
+--   AND member_id = 1006
+--   AND is_deleted = 0;
+--
+-- INSERT INTO sms_card_asset_log
+--   (asset_instance_id, participation_record_id,
+--    from_status, to_status,
+--    operation_type, operator_type, trace_id,
+--    reason_code, reason_text, payload_json,
+--    create_time)
+-- VALUES
+--   (970017, 0, 'asset_created', 'asset_created',
+--    'asset_transferred_rolled_back', 'system', 'review-5-h1-rollback',
+--    'unauthorized_direct_transfer_rollback',
+--    '撤销 2026-05-11 越权直转，恢复至原持有人',
+--    JSON_OBJECT('prevHolder', 1006, 'restoredHolder', 4,
+--                'reason', 'review-5-h1-rollback',
+--                'originalApi', '/transferDigitalCardAsset',
+--                'rolledBackAt', NOW()),
+--    NOW()),
+--   (970019, 0, 'asset_created', 'asset_created',
+--    'asset_transferred_rolled_back', 'system', 'review-5-h1-rollback',
+--    'unauthorized_direct_transfer_rollback',
+--    '撤销 2026-05-11 越权直转，恢复至原持有人',
+--    JSON_OBJECT('prevHolder', 1006, 'restoredHolder', 4,
+--                'reason', 'review-5-h1-rollback',
+--                'originalApi', '/transferDigitalCardAsset',
+--                'rolledBackAt', NOW()),
+--    NOW());
+--
+-- COMMIT;
+
+-- ============================================================================
+-- 分支 B：业务侧确认 did(1006) 是合法接收人，仅补审计日志做事后追认
+-- ============================================================================
+-- START TRANSACTION;
+--
+-- INSERT INTO sms_card_asset_log
+--   (asset_instance_id, participation_record_id,
+--    from_status, to_status,
+--    operation_type, operator_type, trace_id,
+--    reason_code, reason_text, payload_json,
+--    create_time)
+-- VALUES
+--   (970017, 0, 'asset_created', 'asset_created',
+--    'holder_transferred_backfilled', 'system', 'review-5-h1-backfill',
+--    'unauthorized_direct_transfer_acknowledged',
+--    '事后追认 2026-05-11 通过越权直转 API 完成的合法转赠',
+--    JSON_OBJECT('fromHolderId', 4, 'toHolderId', 1006,
+--                'originalApi', '/transferDigitalCardAsset',
+--                'acknowledgedAt', NOW()),
+--    NOW()),
+--   (970019, 0, 'asset_created', 'asset_created',
+--    'holder_transferred_backfilled', 'system', 'review-5-h1-backfill',
+--    'unauthorized_direct_transfer_acknowledged',
+--    '事后追认 2026-05-11 通过越权直转 API 完成的合法转赠',
+--    JSON_OBJECT('fromHolderId', 4, 'toHolderId', 1006,
+--                'originalApi', '/transferDigitalCardAsset',
+--                'acknowledgedAt', NOW()),
+--    NOW());
+--
+-- COMMIT;
+
+-- ============================================================================
+-- 验证查询（执行后跑一遍）
+-- ============================================================================
+-- SELECT id, member_id, asset_status, update_time
+-- FROM sms_card_instance
+-- WHERE id IN (970017, 970019);
+--
+-- SELECT id, asset_instance_id, operation_type, reason_code, create_time
+-- FROM sms_card_asset_log
+-- WHERE asset_instance_id IN (970017, 970019)
+-- ORDER BY id DESC LIMIT 10;

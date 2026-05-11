@@ -2,6 +2,7 @@ package cardclaimtokenservicelogic
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -94,6 +95,15 @@ func (l *ConsumeClaimTokenLogic) consumeClaimTokenInTx(tx *gorm.DB, in *smsclien
 		return nil, errors.New("凭证领取次数已达上限")
 	}
 
+	// C-2 / Review #5 H2: 关闭 fail-open——只要 token 自身带有任意作用域，
+	// 请求必须精确匹配；若调用方未携带（全 0）将直接被拒绝，禁止匿名/零作用域绕过。
+	tokenHasScope := token.PlatformID > 0 || token.TenantID > 0 || token.MerchantID > 0
+	if tokenHasScope {
+		if token.PlatformID != in.PlatformId || token.TenantID != in.TenantId || token.MerchantID != in.MerchantId {
+			return nil, errors.New("凭证作用域与当前用户不匹配")
+		}
+	}
+
 	var instance cardInstanceRow
 	if err := tx.WithContext(l.ctx).
 		Table(instance.TableName()).
@@ -109,8 +119,12 @@ func (l *ConsumeClaimTokenLogic) consumeClaimTokenInTx(tx *gorm.DB, in *smsclien
 		return nil, fmt.Errorf("卡片状态不允许领取:%s", instance.AssetStatus)
 	}
 
+	// 卡片实例作用域必须与 token 一致，确保历史数据/外部调用不会跨作用域转移
+	if instance.PlatformID != token.PlatformID || instance.TenantID != token.TenantID || instance.MerchantID != token.MerchantID {
+		return nil, errors.New("卡片实例作用域与凭证不一致")
+	}
+
 	// 当前卡片持有人 = 领取人：不能自己给自己领
-	// （原实现有两个相同判断块，第二块是死代码，已合并）
 	if instance.MemberID == in.ClaimedBy {
 		return nil, errors.New("您已持有该卡片，无需重复领取")
 	}
@@ -163,17 +177,33 @@ func (l *ConsumeClaimTokenLogic) consumeClaimTokenInTx(tx *gorm.DB, in *smsclien
 	}
 
 	fromHolderID := instance.MemberID
-	if err := tx.WithContext(l.ctx).
+	// H-1: 并发保护——UPDATE 必须带 member_id = fromHolderID，避免多个事务同时把
+	// instance.MemberID 改给不同领取人；若 RowsAffected==0 说明已被并发抢先，回滚事务。
+	instanceUpd := tx.WithContext(l.ctx).
 		Table(instance.TableName()).
-		Where("id = ?", instance.ID).
+		Where("id = ? AND member_id = ? AND is_deleted = 0", instance.ID, fromHolderID).
 		Updates(map[string]interface{}{
 			"member_id":   in.ClaimedBy,
 			"update_time": now,
-		}).Error; err != nil {
-		return nil, fmt.Errorf("更新卡片持有人失败: %w", err)
+		})
+	if instanceUpd.Error != nil {
+		return nil, fmt.Errorf("更新卡片持有人失败: %w", instanceUpd.Error)
+	}
+	if instanceUpd.RowsAffected == 0 {
+		return nil, errors.New("卡片持有人已被并发更新，请重试")
 	}
 
-	payload := fmt.Sprintf(`{"fromHolderId":%d,"toHolderId":%d,"claimTokenId":%d,"transferReason":"%s"}`, fromHolderID, in.ClaimedBy, token.ID, cardAssetReasonClaimTokenConsumed)
+	// M-3: payload 用 json.Marshal，避免 fmt.Sprintf 拼接遇到特殊字符时被 JSON 注入
+	payloadBytes, mErr := json.Marshal(map[string]interface{}{
+		"fromHolderId":   fromHolderID,
+		"toHolderId":     in.ClaimedBy,
+		"claimTokenId":   token.ID,
+		"transferReason": cardAssetReasonClaimTokenConsumed,
+	})
+	if mErr != nil {
+		return nil, fmt.Errorf("序列化审计负载失败: %w", mErr)
+	}
+	payload := string(payloadBytes)
 	logRow := &cardAssetLogRow{
 		AssetInstanceID:       instance.ID,
 		ParticipationRecordID: 0,
@@ -225,6 +255,25 @@ func (l *ConsumeClaimTokenLogic) recordClaimAttempt(in *smsclient.ConsumeClaimTo
 		}
 	}
 
+	// L-2 + M-3: payload 用 json.Marshal 避免拼接歧义，token 不存在时 tokenId=0 表示未识别
+	tokenIDVal := int64(0)
+	if token != nil {
+		tokenIDVal = token.ID
+	}
+	payloadBytes, mErr := json.Marshal(map[string]interface{}{
+		"token":         in.Token,
+		"tokenId":       tokenIDVal,
+		"claimedBy":     in.ClaimedBy,
+		"result":        result,
+		"failureReason": failureReason,
+	})
+	payloadJSON := ""
+	if mErr != nil {
+		logc.Errorf(l.ctx, "序列化领取尝试 payload 失败: %v", mErr)
+		payloadJSON = `{"serializeError":true}`
+	} else {
+		payloadJSON = string(payloadBytes)
+	}
 	logRow := &cardAssetLogRow{
 		AssetInstanceID:       cardInstanceIDVal,
 		ParticipationRecordID: 0,
@@ -235,10 +284,7 @@ func (l *ConsumeClaimTokenLogic) recordClaimAttempt(in *smsclient.ConsumeClaimTo
 		TraceID:               in.TraceId,
 		ReasonCode:            result,
 		ReasonText:            fmt.Sprintf("领取尝试:%s", result),
-		PayloadJSON:           fmt.Sprintf(`{"token":"%s","tokenId":%d,"claimedBy":%d,"result":"%s","failureReason":"%s"}`, in.Token, 0, in.ClaimedBy, result, failureReason),
-	}
-	if token != nil {
-		logRow.PayloadJSON = fmt.Sprintf(`{"token":"%s","tokenId":%d,"claimedBy":%d,"result":"%s","failureReason":"%s"}`, in.Token, token.ID, in.ClaimedBy, result, failureReason)
+		PayloadJSON:           payloadJSON,
 	}
 
 	if err := l.svcCtx.DB.WithContext(l.ctx).Table(logRow.TableName()).Create(logRow).Error; err != nil {

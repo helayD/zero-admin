@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/feihua/zero-admin/pkg/digitalcardmint"
 	"github.com/feihua/zero-admin/rpc/oms/client/orderservice"
@@ -134,8 +133,17 @@ func RedemptionRequested(ctx context.Context, body []byte, db *gorm.DB, orderSer
 		return err
 	}
 
+	// C-5: 幂等保护——MQ 可能重投同一事件，若提货单已绑定 OMS 订单则直接确认消息，
+	// 避免重新生成新 OrderNo 导致 OMS 端出现多张 0 元订单
+	if order.OmsOrderID > 0 {
+		logc.Infof(ctx, "提货单已绑定 OMS 订单，跳过重复处理, orderId=%d, omsOrderId=%d", order.ID, order.OmsOrderID)
+		return nil
+	}
+
 	if order.Status != "pending" {
-		return fmt.Errorf("提货单状态不是待处理: %s", order.Status)
+		// 非 pending（可能在 processing/shipped/cancelled/failed）一律忽略，由人工或专项 job 处理
+		logc.Infof(ctx, "提货单状态非 pending，跳过事件, orderId=%d, status=%s", order.ID, order.Status)
+		return nil
 	}
 
 	logc.Infof(ctx, "收到提货请求事件, orderId=%d, cardInstanceId=%d", event.OrderID, order.CardInstanceID)
@@ -161,6 +169,15 @@ func RedemptionRequested(ctx context.Context, body []byte, db *gorm.DB, orderSer
 
 	// 创建OMS订单
 	if omsService != nil {
+		// 再次校验 omsOrderId 仍为 0，防止 status 更新与创建 OMS 之间的间隙被并发请求抢先
+		var latest redemptionOrderRow
+		if err := db.WithContext(ctx).
+			Table(latest.TableName()).
+			Where("id = ? AND is_deleted = 0", order.ID).
+			Take(&latest).Error; err == nil && latest.OmsOrderID > 0 {
+			logc.Infof(ctx, "提货单 OMS 订单已被并发创建，跳过, orderId=%d, omsOrderId=%d", order.ID, latest.OmsOrderID)
+			return nil
+		}
 		omsOrderID, err := createOmsOrder(ctx, db, omsService, &order)
 		if err != nil {
 			logc.Errorf(ctx, "创建OMS订单失败: %v", err)
@@ -229,8 +246,8 @@ func createOmsOrder(ctx context.Context, db *gorm.DB, omsService orderservice.Or
 	}
 
 	// 构建OMS订单请求
-	now := time.Now()
-	orderNo := fmt.Sprintf("RDO%s%d", now.Format("20060102150405"), order.ID)
+	// C-5: 用 SMS 提货单的 OrderNo 作为 OMS 幂等键，确保 MQ 重投不会产生不同的 OMS 订单号
+	orderNo := order.OrderNo
 
 	omsReq := &omsclient.AddOrderReq{
 		OrderNo:     orderNo,

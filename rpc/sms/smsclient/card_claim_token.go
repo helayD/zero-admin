@@ -55,29 +55,34 @@ type ValidateClaimTokenReq struct {
 }
 
 type ValidateClaimTokenResp struct {
-	Valid          bool   `json:"valid"`
-	Token          *ClaimTokenData `json:"token"`
-	FailureReason  string `json:"failureReason"`
+	Valid         bool            `json:"valid"`
+	Token         *ClaimTokenData `json:"token"`
+	FailureReason string          `json:"failureReason"`
 }
 
 type ConsumeClaimTokenReq struct {
 	Token      string `json:"token"`
 	ClaimedBy  int64  `json:"claimedBy"`
+	PlatformId int64  `json:"platformId"`
+	TenantId   int64  `json:"tenantId"`
+	MerchantId int64  `json:"merchantId"`
 	TraceId    string `json:"traceId"`
 	RequestId  string `json:"requestId"`
 }
 
 type ConsumeClaimTokenResp struct {
-	Success        bool            `json:"success"`
-	Token          *ClaimTokenData `json:"token"`
-	CardInstance   *CardInstanceData `json:"cardInstance"`
-	FailureReason  string          `json:"failureReason"`
+	Success       bool              `json:"success"`
+	Token         *ClaimTokenData   `json:"token"`
+	CardInstance  *CardInstanceData `json:"cardInstance"`
+	FailureReason string            `json:"failureReason"`
 }
 
 type RevokeClaimTokenReq struct {
-	TokenId    int64  `json:"tokenId"`
-	IssuerId   int64  `json:"issuerId"`
-	Reason     string `json:"reason"`
+	TokenId   int64  `json:"tokenId"`
+	IssuerId  int64  `json:"issuerId"`
+	Reason    string `json:"reason"`
+	TraceId   string `json:"traceId"`
+	RequestId string `json:"requestId"`
 }
 
 type RevokeClaimTokenResp struct {

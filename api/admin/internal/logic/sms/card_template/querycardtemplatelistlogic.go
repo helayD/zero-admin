@@ -97,8 +97,9 @@ func toCardTemplateData(item *smsclient.CardTemplateData) types.CardTemplateData
 		MerchantId:              item.MerchantId,
 		CreateBy:                item.CreateBy,
 		UpdateBy:                item.UpdateBy,
-		CreateTime:              item.CreateTime,
-		UpdateTime:              item.UpdateTime,
-		RefRuleCount:            item.RefRuleCount,
+
+		CreateTime:   item.CreateTime,
+		UpdateTime:   item.UpdateTime,
+		RefRuleCount: item.RefRuleCount,
 	}
 }

@@ -9,9 +9,9 @@ import (
 )
 
 const (
-	CardRedemptionOrderService_CreateRedemptionOrder_FullMethodName  = "/smsclient.CardRedemptionOrderService/CreateRedemptionOrder"
-	CardRedemptionOrderService_QueryRedemptionOrder_FullMethodName   = "/smsclient.CardRedemptionOrderService/QueryRedemptionOrder"
-	CardRedemptionOrderService_CancelRedemptionOrder_FullMethodName  = "/smsclient.CardRedemptionOrderService/CancelRedemptionOrder"
+	CardRedemptionOrderService_CreateRedemptionOrder_FullMethodName       = "/smsclient.CardRedemptionOrderService/CreateRedemptionOrder"
+	CardRedemptionOrderService_QueryRedemptionOrder_FullMethodName        = "/smsclient.CardRedemptionOrderService/QueryRedemptionOrder"
+	CardRedemptionOrderService_CancelRedemptionOrder_FullMethodName       = "/smsclient.CardRedemptionOrderService/CancelRedemptionOrder"
 	CardRedemptionOrderService_UpdateRedemptionOrderStatus_FullMethodName = "/smsclient.CardRedemptionOrderService/UpdateRedemptionOrderStatus"
 )
 
@@ -56,6 +56,9 @@ type QueryRedemptionOrderReq struct {
 	OrderId        int64 `json:"orderId"`
 	CardInstanceId int64 `json:"cardInstanceId"`
 	HolderId       int64 `json:"holderId"`
+	PlatformId     int64 `json:"platformId"`
+	TenantId       int64 `json:"tenantId"`
+	MerchantId     int64 `json:"merchantId"`
 }
 
 type QueryRedemptionOrderResp struct {
@@ -66,6 +69,10 @@ type CancelRedemptionOrderReq struct {
 	OrderId      int64  `json:"orderId"`
 	HolderId     int64  `json:"holderId"`
 	CancelReason string `json:"cancelReason"`
+	PlatformId   int64  `json:"platformId"`
+	TenantId     int64  `json:"tenantId"`
+	MerchantId   int64  `json:"merchantId"`
+	TraceId      string `json:"traceId"`
 }
 
 type CancelRedemptionOrderResp struct {
@@ -111,7 +118,8 @@ func (UnimplementedCardRedemptionOrderServiceServer) CancelRedemptionOrder(ctx c
 func (UnimplementedCardRedemptionOrderServiceServer) UpdateRedemptionOrderStatus(ctx context.Context, in *UpdateRedemptionOrderStatusReq) (*UpdateRedemptionOrderStatusResp, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateRedemptionOrderStatus not implemented")
 }
-func (UnimplementedCardRedemptionOrderServiceServer) mustEmbedUnimplementedCardRedemptionOrderServiceServer() {}
+func (UnimplementedCardRedemptionOrderServiceServer) mustEmbedUnimplementedCardRedemptionOrderServiceServer() {
+}
 
 type cardRedemptionOrderServiceImpl struct {
 	conn grpc.ClientConnInterface
