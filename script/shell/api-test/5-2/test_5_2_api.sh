@@ -42,11 +42,23 @@ echo " Time: $(date '+%Y-%m-%d %H:%M:%S')"
 echo "============================================="
 echo ""
 
-# 0. 会员登录
-log_info "0. 会员登录"
-LOGIN_RESP=$(curl -s --max-time $TIMEOUT -X POST "$BASE_URL/api/member/login" \
+# 0. 会员登录（验证码登录）
+log_info "0. 发送短信验证码"
+SMS_RESP=$(curl -s --max-time $TIMEOUT -X POST "$BASE_URL/api/member/auth/sms/send" \
   -H 'Content-Type: application/json' \
-  -d '{"mobile":"13800138001","password":"123456"}')
+  -d '{"mobile":"13800138001","scene":1}')
+SMS_CODE=$(json_val "d.get('code','')" "$SMS_RESP")
+if [ "$SMS_CODE" = "0" ]; then
+  log_pass "短信验证码发送成功"
+else
+  log_fail "短信验证码发送失败: $SMS_RESP"
+  exit 1
+fi
+
+log_info "0. 验证码登录"
+LOGIN_RESP=$(curl -s --max-time $TIMEOUT -X POST "$BASE_URL/api/member/auth/login" \
+  -H 'Content-Type: application/json' \
+  -d '{"mobile":"13800138001","code":"123456","source":1}')
 FRONT_TOKEN=$(json_val "d.get('data',{}).get('token','')" "$LOGIN_RESP")
 FRONT_CODE=$(json_val "d.get('code','')" "$LOGIN_RESP")
 if [ -n "$FRONT_TOKEN" ] && [ "$FRONT_TOKEN" != "None" ] && [ "$FRONT_CODE" = "0" ]; then

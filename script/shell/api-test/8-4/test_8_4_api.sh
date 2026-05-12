@@ -75,10 +75,22 @@ else
   exit 1
 fi
 
-log_info "1. Front 会员登录"
-FRONT_LOGIN=$(curl -s --max-time "$TIMEOUT" -X POST "$FRONT_BASE_URL/api/member/login" \
+log_info "1. Front 发送短信验证码"
+SMS_RESP=$(curl -s --max-time "$TIMEOUT" -X POST "$FRONT_BASE_URL/api/member/auth/sms/send" \
   -H 'Content-Type: application/json' \
-  -d '{"mobile":"13800138001","password":"123456"}')
+  -d '{"mobile":"13800138001","scene":1}')
+SMS_CODE=$(json_val "d.get('code','')" "$SMS_RESP")
+if [ "$SMS_CODE" = "0" ]; then
+  log_pass "短信验证码发送成功"
+else
+  log_fail "短信验证码发送失败: $SMS_RESP"
+  exit 1
+fi
+
+log_info "1. Front 验证码登录"
+FRONT_LOGIN=$(curl -s --max-time "$TIMEOUT" -X POST "$FRONT_BASE_URL/api/member/auth/login" \
+  -H 'Content-Type: application/json' \
+  -d '{"mobile":"13800138001","code":"123456","source":1}')
 FRONT_TOKEN=$(json_val "d.get('data',{}).get('token','')" "$FRONT_LOGIN")
 if [ -n "$FRONT_TOKEN" ] && [ "$FRONT_TOKEN" != "None" ]; then
   log_pass "Front 会员登录成功"
