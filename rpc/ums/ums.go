@@ -3,16 +3,19 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
+
 	"github.com/feihua/zero-admin/rpc/ums/internal/config"
+	umsserver "github.com/feihua/zero-admin/rpc/ums/internal/server"
 	memberaddressserviceServer "github.com/feihua/zero-admin/rpc/ums/internal/server/memberaddressservice"
 	memberbrandattentionserviceServer "github.com/feihua/zero-admin/rpc/ums/internal/server/memberbrandattentionservice"
 	memberconsumesettingserviceServer "github.com/feihua/zero-admin/rpc/ums/internal/server/memberconsumesettingservice"
-	memberidentityserviceServer "github.com/feihua/zero-admin/rpc/ums/internal/server/memberidentityservice"
-	membermessageserviceServer "github.com/feihua/zero-admin/rpc/ums/internal/server/membermessageservice"
 	membergrowthlogserviceServer "github.com/feihua/zero-admin/rpc/ums/internal/server/membergrowthlogservice"
+	memberidentityserviceServer "github.com/feihua/zero-admin/rpc/ums/internal/server/memberidentityservice"
 	memberinfoserviceServer "github.com/feihua/zero-admin/rpc/ums/internal/server/memberinfoservice"
 	memberlevelserviceServer "github.com/feihua/zero-admin/rpc/ums/internal/server/memberlevelservice"
 	memberloginlogserviceServer "github.com/feihua/zero-admin/rpc/ums/internal/server/memberloginlogservice"
+	membermessageserviceServer "github.com/feihua/zero-admin/rpc/ums/internal/server/membermessageservice"
 	memberpointslogserviceServer "github.com/feihua/zero-admin/rpc/ums/internal/server/memberpointslogservice"
 	memberproductcategoryrelationserviceServer "github.com/feihua/zero-admin/rpc/ums/internal/server/memberproductcategoryrelationservice"
 	memberproductcollectionserviceServer "github.com/feihua/zero-admin/rpc/ums/internal/server/memberproductcollectionservice"
@@ -27,7 +30,6 @@ import (
 	"github.com/feihua/zero-admin/rpc/ums/internal/svc"
 	"github.com/feihua/zero-admin/rpc/ums/umsclient"
 	"github.com/zeromicro/go-zero/core/logx"
-	"os"
 
 	"github.com/zeromicro/go-zero/core/conf"
 	"github.com/zeromicro/go-zero/core/service"
@@ -68,6 +70,9 @@ func main() {
 		umsclient.RegisterMemberPointsLogServiceServer(grpcServer, memberpointslogserviceServer.NewMemberPointsLogServiceServer(ctx))
 		umsclient.RegisterMemberConsumeSettingServiceServer(grpcServer, memberconsumesettingserviceServer.NewMemberConsumeSettingServiceServer(ctx))
 		umsclient.RegisterMemberMessageServiceServer(grpcServer, membermessageserviceServer.NewMemberMessageServiceServer(ctx))
+
+		// Story 3.1.1: 注册手写的 MemberAuthService（手机号+验证码合并登录注册）
+		umsserver.RegisterExtraServices(grpcServer, ctx)
 
 		if c.Mode == service.DevMode || c.Mode == service.TestMode {
 			reflection.Register(grpcServer)

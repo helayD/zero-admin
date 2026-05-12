@@ -815,21 +815,48 @@ type ListCouponResp struct {
 	Data    []*CouponData `json:"data"`
 }
 
+// Story 3.1.1: 手机号验证码登录注册合并接口类型
+//
+// 旧的 LoginReq/LoginResp/RegisterReq/RegisterResp（手机号+密码）已下线。
+// LoginData 改造为本接口的通用 token 数据结构，并新增 IsNewUser 字段，
+// 客户端可据此向新用户展示欢迎语。
+
 type LoginData struct {
 	Token     string `json:"token"`
 	TokenHead string `json:"tokenHead"`
+	IsNewUser bool   `json:"isNewUser,omitempty"`
 }
 
-type LoginReq struct {
-	Mobile   string `json:"mobile"`           //会员名称或者手机号码
-	Password string `json:"password"`         //密码
-	Source   int32  `json:"source,default=1"` //登录类型：0->PC；1->android;2->ios;3->小程序
+// SmsLoginReq POST /api/member/auth/login 请求体
+type SmsLoginReq struct {
+	Mobile string `json:"mobile"`           //手机号
+	Code   string `json:"code"`             //6 位短信验证码
+	Source int32  `json:"source,default=1"` //登录来源：0-PC，1-APP，2-小程序
 }
 
-type LoginResp struct {
+// SmsLoginResp POST /api/member/auth/login 响应体
+type SmsLoginResp struct {
 	Code    int64     `json:"code"`
 	Message string    `json:"message"`
 	Data    LoginData `json:"data"`
+}
+
+// SendSmsCodeReq POST /api/member/auth/sms/send 请求体
+type SendSmsCodeReq struct {
+	Mobile string `json:"mobile"`          //手机号
+	Scene  int32  `json:"scene,default=1"` //1=member_login，预留其他场景
+}
+
+// SendSmsCodeData 短信验证码响应数据（绝不包含验证码原文）
+type SendSmsCodeData struct {
+	ExpireSeconds int32 `json:"expireSeconds"`
+}
+
+// SendSmsCodeResp POST /api/member/auth/sms/send 响应体
+type SendSmsCodeResp struct {
+	Code    int64           `json:"code"`
+	Message string          `json:"message"`
+	Data    SendSmsCodeData `json:"data"`
 }
 
 type LogisticsData struct {
@@ -1470,20 +1497,6 @@ type RecordHomeAdvertiseClickReq struct {
 type RecordHomeAdvertiseClickResp struct {
 	Code    int64  `json:"code"`
 	Message string `json:"message"`
-}
-
-type RegisterReq struct {
-	Nickname        string `json:"nickname"`        //昵称
-	Password        string `json:"password"`        //密码
-	ConfirmPassword string `json:"confirmPassword"` //确认密码
-	Mobile          string `json:"mobile"`          //手机号码
-	Source          int32  `json:"source"`          //注册来源：0-PC，1-APP，2-小程序
-}
-
-type RegisterResp struct {
-	Code    int64     `json:"code"`
-	Message string    `json:"message"`
-	Data    LoginData `json:"data"`
 }
 
 type ReturnApplyReq struct {

@@ -36,18 +36,25 @@ class LoginData {
   String tokenHead;
   String token;
 
+  /// Story 3.1.1: 是否为本次调用触发的自动建号
+  /// 客户端可据此向新用户展示「欢迎，注册成功」等差异化文案。
+  bool isNewUser;
+
   LoginData({
     required this.tokenHead,
     required this.token,
+    this.isNewUser = false,
   });
 
   factory LoginData.fromJson(Map<String, dynamic> json) => LoginData(
-        tokenHead: json["tokenHead"],
-        token: json["token"],
+        tokenHead: json["tokenHead"] ?? "Bearer",
+        token: json["token"] ?? "",
+        isNewUser: json["isNewUser"] == true,
       );
 
   Map<String, dynamic> toJson() => {
         "tokenHead": tokenHead,
         "token": token,
+        "isNewUser": isNewUser,
       };
 }

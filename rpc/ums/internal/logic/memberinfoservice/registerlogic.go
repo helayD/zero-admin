@@ -32,6 +32,11 @@ return redis.call("INCR", KEYS[1])
 `
 )
 
+// Deprecated: front-api no longer calls this; new login flow is LoginByCode.
+// Story 3.1.1 把会员注册改为"验证码命中未注册手机号自动建号"路径，
+// 由 MemberAuthService.LoginByCode 内部完成。本方法保留以不破坏 .pb.go
+// 二进制兼容性，但 front-api 已不再调用，请勿在新代码中引用。
+//
 // RegisterLogic 注册会员信息
 /*
 Author: LiuFeiHua

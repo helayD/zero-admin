@@ -56,6 +56,7 @@ import (
 	"github.com/feihua/zero-admin/rpc/sys/client/roleservice"
 	"github.com/feihua/zero-admin/rpc/sys/client/userservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/memberaddressservice"
+	"github.com/feihua/zero-admin/rpc/ums/client/memberauthservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/memberbrandattentionservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/memberconsumesettingservice"
 	"github.com/feihua/zero-admin/rpc/ums/client/membergrowthlogservice"
@@ -98,13 +99,15 @@ type ServiceContext struct {
 	MemberRuleSettingService             memberrulesettingservice.MemberRuleSettingService
 	MemberIdentityService                memberidentityservice.MemberIdentityService
 	MemberService                        memberinfoservice.MemberInfoService
-	MemberStatisticsInfoService          memberstatisticsinfoservice.MemberStatisticsInfoService
-	MemberTagService                     membertagservice.MemberTagService
-	MemberTagRelationService             membertagrelationservice.MemberTagRelationService
-	MemberTaskService                    membertaskservice.MemberTaskService
-	MemberTaskRelationService            membertaskrelationservice.MemberTaskRelationService
-	MemberBrandAttentionService          memberbrandattentionservice.MemberBrandAttentionService
-	MemberMessageService                 membermessageservice.MemberMessageService
+	// Story 3.1.1: 手机号验证码合并登录注册接口
+	MemberAuthService           memberauthservice.MemberAuthService
+	MemberStatisticsInfoService memberstatisticsinfoservice.MemberStatisticsInfoService
+	MemberTagService            membertagservice.MemberTagService
+	MemberTagRelationService    membertagrelationservice.MemberTagRelationService
+	MemberTaskService           membertaskservice.MemberTaskService
+	MemberTaskRelationService   membertaskrelationservice.MemberTaskRelationService
+	MemberBrandAttentionService memberbrandattentionservice.MemberBrandAttentionService
+	MemberMessageService        membermessageservice.MemberMessageService
 
 	// 系统相关
 	DeptService     deptservice.DeptService
@@ -141,19 +144,19 @@ type ServiceContext struct {
 	OrderService             orderservice.OrderService
 	OrderSettingService      ordersettingservice.OrderSettingService
 	// 营销相关
-	CouponRecordService           couponrecordservice.CouponRecordService
-	CouponScopeService            couponscopeservice.CouponScopeService
-	CouponService                 couponservice.CouponService
-	CouponTypeService             coupontypeservice.CouponTypeService
-	DrawParticipationService      drawparticipationservice.DrawParticipationService
-	HomeAdvertiseService          homeadvertiseservice.HomeAdvertiseService
-	OperateDashboardService       operatedashboardservice.OperateDashboardService
-	SeckillActivityService        seckillactivityservice.SeckillActivityService
-	SeckillProductService         seckillproductservice.SeckillProductService
-	SeckillReservationService     seckillreservationservice.SeckillReservationService
-	SeckillSessionService         seckillsessionservice.SeckillSessionService
-	CardRedemptionOrderService    cardredemptionorderservice.CardRedemptionOrderService
-	CardClaimTokenService         cardclaimtokenservice.CardClaimTokenService
+	CouponRecordService        couponrecordservice.CouponRecordService
+	CouponScopeService         couponscopeservice.CouponScopeService
+	CouponService              couponservice.CouponService
+	CouponTypeService          coupontypeservice.CouponTypeService
+	DrawParticipationService   drawparticipationservice.DrawParticipationService
+	HomeAdvertiseService       homeadvertiseservice.HomeAdvertiseService
+	OperateDashboardService    operatedashboardservice.OperateDashboardService
+	SeckillActivityService     seckillactivityservice.SeckillActivityService
+	SeckillProductService      seckillproductservice.SeckillProductService
+	SeckillReservationService  seckillreservationservice.SeckillReservationService
+	SeckillSessionService      seckillsessionservice.SeckillSessionService
+	CardRedemptionOrderService cardredemptionorderservice.CardRedemptionOrderService
+	CardClaimTokenService      cardclaimtokenservice.CardClaimTokenService
 	// 内容相关
 	SubjectService                      subjectservice.SubjectService
 	SubjectProductRelationService       subjectproductrelationservice.SubjectProductRelationService
@@ -222,6 +225,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		MemberRuleSettingService:             memberrulesettingservice.NewMemberRuleSettingService(umsClient),
 		MemberIdentityService:                memberidentityservice.NewMemberIdentityService(umsClient),
 		MemberService:                        memberinfoservice.NewMemberInfoService(umsClient),
+		MemberAuthService:                    memberauthservice.NewMemberAuthService(umsClient),
 		MemberStatisticsInfoService:          memberstatisticsinfoservice.NewMemberStatisticsInfoService(umsClient),
 		MemberTagService:                     membertagservice.NewMemberTagService(umsClient),
 		MemberTagRelationService:             membertagrelationservice.NewMemberTagRelationService(umsClient),
@@ -264,17 +268,17 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		OrderService:             orderservice.NewOrderService(omsClient),
 		OrderSettingService:      ordersettingservice.NewOrderSettingService(omsClient),
 
-		CouponRecordService:       couponrecordservice.NewCouponRecordService(smsClient),
-		CouponScopeService:        couponscopeservice.NewCouponScopeService(smsClient),
-		CouponService:             couponservice.NewCouponService(smsClient),
-		CouponTypeService:         coupontypeservice.NewCouponTypeService(smsClient),
-		DrawParticipationService:  drawparticipationservice.NewDrawParticipationService(smsClient),
-		HomeAdvertiseService:      homeadvertiseservice.NewHomeAdvertiseService(smsClient),
-		OperateDashboardService:   operatedashboardservice.NewOperateDashboardService(smsClient),
-		SeckillActivityService:    seckillactivityservice.NewSeckillActivityService(smsClient),
-		SeckillProductService:     seckillproductservice.NewSeckillProductService(smsClient),
-		SeckillReservationService: seckillreservationservice.NewSeckillReservationService(smsClient),
-		SeckillSessionService:     seckillsessionservice.NewSeckillSessionService(smsClient),
+		CouponRecordService:        couponrecordservice.NewCouponRecordService(smsClient),
+		CouponScopeService:         couponscopeservice.NewCouponScopeService(smsClient),
+		CouponService:              couponservice.NewCouponService(smsClient),
+		CouponTypeService:          coupontypeservice.NewCouponTypeService(smsClient),
+		DrawParticipationService:   drawparticipationservice.NewDrawParticipationService(smsClient),
+		HomeAdvertiseService:       homeadvertiseservice.NewHomeAdvertiseService(smsClient),
+		OperateDashboardService:    operatedashboardservice.NewOperateDashboardService(smsClient),
+		SeckillActivityService:     seckillactivityservice.NewSeckillActivityService(smsClient),
+		SeckillProductService:      seckillproductservice.NewSeckillProductService(smsClient),
+		SeckillReservationService:  seckillreservationservice.NewSeckillReservationService(smsClient),
+		SeckillSessionService:      seckillsessionservice.NewSeckillSessionService(smsClient),
 		CardRedemptionOrderService: cardredemptionorderservice.NewCardRedemptionOrderService(smsClient),
 		CardClaimTokenService:      cardclaimtokenservice.NewCardClaimTokenService(smsClient),
 

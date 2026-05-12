@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_mall/config/service_url.dart';
 import 'package:flutter_mall/layout/main_tab.dart';
 import 'package:flutter_mall/model/app_recent_context.dart';
@@ -7,7 +10,6 @@ import 'package:flutter_mall/theme/app_theme.dart';
 import 'package:flutter_mall/utils/app_recovery_router.dart';
 import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/utils/http_util.dart';
-import 'package:flutter_mall/view/mine/login/register.dart';
 
 import '../../../model/login_model.dart';
 
@@ -28,24 +30,33 @@ class Login extends StatefulWidget {
 }
 
 class _LoginState extends State<Login> {
+  // Story 3.1.1: 验证码合并登录注册
+  //   - 手机号正则与后端 ums-rpc 保持一致：^1[3-9]\d{9}$
+  //   - 验证码 6 位纯数字（AC-12 硬约束；mock provider 固定下发 "123456"）
+  //   - 60 秒发送冷却窗口，前后端双向 enforce
   static final RegExp _mobileRegExp = RegExp(r'^1[3-9]\d{9}$');
+  static final RegExp _smsCodeRegExp = RegExp(r'^\d{6}$');
+  static const int _smsCooldownSeconds = 60;
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _smsCodeController = TextEditingController();
   final FocusNode _mobileFocusNode = FocusNode();
-  final FocusNode _passwordFocusNode = FocusNode();
+  final FocusNode _smsCodeFocusNode = FocusNode();
 
   bool _isLoading = false;
-  bool _obscurePassword = true;
+  bool _isSendingCode = false;
+  int _cooldownRemaining = 0;
+  Timer? _cooldownTimer;
   String? _submitError;
 
   @override
   void dispose() {
+    _cooldownTimer?.cancel();
     _usernameController.dispose();
-    _passwordController.dispose();
+    _smsCodeController.dispose();
     _mobileFocusNode.dispose();
-    _passwordFocusNode.dispose();
+    _smsCodeFocusNode.dispose();
     super.dispose();
   }
 
@@ -60,15 +71,88 @@ class _LoginState extends State<Login> {
     return null;
   }
 
-  String? _validatePassword(String? value) {
-    final password = value ?? '';
-    if (password.isEmpty) {
-      return '请输入密码';
+  String? _validateSmsCode(String? value) {
+    final code = value?.trim() ?? '';
+    if (code.isEmpty) {
+      return '请输入验证码';
     }
-    if (password.length < 6) {
-      return '密码长度不能少于 6 位';
+    if (!_smsCodeRegExp.hasMatch(code)) {
+      return '请输入 6 位验证码';
     }
     return null;
+  }
+
+  void _startCooldown() {
+    _cooldownTimer?.cancel();
+    setState(() => _cooldownRemaining = _smsCooldownSeconds);
+    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_cooldownRemaining <= 1) {
+        timer.cancel();
+        setState(() => _cooldownRemaining = 0);
+        return;
+      }
+      setState(() => _cooldownRemaining -= 1);
+    });
+  }
+
+  Future<void> _sendSmsCode() async {
+    if (_isSendingCode || _cooldownRemaining > 0) {
+      return;
+    }
+    final mobile = _usernameController.text.trim();
+    final mobileError = _validateMobile(mobile);
+    if (mobileError != null) {
+      setState(() => _submitError = mobileError);
+      _mobileFocusNode.requestFocus();
+      return;
+    }
+
+    setState(() {
+      _isSendingCode = true;
+      _submitError = null;
+    });
+
+    try {
+      final Response result = await HttpUtil.post(
+        sendSmsCodeUrl,
+        data: {'mobile': mobile, 'scene': 1},
+      );
+      final data = result.data;
+      final int code = (data is Map && data['code'] is int) ? data['code'] : -1;
+      if (code == 0) {
+        // UX: 发送成功给予轻量触觉反馈 + 自动聚焦验证码输入框
+        HapticFeedback.lightImpact();
+        _startCooldown();
+        _smsCodeFocusNode.requestFocus();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('验证码已发送，请注意查收'),
+              duration: Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } else {
+        final String msg = (data is Map ? data['message']?.toString() : null) ??
+            '验证码发送失败，请稍后重试';
+        if (mounted) setState(() => _submitError = msg);
+      }
+    } on DioException catch (e) {
+      String msg = '验证码发送失败，请稍后重试';
+      if (e.response?.data is Map) {
+        msg = (e.response?.data as Map)['message']?.toString() ?? msg;
+      }
+      if (mounted) setState(() => _submitError = msg);
+    } catch (_) {
+      if (mounted) setState(() => _submitError = '验证码发送失败，请检查网络');
+    } finally {
+      if (mounted) setState(() => _isSendingCode = false);
+    }
   }
 
   void _clearSubmitError() {
@@ -145,19 +229,39 @@ class _LoginState extends State<Login> {
     try {
       final Map<String, dynamic> loginMap = <String, dynamic>{
         'mobile': _usernameController.value.text.trim(),
-        'password': _passwordController.value.text,
+        'code': _smsCodeController.value.text.trim(),
       };
 
-      final Response result = await HttpUtil.post(loginDataUrl, data: loginMap);
+      final Response result = await HttpUtil.post(smsLoginUrl, data: loginMap);
       final LoginModel loginModel = LoginModel.fromJson(result.data);
 
       if (loginModel.code == 0) {
+        // UX: 登录成功中等强度触觉反馈，与安全操作一致
+        HapticFeedback.mediumImpact();
+
+        // 提交 AutofillContext，提示系统记住成功凭据
+        TextInput.finishAutofillContext();
+
         final authToken =
             "${loginModel.data.tokenHead} ${loginModel.data.token}";
         await AppRecoveryStore.persistAuthToken(authToken);
 
         if (!mounted) {
           return;
+        }
+
+        // 新用户首次登录时给出差异化提示（仅 SnackBar，不阻断路由恢复）
+        if (loginModel.data.isNewUser) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('账号创建成功，欢迎加入九克城'),
+              duration: Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          // 给 SnackBar 一个短暂的可见窗口，避免被后续 Navigator.pushAndRemoveUntil 立即覆盖。
+          await Future<void>.delayed(const Duration(milliseconds: 300));
+          if (!mounted) return;
         }
 
         final pendingIntent = await AppRecoveryStore.consumePendingIntent();
@@ -179,7 +283,7 @@ class _LoginState extends State<Login> {
       setState(() {
         _submitError = loginModel.message.trim().isNotEmpty
             ? loginModel.message
-            : '登录失败，请检查手机号与密码';
+            : '登录失败，请检查手机号与验证码';
       });
     } on DioException catch (e) {
       if (!mounted) {
@@ -304,31 +408,8 @@ class _LoginState extends State<Login> {
     );
   }
 
-  Future<void> _goToRegister() async {
-    final bool? registered = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (context) => Register(
-          redirectRoute: widget.redirectRoute,
-          recoveryIntent: widget.recoveryIntent,
-        ),
-      ),
-    );
-
-    if (registered != true || !mounted) {
-      return;
-    }
-
-    final pendingIntent = await AppRecoveryStore.consumePendingIntent();
-    if (!mounted) {
-      return;
-    }
-    final restoreIntent = pendingIntent ?? widget.recoveryIntent;
-    await AppRecoveryRouter.restoreAfterLogin(
-      context,
-      recoveryIntent: restoreIntent,
-      redirectRoute: widget.redirectRoute,
-    );
-  }
+  // Story 3.1.1: 旧的「跳转独立注册页」入口已下线，验证码合并接口在 _submitLoginData
+  // 中自动建号，无需单独的 Register 页面。
 
   Future<void> _goToHome() async {
     await AppRecoveryStore.clearPendingIntent();
@@ -485,12 +566,12 @@ class _LoginState extends State<Login> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      '欢迎登录',
+                                      '手机号登录',
                                       style: textTheme.titleLarge,
                                     ),
                                     const SizedBox(height: AppSpacing.xs),
                                     Text(
-                                      '登录后继续查看订单、优惠券和售后进度。',
+                                      '输入手机号即可登录，未注册手机号将自动创建账号。',
                                       style: textTheme.bodySmall?.copyWith(
                                         color: AppColors.textSecondary,
                                         height: 1.45,
@@ -542,7 +623,7 @@ class _LoginState extends State<Login> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                '账号登录',
+                                '手机号验证码登录',
                                 style: textTheme.titleLarge,
                               ),
                               if (recoveryHint != null) ...[
@@ -563,58 +644,102 @@ class _LoginState extends State<Login> {
                                         keyboardType: TextInputType.phone,
                                         textInputAction: TextInputAction.next,
                                         maxLength: 11,
+                                        inputFormatters: [
+                                          FilteringTextInputFormatter
+                                              .digitsOnly,
+                                          LengthLimitingTextInputFormatter(11),
+                                        ],
                                         autofillHints: const [
                                           AutofillHints.telephoneNumber,
                                         ],
                                         onChanged: (_) => _clearSubmitError(),
                                         onFieldSubmitted: (_) {
-                                          _passwordFocusNode.requestFocus();
+                                          _smsCodeFocusNode.requestFocus();
                                         },
                                         decoration: _buildInputDecoration(
                                           context: context,
                                           label: '手机号',
-                                          hint: '请输入已绑定的手机号',
+                                          hint: '请输入 11 位手机号',
                                           icon: Icons.phone_iphone_rounded,
                                         ).copyWith(counterText: ''),
                                         validator: _validateMobile,
                                       ),
                                       const SizedBox(height: AppSpacing.lg),
+                                      // Story 3.1.1 + UX Review: 验证码输入 + 「获取验证码」按钮
+                                      //   - autofillHints.oneTimeCode: 支持 iOS/Android 系统自动从 SMS 填充验证码
+                                      //   - 按钮高度 ≥ 44px（UX touch target 规范）
+                                      //   - disabled 状态显式设色，倒计时期间视觉明显
                                       TextFormField(
-                                        controller: _passwordController,
-                                        focusNode: _passwordFocusNode,
-                                        obscureText: _obscurePassword,
-                                        enableSuggestions: false,
-                                        autocorrect: false,
+                                        controller: _smsCodeController,
+                                        focusNode: _smsCodeFocusNode,
+                                        keyboardType: TextInputType.number,
                                         textInputAction: TextInputAction.done,
+                                        maxLength: 6,
+                                        inputFormatters: [
+                                          FilteringTextInputFormatter
+                                              .digitsOnly,
+                                          LengthLimitingTextInputFormatter(6),
+                                        ],
                                         autofillHints: const [
-                                          AutofillHints.password,
+                                          AutofillHints.oneTimeCode,
                                         ],
                                         onChanged: (_) => _clearSubmitError(),
                                         onFieldSubmitted: (_) =>
                                             _submitLoginData(),
                                         decoration: _buildInputDecoration(
                                           context: context,
-                                          label: '密码',
-                                          hint: '请输入登录密码',
-                                          icon: Icons.lock_outline_rounded,
-                                          suffixIcon: IconButton(
-                                            splashRadius: 20,
-                                            onPressed: () {
-                                              setState(() {
-                                                _obscurePassword =
-                                                    !_obscurePassword;
-                                              });
-                                            },
-                                            icon: Icon(
-                                              _obscurePassword
-                                                  ? Icons
-                                                      .visibility_off_outlined
-                                                  : Icons.visibility_outlined,
-                                              color: AppColors.textHint,
+                                          label: '验证码',
+                                          hint: '请输入短信验证码',
+                                          icon: Icons.message_outlined,
+                                          suffixIcon: Padding(
+                                            padding: const EdgeInsets.only(
+                                              right: AppSpacing.xs,
+                                            ),
+                                            child: TextButton(
+                                              onPressed: (_isSendingCode ||
+                                                      _cooldownRemaining > 0)
+                                                  ? null
+                                                  : _sendSmsCode,
+                                              style: TextButton.styleFrom(
+                                                minimumSize:
+                                                    const Size(108, 44),
+                                                padding: const EdgeInsets
+                                                    .symmetric(
+                                                  horizontal: AppSpacing.sm,
+                                                ),
+                                                foregroundColor:
+                                                    AppColors.primary,
+                                                disabledForegroundColor:
+                                                    AppColors.textHint,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                    AppRadii.md,
+                                                  ),
+                                                ),
+                                              ),
+                                              child: _isSendingCode
+                                                  ? const SizedBox(
+                                                      width: 18,
+                                                      height: 18,
+                                                      child:
+                                                          CircularProgressIndicator(
+                                                        strokeWidth: 2,
+                                                      ),
+                                                    )
+                                                  : Text(
+                                                      _cooldownRemaining > 0
+                                                          ? '${_cooldownRemaining}s 后重发'
+                                                          : '获取验证码',
+                                                      style: const TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
+                                                    ),
                                             ),
                                           ),
-                                        ),
-                                        validator: _validatePassword,
+                                        ).copyWith(counterText: ''),
+                                        validator: _validateSmsCode,
                                       ),
                                       const SizedBox(height: AppSpacing.md),
                                       Row(
@@ -634,7 +759,7 @@ class _LoginState extends State<Login> {
                                           const SizedBox(width: AppSpacing.sm),
                                           Expanded(
                                             child: Text(
-                                              '手机号仅用于账户识别，不会公开展示。若忘记密码，可重新注册或稍后重试。',
+                                              '未注册手机号将自动创建账号并登录。验证码 5 分钟内有效，60 秒内不能重复获取。',
                                               style:
                                                   textTheme.bodySmall?.copyWith(
                                                 color: AppColors.textHint,
@@ -750,33 +875,8 @@ class _LoginState extends State<Login> {
                                             : const Text('登录并继续'),
                                       ),
                                       const SizedBox(height: AppSpacing.md),
-                                      OutlinedButton.icon(
-                                        onPressed:
-                                            _isLoading ? null : _goToRegister,
-                                        style: OutlinedButton.styleFrom(
-                                          minimumSize:
-                                              const Size(double.infinity, 52),
-                                          side: const BorderSide(
-                                            color: AppColors.border,
-                                          ),
-                                          foregroundColor:
-                                              AppColors.textPrimary,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              AppRadii.lg,
-                                            ),
-                                          ),
-                                          textStyle:
-                                              textTheme.titleSmall?.copyWith(
-                                            color: AppColors.textPrimary,
-                                          ),
-                                        ),
-                                        icon: const Icon(
-                                          Icons.person_add_alt_1_rounded,
-                                        ),
-                                        label: const Text('新用户注册'),
-                                      ),
-                                      const SizedBox(height: AppSpacing.md),
+                                      // Story 3.1.1: 旧的「新用户注册」按钮下线—
+                                      // 验证码接口自动处理未注册手机号。
                                       Center(
                                         child: Text(
                                           '登录后可同步订单、优惠券、收货地址与售后进度',

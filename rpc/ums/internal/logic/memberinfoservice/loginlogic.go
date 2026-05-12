@@ -19,6 +19,10 @@ import (
 	"github.com/zeromicro/go-zero/core/logx"
 )
 
+// Deprecated: front-api no longer calls this; new login flow is LoginByCode.
+// Story 3.1.1 把会员认证统一切换为「手机号 + 短信验证码」（MemberAuthService.LoginByCode）。
+// 本方法保留以不破坏 .pb.go 二进制兼容性，但 front-api 已不再调用，请勿在新代码中引用。
+//
 // LoginLogic 会员登录
 /*
 Author: LiuFeiHua

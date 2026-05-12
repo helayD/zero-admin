@@ -35,3 +35,10 @@ Redis:
   Pass: "123456"
   Tls: false
   Key: "ums:"
+
+# Story 3.1.1: SMS ConfigResolver 通过 sys-rpc 拉取激活的短信 provider 模板
+SysRpc:
+  Etcd:
+    Hosts:
+      - 127.0.0.1:2379
+    Key: sys.rpc

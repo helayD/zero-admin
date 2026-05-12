@@ -124,6 +124,13 @@
         hideInMenu: true,
       },
       {
+        // Story 3.1.1: 短信网关配置菜单（sys_menu 中 vue_path=smsProviderConfig）
+        // 复用「模板治理」页面，URL query 默认筛选 targetCode=sms_provider
+        path: '/system/smsProviderConfig/list',
+        component: './system/channel_integration_template',
+        hideInMenu: true,
+      },
+      {
         path: '/system/system-config',
         redirect: '/system/systemConfig',
         hideInMenu: true,

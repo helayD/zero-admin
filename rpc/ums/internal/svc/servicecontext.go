@@ -5,12 +5,15 @@ import (
 	"time"
 
 	"github.com/feihua/zero-admin/pkg/mq"
+	"github.com/feihua/zero-admin/pkg/sms"
+	"github.com/feihua/zero-admin/rpc/sys/client/channelintegrationtemplateservice"
 	"github.com/feihua/zero-admin/rpc/ums/gen/model"
 	"github.com/feihua/zero-admin/rpc/ums/gen/query"
 	"github.com/feihua/zero-admin/rpc/ums/internal/config"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/mon"
 	"github.com/zeromicro/go-zero/core/stores/redis"
+	"github.com/zeromicro/go-zero/zrpc"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -26,6 +29,12 @@ type ServiceContext struct {
 	MemberProductCollectionModel       model.MemberProductCollectionModel
 	Redis                              *redis.Redis
 	RedisKey                           string // redis的模块统一前缀
+
+	// Story 3.1.1: 短信验证码登录注册合并
+	// SmsSender 全项目共享的 SMS 抽象层，业务模块通过其下发短信
+	SmsSender sms.Sender
+	// ChannelIntegrationTemplateService 用于 SmsSender 的 ConfigResolver 拉取激活模板
+	ChannelIntegrationTemplateService channelintegrationtemplateservice.ChannelIntegrationTemplateService
 }
 
 func NewServiceContext(c config.Config) *ServiceContext {
@@ -56,7 +65,25 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	MemberBrandAttention := model.NewMemberBrandAttentionModel(c.Mongo.Datasource, c.Mongo.Db, "ums_member_brand_attention")
 	MemberBrowseRecordModel := model.NewMemberBrowseRecordModel(c.Mongo.Datasource, c.Mongo.Db, "ums_member_browse_record")
 	MemberProductCategoryRelationModel := model.NewMemberProductCategoryRelationModel(c.Mongo.Datasource, c.Mongo.Db, "ums_member_product_category_relation")
-	MemberProductCollectionModel := model.NewMemberProductCollectionModel(c.Mongo.Datasource, c.Mongo.Db, "ums_member_product_collection")
+	MemberProductCollection := model.NewMemberProductCollectionModel(c.Mongo.Datasource, c.Mongo.Db, "ums_member_product_collection")
+
+	// Story 3.1.1: 注入 SMS 抽象层
+	//   - sys-rpc client → ChannelIntegrationTemplateService 提供激活模板查询
+	//   - SmsConfigResolver 解析模板 default_config_json → sms.Config（30s 正向 / 5s 负向缓存）
+	//   - sms.NewSender 路由到对应 Provider（默认注册的 mock 验证码固定 123456）
+	//
+	// ⚠️ 部署依赖（Story 3.1.1 新增）:
+	//   ums-rpc 启动前 sys-rpc 必须已注册到 Etcd/Nacos，否则 zrpc.MustNewClient
+	//   会 panic 导致 ums 启动失败。建议启动顺序:
+	//     1) sys-rpc 先就绪
+	//     2) ums-rpc、pms-rpc、oms-rpc、... 其他 RPC 服务
+	//     3) admin-api、front-api 等 HTTP API 层
+	//   服务器部署脚本 script/ / Makefile 已按此顺序编排。
+	sysRpcClient := zrpc.MustNewClient(c.SysRpc)
+	templateService := channelintegrationtemplateservice.NewChannelIntegrationTemplateService(sysRpcClient)
+	smsResolver := NewSmsConfigResolver(templateService)
+	smsSender := sms.NewSender(smsResolver)
+
 	return &ServiceContext{
 		Config:                             c,
 		DB:                                 db,
@@ -64,9 +91,12 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		MemberBrandAttentionModel:          MemberBrandAttention,
 		MemberBrowseRecordModel:            MemberBrowseRecordModel,
 		MemberProductCategoryRelationModel: MemberProductCategoryRelationModel,
-		MemberProductCollectionModel:       MemberProductCollectionModel,
+		MemberProductCollectionModel:       MemberProductCollection,
 		Redis:                              rds,
 		RedisKey:                           redisKey,
+
+		SmsSender:                         smsSender,
+		ChannelIntegrationTemplateService: templateService,
 	}
 }
 

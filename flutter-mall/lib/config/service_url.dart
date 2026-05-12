@@ -124,10 +124,12 @@ const focusOnListDataUrl = "$baseUrl/api/member/queryAttentionList";
 const deleteAttentionDataUrl = "$baseUrl/api/member/deleteAttention";
 // 清空关注
 const clearAttentionDataUrl = "$baseUrl/api/member/clearAttention";
-// 登录
-const loginDataUrl = "$baseUrl/api/member/login";
-// 注册
-const registerDataUrl = "$baseUrl/api/member/register";
+// Story 3.1.1: 手机号 + 短信验证码合并登录注册
+//   - sendSmsCodeUrl：发送短信验证码（mock 模式固定 123456，前期调试用）
+//   - smsLoginUrl：验证码合并登录注册接口（已注册→直接登录；未注册→自动建号并登录）
+// 旧的 /api/member/login（手机号+密码登录）与 /api/member/register（手机号+密码注册）已下线。
+const sendSmsCodeUrl = "$baseUrl/api/member/auth/sms/send";
+const smsLoginUrl = "$baseUrl/api/member/auth/login";
 // 获取用户信息
 const memberInfoDataUrl = "$baseUrl/api/member/info";
 // 更新会员信息

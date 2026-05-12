@@ -1,3 +1,6 @@
+// Story 3.1.1: 旧的密码登录/注册接口已下线，validation_test 仅保留
+// mobileRegexp 与 smsCodeRegexp 的通用校验测试。
+
 package member
 
 import (
@@ -32,47 +35,28 @@ func TestMobileRegexp(t *testing.T) {
 	}
 }
 
-func TestPasswordLengthValidation(t *testing.T) {
+func TestSmsCodeRegexp(t *testing.T) {
+	// AC-12: 验证码硬约束 6 位纯数字（mock 与真实 provider 统一）。
 	tests := []struct {
-		name     string
-		password string
-		wantOk   bool
+		name  string
+		input string
+		want  bool
 	}{
-		{"6 chars", "123456", true},
-		{"8 chars", "12345678", true},
-		{"5 chars", "12345", false},
+		{"mock 6 digits 123456", "123456", true},
+		{"real provider 6 digits", "456789", true},
+		{"4 digits rejected", "1234", false},
+		{"5 digits rejected", "12345", false},
+		{"too short 3", "123", false},
+		{"too long 7", "1234567", false},
 		{"empty", "", false},
-		{"1 char", "a", false},
+		{"letters", "12a456", false},
+		{"with space", "123 456", false},
 	}
-
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			ok := len(tc.password) >= 6
-			if ok != tc.wantOk {
-				t.Fatalf("len(%q) >= 6 = %v, want %v", tc.password, ok, tc.wantOk)
-			}
-		})
-	}
-}
-
-func TestPasswordConfirmValidation(t *testing.T) {
-	tests := []struct {
-		name            string
-		password        string
-		confirmPassword string
-		wantMatch       bool
-	}{
-		{"match", "123456", "123456", true},
-		{"mismatch", "123456", "654321", false},
-		{"empty confirm", "123456", "", false},
-		{"both empty", "", "", true},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			got := tc.password == tc.confirmPassword
-			if got != tc.wantMatch {
-				t.Fatalf("password match = %v, want %v", got, tc.wantMatch)
+			got := smsCodeRegexp.MatchString(tc.input)
+			if got != tc.want {
+				t.Fatalf("smsCodeRegexp.MatchString(%q) = %v, want %v", tc.input, got, tc.want)
 			}
 		})
 	}

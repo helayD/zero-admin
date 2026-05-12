@@ -22,6 +22,7 @@ import {
   Tag,
 } from 'antd';
 import React, { useMemo, useRef, useState } from 'react';
+import { useLocation } from 'umi';
 import { PageContainer } from '@ant-design/pro-layout';
 import type { ActionType, ProColumns } from '@ant-design/pro-table';
 import ProTable from '@ant-design/pro-table';
@@ -128,7 +129,22 @@ const formatImpactSummary = (record: ChannelIntegrationTemplateItem) => {
   return parts.join(' / ');
 };
 
+// Story 3.1.1: 解析 URL query 中的 targetCode（例如 /system/smsProviderConfig/list?targetCode=sms_provider）
+//   - 「短信网关配置」菜单项指向本页面，通过 query 默认筛选 sms_provider 模板
+//   - 仅作为 ProTable 的初始筛选值，用户仍可手动调整其他过滤条件
+const parseQueryParams = (search: string) => {
+  const params = new URLSearchParams(search || '');
+  const targetCode = params.get('targetCode') || '';
+  const templateType = params.get('templateType') || '';
+  return { targetCode, templateType };
+};
+
 const TemplatePage: React.FC = () => {
+  const location = useLocation();
+  const initialQueryParams = useMemo(
+    () => parseQueryParams(location.search || ''),
+    [location.search],
+  );
   const actionRef = useRef<ActionType>();
   const [form] = Form.useForm();
   const [modalVisible, setModalVisible] = useState(false);
@@ -396,10 +412,21 @@ const TemplatePage: React.FC = () => {
       />
 
       <ProTable<ChannelIntegrationTemplateItem>
-        headerTitle="渠道与集成模板治理"
+        headerTitle={
+          initialQueryParams.targetCode === 'sms_provider'
+            ? '短信网关配置'
+            : '渠道与集成模板治理'
+        }
         actionRef={actionRef}
         rowKey="id"
         search={{ labelWidth: 120 }}
+        // Story 3.1.1: URL query 携带的 targetCode/templateType 作为初始筛选默认值
+        form={{
+          initialValues: {
+            ...(initialQueryParams.targetCode ? { targetCode: initialQueryParams.targetCode } : {}),
+            ...(initialQueryParams.templateType ? { templateType: initialQueryParams.templateType } : {}),
+          },
+        }}
         request={queryChannelIntegrationTemplateList}
         columns={columns}
         pagination={{ pageSize: 20 }}

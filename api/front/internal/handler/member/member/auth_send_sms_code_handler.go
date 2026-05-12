@@ -1,3 +1,6 @@
+// Story 3.1.1: POST /api/member/auth/sms/send
+// 发送手机号短信验证码（mock 模式固定 123456）。无需 JWT。
+
 package member
 
 import (
@@ -9,16 +12,16 @@ import (
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
-func RegisterHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
+func AuthSendSmsCodeHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var req types.RegisterReq
+		var req types.SendSmsCodeReq
 		if err := httpx.Parse(r, &req); err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 			return
 		}
 
-		l := member.NewRegisterLogic(r.Context(), svcCtx)
-		resp, err := l.Register(&req)
+		l := member.NewAuthSendSmsCodeLogic(r.Context(), svcCtx)
+		resp, err := l.AuthSendSmsCode(&req)
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 		} else {

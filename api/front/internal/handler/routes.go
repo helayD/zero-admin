@@ -244,17 +244,21 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		rest.WithPrefix("/api/member"),
 	)
 
+	// Story 3.1.1: 手机号验证码登录注册合并接口
+	//   - /auth/sms/send  发送 6 位短信验证码（mock 固定 123456）
+	//   - /auth/login     验证码登录（已注册→直接登录；未注册→自动建号并登录）
+	// 旧的 /login（手机号+密码登录）和 /register（手机号+密码+确认密码注册）接口已下线。
 	server.AddRoutes(
 		[]rest.Route{
 			{
 				Method:  http.MethodPost,
-				Path:    "/login",
-				Handler: membermember.LoginHandler(serverCtx),
+				Path:    "/auth/sms/send",
+				Handler: membermember.AuthSendSmsCodeHandler(serverCtx),
 			},
 			{
 				Method:  http.MethodPost,
-				Path:    "/register",
-				Handler: membermember.RegisterHandler(serverCtx),
+				Path:    "/auth/login",
+				Handler: membermember.AuthLoginHandler(serverCtx),
 			},
 		},
 		rest.WithPrefix("/api/member"),

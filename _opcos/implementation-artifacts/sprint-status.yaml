@@ -71,7 +71,8 @@ development_status:
   epic-2-retrospective: optional
 
   epic-3: in-progress
-  3-1-手机号注册与登录: done
+  3-1-手机号注册与登录: done  # 2026-05-12 认证模式升级为「手机号+验证码」合并接口，由 Story 3.1.1 承接；本 story 保留 done 状态作为历史基线
+  3-1-1-验证码登录注册合并: review  # 2026-05-12 dev-story 完成：pkg/sms 公共抽象层 + ums-rpc MemberAuthService（手写 pb 兼容现有 channel_integration_template 模式）+ front-api /auth/sms/send /auth/login + Flutter 登录页改造 + SQL 迁移 + Web admin URL query。旧密码接口已直接下线。
   3-2-个人资料与账户概览: done
   3-3-收货地址管理: done
   3-4-用户资产-收藏与足迹视图: done

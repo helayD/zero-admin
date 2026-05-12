@@ -23,4 +23,8 @@ type Config struct {
 		AccessSecret string
 		AccessExpire int64
 	}
+
+	// SysRpc 用于 sms ConfigResolver 调用 sys-rpc.ChannelIntegrationTemplateService
+	// 拉取激活的 SMS provider 模板。Story 3.1.1 引入。
+	SysRpc zrpc.RpcClientConf
 }
