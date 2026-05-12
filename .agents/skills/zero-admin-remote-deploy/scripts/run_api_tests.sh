@@ -139,6 +139,12 @@ for story_dir in "${STORY_DIRS[@]}"; do
     base_url="$(resolve_base_url_from_script "$script")"
     echo -e "${BOLD}━━━ Story $story_name ($script_name) → $base_url ━━━${NC}"
 
+    # 清除 SMS 冷却 key，避免多 story 共用同一手机号时触发 60s 频控
+    SSHPASS='Qianmai1#' sshpass -e ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no \
+      -o ConnectTimeout=5 root@47.107.224.56 \
+      'redis-cli -p 16379 -a 123456 --no-auth-warning KEYS "ums:sms:cooldown:*" | xargs -r redis-cli -p 16379 -a 123456 --no-auth-warning DEL' \
+      2>/dev/null || true
+
     set +e
     output=$(bash "$script" "$base_url" 2>&1)
     exit_code=$?
