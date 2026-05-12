@@ -1,13 +1,15 @@
 import {
   BarChartOutlined,
   DashboardOutlined,
+  EyeInvisibleOutlined,
+  EyeOutlined,
   LockOutlined,
   SafetyCertificateOutlined,
   UserOutlined,
 } from '@ant-design/icons';
 import { LoginForm, ProFormCheckbox, ProFormText } from '@ant-design/pro-form';
-import { Alert, message } from 'antd';
-import React, { useEffect, useState } from 'react';
+import { Alert, message, Spin } from 'antd';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { history, SelectLang, useIntl, useModel } from 'umi';
 
 import { login } from '@/services/ant-design-pro/api';
@@ -60,6 +62,8 @@ const LoginMessage: React.FC<{
     showIcon
     closable
     onClose={onClose}
+    role="alert"
+    aria-live="assertive"
   />
 );
 
@@ -67,13 +71,26 @@ const Login: React.FC = () => {
   const [userLoginState, setUserLoginState] = useState<API.LoginResult>(emptyLoginState);
   const [submitting, setSubmitting] = useState(false);
   const [rememberAccount, setRememberAccount] = useState('');
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [loginAttempts, setLoginAttempts] = useState(0);
   const { initialState, setInitialState } = useModel('@@initialState');
   const intl = useIntl();
+  const accountInputRef = useRef<any>(null);
+  const passwordInputRef = useRef<any>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem(REMEMBER_ACCOUNT_KEY);
     if (saved) {
       setRememberAccount(saved);
+      // 如果有记住的账号，自动聚焦到密码框
+      setTimeout(() => {
+        passwordInputRef.current?.focus();
+      }, 100);
+    } else {
+      // 否则聚焦到账号框
+      setTimeout(() => {
+        accountInputRef.current?.focus();
+      }, 100);
     }
   }, []);
 
@@ -87,7 +104,7 @@ const Login: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (values: API.LoginParams) => {
+  const handleSubmit = useCallback(async (values: API.LoginParams) => {
     setUserLoginState(emptyLoginState);
     setSubmitting(true);
 
@@ -108,6 +125,10 @@ const Login: React.FC = () => {
             defaultMessage: '登录成功！',
           }),
         );
+
+        // 重置登录尝试次数
+        setLoginAttempts(0);
+
         await fetchUserInfo();
         if (!history) {
           return false;
@@ -117,6 +138,9 @@ const Login: React.FC = () => {
         history.push(redirect || '/');
         return true;
       }
+
+      // 登录失败，增加尝试次数
+      setLoginAttempts((prev) => prev + 1);
 
       setUserLoginState({
         code: res?.code || '111111',
@@ -130,8 +154,17 @@ const Login: React.FC = () => {
           token: '',
         },
       });
+
+      // 登录失败后聚焦到密码框
+      setTimeout(() => {
+        passwordInputRef.current?.focus();
+        passwordInputRef.current?.select();
+      }, 100);
+
       return false;
     } catch (error) {
+      setLoginAttempts((prev) => prev + 1);
+
       const fallbackMessage = intl.formatMessage({
         id: 'pages.login.failure',
         defaultMessage: '登录失败，请重试！',
@@ -148,12 +181,22 @@ const Login: React.FC = () => {
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [intl, fetchUserInfo]);
 
   const hasLoginError =
     userLoginState.code !== '' &&
     userLoginState.code !== '000000' &&
     Boolean(userLoginState.message);
+
+  const isAccountLocked = useMemo(() => loginAttempts >= 5, [loginAttempts]);
+
+  const togglePasswordVisibility = useCallback(() => {
+    setPasswordVisible((prev) => !prev);
+  }, []);
+
+  const handleErrorClose = useCallback(() => {
+    setUserLoginState(emptyLoginState);
+  }, []);
 
   return (
     <div className={styles.container} role="main" aria-label="登录页面">
@@ -234,7 +277,19 @@ const Login: React.FC = () => {
             {hasLoginError && (
               <LoginMessage
                 content={userLoginState.message}
-                onClose={() => setUserLoginState(emptyLoginState)}
+                onClose={handleErrorClose}
+              />
+            )}
+
+            {isAccountLocked && (
+              <Alert
+                style={{ marginBottom: 20, borderRadius: 16 }}
+                message="账号已被临时锁定"
+                description="由于多次登录失败，请稍后再试或联系管理员"
+                type="warning"
+                showIcon
+                role="alert"
+                aria-live="polite"
               />
             )}
 
@@ -263,7 +318,8 @@ const Login: React.FC = () => {
                     size: 'large',
                     className: styles.submitButton,
                     loading: submitting,
-                    disabled: submitting,
+                    disabled: submitting || isAccountLocked,
+                    'aria-label': submitting ? '登录中...' : '进入控制台',
                   },
                 }}
                 onFinish={async (values) => handleSubmit(values)}
@@ -277,8 +333,11 @@ const Login: React.FC = () => {
                     autoComplete: 'username',
                     maxLength: 64,
                     allowClear: true,
-                    disabled: submitting,
-                    autoFocus: !rememberAccount,
+                    disabled: submitting || isAccountLocked,
+                    ref: accountInputRef,
+                    'aria-label': '账号',
+                    'aria-required': 'true',
+                    'aria-invalid': hasLoginError ? 'true' : 'false',
                   }}
                   placeholder={intl.formatMessage({
                     id: 'pages.login.username.placeholder',
@@ -301,10 +360,27 @@ const Login: React.FC = () => {
                   fieldProps={{
                     size: 'large',
                     prefix: <LockOutlined className={styles.prefixIcon} aria-hidden="true" />,
+                    iconRender: (visible) =>
+                      visible ? (
+                        <EyeOutlined
+                          aria-label="隐藏密码"
+                          role="button"
+                          tabIndex={0}
+                        />
+                      ) : (
+                        <EyeInvisibleOutlined
+                          aria-label="显示密码"
+                          role="button"
+                          tabIndex={0}
+                        />
+                      ),
                     autoComplete: 'current-password',
                     maxLength: 64,
-                    disabled: submitting,
-                    autoFocus: !!rememberAccount,
+                    disabled: submitting || isAccountLocked,
+                    ref: passwordInputRef,
+                    'aria-label': '密码',
+                    'aria-required': 'true',
+                    'aria-invalid': hasLoginError ? 'true' : 'false',
                   }}
                   placeholder={intl.formatMessage({
                     id: 'pages.login.password.placeholder',

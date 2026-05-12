@@ -22,6 +22,17 @@
   50% { box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.05); }
 }
 
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .container {
   --brand-950: #0f172a;
   --brand-900: #172554;
@@ -423,7 +434,7 @@
       border-radius: 14px;
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
-      &:hover {
+      &:hover:not(&-disabled) {
         background: var(--surface-0);
         border-color: #93c5fd;
         transform: translateY(-1px);
@@ -440,7 +451,24 @@
       &-disabled {
         opacity: 0.6;
         cursor: not-allowed;
+        background: #f1f5f9;
         transform: none !important;
+
+        &:hover {
+          border-color: #cbd5e1;
+        }
+      }
+
+      // 错误状态
+      &-status-error {
+        border-color: #ef4444;
+        animation: shake 0.4s ease-in-out;
+
+        &:focus,
+        &-focused {
+          border-color: #ef4444;
+          box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.12);
+        }
       }
     }
 
@@ -475,6 +503,36 @@
     .ant-checkbox-checked .ant-checkbox-inner {
       background-color: var(--brand-700);
       border-color: var(--brand-700);
+    }
+
+    // 密码可见性切换按钮优化
+    .ant-input-password-icon {
+      color: #64748b;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        color: var(--brand-700);
+        transform: scale(1.1);
+      }
+
+      &:focus {
+        outline: 2px solid var(--brand-500);
+        outline-offset: 2px;
+        border-radius: 4px;
+      }
+    }
+
+    // 提交按钮加载状态优化
+    .ant-btn-loading {
+      position: relative;
+      pointer-events: none;
+
+      &::before {
+        display: block;
+        background: rgba(255, 255, 255, 0.4);
+      }
     }
   }
 }
@@ -529,10 +587,9 @@
     transition: left 0.5s ease;
   }
 
-  &:hover:not(:disabled),
-  &:focus-visible:not(:disabled) {
-    background: linear-gradient(135deg, var(--brand-700) 0%, #1e40af 100%);
-    box-shadow: 0 18px 34px rgba(37, 99, 235, 0.32);
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, #1e40af 0%, var(--brand-700) 100%);
+    box-shadow: 0 18px 36px rgba(37, 99, 235, 0.36);
     transform: translateY(-2px);
     filter: brightness(1.04);
 
@@ -542,14 +599,22 @@
   }
 
   &:active:not(:disabled) {
-    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.24);
     transform: translateY(0);
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.24);
     transition-duration: 0.1s;
   }
 
+  &:focus-visible {
+    outline: 2px solid var(--brand-500);
+    outline-offset: 2px;
+  }
+
   &:disabled {
-    opacity: 0.7;
+    opacity: 0.6;
     cursor: not-allowed;
+    transform: none;
+  }
+}
     transform: none !important;
     box-shadow: 0 6px 16px rgba(37, 99, 235, 0.16);
   }
