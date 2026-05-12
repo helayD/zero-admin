@@ -36,15 +36,15 @@
 
 ```bash
 # 启动
-tmux new-session -d -s flutter-run
-tmux send-keys -t flutter-run "cd /Users/helay/Documents/GitHub/zero-admin/flutter-mall && flutter run" Enter
+tmux new-session -d -s flutter
+tmux send-keys -t flutter "cd /Users/helay/Documents/GitHub/zero-admin/flutter-mall && flutter run" Enter
 
 # 查看日志
-tmux attach -t flutter-run
+tmux attach -t flutter
 
 # 停止
-tmux send-keys -t flutter-run "q" Enter
-tmux kill-session -t flutter-run
+tmux send-keys -t flutter "q" Enter
+tmux kill-session -t flutter
 ```
 
 ## 文件结构
@@ -69,7 +69,7 @@ tmux kill-session -t flutter-run
 如果提示 `duplicate session`，使用现有会话：
 
 ```bash
-tmux send-keys -t flutter-run "cd /Users/helay/Documents/GitHub/zero-admin/flutter-mall && flutter run" Enter
+tmux send-keys -t flutter "cd /Users/helay/Documents/GitHub/zero-admin/flutter-mall && flutter run" Enter
 ```
 
 ### 应用崩溃
@@ -77,17 +77,17 @@ tmux send-keys -t flutter-run "cd /Users/helay/Documents/GitHub/zero-admin/flutt
 查看日志：
 
 ```bash
-tmux capture-pane -t flutter-run -p | tail -100
+tmux capture-pane -t flutter -p | tail -100
 ```
 
 ### 强制停止
 
 ```bash
-tmux kill-session -t flutter-run
+tmux kill-session -t flutter
 ```
 
 ## 相关技能
 
-- `flutter-run` - 直接在前台运行 Flutter
+- `flutter` - 直接在前台运行 Flutter
 - `flutter-test` - 运行 Flutter 测试
 - `flutter-build` - 构建 Flutter 应用

@@ -3,7 +3,7 @@
 # 用法: ./flutter-tmux.sh [start|stop|restart|status|logs]
 
 FLUTTER_DIR="/Users/helay/Documents/GitHub/zero-admin/flutter-mall"
-SESSION_NAME="flutter-run"
+SESSION_NAME="flutter"
 
 case "$1" in
     start)
