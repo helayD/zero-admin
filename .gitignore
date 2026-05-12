@@ -55,4 +55,5 @@ target
 # Local Claude config
 .claude/*
 !.claude/settings.json
+!.claude/skills/
 CLAUDE.md
