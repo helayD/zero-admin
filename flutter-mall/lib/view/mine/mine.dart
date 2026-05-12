@@ -226,7 +226,7 @@ class _MineState extends State<Mine> {
     if (signature.isNotEmpty) {
       return signature;
     }
-    return '订单、资产和常用服务都集中在这里';
+    return '订单、卡包和常用服务都集中在这里';
   }
 
   String _maskedMobile() {
@@ -490,7 +490,7 @@ class _MineState extends State<Mine> {
             icon: Icons.dashboard_customize_rounded,
             iconColor: AppColors.primaryDark,
             iconBackground: AppColors.primarySoft,
-            title: '我的资产',
+            title: '我的卡包',
             actionLabel: '查看卡片',
             onActionTap: () {
               _openProtectedPage(

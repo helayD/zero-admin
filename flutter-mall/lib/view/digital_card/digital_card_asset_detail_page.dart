@@ -610,8 +610,6 @@ class _DigitalCardAssetDetailPageState
             _buildDrawSummaryCard(detail.drawSummary),
           if (detail != null) ...<Widget>[
             const SizedBox(height: AppSpacing.lg),
-            _buildStatusCard(detail, statusCopy),
-            const SizedBox(height: AppSpacing.lg),
             _buildPhysicalFulfillmentEntry(detail.item),
             const SizedBox(height: AppSpacing.lg),
             _buildAssetActionCard(detail.item),
@@ -881,6 +879,22 @@ class _DigitalCardAssetDetailPageState
                   ),
             ),
           ],
+          const SizedBox(height: AppSpacing.md),
+          Divider(color: Colors.white.withValues(alpha: 0.2), height: 1),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: _buildHeroMeta('获取方式', _assetSourceName(item)),
+              ),
+              Expanded(
+                child: _buildHeroMeta(
+                  '获取时间',
+                  item.obtainedAt.isEmpty ? '待同步' : item.obtainedAt,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -888,35 +902,43 @@ class _DigitalCardAssetDetailPageState
 
   Widget _buildDrawSummaryCard(DigitalCardAssetDrawSummary summary) {
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadii.xl),
         border: Border.all(color: AppColors.border),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            '抽卡来源摘要',
-            style: Theme.of(context).textTheme.titleLarge,
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding:
+              const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+          childrenPadding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg, 0, AppSpacing.lg, AppSpacing.lg,
           ),
-          const SizedBox(height: AppSpacing.md),
-          _buildMetaLine('抽卡记录', '${summary.participationRecordId}'),
-          _buildMetaLine(
-            '结果状态',
-            digitalCardUserFacingText(summary.resultStatusText.trim().isEmpty
-                ? summary.resultStatus
-                : summary.resultStatusText),
+          title: Text(
+            '抽卡来源',
+            style: Theme.of(context).textTheme.titleMedium,
           ),
-          _buildMetaLine(
-              '参与时间', summary.createTime.isEmpty ? '待同步' : summary.createTime),
-          if (summary.failureReason.trim().isNotEmpty)
+          children: <Widget>[
             _buildMetaLine(
-              '失败原因',
-              digitalCardUserFacingText(summary.failureReason),
+              '结果状态',
+              digitalCardUserFacingText(
+                  summary.resultStatusText.trim().isEmpty
+                      ? summary.resultStatus
+                      : summary.resultStatusText),
             ),
-        ],
+            _buildMetaLine(
+              '参与时间',
+              summary.createTime.isEmpty ? '待同步' : summary.createTime,
+            ),
+            if (summary.failureReason.trim().isNotEmpty)
+              _buildMetaLine(
+                '失败原因',
+                digitalCardUserFacingText(summary.failureReason),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -934,52 +956,6 @@ class _DigitalCardAssetDetailPageState
       return item.activityName.trim();
     }
     return '待同步';
-  }
-
-  Widget _buildStatusCard(
-    DigitalCardAssetDetailData detail,
-    DigitalCardStatusCopy statusCopy,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadii.xl),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            '状态与标识',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          _buildMetaLine('当前进展', statusCopy.label),
-          _buildMetaLine('状态说明', statusCopy.description),
-          if (statusCopy.actionHint.trim().isNotEmpty)
-            _buildMetaLine('下一步', statusCopy.actionHint),
-          _buildMetaLine('资产来源', _assetSourceName(detail.item)),
-          _buildMetaLine(
-            '获取时间',
-            detail.item.obtainedAt.isEmpty ? '待同步' : detail.item.obtainedAt,
-          ),
-          _buildMetaLine(
-            '展示状态',
-            digitalCardDisplayStatusText(
-              detail.item.displayStatus,
-              detail.item.displayStatusText,
-            ),
-          ),
-          _buildMetaLine(
-            '合规状态',
-            digitalCardUserFacingText(detail.item.complianceStatusText.isEmpty
-                ? detail.item.complianceStatus
-                : detail.item.complianceStatusText),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildHeroChip(String text) {
@@ -1002,6 +978,27 @@ class _DigitalCardAssetDetailPageState
               color: Colors.white,
             ),
       ),
+    );
+  }
+
+  Widget _buildHeroMeta(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          label,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: Colors.white.withValues(alpha: 0.6),
+              ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value.trim().isEmpty ? '-' : value,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.white.withValues(alpha: 0.9),
+              ),
+        ),
+      ],
     );
   }
 

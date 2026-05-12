@@ -69,7 +69,7 @@ void main() {
             children: const <Widget>[
               ComplianceRuleBanner(
                 title: '合规说明',
-                summary: '该资产当前处于人工复核中，请稍后查看最新结果。',
+                summary: '该卡片当前处于人工复核中，请稍后查看最新结果。',
                 statusText: '人工复核中',
               ),
               MintStatusTimeline(
@@ -239,21 +239,12 @@ void main() {
     expect(find.text('无需重复操作，稍后刷新查看结果。'), findsWidgets);
     expect(find.text('受限展示'), findsWidgets);
     expect(find.text('到账进度'), findsOneWidget);
+    expect(find.text('获取方式'), findsOneWidget);
+    expect(find.text('春季抽卡'), findsWidgets);
     await tester.drag(find.byType(ListView), const Offset(0, -900));
     await tester.pumpAndSettle();
-    expect(find.text('资产来源'), findsOneWidget);
-    expect(find.text('春季抽卡'), findsWidgets);
     expect(find.text('待发放完成后，可支付邮费、提交提现申请或转赠给已注册用户。'), findsOneWidget);
-    final Finder payButtonFinder = find.widgetWithText(FilledButton, '支付邮费');
-    final Finder withdrawButtonFinder =
-        find.widgetWithText(OutlinedButton, '提现');
-    final Finder transferButtonFinder =
-        find.widgetWithText(OutlinedButton, '转赠');
-    expect(tester.widget<FilledButton>(payButtonFinder).onPressed, isNull);
-    expect(
-        tester.widget<OutlinedButton>(withdrawButtonFinder).onPressed, isNull);
-    expect(
-        tester.widget<OutlinedButton>(transferButtonFinder).onPressed, isNull);
+    expect(find.text('卡片操作'), findsOneWidget);
     expect(find.textContaining('链上'), findsNothing);
     expect(find.textContaining('token'), findsNothing);
     expect(find.textContaining('AntChain'), findsNothing);

@@ -179,7 +179,7 @@ class _LoginState extends State<Login> {
         case AppRecentTargetType.productDetail:
           return '登录后将继续查看商品详情。';
         case AppRecentTargetType.couponList:
-          return '登录后将继续查看优惠券资产。';
+          return '登录后将继续查看优惠券。';
         case AppRecentTargetType.couponCenter:
           return '登录后将继续进入领券中心。';
         case AppRecentTargetType.afterSalesApply:
@@ -531,367 +531,291 @@ class _LoginState extends State<Login> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: AppSpacing.md),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.lg,
-                            vertical: AppSpacing.lg,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.92),
-                            borderRadius: BorderRadius.circular(AppRadii.xl),
-                            border: Border.all(
-                              color: AppColors.border.withValues(alpha: 0.88),
+                        const SizedBox(height: AppSpacing.xxl),
+                        Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppColors.primarySoft,
+                                borderRadius:
+                                    BorderRadius.circular(AppRadii.md),
+                              ),
+                              child: Image.asset(
+                                'images/icon_main_logo.png',
+                                fit: BoxFit.contain,
+                              ),
                             ),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 42,
-                                height: 42,
-                                padding: const EdgeInsets.all(9),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primarySoft,
-                                  borderRadius:
-                                      BorderRadius.circular(AppRadii.md),
-                                ),
-                                child: Image.asset(
-                                  'images/icon_main_logo.png',
-                                  fit: BoxFit.contain,
-                                ),
-                              ),
-                              const SizedBox(width: AppSpacing.md),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '手机号登录',
-                                      style: textTheme.titleLarge,
-                                    ),
-                                    const SizedBox(height: AppSpacing.xs),
-                                    Text(
-                                      '输入手机号即可登录，未注册手机号将自动创建账号。',
-                                      style: textTheme.bodySmall?.copyWith(
-                                        color: AppColors.textSecondary,
-                                        height: 1.45,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.sm,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primarySoft,
-                                  borderRadius:
-                                      BorderRadius.circular(AppRadii.sm),
-                                ),
-                                child: Text(
-                                  '会员中心',
-                                  style: textTheme.labelMedium?.copyWith(
-                                    color: AppColors.primaryDark,
-                                  ),
-                                ),
-                              ),
-                            ],
+                            const SizedBox(width: AppSpacing.md),
+                            Text(
+                              '手机号登录',
+                              style: textTheme.headlineSmall,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          '未注册手机号将自动创建账号',
+                          style: textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary,
                           ),
                         ),
-                        const SizedBox(height: AppSpacing.md),
-                        Container(
-                          padding: const EdgeInsets.all(AppSpacing.xl),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(AppRadii.xxl),
-                            border: Border.all(
-                              color: AppColors.border.withValues(alpha: 0.82),
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.textPrimary.withValues(
-                                  alpha: 0.06,
+                        if (recoveryHint != null) ...[
+                          const SizedBox(height: AppSpacing.md),
+                          _buildRecoveryBanner(context, recoveryHint),
+                        ],
+                        const SizedBox(height: AppSpacing.xxl),
+                        AutofillGroup(
+                          child: Form(
+                            key: _formKey,
+                            child: Column(
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.stretch,
+                              children: [
+                                TextFormField(
+                                  controller: _usernameController,
+                                  focusNode: _mobileFocusNode,
+                                  keyboardType: TextInputType.phone,
+                                  textInputAction: TextInputAction.next,
+                                  maxLength: 11,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter
+                                        .digitsOnly,
+                                    LengthLimitingTextInputFormatter(11),
+                                  ],
+                                  autofillHints: const [
+                                    AutofillHints.telephoneNumber,
+                                  ],
+                                  onChanged: (_) => _clearSubmitError(),
+                                  onFieldSubmitted: (_) {
+                                    _smsCodeFocusNode.requestFocus();
+                                  },
+                                  decoration: _buildInputDecoration(
+                                    context: context,
+                                    label: '手机号',
+                                    hint: '请输入 11 位手机号',
+                                    icon: Icons.phone_iphone_rounded,
+                                  ).copyWith(counterText: ''),
+                                  validator: _validateMobile,
                                 ),
-                                blurRadius: 24,
-                                offset: const Offset(0, 12),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '手机号验证码登录',
-                                style: textTheme.titleLarge,
-                              ),
-                              if (recoveryHint != null) ...[
-                                const SizedBox(height: AppSpacing.md),
-                                _buildRecoveryBanner(context, recoveryHint),
-                              ],
-                              const SizedBox(height: AppSpacing.lg),
-                              AutofillGroup(
-                                child: Form(
-                                  key: _formKey,
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.stretch,
-                                    children: [
-                                      TextFormField(
-                                        controller: _usernameController,
-                                        focusNode: _mobileFocusNode,
-                                        keyboardType: TextInputType.phone,
-                                        textInputAction: TextInputAction.next,
-                                        maxLength: 11,
-                                        inputFormatters: [
-                                          FilteringTextInputFormatter
-                                              .digitsOnly,
-                                          LengthLimitingTextInputFormatter(11),
-                                        ],
-                                        autofillHints: const [
-                                          AutofillHints.telephoneNumber,
-                                        ],
-                                        onChanged: (_) => _clearSubmitError(),
-                                        onFieldSubmitted: (_) {
-                                          _smsCodeFocusNode.requestFocus();
-                                        },
-                                        decoration: _buildInputDecoration(
-                                          context: context,
-                                          label: '手机号',
-                                          hint: '请输入 11 位手机号',
-                                          icon: Icons.phone_iphone_rounded,
-                                        ).copyWith(counterText: ''),
-                                        validator: _validateMobile,
+                                const SizedBox(height: AppSpacing.lg),
+                                // Story 3.1.1 + UX Review: 验证码输入 + 「获取验证码」按钮
+                                //   - autofillHints.oneTimeCode: 支持 iOS/Android 系统自动从 SMS 填充验证码
+                                //   - 按钮高度 ≥ 44px（UX touch target 规范）
+                                //   - disabled 状态显式设色，倒计时期间视觉明显
+                                TextFormField(
+                                  controller: _smsCodeController,
+                                  focusNode: _smsCodeFocusNode,
+                                  keyboardType: TextInputType.number,
+                                  textInputAction: TextInputAction.done,
+                                  maxLength: 6,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter
+                                        .digitsOnly,
+                                    LengthLimitingTextInputFormatter(6),
+                                  ],
+                                  autofillHints: const [
+                                    AutofillHints.oneTimeCode,
+                                  ],
+                                  onChanged: (_) => _clearSubmitError(),
+                                  onFieldSubmitted: (_) =>
+                                      _submitLoginData(),
+                                  decoration: _buildInputDecoration(
+                                    context: context,
+                                    label: '验证码',
+                                    hint: '请输入短信验证码',
+                                    icon: Icons.message_outlined,
+                                    suffixIcon: Padding(
+                                      padding: const EdgeInsets.only(
+                                        right: AppSpacing.xs,
                                       ),
-                                      const SizedBox(height: AppSpacing.lg),
-                                      // Story 3.1.1 + UX Review: 验证码输入 + 「获取验证码」按钮
-                                      //   - autofillHints.oneTimeCode: 支持 iOS/Android 系统自动从 SMS 填充验证码
-                                      //   - 按钮高度 ≥ 44px（UX touch target 规范）
-                                      //   - disabled 状态显式设色，倒计时期间视觉明显
-                                      TextFormField(
-                                        controller: _smsCodeController,
-                                        focusNode: _smsCodeFocusNode,
-                                        keyboardType: TextInputType.number,
-                                        textInputAction: TextInputAction.done,
-                                        maxLength: 6,
-                                        inputFormatters: [
-                                          FilteringTextInputFormatter
-                                              .digitsOnly,
-                                          LengthLimitingTextInputFormatter(6),
-                                        ],
-                                        autofillHints: const [
-                                          AutofillHints.oneTimeCode,
-                                        ],
-                                        onChanged: (_) => _clearSubmitError(),
-                                        onFieldSubmitted: (_) =>
-                                            _submitLoginData(),
-                                        decoration: _buildInputDecoration(
-                                          context: context,
-                                          label: '验证码',
-                                          hint: '请输入短信验证码',
-                                          icon: Icons.message_outlined,
-                                          suffixIcon: Padding(
-                                            padding: const EdgeInsets.only(
-                                              right: AppSpacing.xs,
-                                            ),
-                                            child: TextButton(
-                                              onPressed: (_isSendingCode ||
-                                                      _cooldownRemaining > 0)
-                                                  ? null
-                                                  : _sendSmsCode,
-                                              style: TextButton.styleFrom(
-                                                minimumSize:
-                                                    const Size(108, 44),
-                                                padding: const EdgeInsets
-                                                    .symmetric(
-                                                  horizontal: AppSpacing.sm,
-                                                ),
-                                                foregroundColor:
-                                                    AppColors.primary,
-                                                disabledForegroundColor:
-                                                    AppColors.textHint,
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                    AppRadii.md,
-                                                  ),
-                                                ),
-                                              ),
-                                              child: _isSendingCode
-                                                  ? const SizedBox(
-                                                      width: 18,
-                                                      height: 18,
-                                                      child:
-                                                          CircularProgressIndicator(
-                                                        strokeWidth: 2,
-                                                      ),
-                                                    )
-                                                  : Text(
-                                                      _cooldownRemaining > 0
-                                                          ? '${_cooldownRemaining}s 后重发'
-                                                          : '获取验证码',
-                                                      style: const TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                      ),
-                                                    ),
-                                            ),
-                                          ),
-                                        ).copyWith(counterText: ''),
-                                        validator: _validateSmsCode,
-                                      ),
-                                      const SizedBox(height: AppSpacing.md),
-                                      Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          const Padding(
-                                            padding: EdgeInsets.only(
-                                              top: 1,
-                                            ),
-                                            child: Icon(
-                                              Icons.info_outline_rounded,
-                                              size: 16,
-                                              color: AppColors.textHint,
-                                            ),
-                                          ),
-                                          const SizedBox(width: AppSpacing.sm),
-                                          Expanded(
-                                            child: Text(
-                                              '未注册手机号将自动创建账号并登录。验证码 5 分钟内有效，60 秒内不能重复获取。',
-                                              style:
-                                                  textTheme.bodySmall?.copyWith(
-                                                color: AppColors.textHint,
-                                                height: 1.45,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      AnimatedSwitcher(
-                                        duration:
-                                            const Duration(milliseconds: 180),
-                                        child: _submitError == null
-                                            ? const SizedBox(
-                                                key: ValueKey('submit-empty'),
-                                                height: 0,
-                                              )
-                                            : Padding(
-                                                key: ValueKey(_submitError),
-                                                padding: const EdgeInsets.only(
-                                                  top: AppSpacing.lg,
-                                                ),
-                                                child: Semantics(
-                                                  liveRegion: true,
-                                                  child: Container(
-                                                    padding:
-                                                        const EdgeInsets.all(
-                                                      AppSpacing.lg,
-                                                    ),
-                                                    decoration: BoxDecoration(
-                                                      color: theme.colorScheme
-                                                          .errorContainer,
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                        AppRadii.lg,
-                                                      ),
-                                                      border: Border.all(
-                                                        color: theme
-                                                            .colorScheme.error
-                                                            .withValues(
-                                                          alpha: 0.18,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    child: Row(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment
-                                                              .start,
-                                                      children: [
-                                                        Icon(
-                                                          Icons.error_outline,
-                                                          size: 18,
-                                                          color: theme
-                                                              .colorScheme
-                                                              .onErrorContainer,
-                                                        ),
-                                                        const SizedBox(
-                                                          width: AppSpacing.sm,
-                                                        ),
-                                                        Expanded(
-                                                          child: Text(
-                                                            _submitError!,
-                                                            style: textTheme
-                                                                .bodySmall
-                                                                ?.copyWith(
-                                                              color: theme
-                                                                  .colorScheme
-                                                                  .onErrorContainer,
-                                                              height: 1.5,
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                      ),
-                                      const SizedBox(height: AppSpacing.xl),
-                                      FilledButton(
-                                        onPressed: _isLoading
+                                      child: TextButton(
+                                        onPressed: (_isSendingCode ||
+                                                _cooldownRemaining > 0)
                                             ? null
-                                            : _submitLoginData,
-                                        style: FilledButton.styleFrom(
+                                            : _sendSmsCode,
+                                        style: TextButton.styleFrom(
                                           minimumSize:
-                                              const Size(double.infinity, 56),
-                                          backgroundColor: AppColors.primary,
-                                          disabledBackgroundColor:
-                                              AppColors.textHint.withValues(
-                                            alpha: 0.35,
+                                              const Size(108, 44),
+                                          padding: const EdgeInsets
+                                              .symmetric(
+                                            horizontal: AppSpacing.md,
                                           ),
-                                          foregroundColor: Colors.white,
+                                          foregroundColor:
+                                              AppColors.primary,
+                                          disabledForegroundColor:
+                                              AppColors.textHint,
+                                          backgroundColor: AppColors
+                                              .primarySoft,
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              AppRadii.lg,
+                                            borderRadius:
+                                                BorderRadius.circular(
+                                              AppRadii.md,
                                             ),
-                                          ),
-                                          textStyle:
-                                              textTheme.titleSmall?.copyWith(
-                                            color: Colors.white,
                                           ),
                                         ),
-                                        child: _isLoading
+                                        child: _isSendingCode
                                             ? const SizedBox(
-                                                width: 22,
-                                                height: 22,
+                                                width: 18,
+                                                height: 18,
                                                 child:
                                                     CircularProgressIndicator(
-                                                  strokeWidth: 2.2,
-                                                  color: Colors.white,
+                                                  strokeWidth: 2,
                                                 ),
                                               )
-                                            : const Text('登录并继续'),
+                                            : Text(
+                                                _cooldownRemaining > 0
+                                                    ? '${_cooldownRemaining}s 后重发'
+                                                    : '获取验证码',
+                                                style: const TextStyle(
+                                                  fontWeight:
+                                                      FontWeight.w600,
+                                                ),
+                                              ),
                                       ),
-                                      const SizedBox(height: AppSpacing.md),
-                                      // Story 3.1.1: 旧的「新用户注册」按钮下线—
-                                      // 验证码接口自动处理未注册手机号。
-                                      Center(
-                                        child: Text(
-                                          '登录后可同步订单、优惠券、收货地址与售后进度',
-                                          textAlign: TextAlign.center,
-                                          style: textTheme.bodySmall?.copyWith(
-                                            color: AppColors.textHint,
-                                            height: 1.45,
+                                    ),
+                                  ).copyWith(counterText: ''),
+                                  validator: _validateSmsCode,
+                                ),
+                                AnimatedSwitcher(
+                                  duration:
+                                      const Duration(milliseconds: 180),
+                                  child: _submitError == null
+                                      ? const SizedBox(
+                                          key: ValueKey('submit-empty'),
+                                          height: 0,
+                                        )
+                                      : Padding(
+                                          key: ValueKey(_submitError),
+                                          padding: const EdgeInsets.only(
+                                            top: AppSpacing.md,
+                                          ),
+                                          child: Semantics(
+                                            liveRegion: true,
+                                            child: Container(
+                                              padding:
+                                                  const EdgeInsets.all(
+                                                AppSpacing.lg,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                color: theme.colorScheme
+                                                    .errorContainer,
+                                                borderRadius:
+                                                    BorderRadius.circular(
+                                                  AppRadii.lg,
+                                                ),
+                                                border: Border.all(
+                                                  color: theme
+                                                      .colorScheme.error
+                                                      .withValues(
+                                                    alpha: 0.18,
+                                                  ),
+                                                ),
+                                              ),
+                                              child: Row(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment
+                                                        .start,
+                                                children: [
+                                                  Icon(
+                                                    Icons.error_outline,
+                                                    size: 18,
+                                                    color: theme
+                                                        .colorScheme
+                                                        .onErrorContainer,
+                                                  ),
+                                                  const SizedBox(
+                                                    width: AppSpacing.sm,
+                                                  ),
+                                                  Expanded(
+                                                    child: Text(
+                                                      _submitError!,
+                                                      style: textTheme
+                                                          .bodySmall
+                                                          ?.copyWith(
+                                                        color: theme
+                                                            .colorScheme
+                                                            .onErrorContainer,
+                                                        height: 1.5,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
                                           ),
                                         ),
+                                ),
+                                const SizedBox(height: AppSpacing.xl),
+                                FilledButton(
+                                  onPressed: _isLoading
+                                      ? null
+                                      : _submitLoginData,
+                                  style: FilledButton.styleFrom(
+                                    minimumSize:
+                                        const Size(double.infinity, 56),
+                                    backgroundColor: AppColors.primary,
+                                    disabledBackgroundColor:
+                                        AppColors.textHint.withValues(
+                                      alpha: 0.35,
+                                    ),
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(
+                                        AppRadii.lg,
                                       ),
-                                    ],
+                                    ),
+                                    textStyle:
+                                        textTheme.titleSmall?.copyWith(
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  child: _isLoading
+                                      ? const SizedBox(
+                                          width: 22,
+                                          height: 22,
+                                          child:
+                                              CircularProgressIndicator(
+                                            strokeWidth: 2.2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : const Text('登录并继续'),
+                                ),
+                                const SizedBox(height: AppSpacing.xxl),
+                                Center(
+                                  child: Text.rich(
+                                    TextSpan(
+                                      text: '登录即表示同意 ',
+                                      style: textTheme.bodySmall?.copyWith(
+                                        color: AppColors.textHint,
+                                        fontSize: 12,
+                                      ),
+                                      children: [
+                                        TextSpan(
+                                          text: '《用户服务协议》',
+                                          style: textTheme.bodySmall?.copyWith(
+                                            color: AppColors.textSecondary,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                        const TextSpan(text: ' 与 '),
+                                        TextSpan(
+                                          text: '《隐私政策》',
+                                          style: textTheme.bodySmall?.copyWith(
+                                            color: AppColors.textSecondary,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    textAlign: TextAlign.center,
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ],

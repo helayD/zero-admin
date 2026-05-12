@@ -91,7 +91,7 @@ String digitalCardAssetStatusText(String status, String statusText) {
     case 'asset_pending':
       return '待到账';
     case 'asset_failed':
-      return '资产发放失败';
+      return '发放失败';
     default:
       final String label = digitalCardUserFacingText(statusText);
       return label.isEmpty ? digitalCardUserFacingText(status) : label;
