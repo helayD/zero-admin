@@ -1,377 +1,317 @@
 @import (reference) '~antd/es/style/themes/index';
 
+// Design tokens - Trust & Authority (企业级管理后台)
+@brand-primary: #0369a1;     // CTA 主色
+@brand-primary-hover: #075985;
+@brand-primary-press: #0c4a6e;
+@brand-ink-950: #020617;
+@brand-ink-900: #0f172a;
+@brand-ink-800: #1e293b;
+@brand-ink-700: #334155;
+@brand-ink-500: #64748b;
+@brand-ink-400: #94a3b8;
+@brand-surface-0: #ffffff;
+@brand-surface-50: #f8fafc;
+@brand-surface-100: #f1f5f9;
+@brand-border: #e2e8f0;
+@brand-border-strong: #cbd5e1;
+@danger: #dc2626;
+@warning: #d97706;
+@success: #16a34a;
+
+@radius-sm: 8px;
+@radius-md: 10px;
+@radius-lg: 14px;
+
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
-  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
-  20%, 40%, 60%, 80% { transform: translateX(4px); }
+  20%, 60% { transform: translateX(-3px); }
+  40%, 80% { transform: translateX(3px); }
 }
 
 @keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.2); }
-  50% { box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.05); }
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .container {
-  --brand-950: #0f172a;
-  --brand-900: #172554;
-  --brand-700: #1d4ed8;
-  --brand-500: #3b82f6;
-  --brand-100: #dbeafe;
-  --accent-500: #f97316;
-  --surface-0: #fff;
-  --surface-50: #f8fafc;
-  --surface-100: #eff6ff;
-  --text-main: #0f172a;
-  --text-subtle: #475569;
-  --border-soft: rgba(148, 163, 184, 0.24);
-
   display: flex;
   min-height: 100vh;
-  background: radial-gradient(circle at top left, rgba(37, 99, 235, 0.1) 0%, transparent 32%),
-    radial-gradient(circle at bottom right, rgba(249, 115, 22, 0.08) 0%, transparent 28%),
-    linear-gradient(135deg, #f8fbff 0%, #eef4fb 46%, #f6f8fb 100%);
+  color: @brand-ink-900;
+  background: @brand-surface-50;
 }
 
+.skipLink {
+  position: absolute;
+  top: -40px;
+  left: 16px;
+  z-index: 100;
+  padding: 8px 14px;
+  color: @brand-surface-0;
+  font-weight: 600;
+  font-size: 13px;
+  background: @brand-primary;
+  border-radius: @radius-sm;
+  transition: top 0.2s ease;
+
+  &:focus {
+    top: 16px;
+    outline: 2px solid @brand-primary;
+    outline-offset: 2px;
+  }
+}
+
+/* ================ 左侧品牌区 ================ */
 .brandSide {
   position: relative;
   display: flex;
   flex: 1 1 auto;
-  align-items: center;
-  padding: 72px 72px 56px 80px;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 56px 64px;
   overflow: hidden;
-  background: linear-gradient(145deg, #0f172a 0%, #14213d 48%, #1e3a8a 100%);
-
-  &::before,
-  &::after {
-    position: absolute;
-    content: '';
-    pointer-events: none;
-    inset: auto;
-  }
+  color: rgba(255, 255, 255, 0.9);
+  background: linear-gradient(160deg, @brand-ink-950 0%, #0b1a3a 55%, #0d2250 100%);
 
   &::before {
+    position: absolute;
     top: -120px;
-    right: -90px;
-    width: 340px;
-    height: 340px;
-    background: radial-gradient(circle, rgba(59, 130, 246, 0.3) 0%, transparent 72%);
+    right: -80px;
+    width: 360px;
+    height: 360px;
+    content: '';
+    background: radial-gradient(circle, rgba(3, 105, 161, 0.28) 0%, transparent 68%);
     border-radius: 50%;
-  }
-
-  &::after {
-    bottom: -160px;
-    left: -140px;
-    width: 420px;
-    height: 420px;
-    background: radial-gradient(circle, rgba(249, 115, 22, 0.2) 0%, transparent 72%);
-    border-radius: 50%;
+    pointer-events: none;
   }
 }
 
 .brandContent {
   position: relative;
   z-index: 1;
-  max-width: 720px;
-}
-
-.brandEyebrow {
-  display: inline-flex;
-  align-items: center;
-  padding: 8px 14px;
-  color: rgba(219, 234, 254, 0.92);
-  font-weight: 600;
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(219, 234, 254, 0.16);
-  border-radius: 999px;
+  max-width: 520px;
+  animation: fadeIn 0.5s ease-out;
 }
 
 .brandHero {
   display: flex;
-  gap: 18px;
+  gap: 14px;
   align-items: center;
-  margin: 24px 0 28px;
+  margin-bottom: 56px;
 }
 
 .brandLogo {
-  width: 60px;
-  height: 60px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(219, 234, 254, 0.18);
-  border-radius: 18px;
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.24);
-}
-
-.brandHeroText {
-  min-width: 0;
+  width: 44px;
+  height: 44px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: @radius-md;
 }
 
 .brandTitle {
   color: #fff;
   font-weight: 700;
-  font-size: 34px;
-  line-height: 1.1;
-  letter-spacing: -0.03em;
+  font-size: 20px;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
 }
 
 .brandTagline {
-  margin-top: 6px;
-  color: rgba(226, 232, 240, 0.78);
-  font-size: 15px;
-  line-height: 1.6;
+  margin-top: 2px;
+  color: rgba(226, 232, 240, 0.7);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .brandHeadline {
-  max-width: 12ch;
-  margin-bottom: 20px;
+  margin: 0 0 16px;
   color: #fff;
   font-weight: 700;
-  font-size: clamp(38px, 3.4vw, 54px);
-  line-height: 1.12;
-  letter-spacing: -0.04em;
+  font-size: clamp(32px, 3vw, 44px);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
 }
 
 .brandSubtitle {
-  max-width: 640px;
-  margin-bottom: 26px;
-  color: rgba(226, 232, 240, 0.84);
-  font-size: 16px;
-  line-height: 1.85;
+  margin: 0 0 40px;
+  max-width: 420px;
+  color: rgba(226, 232, 240, 0.75);
+  font-size: 15px;
+  line-height: 1.7;
 }
 
-.modulePills {
+.brandHighlights {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 32px;
+  flex-direction: column;
+  gap: 20px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
 }
 
-.modulePill {
-  display: inline-flex;
-  align-items: center;
-  padding: 8px 14px;
-  color: #dbeafe;
-  font-weight: 600;
-  font-size: 13px;
-  line-height: 1;
-  background: rgba(15, 23, 42, 0.26);
-  border: 1px solid rgba(219, 234, 254, 0.14);
-  border-radius: 999px;
-  transition: all 0.25s ease;
-  cursor: default;
+.highlightItem {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  transition: border-color 0.25s ease;
+
+  &:last-child {
+    padding-bottom: 0;
+    border-bottom: none;
+  }
 
   &:hover {
-    background: rgba(15, 23, 42, 0.4);
-    border-color: rgba(219, 234, 254, 0.24);
-    transform: translateY(-1px);
+    border-color: rgba(255, 255, 255, 0.14);
   }
 }
 
-.brandGrid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
-  margin-bottom: 28px;
-}
-
-.brandPanel {
-  min-height: 208px;
-  padding: 22px 20px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 24px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(18px);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.2);
-    transform: translateY(-2px);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 8px 24px rgba(15, 23, 42, 0.2);
-  }
-}
-
-.brandPanelIcon {
+.highlightIcon {
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 46px;
-  height: 46px;
-  margin-bottom: 16px;
-  color: #fff;
-  font-size: 20px;
-  background: linear-gradient(135deg, var(--accent-500) 0%, #ea580c 100%);
-  border-radius: 14px;
-  box-shadow: 0 12px 28px rgba(234, 88, 12, 0.3);
+  width: 36px;
+  height: 36px;
+  color: #7dd3fc;
+  font-size: 17px;
+  background: rgba(3, 105, 161, 0.22);
+  border: 1px solid rgba(56, 189, 248, 0.24);
+  border-radius: @radius-sm;
 }
 
-.brandPanelTitle {
-  margin-bottom: 10px;
+.highlightText {
+  min-width: 0;
+  flex: 1;
+}
+
+.highlightTitle {
   color: #fff;
   font-weight: 600;
-  font-size: 17px;
-  line-height: 1.4;
+  font-size: 15px;
+  line-height: 1.5;
 }
 
-.brandPanelDesc {
-  color: rgba(226, 232, 240, 0.8);
-  font-size: 14px;
-  line-height: 1.8;
-}
-
-.trustStrip {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.trustTag {
-  display: inline-flex;
-  align-items: center;
-  padding: 10px 14px;
-  color: rgba(255, 255, 255, 0.92);
-  font-weight: 500;
+.highlightDesc {
+  margin-top: 4px;
+  color: rgba(226, 232, 240, 0.7);
   font-size: 13px;
-  line-height: 1;
-  background: rgba(15, 23, 42, 0.3);
-  border: 1px solid rgba(219, 234, 254, 0.14);
-  border-radius: 14px;
-  transition: all 0.25s ease;
-  cursor: default;
-
-  &:hover {
-    background: rgba(15, 23, 42, 0.45);
-    border-color: rgba(219, 234, 254, 0.24);
-    transform: translateY(-1px);
-  }
+  line-height: 1.65;
 }
 
+.brandFooter {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  color: rgba(148, 163, 184, 0.68);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.brandFooterDivider {
+  width: 3px;
+  height: 3px;
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 50%;
+}
+
+/* ================ 右侧登录区 ================ */
 .loginSide {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 520px;
-  padding: 48px 32px 32px;
+  width: 480px;
+  padding: 40px 32px;
+  background: @brand-surface-0;
 }
 
 .loginShell {
-  position: relative;
+  display: flex;
+  flex-direction: column;
   width: 100%;
-  max-width: 432px;
+  max-width: 380px;
+}
+
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 48px;
+}
+
+.brandCompact {
+  display: none;  // 桌面端隐藏，移动端显示
+  gap: 10px;
+  align-items: center;
+
+  img {
+    width: 28px;
+    height: 28px;
+  }
+
+  span {
+    color: @brand-ink-900;
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: -0.01em;
+  }
 }
 
 .lang {
-  position: absolute;
-  top: 0;
-  right: 0;
-  z-index: 10;
+  margin-left: auto;
 
   :global(.ant-dropdown-trigger) {
-    margin-right: 0;
-    color: #334155;
+    color: @brand-ink-700;
+    font-size: 14px;
+    transition: color 0.2s ease;
+    cursor: pointer;
+
+    &:hover {
+      color: @brand-primary;
+    }
   }
 }
 
 .loginCard {
-  margin-top: 52px;
-  padding: 32px 32px 28px;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid var(--border-soft);
-  border-radius: 28px;
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.16);
-  backdrop-filter: blur(18px);
-  transition: box-shadow 0.3s ease, transform 0.3s ease;
-
-  &:hover {
-    box-shadow: 0 28px 68px rgba(15, 23, 42, 0.2);
-  }
-}
-
-.loginBadge {
-  display: inline-flex;
-  align-items: center;
-  margin-bottom: 18px;
-  padding: 8px 14px;
-  color: var(--brand-700);
-  font-weight: 700;
-  font-size: 12px;
-  letter-spacing: 0.06em;
-  background: rgba(37, 99, 235, 0.08);
-  border: 1px solid rgba(37, 99, 235, 0.12);
-  border-radius: 999px;
+  animation: fadeIn 0.5s ease-out 0.1s both;
 }
 
 .loginHeader {
-  margin-bottom: 24px;
-}
-
-.loginLogo {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  margin-bottom: 20px;
-
-  img {
-    width: 40px;
-    height: 40px;
-    padding: 8px;
-    background: var(--surface-100);
-    border-radius: 14px;
-  }
-
-  span {
-    color: var(--text-main);
-    font-weight: 700;
-    font-size: 20px;
-    letter-spacing: -0.02em;
-  }
+  margin-bottom: 28px;
 }
 
 .loginTitle {
-  margin-bottom: 10px;
-  color: var(--text-main);
+  margin: 0 0 8px;
+  color: @brand-ink-950;
   font-weight: 700;
-  font-size: 30px;
+  font-size: 26px;
+  letter-spacing: -0.02em;
   line-height: 1.2;
-  letter-spacing: -0.03em;
 }
 
 .loginSubtitle {
-  color: var(--text-subtle);
+  margin: 0;
+  color: @brand-ink-500;
   font-size: 14px;
-  line-height: 1.75;
+  line-height: 1.6;
 }
 
-.securityAlert {
+.feedbackAlert {
   margin-bottom: 20px;
-  background: linear-gradient(180deg, #f8fbff 0%, #eff6ff 100%);
-  border: 1px solid #dbeafe;
-  border-radius: 18px;
+  border-radius: @radius-md;
+  animation: slideDown 0.2s ease-out;
 }
 
 .loginFormWrapper {
@@ -390,94 +330,79 @@
 
     .ant-form-item {
       margin-bottom: 18px;
-      transition: all 0.2s ease;
     }
 
-    .ant-form-item-has-error {
-      animation: shake 0.4s ease-in-out;
-
-      .ant-input-affix-wrapper {
-        border-color: #ef4444;
-        box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
-      }
+    .ant-form-item-has-error .ant-input-affix-wrapper {
+      animation: shake 0.35s ease-in-out;
     }
 
     .ant-form-vertical .ant-form-item-label {
-      padding-bottom: 8px;
+      padding-bottom: 6px;
     }
 
     .ant-form-item-label > label {
       height: auto;
-      color: var(--text-main);
+      color: @brand-ink-800;
       font-weight: 600;
       font-size: 13px;
     }
 
     .ant-form-item-explain-error {
+      margin-top: 4px;
+      color: @danger;
       font-size: 12px;
       animation: slideDown 0.2s ease-out;
     }
 
-    .ant-alert-message {
-      font-weight: 600;
-    }
-
-    .ant-alert-description {
-      line-height: 1.7;
-    }
-
     .ant-input-affix-wrapper {
-      min-height: 52px;
-      padding: 10px 14px;
-      background: var(--surface-50);
-      border: 1px solid #cbd5e1;
-      border-radius: 14px;
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      min-height: 44px;
+      padding: 8px 12px;
+      background: @brand-surface-0;
+      border: 1px solid @brand-border-strong;
+      border-radius: @radius-md;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 
       &:hover:not(&-disabled) {
-        background: var(--surface-0);
-        border-color: #93c5fd;
-        transform: translateY(-1px);
+        border-color: @brand-ink-500;
       }
 
       &:focus,
       &-focused {
-        background: var(--surface-0);
-        border-color: var(--brand-700);
-        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12), 0 4px 12px rgba(37, 99, 235, 0.08);
-        transform: translateY(-1px);
+        background: @brand-surface-0;
+        border-color: @brand-primary;
+        box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.14);
       }
 
       &-disabled {
         opacity: 0.6;
         cursor: not-allowed;
-        background: #f1f5f9;
-        transform: none !important;
+        background: @brand-surface-100;
 
         &:hover {
-          border-color: #cbd5e1;
+          border-color: @brand-border-strong;
         }
       }
 
-      // 错误状态
       &-status-error {
-        border-color: #ef4444;
-        animation: shake 0.4s ease-in-out;
+        border-color: @danger;
 
         &:focus,
         &-focused {
-          border-color: #ef4444;
-          box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.12);
+          border-color: @danger;
+          box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.14);
         }
       }
     }
 
     .ant-input {
-      color: var(--text-main);
+      color: @brand-ink-900;
       font-size: 14px;
       line-height: 1.6;
       background: transparent;
-      transition: color 0.2s ease;
+
+      &::placeholder {
+        color: @brand-ink-400;
+      }
     }
 
     .ant-input-affix-wrapper-disabled .ant-input {
@@ -485,289 +410,280 @@
     }
 
     .ant-checkbox-wrapper {
-      color: var(--text-subtle);
+      color: @brand-ink-700;
       font-size: 13px;
-      line-height: 1.6;
       transition: color 0.2s ease;
+      cursor: pointer;
 
       &:hover {
-        color: var(--text-main);
+        color: @brand-ink-900;
       }
     }
 
     .ant-checkbox-inner {
-      border-radius: 6px;
+      border-color: @brand-border-strong;
+      border-radius: 4px;
       transition: all 0.2s ease;
+    }
+
+    .ant-checkbox:hover .ant-checkbox-inner {
+      border-color: @brand-primary;
     }
 
     .ant-checkbox-checked .ant-checkbox-inner {
-      background-color: var(--brand-700);
-      border-color: var(--brand-700);
+      background-color: @brand-primary;
+      border-color: @brand-primary;
     }
 
-    // 密码可见性切换按钮优化
     .ant-input-password-icon {
-      color: #64748b;
+      min-width: 20px;
+      min-height: 20px;
+      color: @brand-ink-500;
       font-size: 16px;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: color 0.2s ease;
 
       &:hover {
-        color: var(--brand-700);
-        transform: scale(1.1);
+        color: @brand-primary;
       }
 
-      &:focus {
-        outline: 2px solid var(--brand-500);
+      &:focus-visible {
+        outline: 2px solid @brand-primary;
         outline-offset: 2px;
         border-radius: 4px;
-      }
-    }
-
-    // 提交按钮加载状态优化
-    .ant-btn-loading {
-      position: relative;
-      pointer-events: none;
-
-      &::before {
-        display: block;
-        background: rgba(255, 255, 255, 0.4);
       }
     }
   }
 }
 
 .prefixIcon {
-  color: #64748b;
+  color: @brand-ink-500;
   font-size: 16px;
+}
+
+.capsLockHint {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  margin: -4px 0 16px;
+  color: @warning;
+  font-size: 12px;
+  font-weight: 500;
+  background: #fffbeb;
+  border-left: 3px solid @warning;
+  border-radius: 4px;
+  animation: slideDown 0.2s ease-out;
+
+  &::before {
+    content: '⇪';
+    margin-right: 8px;
+    font-size: 14px;
+    font-weight: 700;
+  }
 }
 
 .formOptions {
   display: flex;
-  gap: 16px;
-  align-items: flex-start;
+  gap: 12px;
+  align-items: center;
   justify-content: space-between;
   margin-bottom: 24px;
 }
 
 .supportText {
-  flex: 1;
-  color: #64748b;
+  color: @brand-ink-500;
   font-size: 13px;
-  line-height: 1.6;
+  line-height: 1.5;
   text-align: right;
 }
 
 .submitButton {
   width: 100%;
-  height: 52px;
+  height: 44px;
+  color: #fff;
   font-weight: 600;
-  font-size: 15px;
-  background: linear-gradient(135deg, var(--brand-700) 0%, #1e40af 100%);
-  border: none;
-  border-radius: 14px;
-  box-shadow: 0 14px 30px rgba(37, 99, 235, 0.28);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(255, 255, 255, 0.2),
-      transparent
-    );
-    transition: left 0.5s ease;
-  }
+  font-size: 14px;
+  letter-spacing: 0.01em;
+  background: @brand-primary;
+  border: 1px solid @brand-primary;
+  border-radius: @radius-md;
+  box-shadow: 0 1px 2px rgba(2, 6, 23, 0.06);
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 
   &:hover:not(:disabled) {
-    background: linear-gradient(135deg, #1e40af 0%, var(--brand-700) 100%);
-    box-shadow: 0 18px 36px rgba(37, 99, 235, 0.36);
-    transform: translateY(-2px);
-    filter: brightness(1.04);
-
-    &::before {
-      left: 100%;
-    }
+    color: #fff;
+    background: @brand-primary-hover;
+    border-color: @brand-primary-hover;
+    box-shadow: 0 4px 10px rgba(3, 105, 161, 0.22);
   }
 
   &:active:not(:disabled) {
-    transform: translateY(0);
-    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.24);
-    transition-duration: 0.1s;
+    background: @brand-primary-press;
+    border-color: @brand-primary-press;
+    box-shadow: 0 1px 2px rgba(2, 6, 23, 0.12);
   }
 
   &:focus-visible {
-    outline: 2px solid var(--brand-500);
+    outline: 2px solid @brand-primary;
     outline-offset: 2px;
   }
 
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
-    transform: none;
   }
 }
 
-.submitHint {
-  margin-top: 14px;
-  color: #64748b;
+.meta {
+  margin-top: 20px;
+  color: @brand-ink-500;
   font-size: 12px;
-  line-height: 1.7;
-}
-
-.footer {
-  margin-top: 16px;
-  color: #64748b;
-  font-size: 12px;
-  line-height: 1.7;
+  line-height: 1.6;
   text-align: center;
 }
 
-@media (max-width: 1440px) {
+.footer {
+  margin-top: 40px;
+  color: @brand-ink-400;
+  font-size: 12px;
+  line-height: 1.6;
+  text-align: center;
+  animation: fadeIn 0.5s ease-out 0.2s both;
+}
+
+/* ================ 响应式 ================ */
+@media (max-width: 1280px) {
   .brandSide {
-    padding: 64px 52px 48px 56px;
+    padding: 48px 48px;
   }
 
-  .brandGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .loginSide {
+    width: 440px;
+    padding: 40px 28px;
   }
 }
 
-@media (max-width: 1180px) {
+@media (max-width: 1024px) {
   .container {
     flex-direction: column;
   }
 
   .brandSide {
-    padding: 40px 28px 18px;
+    flex: 0 0 auto;
+    padding: 32px 32px 28px;
+  }
+
+  .brandContent {
+    max-width: none;
+    margin-bottom: 0;
+  }
+
+  .brandHero {
+    margin-bottom: 24px;
   }
 
   .brandHeadline {
+    font-size: 28px;
+    margin-bottom: 10px;
+  }
+
+  .brandSubtitle {
+    margin-bottom: 24px;
     max-width: none;
-    font-size: 36px;
   }
 
-  .brandGrid {
-    grid-template-columns: 1fr;
+  .brandHighlights {
+    flex-direction: row;
+    gap: 16px;
   }
 
-  .brandPanel {
-    min-height: unset;
+  .highlightItem {
+    flex-direction: column;
+    gap: 10px;
+    flex: 1 1 0;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+
+  .brandFooter {
+    margin-top: 24px;
   }
 
   .loginSide {
     width: 100%;
-    padding: 0 28px 32px;
+    padding: 40px 24px 32px;
   }
 
   .loginShell {
-    max-width: 560px;
-  }
-
-  .loginCard {
-    margin-top: 28px;
+    max-width: 420px;
+    margin: 0 auto;
   }
 }
 
 @media (max-width: 768px) {
   .brandSide {
-    padding: 32px 20px 12px;
-  }
-
-  .brandEyebrow {
-    font-size: 11px;
-  }
-
-  .brandHero {
-    margin: 20px 0 18px;
-  }
-
-  .brandTitle {
-    font-size: 28px;
-  }
-
-  .brandHeadline {
-    font-size: 30px;
-  }
-
-  .brandSubtitle {
-    margin-bottom: 20px;
-    font-size: 14px;
-  }
-
-  .modulePills {
-    gap: 8px;
-    margin-bottom: 20px;
-  }
-
-  .modulePill,
-  .trustTag {
-    padding: 8px 10px;
-    font-size: 12px;
-  }
-
-  .brandGrid {
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-
-  .brandPanel {
-    padding: 18px 16px;
-    border-radius: 20px;
-  }
-
-  .loginSide {
-    padding: 0 16px 24px;
-  }
-
-  .loginCard {
-    padding: 24px 20px 20px;
-    border-radius: 22px;
-  }
-
-  .loginTitle {
-    font-size: 24px;
-  }
-
-  .formOptions {
-    flex-direction: column;
-    gap: 10px;
-    align-items: flex-start;
-  }
-
-  .supportText {
-    text-align: left;
-  }
-
-  .lang {
-    position: static;
-    display: flex;
-    justify-content: flex-end;
-    margin-bottom: 12px;
-  }
-}
-
-@media (max-width: 480px) {
-  .brandGrid,
-  .trustStrip {
     display: none;
   }
 
-  .brandSubtitle {
-    margin-bottom: 12px;
+  .brandCompact {
+    display: flex;
+  }
+
+  .topBar {
+    margin-bottom: 32px;
+  }
+
+  .loginSide {
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 32px 20px 24px;
+  }
+
+  .loginShell {
+    max-width: 100%;
+  }
+
+  .loginTitle {
+    font-size: 22px;
+  }
+
+  .loginSubtitle {
+    font-size: 13px;
+  }
+
+  .loginFormWrapper :global(.ant-input-affix-wrapper) {
+    min-height: 46px;
+  }
+
+  .submitButton {
+    height: 46px;
+  }
+
+  .formOptions {
+    gap: 8px;
+  }
+
+  .footer {
+    margin-top: 28px;
+  }
+}
+
+@media (max-width: 420px) {
+  .topBar {
+    margin-bottom: 24px;
+  }
+
+  .brandCompact span {
+    font-size: 15px;
+  }
+
+  .loginHeader {
+    margin-bottom: 22px;
   }
 }
 
 :focus-visible {
-  outline: 2px solid var(--brand-500);
+  outline: 2px solid @brand-primary;
   outline-offset: 2px;
 }
 
