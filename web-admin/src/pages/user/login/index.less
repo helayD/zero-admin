@@ -42,8 +42,11 @@
 .container {
   display: flex;
   min-height: 100vh;
+  max-width: 1600px;
+  margin: 0 auto;
   color: @brand-ink-900;
   background: @brand-surface-50;
+  box-shadow: 0 0 80px rgba(2, 6, 23, 0.08);
 }
 
 .skipLink {
@@ -73,6 +76,7 @@
   flex: 1 1 auto;
   flex-direction: column;
   justify-content: space-between;
+  align-items: flex-end;
   padding: 56px 64px;
   overflow: hidden;
   color: rgba(255, 255, 255, 0.9);
@@ -94,6 +98,7 @@
 .brandContent {
   position: relative;
   z-index: 1;
+  width: 100%;
   max-width: 520px;
   animation: fadeIn 0.5s ease-out;
 }
@@ -214,6 +219,8 @@
   display: flex;
   gap: 16px;
   align-items: center;
+  width: 100%;
+  max-width: 520px;
   color: rgba(148, 163, 184, 0.68);
   font-size: 12px;
   font-weight: 500;
@@ -232,7 +239,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 480px;
+  width: 520px;
   padding: 40px 32px;
   background: @brand-surface-0;
 }
@@ -566,10 +573,13 @@
 @media (max-width: 1024px) {
   .container {
     flex-direction: column;
+    max-width: none;
+    box-shadow: none;
   }
 
   .brandSide {
     flex: 0 0 auto;
+    align-items: stretch;
     padding: 32px 32px 28px;
   }
 
