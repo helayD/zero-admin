@@ -1,4 +1,5 @@
 import {
+  AuditOutlined,
   EyeInvisibleOutlined,
   EyeOutlined,
   LockOutlined,
@@ -8,8 +9,8 @@ import {
   UserOutlined,
 } from '@ant-design/icons';
 import { LoginForm, ProFormCheckbox, ProFormText } from '@ant-design/pro-form';
-import { Alert, message } from 'antd';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, Form, message } from 'antd';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { history, SelectLang, useIntl, useModel } from 'umi';
 
 import { login } from '@/services/ant-design-pro/api';
@@ -17,23 +18,28 @@ import { login } from '@/services/ant-design-pro/api';
 import styles from './index.less';
 
 const REMEMBER_ACCOUNT_KEY = 'zero_admin_remember_account';
-const MAX_LOGIN_ATTEMPTS = 5;
+
+const trustStats = [
+  { value: '7+', label: '业务域统一治理' },
+  { value: 'RBAC', label: '权限分层管控' },
+  { value: 'Audit', label: '操作全程留痕' },
+];
 
 const governanceHighlights = [
   {
     icon: <TeamOutlined />,
-    title: '全业务域聚合',
-    description: '系统、会员、商品、订单、营销、内容一个入口闭环。',
+    title: '统一业务入口',
+    description: '系统、会员、商品、订单、营销、内容集中管理。',
   },
   {
     icon: <ThunderboltOutlined />,
-    title: '实时数据驱动',
-    description: '经营看板与流程操作共享同一数据源，决策更高效。',
+    title: '高效运营协同',
+    description: '关键流程和经营数据在同一控制台完成闭环。',
   },
   {
     icon: <SafetyCertificateOutlined />,
-    title: '审计留痕',
-    description: 'RBAC 权限、登录与操作日志支撑企业级治理。',
+    title: '企业级安全治理',
+    description: '权限、登录、审计日志共同支撑后台访问安全。',
   },
 ];
 
@@ -44,9 +50,9 @@ const emptyLoginState: API.LoginResult = {
 };
 
 const Login: React.FC = () => {
+  const [form] = Form.useForm<API.LoginParams>();
   const [userLoginState, setUserLoginState] = useState<API.LoginResult>(emptyLoginState);
   const [submitting, setSubmitting] = useState(false);
-  const [rememberAccount, setRememberAccount] = useState('');
   const [loginAttempts, setLoginAttempts] = useState(0);
   const [capsLockOn, setCapsLockOn] = useState(false);
   const { initialState, setInitialState } = useModel('@@initialState');
@@ -57,19 +63,20 @@ const Login: React.FC = () => {
   useEffect(() => {
     const saved = localStorage.getItem(REMEMBER_ACCOUNT_KEY);
     if (saved) {
-      setRememberAccount(saved);
+      form.setFieldsValue({ account: saved, autoLogin: true });
       setTimeout(() => passwordInputRef.current?.focus(), 100);
-    } else {
-      setTimeout(() => accountInputRef.current?.focus(), 100);
+      return;
     }
-  }, []);
 
-  const fetchUserInfo = async () => {
+    setTimeout(() => accountInputRef.current?.focus(), 100);
+  }, [form]);
+
+  const fetchUserInfo = useCallback(async () => {
     const userInfo = await initialState?.fetchUserInfo?.();
     if (userInfo) {
       await setInitialState((s) => ({ ...s, currentUser: userInfo }));
     }
-  };
+  }, [initialState, setInitialState]);
 
   const handleSubmit = useCallback(
     async (values: API.LoginParams) => {
@@ -147,8 +154,6 @@ const Login: React.FC = () => {
     userLoginState.code !== '000000' &&
     Boolean(userLoginState.message);
 
-  const isAccountLocked = useMemo(() => loginAttempts >= MAX_LOGIN_ATTEMPTS, [loginAttempts]);
-
   const handleErrorClose = useCallback(() => {
     setUserLoginState(emptyLoginState);
   }, []);
@@ -165,70 +170,73 @@ const Login: React.FC = () => {
         跳转到登录表单
       </a>
 
-      <aside className={styles.brandSide} aria-label="产品介绍">
-        <div className={styles.brandContent}>
-          <div className={styles.brandHero}>
+      <main className={styles.shell}>
+        <aside className={styles.brandPanel} aria-label="产品介绍">
+          <div className={styles.brandHeader}>
             <img src="/logo.svg" alt="" className={styles.brandLogo} aria-hidden="true" />
             <div>
-              <div className={styles.brandTitle}>九克城</div>
-              <div className={styles.brandTagline}>Enterprise Console</div>
+              <div className={styles.brandName}>九克城</div>
+              <div className={styles.brandTagline}>Zero-Admin Enterprise Console</div>
             </div>
           </div>
 
-          <h1 className={styles.brandHeadline}>企业级后台管理</h1>
-          <p className={styles.brandSubtitle}>
-            基于 go-zero 微服务架构，聚合业务、运营、数据与治理能力。
-          </p>
+          <div className={styles.heroBlock}>
+            <div className={styles.heroEyebrow}>安全、稳定、清晰的后台入口</div>
+            <h1 className={styles.heroTitle}>登录企业管理控制台</h1>
+            <p className={styles.heroDescription}>
+              为多业务域运营团队提供统一的账号访问、权限治理和审计能力。
+            </p>
+          </div>
 
-          <ul className={styles.brandHighlights}>
+          <div className={styles.statGrid} aria-label="平台能力摘要">
+            {trustStats.map((item) => (
+              <div key={item.label} className={styles.statCard}>
+                <div className={styles.statValue}>{item.value}</div>
+                <div className={styles.statLabel}>{item.label}</div>
+              </div>
+            ))}
+          </div>
+
+          <ul className={styles.highlightList}>
             {governanceHighlights.map((item) => (
               <li key={item.title} className={styles.highlightItem}>
                 <span className={styles.highlightIcon} aria-hidden="true">
                   {item.icon}
                 </span>
-                <div className={styles.highlightText}>
+                <div>
                   <div className={styles.highlightTitle}>{item.title}</div>
                   <div className={styles.highlightDesc}>{item.description}</div>
                 </div>
               </li>
             ))}
           </ul>
-        </div>
+        </aside>
 
-        <div className={styles.brandFooter}>
-          <span>RBAC 权限</span>
-          <span className={styles.brandFooterDivider} aria-hidden="true" />
-          <span>审计链路</span>
-          <span className={styles.brandFooterDivider} aria-hidden="true" />
-          <span>多业务域</span>
-        </div>
-      </aside>
-
-      <section className={styles.loginSide} aria-label="登录入口">
-        <div className={styles.loginShell}>
-          <div className={styles.topBar}>
-            <div className={styles.brandCompact}>
-              <img src="/logo.svg" alt="" aria-hidden="true" />
-              <span>九克城后台</span>
+        <section className={styles.loginPanel} aria-label="登录入口">
+          <div className={styles.panelTopBar}>
+            <div className={styles.secureBadge}>
+              <AuditOutlined aria-hidden="true" />
+              <span>受控访问</span>
             </div>
             <div className={styles.lang}>{SelectLang && <SelectLang />}</div>
           </div>
 
-          <div
-            id="login-form"
-            className={styles.loginCard}
-            role="form"
-            aria-label="登录表单"
-          >
+          <div id="login-form" className={styles.loginCard} role="form" aria-label="登录表单">
             <div className={styles.loginHeader}>
-              <h2 className={styles.loginTitle}>登录控制台</h2>
-              <p className={styles.loginSubtitle}>请使用已分配的后台账号进入系统</p>
+              <h2 className={styles.loginTitle}>欢迎回来</h2>
+              <p className={styles.loginSubtitle}>请输入后台账号和密码继续访问</p>
+            </div>
+
+            <div className={styles.formNotice}>
+              <SafetyCertificateOutlined aria-hidden="true" />
+              <span>系统将记录本次登录行为，用于账号安全与合规审计。</span>
             </div>
 
             {hasLoginError && (
               <Alert
                 className={styles.feedbackAlert}
                 message={userLoginState.message}
+                description={loginAttempts >= 2 ? '请确认账号、密码或联系管理员协助处理。' : undefined}
                 type="error"
                 showIcon
                 closable
@@ -238,27 +246,13 @@ const Login: React.FC = () => {
               />
             )}
 
-            {isAccountLocked && (
-              <Alert
-                className={styles.feedbackAlert}
-                message="账号已被临时锁定"
-                description="多次登录失败，请稍后再试或联系管理员"
-                type="warning"
-                showIcon
-                role="alert"
-                aria-live="polite"
-              />
-            )}
-
             <div className={styles.loginFormWrapper}>
               <LoginForm<API.LoginParams>
+                form={form}
                 logo={null}
                 title=""
                 subTitle=""
-                initialValues={{
-                  autoLogin: true,
-                  account: rememberAccount,
-                }}
+                initialValues={{ autoLogin: true }}
                 submitter={{
                   searchConfig: {
                     submitText: submitting
@@ -275,7 +269,7 @@ const Login: React.FC = () => {
                     size: 'large',
                     className: styles.submitButton,
                     loading: submitting,
-                    disabled: submitting || isAccountLocked,
+                    disabled: submitting,
                     'aria-label': submitting ? '登录中' : '登录',
                   },
                 }}
@@ -290,7 +284,7 @@ const Login: React.FC = () => {
                     autoComplete: 'username',
                     maxLength: 64,
                     allowClear: true,
-                    disabled: submitting || isAccountLocked,
+                    disabled: submitting,
                     ref: accountInputRef,
                     'aria-label': '账号',
                     'aria-required': 'true',
@@ -325,7 +319,7 @@ const Login: React.FC = () => {
                       ),
                     autoComplete: 'current-password',
                     maxLength: 64,
-                    disabled: submitting || isAccountLocked,
+                    disabled: submitting,
                     ref: passwordInputRef,
                     onKeyDown: detectCapsLock,
                     onKeyUp: detectCapsLock,
@@ -361,23 +355,15 @@ const Login: React.FC = () => {
                       defaultMessage: '记住账号',
                     })}
                   </ProFormCheckbox>
-                  <span className={styles.supportText}>
-                    忘记密码请联系管理员
-                  </span>
+                  <span className={styles.supportText}>忘记密码请联系管理员</span>
                 </div>
               </LoginForm>
             </div>
 
-            <div className={styles.meta}>
-              登录即表示同意后台访问控制策略
-            </div>
+            <div className={styles.meta}>仅限授权人员访问，请勿在公共设备保存账号。</div>
           </div>
-
-          <footer className={styles.footer}>
-            &copy; {new Date().getFullYear()} 九克城 · Zero-Admin Enterprise Console
-          </footer>
-        </div>
-      </section>
+        </section>
+      </main>
     </div>
   );
 };
