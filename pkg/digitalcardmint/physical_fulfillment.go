@@ -833,11 +833,16 @@ func (s *Service) physicalFulfillmentBlockReason(ctx context.Context, tx *gorm.D
 		}
 	}
 
-	activity, err := s.loadDrawActivity(ctx, tx, instance.ActivityID)
-	if err != nil {
-		return "", "", err
+	// 购买型资产 activity_id=0，无抽奖活动，跳过实名校验
+	var realNameRequired int32
+	if instance.ActivityID > 0 {
+		activity, err := s.loadDrawActivity(ctx, tx, instance.ActivityID)
+		if err != nil {
+			return "", "", err
+		}
+		realNameRequired = activity.RealNameRequired
 	}
-	if activity.RealNameRequired == mintEnabledStatus {
+	if realNameRequired == mintEnabledStatus {
 		realNameStatus, realNameErr := s.loadMemberRealNameStatus(ctx, tx, instance.MemberID)
 		if realNameErr != nil {
 			return "", "", errors.New("实名状态查询失败，暂不可履约")
@@ -849,12 +854,12 @@ func (s *Service) physicalFulfillmentBlockReason(ctx context.Context, tx *gorm.D
 
 	if s.hasColumn(tx, CardInstanceRow{}.TableName(), "compliance_status") {
 		var complianceStatus string
-		if err = tx.WithContext(ctx).
+		if complianceErr := tx.WithContext(ctx).
 			Table(CardInstanceRow{}.TableName()).
 			Select("COALESCE(compliance_status, '')").
 			Where("id = ? AND is_deleted = 0", instance.ID).
-			Scan(&complianceStatus).Error; err != nil {
-			return "", "", err
+			Scan(&complianceStatus).Error; complianceErr != nil {
+			return "", "", complianceErr
 		}
 		switch strings.TrimSpace(complianceStatus) {
 		case ComplianceStatusRestricted, ComplianceStatusRecycleRequested, ComplianceStatusRecycled:
