@@ -3,5 +3,8 @@
     "allow": [
       "Bash(ls -d /Users/helay/Documents/GitHub/zero-admin/_opcos/planning-artifacts/*/)"
     ]
+  },
+  "enabledPlugins": {
+    "ui-ux-pro-max@ui-ux-pro-max-skill": true
   }
 }
