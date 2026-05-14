@@ -952,6 +952,44 @@ func (s *Service) ScanDueTasks(ctx context.Context, batchSize int) (*RecoverySta
 			}
 		}
 	}
+
+	// 扫描 mint_task_id=0 的孤立实例（中奖后因实名校验等原因未创建 task），补偿创建并派发
+	var orphanInstances []CardInstanceRow
+	orphanErr := s.DB.WithContext(ctx).
+		Table(CardInstanceRow{}.TableName()).
+		Where("is_deleted = 0 AND mint_task_id = 0 AND mint_status = ? AND asset_status = ?",
+			MintStatusPending, AssetStatusCreated).
+		Order("id asc").
+		Limit(batchSize).
+		Find(&orphanInstances).Error
+	if orphanErr == nil {
+		for _, inst := range orphanInstances {
+			instCopy := inst
+			var taskID int64
+			txErr := s.DB.Transaction(func(tx *gorm.DB) error {
+				task, err := s.EnsureTaskTx(ctx, tx, instCopy.ID, OperatorJob)
+				if err != nil {
+					return err
+				}
+				if task != nil {
+					taskID = task.ID
+				}
+				return nil
+			})
+			if txErr != nil {
+				continue
+			}
+			if taskID > 0 {
+				stats.Dispatched++
+				if s.MQ != nil {
+					_ = s.DispatchTask(ctx, taskID, "孤立实例自愈补偿")
+				} else {
+					_, _ = s.ExecuteTask(ctx, taskID, OperatorJob)
+				}
+			}
+		}
+	}
+
 	return stats, nil
 }
 
