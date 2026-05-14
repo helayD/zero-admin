@@ -49,6 +49,70 @@ String digitalCardUserFacingText(String text) {
       .trim();
 }
 
+/// 将时间线 operationType / statusText 等 snake_case 状态码转为用户可读中文。
+/// 优先精确匹配，未命中时走 [digitalCardUserFacingText] 做通用脱敏。
+String digitalCardOperationLabel(String operationType) {
+  const Map<String, String> _opLabels = <String, String>{
+    // 资产创建
+    'asset_created': '卡片已创建',
+    'asset_created_from_order': '下单获得卡片',
+    // 发放流程
+    'mint_requested': '发放申请已提交',
+    'mint_dispatching': '发放处理中',
+    'mint_succeeded': '卡片已到账',
+    'mint_failed': '发放失败',
+    'mint_frozen': '发放暂停',
+    'mint_manual_review': '人工复核中',
+    'mint_retry_requested': '重新发放中',
+    'mint_compensating': '发放补偿中',
+    // 合规 / 展示
+    'asset_compliance_review': '合规复核中',
+    'asset_offlined': '卡片已下线',
+    // 转移
+    'asset_transferred': '卡片已转移',
+    'holder_transferred': '持有人已变更',
+  };
+
+  final String key = operationType.trim().toLowerCase();
+  if (_opLabels.containsKey(key)) {
+    return _opLabels[key]!;
+  }
+  // 兜底：通用脱敏替换
+  return digitalCardUserFacingText(operationType);
+}
+
+/// 将时间线 statusText（to_status 等）转为用户可读中文。
+String digitalCardStatusLabel(String statusText) {
+  const Map<String, String> _statusLabels = <String, String>{
+    'asset_created': '已创建',
+    'asset_processing': '处理中',
+    'asset_success': '已到账',
+    'asset_pending': '待到账',
+    'asset_failed': '发放失败',
+    'mint_pending': '待发放',
+    'mint_processing': '发放中',
+    'mint_success': '已到账',
+    'mint_failed': '发放失败',
+    'mint_frozen': '已暂停',
+    'mint_compensating': '补偿中',
+    'mint_manual_review': '人工复核',
+    'compliance_clear': '合规通过',
+    'compliance_review': '合规复核中',
+    'compliance_restricted': '受限展示',
+    'compliance_recycled': '已回收',
+    'display_visible': '可展示',
+    'display_hidden': '受限展示',
+    'display_offlined': '已下线',
+    'display_recycled': '已回收',
+  };
+
+  final String key = statusText.trim().toLowerCase();
+  if (_statusLabels.containsKey(key)) {
+    return _statusLabels[key]!;
+  }
+  return digitalCardUserFacingText(statusText);
+}
+
 String digitalCardMintStatusText(String status, String statusText) {
   switch (status) {
     case 'mint_success':

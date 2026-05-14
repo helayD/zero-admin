@@ -119,44 +119,6 @@ class _DigitalCardAssetDetailPageState
     );
   }
 
-  Future<void> _requestWithdraw(DigitalCardAssetItem item) async {
-    final bool? confirmed = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext context) => AlertDialog(
-        title: const Text('提现'),
-        content: const Text('确认提交这张卡片的提现申请吗？'),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('提交'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || _isActionSubmitting) return;
-    setState(() => _isActionSubmitting = true);
-    try {
-      final Response response = await HttpUtil.post(
-        requestDigitalCardWithdrawUrl,
-        data: <String, dynamic>{
-          'assetInstanceId': item.assetInstanceId,
-          'reason': '会员提交提现申请',
-          'requestId': 'withdraw-${DateTime.now().millisecondsSinceEpoch}',
-        },
-      );
-      final Map<String, dynamic> data = _responseData(response.data);
-      if (!mounted) return;
-      _showSnack(data['withdrawText']?.toString() ?? '提现申请已提交');
-      await _loadDetail();
-    } finally {
-      if (mounted) setState(() => _isActionSubmitting = false);
-    }
-  }
-
   Future<void> _openRedemptionSheet(DigitalCardAssetItem item) async {
     final TextEditingController nameController = TextEditingController();
     final TextEditingController phoneController = TextEditingController();
@@ -582,53 +544,62 @@ class _DigitalCardAssetDetailPageState
       latestStatusSummary: detail?.latestStatusSummary ?? '',
     );
 
+    // 只在异常状态（受限/回收/下线）时才显示合规说明 banner
+    final bool showComplianceBanner =
+        detail?.restrictionReason.trim().isNotEmpty == true ||
+            item.complianceStatus == 'compliance_restricted' ||
+            item.complianceStatus == 'compliance_recycled' ||
+            item.displayStatus == 'display_offlined' ||
+            item.displayStatus == 'display_recycled';
+
     return RefreshIndicator(
       onRefresh: _loadDetail,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
         children: <Widget>[
           _buildHeroCard(item, statusCopy),
-          const SizedBox(height: AppSpacing.lg),
-          ComplianceRuleBanner(
-            title: '合规说明',
-            summary: detail?.restrictionReason.trim().isNotEmpty == true
-                ? digitalCardUserFacingText(detail!.restrictionReason)
-                : statusCopy.description,
-            statusText: statusCopy.label,
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          Text(
-            '到账进度',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
+          if (showComplianceBanner) ...<Widget>[
+            const SizedBox(height: AppSpacing.md),
+            ComplianceRuleBanner(
+              title: '卡片说明',
+              summary: detail?.restrictionReason.trim().isNotEmpty == true
+                  ? digitalCardUserFacingText(detail!.restrictionReason)
+                  : statusCopy.description,
+              statusText: statusCopy.label,
+            ),
+          ],
           const SizedBox(height: AppSpacing.md),
+          Text(
+            '卡片进度',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
           MintStatusTimeline(
               timeline:
                   detail?.timeline ?? const <DigitalCardAssetTimelineItem>[]),
-          const SizedBox(height: AppSpacing.lg),
-          if (detail != null && _shouldShowDrawSummary(detail))
+          if (detail != null && _shouldShowDrawSummary(detail)) ...<Widget>[
+            const SizedBox(height: AppSpacing.md),
             _buildDrawSummaryCard(detail.drawSummary),
+          ],
           if (detail != null) ...<Widget>[
-            const SizedBox(height: AppSpacing.lg),
-            _buildPhysicalFulfillmentEntry(detail.item),
-            const SizedBox(height: AppSpacing.lg),
-            _buildAssetActionCard(detail.item),
+            const SizedBox(height: AppSpacing.md),
+            _buildActionAndShippingCard(detail.item),
           ],
         ],
       ),
     );
   }
 
-  Widget _buildAssetActionCard(DigitalCardAssetItem item) {
+  /// 合并「可用操作」+「实体卡进度」为一个紧凑卡片
+  Widget _buildActionAndShippingCard(DigitalCardAssetItem item) {
     final bool actionsAvailable = item.mintStatus == 'mint_success';
     final bool canRedeem = actionsAvailable;
     final bool canShare = actionsAvailable && item.transferable == true;
-    // Story 10.7 Review Fix HIGH-2: 只把 pending/processing/shipped 视为活跃占用，
-    // cancelled/delivered/failed 等终态不应锁定卡片，否则会永久禁用分享/提货入口。
     const Set<String> activeRedemptionStatuses = <String>{
-      'pending',
-      'processing',
-      'shipped',
+      'pending', 'processing', 'shipped',
     };
     final bool hasActiveRedemption = item.redemptionStatus != null &&
         activeRedemptionStatuses.contains(item.redemptionStatus);
@@ -636,13 +607,12 @@ class _DigitalCardAssetDetailPageState
 
     String actionHint = '';
     if (hasActiveRedemption) {
-      actionHint = '该卡片正在提货中，暂不能分享';
+      actionHint = '配送中，暂不能分享';
     } else if (hasActiveShare) {
-      actionHint = '该卡片已分享给朋友，暂不能提货';
+      actionHint = '已分享给朋友，暂不能申请配送';
     }
 
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadii.xl),
@@ -651,120 +621,129 @@ class _DigitalCardAssetDetailPageState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text('卡片操作', style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            actionsAvailable
-                ? '可支付邮费、提交提现申请，或转赠给已注册用户。'
-                : '待发放完成后，可支付邮费、提交提现申请或转赠给已注册用户。',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          if (actionHint.isNotEmpty) ...<Widget>[
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              actionHint,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.price,
+          // ── 实体卡进度入口（行式，紧凑）──
+          InkWell(
+            onTap: () => _openPhysicalFulfillment(item),
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(AppRadii.xl),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg, vertical: AppSpacing.md),
+              child: Row(
+                children: <Widget>[
+                  const Icon(Icons.local_shipping_outlined,
+                      size: 18, color: Color(0xFF2563EB)),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      '实体卡配送',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                    ),
                   ),
-            ),
-          ],
-          const SizedBox(height: AppSpacing.md),
-          // 主要操作按钮（全宽）
-          if (canRedeem && !hasActiveShare)
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: _isActionSubmitting
-                    ? null
-                    : () => _openRedemptionSheet(item),
-                icon: const Icon(Icons.local_mall_outlined),
-                label: const Text('我要提货'),
+                  Text(
+                    _physicalEntryStatus(item),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                  ),
+                  const SizedBox(width: 2),
+                  const Icon(Icons.chevron_right_rounded,
+                      size: 18, color: AppColors.textSecondary),
+                ],
               ),
             ),
-          if (canShare && !hasActiveRedemption) ...[
-            if (canRedeem && !hasActiveShare) const SizedBox(height: AppSpacing.sm),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: _isActionSubmitting
-                    ? null
-                    : () => _openShareSheet(item),
-                icon: const Icon(Icons.share_outlined),
-                label: const Text('分享给朋友'),
-              ),
-            ),
-          ],
-          // 次要操作按钮
-          if (actionsAvailable) ...[
-            const SizedBox(height: AppSpacing.md),
-            const Divider(),
-            const SizedBox(height: AppSpacing.sm),
-            Wrap(
-              spacing: AppSpacing.md,
-              runSpacing: AppSpacing.sm,
+          ),
+          Divider(height: 1, color: AppColors.border),
+          // ── 操作按钮区 ──
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                TextButton.icon(
-                  onPressed: _isActionSubmitting
-                      ? null
-                      : () => _openPhysicalFulfillment(item),
-                  icon: const Icon(Icons.local_shipping_outlined, size: 18),
-                  label: const Text('支付邮费'),
+                if (actionHint.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    child: Row(
+                      children: <Widget>[
+                        const Icon(Icons.info_outline,
+                            size: 13, color: AppColors.price),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            actionHint,
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: AppColors.price,
+                                    ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                Row(
+                  children: <Widget>[
+                    if (canRedeem && !hasActiveShare)
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: _isActionSubmitting
+                              ? null
+                              : () => _openRedemptionSheet(item),
+                          icon: const Icon(Icons.local_shipping_outlined,
+                              size: 16),
+                          label: const Text('申请配送'),
+                          style: FilledButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ),
+                      ),
+                    if (canRedeem && !hasActiveShare && canShare && !hasActiveRedemption)
+                      const SizedBox(width: AppSpacing.sm),
+                    if (canShare && !hasActiveRedemption)
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: _isActionSubmitting
+                              ? null
+                              : () => _openShareSheet(item),
+                          icon: const Icon(Icons.share_outlined, size: 16),
+                          label: const Text('分享给朋友'),
+                          style: OutlinedButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ),
+                      ),
+                    if (!actionsAvailable)
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: null,
+                          icon: const Icon(Icons.hourglass_empty_outlined,
+                              size: 16),
+                          label: const Text('等待卡片到账'),
+                          style: OutlinedButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-                TextButton.icon(
-                  onPressed: _isActionSubmitting
-                      ? null
-                      : () => _requestWithdraw(item),
-                  icon: const Icon(Icons.account_balance_wallet_outlined, size: 18),
-                  label: const Text('提现'),
-                ),
-                // Story 10.7 Review #5 H1: 越权直转按钮已下线，转赠改走「分享给朋友」按钮
-                // 触发的 GenerateClaimToken → H5 领取 → ConsumeClaimToken 流程
               ],
             ),
-          ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildPhysicalFulfillmentEntry(DigitalCardAssetItem item) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadii.xl),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: <Widget>[
-          const Icon(Icons.local_shipping_outlined, color: Color(0xFF2563EB)),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  '实体卡进度',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: AppColors.textPrimary,
-                      ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  _physicalEntryHint(item),
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            tooltip: '查看实体卡进度',
-            onPressed: () => _openPhysicalFulfillment(item),
-            icon: const Icon(Icons.chevron_right_rounded),
-          ),
-        ],
-      ),
-    );
+  String _physicalEntryStatus(DigitalCardAssetItem item) {
+    if (item.mintStatus == 'mint_success') return '可申请';
+    if (item.mintStatus == 'mint_pending' ||
+        item.mintStatus == 'mint_processing') return '待到账';
+    if (item.mintStatus == 'mint_failed') return '暂不可用';
+    return '查看进度';
   }
 
   Future<void> _openPhysicalFulfillment(DigitalCardAssetItem item) async {
@@ -777,33 +756,29 @@ class _DigitalCardAssetDetailPageState
     );
   }
 
-  String _physicalEntryHint(DigitalCardAssetItem item) {
-    if (item.mintStatus == 'mint_success') {
-      return '查看地址确认、制作、配送和签收进度。';
-    }
-    if (item.mintStatus == 'mint_pending' ||
-        item.mintStatus == 'mint_processing') {
-      return '待到账后可继续确认地址和查看制作配送进度。';
-    }
-    if (item.mintStatus == 'mint_failed') {
-      return '当前暂不可发货，请等待处理结果更新。';
-    }
-    return '查看实体卡制作与配送进度。';
-  }
-
   Widget _buildHeroCard(
     DigitalCardAssetItem item,
     DigitalCardStatusCopy statusCopy,
   ) {
+    // 根据稀有度选择渐变色
+    final List<Color> gradientColors = _rarityGradient(item.rarity);
+
     return Container(
       padding: const EdgeInsets.all(AppSpacing.xl),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: <Color>[Color(0xFF111827), Color(0xFF8B1E3F)],
+        gradient: LinearGradient(
+          colors: gradientColors,
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(AppRadii.xxl),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: gradientColors.last.withValues(alpha: 0.35),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -811,19 +786,18 @@ class _DigitalCardAssetDetailPageState
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              ClipRRect(
-                borderRadius: BorderRadius.circular(AppRadii.lg),
-                child: CachedImageWidget(
-                  96,
-                  128,
-                  item.cardFaceImage,
-                ),
-              ),
+              // 卡面图片 / 无图占位
+              _buildCardFaceImage(item),
               const SizedBox(width: AppSpacing.lg),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
+                    // 稀有度标签
+                    if (item.rarity.trim().isNotEmpty)
+                      _buildRarityBadge(item.rarity),
+                    if (item.rarity.trim().isNotEmpty)
+                      const SizedBox(height: AppSpacing.xs),
                     Text(
                       item.templateName.trim().isEmpty
                           ? '提货卡'
@@ -831,14 +805,17 @@ class _DigitalCardAssetDetailPageState
                       style:
                           Theme.of(context).textTheme.headlineSmall?.copyWith(
                                 color: Colors.white,
-                                fontSize: 24,
+                                fontSize: 22,
+                                fontWeight: FontWeight.w700,
+                                height: 1.2,
                               ),
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     Text(
                       '编号 ${item.assetNo.isEmpty ? '待分配' : item.assetNo}',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.white.withValues(alpha: 0.86),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Colors.white.withValues(alpha: 0.7),
+                            letterSpacing: 0.4,
                           ),
                     ),
                     const SizedBox(height: AppSpacing.sm),
@@ -846,9 +823,7 @@ class _DigitalCardAssetDetailPageState
                       spacing: AppSpacing.sm,
                       runSpacing: AppSpacing.sm,
                       children: <Widget>[
-                        _buildHeroChip(
-                          statusCopy.label,
-                        ),
+                        _buildHeroChip(statusCopy.label),
                         _buildHeroChip(
                           digitalCardDisplayStatusText(
                             item.displayStatus,
@@ -862,23 +837,6 @@ class _DigitalCardAssetDetailPageState
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.lg),
-          Text(
-            statusCopy.description,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.8),
-                ),
-          ),
-          if (statusCopy.actionHint.trim().isNotEmpty) ...<Widget>[
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              statusCopy.actionHint,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
-            ),
-          ],
           const SizedBox(height: AppSpacing.md),
           Divider(color: Colors.white.withValues(alpha: 0.2), height: 1),
           const SizedBox(height: AppSpacing.sm),
@@ -896,6 +854,110 @@ class _DigitalCardAssetDetailPageState
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  /// 卡面图片，无图时显示稀有度占位
+  Widget _buildCardFaceImage(DigitalCardAssetItem item) {
+    const double w = 88;
+    const double h = 120;
+    final bool hasImage = item.cardFaceImage.trim().isNotEmpty &&
+        !item.cardFaceImage.contains('example.com');
+
+    if (hasImage) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        child: CachedImageWidget(w, h, item.cardFaceImage),
+      );
+    }
+
+    // 无图占位：渐变背景 + 稀有度文字
+    final String rarityLabel =
+        item.rarity.trim().isEmpty ? 'N' : item.rarity.trim().toUpperCase();
+    return Container(
+      width: w,
+      height: h,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        gradient: LinearGradient(
+          colors: <Color>[
+            Colors.white.withValues(alpha: 0.18),
+            Colors.white.withValues(alpha: 0.06),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.25),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Icon(
+            Icons.card_giftcard_rounded,
+            color: Colors.white.withValues(alpha: 0.6),
+            size: 32,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            rarityLabel,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.85),
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 根据稀有度返回渐变色
+  List<Color> _rarityGradient(String rarity) {
+    switch (rarity.trim().toUpperCase()) {
+      case 'SSR':
+        return const <Color>[Color(0xFF1A0533), Color(0xFF7C3AED)];
+      case 'SR':
+        return const <Color>[Color(0xFF0F2044), Color(0xFF1D4ED8)];
+      case 'R':
+        return const <Color>[Color(0xFF0D2B1F), Color(0xFF059669)];
+      default:
+        return const <Color>[Color(0xFF111827), Color(0xFF374151)];
+    }
+  }
+
+  /// 稀有度角标
+  Widget _buildRarityBadge(String rarity) {
+    final Color badgeColor;
+    switch (rarity.trim().toUpperCase()) {
+      case 'SSR':
+        badgeColor = const Color(0xFFF59E0B);
+      case 'SR':
+        badgeColor = const Color(0xFF60A5FA);
+      case 'R':
+        badgeColor = const Color(0xFF34D399);
+      default:
+        badgeColor = Colors.white54;
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: badgeColor.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: badgeColor.withValues(alpha: 0.6)),
+      ),
+      child: Text(
+        rarity.trim().toUpperCase(),
+        style: TextStyle(
+          color: badgeColor,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1.5,
+        ),
       ),
     );
   }

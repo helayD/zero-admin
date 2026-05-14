@@ -45,7 +45,8 @@ class MintStatusTimeline extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.lg),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg, vertical: AppSpacing.md),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadii.xl),
@@ -56,75 +57,102 @@ class MintStatusTimeline extends StatelessWidget {
           final DigitalCardAssetTimelineItem item = timeline[index];
           final bool isLast = index == timeline.length - 1;
           final Color accentColor = _colorForItem(item);
-          final String operationText = digitalCardUserFacingText(
+          final String operationText = digitalCardOperationLabel(
             item.operationText.trim().isEmpty
                 ? item.operationType
                 : item.operationText,
           );
-          final String statusText = digitalCardUserFacingText(item.statusText);
+          final String statusText = digitalCardStatusLabel(item.statusText);
           final String reasonText = digitalCardUserFacingText(item.reasonText);
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Column(
-                children: <Widget>[
-                  Container(
-                    width: 14,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      color: accentColor,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  if (!isLast)
-                    Container(
-                      width: 2,
-                      height: 52,
-                      color: accentColor.withValues(alpha: 0.18),
-                    ),
-                ],
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.only(bottom: isLast ? 0 : AppSpacing.md),
+          return IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                // 左侧时间轴
+                SizedBox(
+                  width: 20,
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: <Widget>[
-                      Text(
-                        operationText,
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                              color: AppColors.textPrimary,
-                            ),
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      if (statusText.trim().isNotEmpty)
-                        Text(
-                          statusText,
-                          style:
-                              Theme.of(context).textTheme.labelMedium?.copyWith(
-                                    color: accentColor,
-                                  ),
+                      Container(
+                        width: 10,
+                        height: 10,
+                        margin: const EdgeInsets.only(top: 3),
+                        decoration: BoxDecoration(
+                          color: accentColor,
+                          shape: BoxShape.circle,
                         ),
-                      if (reasonText.trim().isNotEmpty) ...<Widget>[
-                        const SizedBox(height: AppSpacing.xs),
-                        Text(
-                          reasonText,
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ],
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        item.createTime.trim().isEmpty
-                            ? '时间待同步'
-                            : item.createTime,
-                        style: Theme.of(context).textTheme.bodySmall,
                       ),
+                      if (!isLast)
+                        Expanded(
+                          child: Container(
+                            width: 2,
+                            margin: const EdgeInsets.symmetric(vertical: 2),
+                            color: accentColor.withValues(alpha: 0.2),
+                          ),
+                        ),
                     ],
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(width: AppSpacing.sm),
+                // 右侧内容
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                        bottom: isLast ? 0 : AppSpacing.sm),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Row(
+                          children: <Widget>[
+                            Expanded(
+                              child: Text(
+                                operationText,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
+                                    ?.copyWith(
+                                      color: AppColors.textPrimary,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                              ),
+                            ),
+                            if (statusText.trim().isNotEmpty)
+                              Text(
+                                statusText,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .labelSmall
+                                    ?.copyWith(color: accentColor),
+                              ),
+                          ],
+                        ),
+                        if (reasonText.trim().isNotEmpty) ...<Widget>[
+                          const SizedBox(height: 2),
+                          Text(
+                            reasonText,
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
+                          ),
+                        ],
+                        const SizedBox(height: 2),
+                        Text(
+                          item.createTime.trim().isEmpty
+                              ? '时间待同步'
+                              : item.createTime,
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 11,
+                                  ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           );
         }),
       ),
