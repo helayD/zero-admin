@@ -1656,20 +1656,7 @@ func (s *Service) validateMintPrerequisites(ctx context.Context, tx *gorm.DB, in
 		return errors.New("所属模板合规状态禁止发链")
 	}
 
-	if activity.RealNameRequired != mintEnabledStatus {
-		return nil
-	}
-	memberID := record.MemberID
-	if memberID <= 0 {
-		memberID = instance.MemberID
-	}
-	realNameStatus, err := s.loadMemberRealNameStatus(ctx, tx, memberID)
-	if err != nil {
-		return errors.New("实名状态查询失败，当前资产不允许发放")
-	}
-	if realNameStatus != mintVerifiedRealNameCode {
-		return errors.New("实名未通过，当前资产不允许发放")
-	}
+	// 抽卡场景不要求实名认证，中奖后直接进入 mint 流程
 	return nil
 }
 
