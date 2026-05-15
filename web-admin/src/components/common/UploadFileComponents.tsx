@@ -2,7 +2,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import { message, Modal, Upload } from 'antd';
 import type { RcFile, UploadProps } from 'antd/es/upload';
 import type { UploadFile } from 'antd/es/upload/interface';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 const defaultUploadApi = '/api/sys/upload';
 
@@ -71,10 +71,19 @@ const UploadFileComponents: React.FC<UploadFileFormProps> = (props) => {
   const [previewImage, setPreviewImage] = useState('');
   const [previewTitle, setPreviewTitle] = useState('');
   const [fileList, setFileList] = useState<UploadFile[]>(initialFileList);
+  // 记录最近一次主动 emit 给 Form 的值，用于跳过自身回写引发的 fileList 重置
+  const lastEmittedValueRef = useRef<string | undefined>(controlledValue ?? '');
 
   useEffect(() => {
+    // 仅在外部传入的 value 与自身最近 emit 的值不一致时才同步 fileList，
+    // 避免上传中/上传完成阶段 onChange 自我回写导致 fileList 被清空。
+    const externalValue = controlledValue ?? '';
+    if (externalValue === (lastEmittedValueRef.current ?? '')) {
+      return;
+    }
+    lastEmittedValueRef.current = externalValue;
     setFileList(initialFileList);
-  }, [initialFileList]);
+  }, [controlledValue, initialFileList]);
 
   const emitChange = (nextFileList: UploadFile[]) => {
     const nextValue = nextFileList
@@ -83,6 +92,7 @@ const UploadFileComponents: React.FC<UploadFileFormProps> = (props) => {
       .filter(Boolean)
       .join(',');
 
+    lastEmittedValueRef.current = nextValue;
     onChange?.(nextValue);
     onSubmit?.(nextValue);
   };
