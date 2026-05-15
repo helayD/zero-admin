@@ -57,7 +57,7 @@ func (l *QueryProductSpuDetailLogic) QueryProductSpuDetail(in *pmsclient.QueryPr
 		l.svcCtx.DB.WithContext(l.ctx).Model(&model.PmsProductSpu{}),
 		current,
 		"",
-	).Where("id = ?", in.Id).Take(&item).Error
+	).Where("id = ? AND is_deleted = 0", in.Id).Take(&item).Error
 
 	switch {
 	case errors.Is(err, gorm.ErrRecordNotFound):

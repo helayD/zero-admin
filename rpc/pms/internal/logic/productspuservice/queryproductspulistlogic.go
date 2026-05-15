@@ -47,7 +47,7 @@ func (l *QueryProductSpuListLogic) QueryProductSpuList(in *pmsclient.QueryProduc
 		l.svcCtx.DB.WithContext(l.ctx).Model(&model.PmsProductSpu{}),
 		current,
 		"",
-	)
+	).Where("is_deleted = ?", 0)
 	if len(in.Name) > 0 {
 		q = q.Where("name LIKE ?", "%"+in.Name+"%")
 	}

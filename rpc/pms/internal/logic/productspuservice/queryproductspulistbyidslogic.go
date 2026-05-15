@@ -48,7 +48,7 @@ func (l *QueryProductSpuListByIdsLogic) QueryProductSpuListByIds(in *pmsclient.Q
 		l.svcCtx.DB.WithContext(l.ctx).Model(&model.PmsProductSpu{}),
 		current,
 		"",
-	).Where("id IN ?", in.Ids).Find(&result).Error
+	).Where("id IN ? AND is_deleted = 0", in.Ids).Find(&result).Error
 
 	if err != nil {
 		logc.Errorf(l.ctx, "查询商品列表失败,参数:%+v,异常:%s", in, err.Error())
@@ -84,16 +84,16 @@ func (l *QueryProductSpuListByIdsLogic) QueryProductSpuListByIds(in *pmsclient.Q
 			Sales:               item.Sales,                                       // 销量
 			Stock:               item.Stock,                                       // 库存
 			LowStock:            item.LowStock,                                    // 预警库存
-		PromotionType:       item.PromotionType,                               // 促销类型：0->没有促销使用原价;1->使用促销价；2->使用会员价；3->使用阶梯价格；4->使用满减价格；5->秒杀
-		FulfillmentMode:     item.FulfillmentMode,                             // 履约模式: physical_delivery-实物发货, digital_asset-数字资产
-		FulfillmentRuleId:   item.FulfillmentRuleID,                           // 关联发卡规则ID,仅digital_asset模式时有效
-		SubTitle:            item.SubTitle,                                    // 副标题
-		DetailHtml:          item.DetailHTML,                                  // 产品详情网页内容
-		DetailMobileHtml:    item.DetailMobileHTML,                            // 移动端网页详情
-		CreateBy:            item.CreateBy,                                    // 创建人ID
-		CreateTime:          time_util.TimeToStr(item.CreateTime),             // 创建时间
-		UpdateBy:            pointerprocess.DefaltData(item.UpdateBy).(int64), // 更新人ID
-		UpdateTime:          time_util.TimeToString(item.UpdateTime),          // 更新时间
+			PromotionType:       item.PromotionType,                               // 促销类型：0->没有促销使用原价;1->使用促销价；2->使用会员价；3->使用阶梯价格；4->使用满减价格；5->秒杀
+			FulfillmentMode:     item.FulfillmentMode,                             // 履约模式: physical_delivery-实物发货, digital_asset-数字资产
+			FulfillmentRuleId:   item.FulfillmentRuleID,                           // 关联发卡规则ID,仅digital_asset模式时有效
+			SubTitle:            item.SubTitle,                                    // 副标题
+			DetailHtml:          item.DetailHTML,                                  // 产品详情网页内容
+			DetailMobileHtml:    item.DetailMobileHTML,                            // 移动端网页详情
+			CreateBy:            item.CreateBy,                                    // 创建人ID
+			CreateTime:          time_util.TimeToStr(item.CreateTime),             // 创建时间
+			UpdateBy:            pointerprocess.DefaltData(item.UpdateBy).(int64), // 更新人ID
+			UpdateTime:          time_util.TimeToString(item.UpdateTime),          // 更新时间
 
 		})
 	}
