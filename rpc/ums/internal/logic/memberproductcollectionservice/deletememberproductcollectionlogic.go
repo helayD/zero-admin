@@ -32,6 +32,16 @@ func NewDeleteMemberProductCollectionLogic(ctx context.Context, svcCtx *svc.Serv
 
 // DeleteMemberProductCollection 删除商品收藏/清空当前用户商品收藏列表
 func (l *DeleteMemberProductCollectionLogic) DeleteMemberProductCollection(in *umsclient.DeleteMemberProductCollectionReq) (*umsclient.DeleteMemberProductCollectionResp, error) {
+	if len(in.Ids) == 0 {
+		_, err := l.svcCtx.MemberProductCollectionModel.DeleteByMemberId(l.ctx, in.MemberId)
+		if err != nil {
+			logc.Errorf(l.ctx, "清空商品收藏失败,参数:%+v,异常:%s", in, err.Error())
+			return nil, errors.New("清空商品收藏失败")
+		}
+
+		return &umsclient.DeleteMemberProductCollectionResp{}, nil
+	}
+
 	for _, id := range in.Ids {
 		_, err := l.svcCtx.MemberProductCollectionModel.Deletes(l.ctx, id, in.MemberId)
 		if err != nil {

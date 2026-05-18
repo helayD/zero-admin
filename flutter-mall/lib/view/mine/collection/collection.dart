@@ -38,7 +38,8 @@ class _CollectionState extends State<Collection> {
         _errorMessage = null;
       });
       Response result = await HttpUtil.get(collectionListDataUrl);
-      CollectionListModel collectionListModel = CollectionListModel.fromJson(result.data);
+      CollectionListModel collectionListModel =
+          CollectionListModel.fromJson(result.data);
       if (!mounted) return;
       setState(() {
         collectionDataItem = collectionListModel.data;
@@ -61,21 +62,30 @@ class _CollectionState extends State<Collection> {
         title: const Text("清空收藏"),
         content: const Text("确定要清空全部收藏吗？此操作不可恢复。"),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text("取消")),
-          TextButton(onPressed: () => Navigator.of(context).pop(true), child: const Text("确定")),
+          TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text("取消")),
+          TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text("确定")),
         ],
       ),
     );
     if (confirmed != true || !mounted) return;
     try {
-      setState(() { _isLoading = true; });
+      setState(() {
+        _isLoading = true;
+      });
       await HttpUtil.get(clearCollectionDataUrl);
       if (!mounted) return;
       queryCollectionList();
     } catch (e) {
       if (!mounted) return;
-      setState(() { _isLoading = false; });
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("清空收藏失败，请重试")));
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text("清空收藏失败，请重试")));
     }
   }
 
@@ -96,7 +106,10 @@ class _CollectionState extends State<Collection> {
             ),
         ],
       ),
-      body: _buildBody(),
+      body: RefreshIndicator(
+        onRefresh: queryCollectionList,
+        child: _buildBody(),
+      ),
     );
   }
 
@@ -105,34 +118,49 @@ class _CollectionState extends State<Collection> {
       return const Center(child: CircularProgressIndicator());
     }
     if (_errorMessage != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.grey),
-            const SizedBox(height: 16),
-            Text(_errorMessage!, style: const TextStyle(fontSize: 14, color: Colors.grey)),
-            const SizedBox(height: 16),
-            ElevatedButton(onPressed: queryCollectionList, child: const Text("重试")),
-          ],
-        ),
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.65,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 48, color: Colors.grey),
+                const SizedBox(height: 16),
+                Text(_errorMessage!,
+                    style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                    onPressed: queryCollectionList, child: const Text("重试")),
+              ],
+            ),
+          ),
+        ],
       );
     }
     if (collectionDataItem.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.favorite_border, size: 48, color: Colors.grey),
-            const SizedBox(height: 16),
-            const Text("暂无收藏", style: TextStyle(fontSize: 14, color: Colors.grey)),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text("去逛逛"),
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          SizedBox(
+            height: MediaQuery.of(context).size.height * 0.65,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.favorite_border, size: 48, color: Colors.grey),
+                const SizedBox(height: 16),
+                const Text("暂无收藏",
+                    style: TextStyle(fontSize: 14, color: Colors.grey)),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text("去逛逛"),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       );
     }
     return Container(
@@ -156,14 +184,19 @@ class _CollectionState extends State<Collection> {
                 child: const Icon(Icons.delete, color: Colors.white),
               ),
               confirmDismiss: (direction) async {
+                final messenger = ScaffoldMessenger.of(context);
                 final confirmed = await showDialog<bool>(
                   context: context,
                   builder: (context) => AlertDialog(
                     title: const Text("取消收藏"),
                     content: Text("确定要取消收藏「${item.productName}」吗？"),
                     actions: [
-                      TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text("取消")),
-                      TextButton(onPressed: () => Navigator.of(context).pop(true), child: const Text("确定")),
+                      TextButton(
+                          onPressed: () => Navigator.of(context).pop(false),
+                          child: const Text("取消")),
+                      TextButton(
+                          onPressed: () => Navigator.of(context).pop(true),
+                          child: const Text("确定")),
                     ],
                   ),
                 );
@@ -173,49 +206,74 @@ class _CollectionState extends State<Collection> {
                   return true;
                 } catch (e) {
                   if (!mounted) return false;
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("取消收藏失败，请重试")));
+                  messenger.showSnackBar(
+                      const SnackBar(content: Text("取消收藏失败，请重试")));
                   return false;
                 }
               },
               onDismissed: (direction) {
                 queryCollectionList();
               },
-              child: InkWell(
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => ProductDetail(productId: item.productId),
-                    ),
-                  );
-                },
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 20),
-                  child: Row(
-                    children: [
-                      CachedImageWidget(103, 125, item.productPic, fit: BoxFit.fill),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(item.productName,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                    fontSize: 16, color: Color(int.parse('303133', radix: 16)).withAlpha(255))),
-                            const SizedBox(height: 6),
-                            Text(item.productSubTitle,
-                                maxLines: 2,
-                                style: TextStyle(
-                                    fontSize: 12, color: Color(int.parse('707070', radix: 16)).withAlpha(255))),
-                            const SizedBox(height: 6),
-                            Text("￥${item.productPrice}",
-                                style: TextStyle(
-                                    fontSize: 16, color: Color(int.parse('fa436a', radix: 16)).withAlpha(255))),
-                          ],
-                        ),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Color(int.parse('eeeeee', radix: 16)).withAlpha(255),
+                  ),
+                ),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () async {
+                    await Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            ProductDetail(productId: item.productId),
                       ),
-                    ],
+                    );
+                    if (!mounted) return;
+                    queryCollectionList();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    child: Row(
+                      children: [
+                        CachedImageWidget(103, 125, item.productPic,
+                            fit: BoxFit.fill),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(item.productName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                      fontSize: 16,
+                                      color:
+                                          Color(int.parse('303133', radix: 16))
+                                              .withAlpha(255))),
+                              const SizedBox(height: 6),
+                              Text(item.productSubTitle,
+                                  maxLines: 2,
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      color:
+                                          Color(int.parse('707070', radix: 16))
+                                              .withAlpha(255))),
+                              const SizedBox(height: 6),
+                              Text("￥${item.productPrice}",
+                                  style: TextStyle(
+                                      fontSize: 16,
+                                      color:
+                                          Color(int.parse('fa436a', radix: 16))
+                                              .withAlpha(255))),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

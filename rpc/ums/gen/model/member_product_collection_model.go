@@ -16,6 +16,7 @@ type (
 	// and implement the added methods in customMemberProductCollectionModel.
 	MemberProductCollectionModel interface {
 		memberProductCollectionModel
+		DeleteByMemberId(ctx context.Context, memberId int64) (int64, error)
 		Deletes(ctx context.Context, id string, memberId int64) (int64, error)
 		FindPage(ctx context.Context, memberId, pageNo, pageSize int64) ([]*MemberProductCollection, error)
 	}
@@ -31,6 +32,10 @@ func NewMemberProductCollectionModel(url, db, collection string) MemberProductCo
 	return &customMemberProductCollectionModel{
 		defaultMemberProductCollectionModel: newDefaultMemberProductCollectionModel(conn),
 	}
+}
+func (m *customMemberProductCollectionModel) DeleteByMemberId(ctx context.Context, memberId int64) (int64, error) {
+	res, err := m.conn.DeleteMany(ctx, bson.M{"memberId": memberId})
+	return res, err
 }
 func (m *customMemberProductCollectionModel) Deletes(ctx context.Context, id string, memberId int64) (int64, error) {
 	oid, err := primitive.ObjectIDFromHex(id)

@@ -114,6 +114,8 @@ const deleteReadHistoryDataUrl = "$baseUrl/api/member/deleteReadHistory";
 const clearReadHistoryDataUrl = "$baseUrl/api/member/clearReadHistory";
 // 我的收藏
 const collectionListDataUrl = "$baseUrl/api/member/queryCollectionList";
+// 添加收藏
+const addCollectionDataUrl = "$baseUrl/api/member/addtCollection";
 // 删除收藏
 const deleteCollectionDataUrl = "$baseUrl/api/member/deleteCollection";
 // 清空收藏
@@ -184,8 +186,7 @@ const createRedemptionOrderUrl =
 const queryRedemptionOrderUrl =
     "$baseUrl/api/digitalCard/asset/queryRedemptionOrder";
 // 生成分享链接
-const generateShareLinkUrl =
-    "$baseUrl/api/digitalCard/asset/generateShareLink";
+const generateShareLinkUrl = "$baseUrl/api/digitalCard/asset/generateShareLink";
 // 校验分享凭证（匿名）
 const validateClaimTokenUrl = "$baseUrl/api/digitalCard/validateClaimToken";
 // 领取分享卡片

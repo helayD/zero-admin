@@ -48,6 +48,9 @@ class _ProductDetailState extends State<ProductDetail> {
   ProductVisibility visibility = ProductVisibility.fromJson({});
   bool loading = true;
   bool _isAdding = false; // 加购按钮防抖
+  bool _isCollecting = false;
+  bool _isCollected = false;
+  String? _collectionId;
   SkuStockList? selectedSku;
   final Map<String, String> _specSelection = {};
 
@@ -98,6 +101,7 @@ class _ProductDetailState extends State<ProductDetail> {
       });
       if (productDetailData.visibility.visible) {
         await _refreshCouponReceiveStatus();
+        await _refreshCollectionStatus();
       }
       if (productDetailData.visibility.visible) {
         await AppRecoveryStore.saveRecentContext(
@@ -797,11 +801,14 @@ class _ProductDetailState extends State<ProductDetail> {
         child: Row(
           children: [
             Expanded(
-              flex: 4,
+              flex: 5,
               child: Row(
                 children: [
                   buildImage(Icons.home_outlined, "首页"),
+                  const SizedBox(width: 6),
                   buildImage(Icons.shopping_cart_outlined, "购物车"),
+                  const SizedBox(width: 6),
+                  buildCollectionAction(),
                 ],
               ),
             ),
@@ -1059,7 +1066,7 @@ class _ProductDetailState extends State<ProductDetail> {
             );
           },
           child: SizedBox(
-            width: 48,
+            width: 44,
             height: 48,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -1083,6 +1090,185 @@ class _ProductDetailState extends State<ProductDetail> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget buildCollectionAction() {
+    return Semantics(
+      button: true,
+      label: _isCollected ? "已收藏，点击取消收藏" : "收藏",
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadii.md),
+          onTap: _isCollecting
+              ? null
+              : _isCollected
+                  ? _deleteCollection
+                  : _addCollection,
+          child: SizedBox(
+            width: 44,
+            height: 48,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _isCollecting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(
+                        _isCollected
+                            ? Icons.favorite_rounded
+                            : Icons.favorite_border_rounded,
+                        size: 22,
+                        color: _isCollected
+                            ? AppColors.primary
+                            : AppColors.textSecondary,
+                      ),
+                const SizedBox(height: 2),
+                Text(
+                  _isCollected ? "已收藏" : "收藏",
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: _isCollected
+                        ? AppColors.primary
+                        : AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _addCollection() async {
+    final Product? currentProduct = product;
+    if (currentProduct == null) {
+      return;
+    }
+    setState(() {
+      _isCollecting = true;
+    });
+    try {
+      await HttpUtil.post(
+        addCollectionDataUrl,
+        data: {
+          "productId": currentProduct.id,
+          "productName": currentProduct.name,
+          "productPic": currentProduct.mainPic,
+          "productSubTitle": currentProduct.subTitle,
+          "productPrice": _parseProductPrice(currentProduct.price),
+        },
+      );
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("已收藏")),
+      );
+      await _refreshCollectionStatus();
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("收藏失败，请重试")),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCollecting = false;
+        });
+      }
+    }
+  }
+
+  int _parseProductPrice(String price) {
+    return double.tryParse(price.trim())?.round() ?? 0;
+  }
+
+  Future<void> _deleteCollection() async {
+    final String? currentCollectionId = _collectionId;
+    if (currentCollectionId == null || currentCollectionId.isEmpty) {
+      await _refreshCollectionStatus();
+      if (_collectionId == null || _collectionId!.isEmpty) {
+        _showCollectedMessage();
+        return;
+      }
+    }
+    setState(() {
+      _isCollecting = true;
+    });
+    try {
+      await HttpUtil.get("$deleteCollectionDataUrl?ids=${_collectionId!}");
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isCollected = false;
+        _collectionId = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("已取消收藏")),
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("取消收藏失败，请重试")),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isCollecting = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _refreshCollectionStatus() async {
+    try {
+      final Response result = await HttpUtil.get(
+        collectionListDataUrl,
+        redirectOnUnauthorized: false,
+      );
+      final data =
+          result.data is Map<String, dynamic> ? result.data["data"] : null;
+      if (data is! List || !mounted) {
+        return;
+      }
+      String? matchedId;
+      final bool matched = data.any((item) {
+        if (item is! Map) {
+          return false;
+        }
+        final value = item["productId"];
+        final bool sameProduct = value is int
+            ? value == widget.productId
+            : int.tryParse(value?.toString() ?? "") == widget.productId;
+        if (sameProduct) {
+          matchedId = item["id"]?.toString();
+        }
+        return sameProduct;
+      });
+      setState(() {
+        _isCollected = matched;
+        _collectionId = matched ? matchedId : null;
+      });
+    } catch (_) {
+      // 未登录或接口异常不影响商品详情浏览和后续点击收藏登录流程。
+    }
+  }
+
+  void _showCollectedMessage() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("已在我的收藏中")),
     );
   }
 
