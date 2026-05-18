@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/zeromicro/go-zero/core/stores/mon"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
@@ -38,7 +37,7 @@ func (m *customMemberProductCollectionModel) DeleteByMemberId(ctx context.Contex
 	return res, err
 }
 func (m *customMemberProductCollectionModel) Deletes(ctx context.Context, id string, memberId int64) (int64, error) {
-	oid, err := primitive.ObjectIDFromHex(id)
+	oid, err := bson.ObjectIDFromHex(id)
 	if err != nil {
 		return 0, ErrInvalidObjectId
 	}
