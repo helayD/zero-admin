@@ -1,5 +1,8 @@
 allprojects {
     repositories {
+        maven { url = uri("https://maven.aliyun.com/repository/google") }
+        maven { url = uri("https://maven.aliyun.com/repository/public") }
+        maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
         google()
         mavenCentral()
     }
@@ -14,6 +17,18 @@ rootProject.layout.buildDirectory.value(newBuildDir)
 subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
+}
+subprojects {
+    if (project.name == "alipay_kit_android") {
+        pluginManager.withPlugin("com.android.library") {
+            extensions.findByName("android")?.javaClass
+                ?.getMethod("setNamespace", String::class.java)
+                ?.invoke(
+                    extensions.findByName("android"),
+                    "io.github.v7lin.alipay_kit_android",
+                )
+        }
+    }
 }
 subprojects {
     project.evaluationDependsOn(":app")

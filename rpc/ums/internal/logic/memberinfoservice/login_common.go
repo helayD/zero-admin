@@ -17,6 +17,7 @@ import (
 // Story 3.1.1: 抽取 Login 与 LoginByCode 共享的「登录后置动作」
 //   - 写登录日志
 //   - 赠送每日登录抽卡次数
+//   - 赠送每日登录积分
 //   - 首登赠优惠券
 //
 // 旧的 loginlogic.go 与新的 loginbycodelogic.go 都通过本文件复用上述能力。
@@ -51,6 +52,10 @@ func runPostLoginActions(ctx context.Context, db *gorm.DB, rabbit *mq.RabbitMQ, 
 
 	if err := grantDailyLoginLotteryTimes(ctx, db, p.MemberID, now); err != nil {
 		logc.Errorf(ctx, "每日登录赠送抽卡次数失败,memberId:%d,异常:%s", p.MemberID, err.Error())
+	}
+
+	if err := grantDailyLoginPoints(ctx, db, p.MemberID, now); err != nil {
+		logc.Errorf(ctx, "每日登录赠送积分失败,memberId:%d,异常:%s", p.MemberID, err.Error())
 	}
 
 	if p.FirstLoginStatus == 1 {

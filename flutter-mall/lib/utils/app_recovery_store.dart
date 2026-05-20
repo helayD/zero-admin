@@ -15,10 +15,15 @@ class AppRecoveryStore {
       'app_pending_permission_context';
   static const String pendingLostMediaKey = 'app_pending_permission_lost_media';
   static const String pendingUpgradeContextKey = 'app_pending_upgrade_context';
+  static const String pendingDailyLoginPointsRewardDateKey =
+      'app_pending_daily_login_points_reward_date';
+  static const String dailyLoginPointsRewardShownDateKey =
+      'app_daily_login_points_reward_shown_date';
   static const String notificationPreferenceKey =
       'app_notification_preference_enabled';
   static const String commentDraftPrefix = 'app_comment_draft_';
   static const String afterSalesDraftPrefix = 'app_after_sales_draft_';
+  static const int dailyLoginPointsRewardAmount = 10;
 
   static Future<void> saveRecentContext(AppRecentContext context) async {
     await clearRecentContext();
@@ -201,6 +206,51 @@ class AppRecoveryStore {
     await SharedPreferencesUtil.remove(notificationPreferenceKey);
   }
 
+  static Future<void> markDailyLoginPointsRewardPending({
+    DateTime? now,
+  }) async {
+    final rewardDate = _dateKey(now ?? DateTime.now());
+    final shownDate =
+        SharedPreferencesUtil.getString(dailyLoginPointsRewardShownDateKey);
+    if (shownDate == rewardDate) {
+      await SharedPreferencesUtil.remove(pendingDailyLoginPointsRewardDateKey);
+      return;
+    }
+    await SharedPreferencesUtil.saveString(
+      pendingDailyLoginPointsRewardDateKey,
+      rewardDate,
+    );
+  }
+
+  static Future<int?> consumeDailyLoginPointsReward({
+    DateTime? now,
+  }) async {
+    final rewardDate =
+        SharedPreferencesUtil.getString(pendingDailyLoginPointsRewardDateKey);
+    if (rewardDate == null || rewardDate.isEmpty) {
+      return null;
+    }
+
+    final today = _dateKey(now ?? DateTime.now());
+    if (rewardDate != today) {
+      await SharedPreferencesUtil.remove(pendingDailyLoginPointsRewardDateKey);
+      return null;
+    }
+
+    final shownDate =
+        SharedPreferencesUtil.getString(dailyLoginPointsRewardShownDateKey);
+    await SharedPreferencesUtil.remove(pendingDailyLoginPointsRewardDateKey);
+    if (shownDate == rewardDate) {
+      return null;
+    }
+
+    await SharedPreferencesUtil.saveString(
+      dailyLoginPointsRewardShownDateKey,
+      rewardDate,
+    );
+    return dailyLoginPointsRewardAmount;
+  }
+
   static Future<void> saveCommentDraft(CommentDraftSnapshot draft) async {
     await SharedPreferencesUtil.saveJsonString(
       _commentDraftKey(draft.orderId),
@@ -356,5 +406,12 @@ class AppRecoveryStore {
 
   static String _afterSalesDraftKey(int orderId) {
     return '$afterSalesDraftPrefix$orderId';
+  }
+
+  static String _dateKey(DateTime value) {
+    final local = value.toLocal();
+    final month = local.month.toString().padLeft(2, '0');
+    final day = local.day.toString().padLeft(2, '0');
+    return '${local.year}-$month-$day';
   }
 }

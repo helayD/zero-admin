@@ -245,6 +245,7 @@ class _LoginState extends State<Login> {
         final authToken =
             "${loginModel.data.tokenHead} ${loginModel.data.token}";
         await AppRecoveryStore.persistAuthToken(authToken);
+        await AppRecoveryStore.markDailyLoginPointsRewardPending();
 
         if (!mounted) {
           return;

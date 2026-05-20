@@ -3,16 +3,21 @@ package memberinfoservicelogic
 import (
 	"context"
 	"errors"
+	"time"
+
+	"github.com/zeromicro/go-zero/core/logc"
+	"github.com/zeromicro/go-zero/core/logx"
+	"google.golang.org/grpc/metadata"
+	"gorm.io/gorm"
 
 	"github.com/feihua/zero-admin/pkg/time_util"
 	"github.com/feihua/zero-admin/rpc/ums/gen/query"
 	memberidentityservicelogic "github.com/feihua/zero-admin/rpc/ums/internal/logic/memberidentityservice"
 	"github.com/feihua/zero-admin/rpc/ums/internal/svc"
 	"github.com/feihua/zero-admin/rpc/ums/umsclient"
-	"github.com/zeromicro/go-zero/core/logc"
-	"github.com/zeromicro/go-zero/core/logx"
-	"gorm.io/gorm"
 )
+
+const memberInfoGrantDailyLoginPointsMetadata = "x-member-info-grant-daily-login-points"
 
 // QueryMemberInfoDetailLogic 查询会员信息详情
 /*
@@ -35,6 +40,14 @@ func NewQueryMemberInfoDetailLogic(ctx context.Context, svcCtx *svc.ServiceConte
 
 // QueryMemberInfoDetail 查询会员信息详情
 func (l *QueryMemberInfoDetailLogic) QueryMemberInfoDetail(in *umsclient.QueryMemberInfoDetailReq) (*umsclient.QueryMemberInfoDetailResp, error) {
+	if md, ok := metadata.FromIncomingContext(l.ctx); ok {
+		if values := md.Get(memberInfoGrantDailyLoginPointsMetadata); len(values) > 0 && values[0] == "true" {
+			if err := grantDailyLoginPoints(l.ctx, l.svcCtx.DB, in.MemberId, time.Now()); err != nil {
+				logc.Errorf(l.ctx, "每日进入App赠送积分失败,memberId:%d,异常:%s", in.MemberId, err.Error())
+			}
+		}
+	}
+
 	item, err := query.UmsMemberInfo.WithContext(l.ctx).Where(query.UmsMemberInfo.MemberID.Eq(in.MemberId)).First()
 
 	switch {

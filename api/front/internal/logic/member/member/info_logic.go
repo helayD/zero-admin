@@ -2,16 +2,17 @@ package member
 
 import (
 	"context"
-	"github.com/feihua/zero-admin/api/front/internal/logic/common"
-	"github.com/feihua/zero-admin/pkg/errorx"
-	"github.com/feihua/zero-admin/rpc/ums/umsclient"
+
 	"github.com/zeromicro/go-zero/core/logc"
+	"github.com/zeromicro/go-zero/core/logx"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
+	"github.com/feihua/zero-admin/api/front/internal/logic/common"
 	"github.com/feihua/zero-admin/api/front/internal/svc"
 	"github.com/feihua/zero-admin/api/front/internal/types"
-
-	"github.com/zeromicro/go-zero/core/logx"
+	"github.com/feihua/zero-admin/pkg/errorx"
+	"github.com/feihua/zero-admin/rpc/ums/umsclient"
 )
 
 // InfoLogic 获取会员个人信息
@@ -39,7 +40,8 @@ func (l *InfoLogic) Info() (resp *types.InfoResp, err error) {
 	if err != nil {
 		return nil, err
 	}
-	detail, err := l.svcCtx.MemberService.QueryMemberInfoDetail(l.ctx, &umsclient.QueryMemberInfoDetailReq{MemberId: memberId})
+	ctx := metadata.AppendToOutgoingContext(l.ctx, "x-member-info-grant-daily-login-points", "true")
+	detail, err := l.svcCtx.MemberService.QueryMemberInfoDetail(ctx, &umsclient.QueryMemberInfoDetailReq{MemberId: memberId})
 
 	if err != nil {
 		logc.Errorf(l.ctx, "获取个人信息失败,参数memberId：%d,异常：%s", memberId, err.Error())
@@ -51,31 +53,31 @@ func (l *InfoLogic) Info() (resp *types.InfoResp, err error) {
 		Code:    0,
 		Message: "查询会员信息",
 		Data: types.MemberData{
-			Id:           detail.Id,                   // 主键ID
-			MemberId:     detail.MemberId,             // 会员ID
-			LevelId:      detail.LevelId,              // 等级ID
-			Nickname:     detail.Nickname,             // 昵称
-			Mobile:       detail.Mobile,               // 手机号码
-			Source:       detail.Source,               // 注册来源：0-PC，1-APP，2-小程序
-			Avatar:       detail.Avatar,               // 头像
-			Signature:    detail.Signature,            // 个性签名
-			Gender:       detail.Gender,               // 性别：0-未知，1-男，2-女
-			Birthday:     detail.Birthday,             // 生日
-			GrowthPoint:  detail.GrowthPoint,          // 成长值
-			Points:       detail.Points,               // 积分
-			TotalPoints:  detail.TotalPoints,          // 累计获得积分
-			SpendAmount:  float64(detail.SpendAmount), // 累计消费金额
-			OrderCount:   detail.OrderCount,           // 订单数
-			CouponCount:  detail.CouponCount,          // 优惠券数量
-			CommentCount: detail.CommentCount,         // 评价数
-			ReturnCount:  detail.ReturnCount,          // 退货数
-			LotteryTimes: detail.LotteryTimes,         // 剩余抽奖次数
-			LastLogin:    detail.LastLogin,            // 最后登录
-			RealNameStatus: detail.RealNameStatus,     // 实名状态
-			RealNameStatusText: detail.RealNameStatusText, // 实名状态文案
-			RealNameMasked: detail.RealNameMasked,     // 脱敏实名
-			CredentialRef: detail.CredentialRef,       // 凭证引用
-			VerifiedAt: detail.VerifiedAt,             // 实名时间
+			Id:                 detail.Id,                   // 主键ID
+			MemberId:           detail.MemberId,             // 会员ID
+			LevelId:            detail.LevelId,              // 等级ID
+			Nickname:           detail.Nickname,             // 昵称
+			Mobile:             detail.Mobile,               // 手机号码
+			Source:             detail.Source,               // 注册来源：0-PC，1-APP，2-小程序
+			Avatar:             detail.Avatar,               // 头像
+			Signature:          detail.Signature,            // 个性签名
+			Gender:             detail.Gender,               // 性别：0-未知，1-男，2-女
+			Birthday:           detail.Birthday,             // 生日
+			GrowthPoint:        detail.GrowthPoint,          // 成长值
+			Points:             detail.Points,               // 积分
+			TotalPoints:        detail.TotalPoints,          // 累计获得积分
+			SpendAmount:        float64(detail.SpendAmount), // 累计消费金额
+			OrderCount:         detail.OrderCount,           // 订单数
+			CouponCount:        detail.CouponCount,          // 优惠券数量
+			CommentCount:       detail.CommentCount,         // 评价数
+			ReturnCount:        detail.ReturnCount,          // 退货数
+			LotteryTimes:       detail.LotteryTimes,         // 剩余抽奖次数
+			LastLogin:          detail.LastLogin,            // 最后登录
+			RealNameStatus:     detail.RealNameStatus,       // 实名状态
+			RealNameStatusText: detail.RealNameStatusText,   // 实名状态文案
+			RealNameMasked:     detail.RealNameMasked,       // 脱敏实名
+			CredentialRef:      detail.CredentialRef,        // 凭证引用
+			VerifiedAt:         detail.VerifiedAt,           // 实名时间
 		},
 	}, nil
 }

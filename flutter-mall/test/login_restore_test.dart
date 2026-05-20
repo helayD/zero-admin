@@ -27,4 +27,46 @@ void main() {
     expect(AppRecoveryStore.peekPendingIntent(), isNull);
     expect(await AppRecoveryStore.consumePendingIntent(), isNull);
   });
+
+  test('daily login points reward is consumed once on the same day', () async {
+    final now = DateTime(2026, 5, 20, 9);
+
+    await AppRecoveryStore.markDailyLoginPointsRewardPending(now: now);
+
+    expect(
+      await AppRecoveryStore.consumeDailyLoginPointsReward(now: now),
+      AppRecoveryStore.dailyLoginPointsRewardAmount,
+    );
+    expect(
+      await AppRecoveryStore.consumeDailyLoginPointsReward(now: now),
+      isNull,
+    );
+  });
+
+  test('daily login points reward does not requeue after it was shown today',
+      () async {
+    final now = DateTime(2026, 5, 20, 9);
+
+    await AppRecoveryStore.markDailyLoginPointsRewardPending(now: now);
+    await AppRecoveryStore.consumeDailyLoginPointsReward(now: now);
+    await AppRecoveryStore.markDailyLoginPointsRewardPending(now: now);
+
+    expect(
+      await AppRecoveryStore.consumeDailyLoginPointsReward(now: now),
+      isNull,
+    );
+  });
+
+  test('stale daily login points reward is dropped', () async {
+    await AppRecoveryStore.markDailyLoginPointsRewardPending(
+      now: DateTime(2026, 5, 19, 22),
+    );
+
+    expect(
+      await AppRecoveryStore.consumeDailyLoginPointsReward(
+        now: DateTime(2026, 5, 20, 9),
+      ),
+      isNull,
+    );
+  });
 }

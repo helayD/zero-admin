@@ -2,6 +2,7 @@ import 'package:card_swiper/card_swiper.dart';
 import 'package:dio/dio.dart';
 import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_mall/model/app_recent_context.dart';
 import 'package:flutter_mall/model/home_model.dart';
 import 'package:flutter_mall/model/message_model.dart';
@@ -106,6 +107,9 @@ class _HomePageState extends State<HomePage> {
     );
     _queryHomeData();
     _queryUnreadMessageCount();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showPendingDailyLoginPointsReward();
+    });
   }
 
   bool get _hasHomeContent {
@@ -277,6 +281,22 @@ class _HomePageState extends State<HomePage> {
         }
       });
     }
+  }
+
+  Future<void> _showPendingDailyLoginPointsReward() async {
+    if (!AppRecoveryStore.hasValidToken()) {
+      return;
+    }
+    final points = await AppRecoveryStore.consumeDailyLoginPointsReward();
+    if (!mounted || points == null || points <= 0) {
+      return;
+    }
+    HapticFeedback.lightImpact();
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => _DailyLoginPointsRewardDialog(points: points),
+    );
   }
 
   Future<void> _handleLoadMore() async {
@@ -989,6 +1009,124 @@ class _HomePageState extends State<HomePage> {
           ),
           padding: const EdgeInsets.all(AppSpacing.lg),
           child: child,
+        ),
+      ),
+    );
+  }
+}
+
+class _DailyLoginPointsRewardDialog extends StatelessWidget {
+  final int points;
+
+  const _DailyLoginPointsRewardDialog({
+    required this.points,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final Size size = MediaQuery.sizeOf(context);
+    final double dialogWidth = size.width < 420 ? size.width - 40 : 380;
+
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xl,
+        vertical: AppSpacing.xxl,
+      ),
+      backgroundColor: Colors.transparent,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: dialogWidth),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadii.xxl),
+            border: Border.all(color: AppColors.border),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x26101828),
+                blurRadius: 28,
+                offset: Offset(0, 16),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.xl,
+              AppSpacing.xxl,
+              AppSpacing.xl,
+              AppSpacing.xl,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 58,
+                  height: 58,
+                  decoration: BoxDecoration(
+                    color: AppColors.accentSoft,
+                    borderRadius: BorderRadius.circular(AppRadii.xl),
+                  ),
+                  child: const Icon(
+                    Icons.workspace_premium_rounded,
+                    color: AppColors.accent,
+                    size: 30,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                Text(
+                  '今日登录积分到账',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  '+$points',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    color: AppColors.price,
+                    fontSize: 44,
+                    fontWeight: FontWeight.w900,
+                    height: 1.0,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  '积分',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                Text(
+                  '已加入你的账户，可在下单和会员权益中使用。',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textSecondary,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 48),
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadii.md),
+                      ),
+                    ),
+                    child: const Text('知道了'),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
