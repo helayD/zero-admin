@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mall/config/service_url.dart';
@@ -66,6 +64,7 @@ class _PointsLogPageState extends State<PointsLogPage>
   }
 
   void _onTabChanged() {
+    if (_tabController.indexIsChanging) return;
     final idx = _tabController.index;
     if (_items[idx].isEmpty && !_loading[idx]) {
       _loadPage(idx);
@@ -95,7 +94,7 @@ class _PointsLogPageState extends State<PointsLogPage>
         },
       );
       final model = PointsLogListResponse.fromJson(
-        Map<String, dynamic>.from(jsonDecode(jsonEncode(resp.data))),
+        Map<String, dynamic>.from(resp.data as Map),
       );
       if (!mounted) return;
       setState(() {
@@ -224,9 +223,7 @@ class _PointsLogPageState extends State<PointsLogPage>
     final loading = _loading[tabIdx];
 
     if (items.isEmpty && loading) {
-      return const Center(
-        child: CircularProgressIndicator(color: _gold),
-      );
+      return _buildSkeletonList();
     }
     if (items.isEmpty && !loading) {
       return Center(
@@ -323,7 +320,7 @@ class _PointsLogPageState extends State<PointsLogPage>
                         item.sourceLabel,
                         style: const TextStyle(
                           color: _gold,
-                          fontSize: 11,
+                          fontSize: 12,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -332,7 +329,7 @@ class _PointsLogPageState extends State<PointsLogPage>
                     Text(
                       item.createTime,
                       style:
-                          const TextStyle(fontSize: 11, color: _muted),
+                          const TextStyle(fontSize: 12, color: _muted),
                     ),
                   ],
                 ),
@@ -350,6 +347,58 @@ class _PointsLogPageState extends State<PointsLogPage>
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSkeletonList() {
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+      itemCount: 6,
+      itemBuilder: (_, __) => Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: _surface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: _line),
+        ),
+        child: Row(
+          children: [
+            _shimmerBox(width: 40, height: 40, radius: 13),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _shimmerBox(width: double.infinity, height: 14, radius: 6),
+                  const SizedBox(height: 8),
+                  _shimmerBox(width: 120, height: 12, radius: 6),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            _shimmerBox(width: 36, height: 20, radius: 6),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _shimmerBox(
+      {required double width, required double height, required double radius}) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.3, end: 0.9),
+      duration: const Duration(milliseconds: 900),
+      curve: Curves.easeInOut,
+      builder: (_, v, __) => Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          color: _line.withValues(alpha: v),
+          borderRadius: BorderRadius.circular(radius),
+        ),
+      ),
+      onEnd: () => setState(() {}),
     );
   }
 
