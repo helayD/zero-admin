@@ -64,13 +64,17 @@ func toSMSPools(input []types.DrawPoolData) []*smsclient.DrawPoolData {
 		mappings := make([]*smsclient.DrawPoolTemplateData, 0, len(item.Templates))
 		for j := range item.Templates {
 			mapping := item.Templates[j]
+			slotIndex := mapping.SlotIndex
+			if slotIndex <= 0 {
+				slotIndex = int32(j + 1)
+			}
 			mappings = append(mappings, &smsclient.DrawPoolTemplateData{
 				Id:             mapping.Id,
 				TemplateId:     mapping.TemplateId,
 				TemplateCode:   mapping.TemplateCode,
 				TemplateName:   mapping.TemplateName,
 				Rarity:         mapping.Rarity,
-				SlotIndex:      mapping.SlotIndex,
+				SlotIndex:      slotIndex,
 				Probability:    mapping.Probability,
 				SaleLimit:      mapping.SaleLimit,
 				RemainingLimit: mapping.RemainingLimit,
