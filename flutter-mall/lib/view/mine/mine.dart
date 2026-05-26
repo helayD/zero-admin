@@ -641,6 +641,17 @@ class _MineState extends State<Mine> {
   SliverToBoxAdapter _buildServiceSection() {
     final List<_MineServiceData> services = [
       _MineServiceData(
+        title: '积分明细',
+        icon: Icons.stars_rounded,
+        accentColor: AppColors.accent,
+        backgroundColor: AppColors.accentSoft,
+        onTap: () {
+          _openProtectedPage(
+            PointsLogPage(currentPoints: _memberInfoData?.points ?? 0),
+          );
+        },
+      ),
+      _MineServiceData(
         title: '地址管理',
         icon: Icons.location_on_outlined,
         accentColor: AppColors.primaryDark,
