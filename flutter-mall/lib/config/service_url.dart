@@ -74,6 +74,8 @@ String messageDeleteDataUrl(int messageId) =>
     "$memberMessageBaseUrl/$messageId";
 // 兼容旧版删除消息入口
 const messageDeleteUrl = "$memberMessageBaseUrl/delete";
+// 积分记录
+const pointsLogListUrl = "$baseUrl/api/member/points/list";
 // 优惠券
 const couponDataUrl = "$baseUrl/api/member/coupon/queryCouponList?useStatus=";
 // 可领取优惠券列表

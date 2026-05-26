@@ -6,12 +6,24 @@ import (
 	digitalcardassethandler "github.com/feihua/zero-admin/api/front/internal/handler/digital_card/digital_card_asset"
 	physicalfulfillmenthandler "github.com/feihua/zero-admin/api/front/internal/handler/digital_card/physical_fulfillment"
 	membermessagehandler "github.com/feihua/zero-admin/api/front/internal/handler/member/message"
+	memberpointshandler "github.com/feihua/zero-admin/api/front/internal/handler/member/points"
 	"github.com/feihua/zero-admin/api/front/internal/middleware"
 	"github.com/feihua/zero-admin/api/front/internal/svc"
 	"github.com/zeromicro/go-zero/rest"
 )
 
 func RegisterExtraHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodGet,
+				Path:    "/list",
+				Handler: memberpointshandler.QueryPointsLogHandler(serverCtx),
+			},
+		},
+		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/member/points"),
+	)
 	server.AddRoutes(
 		[]rest.Route{
 			{

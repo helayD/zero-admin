@@ -575,6 +575,26 @@ type DrawActivityLandingData struct {
 	MyRecords                   []DrawMemberRecord     `json:"myRecords"`                   //我的记录
 }
 
+type QueryMyPointsLogReq struct {
+	PageNum    int32 `form:"pageNum,default=1"`
+	PageSize   int32 `form:"pageSize,default=20"`
+	ChangeType int32 `form:"changeType,optional"` // 0=全部, 1=增加积分, 2=减少积分
+}
+
+type PointsLogItem struct {
+	Id           int64  `json:"id"`
+	ChangeType   int32  `json:"changeType"`   // 1=增加, 2=减少
+	ChangePoints int32  `json:"changePoints"` // 变更积分数
+	SourceType   int32  `json:"sourceType"`   // 0-其他,1-订单,2-活动,3-签到,4-管理员
+	Description  string `json:"description"`  // 描述
+	CreateTime   string `json:"createTime"`   // 时间
+}
+
+type QueryMyPointsLogResp struct {
+	Total int64           `json:"total"`
+	List  []PointsLogItem `json:"list"`
+}
+
 type DrawActivityLandingReq struct {
 	ActivityId  int64  `form:"activityId"`           //活动ID
 	Channel     string `form:"channel,optional"`     //渠道

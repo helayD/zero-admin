@@ -9,6 +9,7 @@ import 'package:flutter_mall/utils/http_util.dart';
 import 'package:flutter_mall/view/mine/address/address_list.dart';
 import 'package:flutter_mall/view/mine/collection/collection.dart';
 import 'package:flutter_mall/view/mine/coupon/coupon_list.dart';
+import 'package:flutter_mall/view/mine/points/points_log_page.dart';
 import 'package:flutter_mall/view/mine/focus/focus.dart';
 import 'package:flutter_mall/view/mine/history/history.dart';
 import 'package:flutter_mall/view/mine/login/login.dart';
@@ -432,10 +433,15 @@ class _MineState extends State<Mine> {
       _MineMetricData(
         label: '积分',
         value: (_memberInfoData?.points ?? 0).toString(),
-        subtitle: '会员权益',
+        subtitle: '点击查看明细',
         icon: Icons.stars_rounded,
         accentColor: AppColors.accent,
         backgroundColor: AppColors.accentSoft,
+        onTap: () {
+          _openProtectedPage(
+            PointsLogPage(currentPoints: _memberInfoData?.points ?? 0),
+          );
+        },
       ),
       _MineMetricData(
         label: '成长值',
