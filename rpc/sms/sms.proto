@@ -666,6 +666,7 @@ message DrawPoolTemplateData {
   int64 sale_limit = 7; // 发售数量
   int64 remaining_limit = 8; // 剩余可发数量
   int64 config_limit = 9; // 配置上限
+  int32 slot_index = 10; // 格位序号(1-5)，转盘定位用
 }
 
 message DrawPoolData {
@@ -676,6 +677,7 @@ message DrawPoolData {
   int32 sort = 5; // 排序
   int32 status = 6; // 状态
   repeated DrawPoolTemplateData templates = 7; // 卡池模板映射
+  int32 wheel_slot_count = 8; // 转盘格位数，固定为5
 }
 
 message DrawActivityAuditRecord {
@@ -892,6 +894,8 @@ message DrawLandingCardPreview {
   string card_face_image = 4; // 卡面资源
   string rarity = 5; // 稀有度
   string display_copy = 6; // 展示文案
+  int32 slot_index = 7; // 格位序号(1-5)，转盘定位用
+  double probability = 8; // 格位概率(0-1)，转盘扇形渲染用
 }
 
 message DrawLandingPoolPreview {
