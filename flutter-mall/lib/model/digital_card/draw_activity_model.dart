@@ -297,8 +297,8 @@ class DrawMemberRecord {
   final String templateName;
   final String rarity;
   final int consumeAmount;
-  final int lotteryTimesBefore;
-  final int lotteryTimesAfter;
+  final int currencyBefore;
+  final int currencyAfter;
   final int assetInstanceId;
   final String assetNo;
   final String assetStatus;
@@ -321,8 +321,8 @@ class DrawMemberRecord {
     required this.templateName,
     required this.rarity,
     required this.consumeAmount,
-    required this.lotteryTimesBefore,
-    required this.lotteryTimesAfter,
+    required this.currencyBefore,
+    required this.currencyAfter,
     required this.assetInstanceId,
     required this.assetNo,
     required this.assetStatus,
@@ -347,8 +347,8 @@ class DrawMemberRecord {
       templateName: json['templateName']?.toString() ?? '',
       rarity: json['rarity']?.toString() ?? '',
       consumeAmount: _intValue(json['consumeAmount']),
-      lotteryTimesBefore: _intValue(json['lotteryTimesBefore']),
-      lotteryTimesAfter: _intValue(json['lotteryTimesAfter']),
+      currencyBefore: _intValue(json['currencyBefore']),
+      currencyAfter: _intValue(json['currencyAfter']),
       assetInstanceId: _intValue(json['assetInstanceId']),
       assetNo: json['assetNo']?.toString() ?? '',
       assetStatus: json['assetStatus']?.toString() ?? '',

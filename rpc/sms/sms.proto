@@ -930,8 +930,8 @@ message DrawMemberRecordData {
   string template_name = 11; // 模板名称
   string rarity = 12; // 稀有度
   int32 consume_amount = 13; // 消耗次数
-  int32 lottery_times_before = 14; // 扣减前次数
-  int32 lottery_times_after = 15; // 扣减后次数
+  int32 currency_before = 14; // 扣减前货币数量（lottery_times 或 points，取决于 consume_type）
+  int32 currency_after = 15; // 扣减后货币数量
   string create_time = 16; // 参与时间
   int64 asset_instance_id = 17; // 资产实例ID
   string asset_no = 18; // 资产编号

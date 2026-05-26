@@ -32,6 +32,7 @@ const (
 	drawNextActionRealName    = "real_name"
 	drawNextActionRetryLater  = "retry_later"
 	drawConsumeTypeLottery    = "lottery_times"
+	drawConsumeTypePoints     = "points"
 	drawResultTypeNotWon      = "not_won"
 	drawResultTypeWon         = "won"
 	drawResultTypeRejected    = "rejected"
@@ -122,6 +123,7 @@ func (drawCardTemplateSnapshot) TableName() string {
 type drawMemberInfoSnapshot struct {
 	MemberID     int64 `gorm:"column:member_id"`
 	LotteryTimes int32 `gorm:"column:lottery_times"`
+	Points       int32 `gorm:"column:points"`
 	IsEnabled    int32 `gorm:"column:is_enabled"`
 }
 
@@ -150,8 +152,8 @@ type drawParticipationRecordRow struct {
 	EligibilitySnapshot string     `gorm:"column:eligibility_snapshot_json"`
 	ConsumeType         string     `gorm:"column:consume_type"`
 	ConsumeAmount       int32      `gorm:"column:consume_amount"`
-	LotteryTimesBefore  int32      `gorm:"column:lottery_times_before"`
-	LotteryTimesAfter   int32      `gorm:"column:lottery_times_after"`
+	CurrencyBefore      int32      `gorm:"column:lottery_times_before"`
+	CurrencyAfter       int32      `gorm:"column:lottery_times_after"`
 	ResultType          string     `gorm:"column:result_type"`
 	ResultStatus        string     `gorm:"column:result_status"`
 	PoolID              int64      `gorm:"column:pool_id"`
@@ -185,8 +187,8 @@ type drawRecordDetailRow struct {
 	TemplateName       string     `gorm:"column:template_name"`
 	Rarity             string     `gorm:"column:rarity"`
 	ConsumeAmount      int32      `gorm:"column:consume_amount"`
-	LotteryTimesBefore int32      `gorm:"column:lottery_times_before"`
-	LotteryTimesAfter  int32      `gorm:"column:lottery_times_after"`
+	CurrencyBefore     int32      `gorm:"column:lottery_times_before"`
+	CurrencyAfter      int32      `gorm:"column:lottery_times_after"`
 	AssetInstanceID    int64      `gorm:"column:asset_instance_id"`
 	AssetNo            string     `gorm:"column:asset_no"`
 	AssetStatus        string     `gorm:"column:asset_status"`
@@ -436,7 +438,11 @@ func buildEligibility(activity *drawActivitySnapshot, member *drawMemberInfoSnap
 		return summary
 	}
 
-	summary.RemainingLotteryTime = member.LotteryTimes
+	if strings.TrimSpace(activity.ConsumeType) == drawConsumeTypePoints {
+		summary.RemainingLotteryTime = member.Points
+	} else {
+		summary.RemainingLotteryTime = member.LotteryTimes
+	}
 	rules := parseEligibilityRuleConfig(activity)
 	if rules.RequireMemberEnabled && member.IsEnabled != 1 {
 		summary.Status = drawEligibilityMemberDisabled
@@ -445,7 +451,11 @@ func buildEligibility(activity *drawActivitySnapshot, member *drawMemberInfoSnap
 		summary.NextAction = drawNextActionRetryLater
 		return summary
 	}
-	if rules.MinimumLotteryTimes > 0 && member.LotteryTimes < rules.MinimumLotteryTimes {
+	availableForMin := member.LotteryTimes
+	if strings.TrimSpace(activity.ConsumeType) == drawConsumeTypePoints {
+		availableForMin = member.Points
+	}
+	if rules.MinimumLotteryTimes > 0 && availableForMin < rules.MinimumLotteryTimes {
 		summary.Status = drawEligibilityQuotaExhausted
 		summary.Code = drawEligibilityQuotaExhausted
 		summary.Message = "当前剩余抽奖次数未达到参与门槛"
@@ -469,10 +479,16 @@ func buildEligibility(activity *drawActivitySnapshot, member *drawMemberInfoSnap
 		return summary
 	}
 
-	if member.LotteryTimes < activity.ConsumeAmount {
+	availableBalance := member.LotteryTimes
+	insufficientMsg := "剩余抽奖次数不足"
+	if strings.TrimSpace(activity.ConsumeType) == drawConsumeTypePoints {
+		availableBalance = member.Points
+		insufficientMsg = "剩余积分不足"
+	}
+	if availableBalance < activity.ConsumeAmount {
 		summary.Status = drawEligibilityQuotaExhausted
 		summary.Code = drawEligibilityQuotaExhausted
-		summary.Message = "剩余抽奖次数不足"
+		summary.Message = insufficientMsg
 		summary.NextAction = drawNextActionRetryLater
 		return summary
 	}
@@ -654,8 +670,8 @@ func mapDrawRecordDetail(row *drawRecordDetailRow) *smsclient.DrawMemberRecordDa
 		TemplateName:       row.TemplateName,
 		Rarity:             row.Rarity,
 		ConsumeAmount:      row.ConsumeAmount,
-		LotteryTimesBefore: row.LotteryTimesBefore,
-		LotteryTimesAfter:  row.LotteryTimesAfter,
+		CurrencyBefore: row.CurrencyBefore,
+		CurrencyAfter:  row.CurrencyAfter,
 		AssetInstanceId:    row.AssetInstanceID,
 		AssetNo:            row.AssetNo,
 		AssetStatus:        row.AssetStatus,
@@ -796,8 +812,8 @@ func buildWinningOrNotRecord(activity *drawActivitySnapshot, memberID int64, req
 		EligibilitySnapshot: string(snapshot),
 		ConsumeType:         firstNonEmpty(strings.TrimSpace(activity.ConsumeType), drawConsumeTypeLottery),
 		ConsumeAmount:       activity.ConsumeAmount,
-		LotteryTimesBefore:  before,
-		LotteryTimesAfter:   after,
+		CurrencyBefore:  before,
+		CurrencyAfter:   after,
 		TraceID:             strings.TrimSpace(requestID),
 	}
 

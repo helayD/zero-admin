@@ -932,7 +932,7 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
           ],
           const SizedBox(height: 6),
           Text(
-            '旋转次数 ${item.lotteryTimesBefore} -> ${item.lotteryTimesAfter}',
+            '消耗 ${item.currencyBefore} -> ${item.currencyAfter}',
             style: const TextStyle(fontSize: 12, color: _muted),
           ),
         ],

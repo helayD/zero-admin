@@ -135,20 +135,34 @@ func (l *ParticipateDrawLogic) ParticipateDraw(in *smsclient.ParticipateDrawReq)
 			return nil
 		}
 
-		before := member.LotteryTimes
-		after := before - activity.ConsumeAmount
+		isPoints := strings.TrimSpace(activity.ConsumeType) == drawConsumeTypePoints
+		var before, after int32
+		var currencyField string
+		if isPoints {
+			before = member.Points
+			after = before - activity.ConsumeAmount
+			currencyField = "points"
+		} else {
+			before = member.LotteryTimes
+			after = before - activity.ConsumeAmount
+			currencyField = "lottery_times"
+		}
 		updateResult := tx.WithContext(l.ctx).
 			Table(member.TableName()).
-			Where("member_id = ? AND lottery_times >= ?", in.MemberId, activity.ConsumeAmount).
+			Where("member_id = ? AND "+currencyField+" >= ?", in.MemberId, activity.ConsumeAmount).
 			Updates(map[string]interface{}{
-				"lottery_times": after,
-				"update_time":   time.Now(),
+				currencyField: after,
+				"update_time": time.Now(),
 			})
 		if updateResult.Error != nil {
 			return updateResult.Error
 		}
 		if updateResult.RowsAffected == 0 {
-			return errors.New("剩余抽奖次数不足")
+			insufficientMsg := "剩余抽奖次数不足"
+			if isPoints {
+				insufficientMsg = "剩余积分不足"
+			}
+			return errors.New(insufficientMsg)
 		}
 
 		winner := chooseWinner(poolTemplates)
@@ -165,8 +179,8 @@ func (l *ParticipateDrawLogic) ParticipateDraw(in *smsclient.ParticipateDrawReq)
 					Table(member.TableName()).
 					Where("member_id = ?", in.MemberId).
 					Updates(map[string]interface{}{
-						"lottery_times": before,
-						"update_time":   time.Now(),
+						currencyField: before,
+						"update_time": time.Now(),
 					}).Error; err != nil {
 					return err
 				}

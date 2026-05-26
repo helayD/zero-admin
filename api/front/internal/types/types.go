@@ -628,8 +628,8 @@ type DrawMemberRecord struct {
 	TemplateName       string `json:"templateName"`       //模板名称
 	Rarity             string `json:"rarity"`             //稀有度
 	ConsumeAmount      int32  `json:"consumeAmount"`      //消耗次数
-	LotteryTimesBefore int32  `json:"lotteryTimesBefore"` //扣减前次数
-	LotteryTimesAfter  int32  `json:"lotteryTimesAfter"`  //扣减后次数
+	CurrencyBefore int32  `json:"currencyBefore"` //扣减前货币数量（lottery_times 或 points）
+	CurrencyAfter  int32  `json:"currencyAfter"`  //扣减后货币数量
 	AssetInstanceId    int64  `json:"assetInstanceId"`    //资产实例ID
 	AssetNo            string `json:"assetNo"`            //资产编号
 	AssetStatus        string `json:"assetStatus"`        //资产状态
