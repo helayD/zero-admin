@@ -2291,4 +2291,49 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
 		rest.WithPrefix("/api/ums/task"),
 	)
+
+	server.AddRoutes(
+		rest.WithMiddlewares(
+			[]rest.Middleware{serverCtx.CheckUrl},
+			[]rest.Route{
+				{
+					Method:  http.MethodPost,
+					Path:    "/addDrawActivity",
+					Handler: smsdraw_activity.AddDrawActivityHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/deleteDrawActivity",
+					Handler: smsdraw_activity.DeleteDrawActivityHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryDrawActivityDetail",
+					Handler: smsdraw_activity.QueryDrawActivityDetailHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/queryDrawActivityList",
+					Handler: smsdraw_activity.QueryDrawActivityListHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/updateDrawActivity",
+					Handler: smsdraw_activity.UpdateDrawActivityHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodPost,
+					Path:    "/updateDrawActivityStatus",
+					Handler: smsdraw_activity.UpdateDrawActivityStatusHandler(serverCtx),
+				},
+				{
+					Method:  http.MethodGet,
+					Path:    "/previewDrawActivityPublishReadiness",
+					Handler: smsdraw_activity.PreviewDrawActivityPublishReadinessHandler(serverCtx),
+				},
+			}...,
+		),
+		rest.WithJwt(serverCtx.Config.Auth.AccessSecret),
+		rest.WithPrefix("/api/sms/drawActivity"),
+	)
 }
