@@ -556,7 +556,9 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
                   )
                 else
                   _buildWheelPlaceholder(),
-                const SizedBox(height: 20),
+                const SizedBox(height: 14),
+                _buildCurrencyBadge(landing),
+                const SizedBox(height: 14),
                 Semantics(
                   button: true,
                   label: wheelReady
@@ -597,6 +599,37 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildCurrencyBadge(DrawActivityLandingData landing) {
+    final int cost = landing.consumeAmount;
+    final bool isPoints = landing.consumeType == 'points';
+    final String eligCode = landing.eligibility.eligibilityCode;
+    if (cost <= 0 || eligCode == 'need_login') {
+      return const SizedBox.shrink();
+    }
+    final int balance = landing.eligibility.remainingLotteryTimes;
+    final String unit = isPoints ? '积分' : '次';
+    final bool canAfford = balance >= cost;
+    final Color textColor = canAfford ? _goldLight : Colors.redAccent;
+    final IconData icon =
+        isPoints ? Icons.stars_rounded : Icons.confirmation_number_outlined;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: <Widget>[
+        Icon(icon, color: textColor, size: 15),
+        const SizedBox(width: 5),
+        Text(
+          '剩余 $balance $unit · 本次消耗 $cost $unit',
+          style: TextStyle(
+            color: textColor,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 
