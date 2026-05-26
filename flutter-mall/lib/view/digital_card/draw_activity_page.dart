@@ -11,6 +11,7 @@ import 'package:flutter_mall/view/digital_card/digital_card_display_text.dart';
 import 'package:flutter_mall/view/digital_card/draw_activity_rule_page.dart';
 import 'package:flutter_mall/view/digital_card/draw_result_sheet.dart';
 import 'package:flutter_mall/view/mine/login/login.dart';
+import 'package:flutter_mall/view/mine/points/points_log_page.dart';
 import 'package:flutter_mall/widgets/lucky_wheel_widget.dart';
 import 'package:uuid/uuid.dart';
 
@@ -616,8 +617,9 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
     final IconData icon =
         isPoints ? Icons.stars_rounded : Icons.confirmation_number_outlined;
 
-    return Row(
+    final Widget badge = Row(
       mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         Icon(icon, color: textColor, size: 15),
         const SizedBox(width: 5),
@@ -629,7 +631,28 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
             fontWeight: FontWeight.w600,
           ),
         ),
+        if (isPoints) ...<Widget>[
+          const SizedBox(width: 4),
+          Icon(
+            Icons.chevron_right,
+            color: textColor.withValues(alpha: 0.7),
+            size: 15,
+          ),
+        ],
       ],
+    );
+
+    if (!isPoints) return badge;
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => PointsLogPage(currentPoints: balance),
+          ),
+        );
+      },
+      child: badge,
     );
   }
 
