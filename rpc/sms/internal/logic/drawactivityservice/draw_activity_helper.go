@@ -793,7 +793,13 @@ func replaceDrawPools(ctx context.Context, tx *gorm.DB, activityID int64, scope 
 	}
 	if err := tx.WithContext(ctx).Table(drawPoolRow{}.TableName()).
 		Where("activity_id = ? AND is_deleted = 0", activityID).
-		Updates(map[string]interface{}{"is_deleted": 1, "update_by": operatorID, "update_time": now}).Error; err != nil {
+		Updates(map[string]interface{}{
+			"is_deleted":  1,
+			"pool_name":   gorm.Expr("CONCAT(pool_name, '_del_', id)"),
+			"pool_code":   gorm.Expr("CONCAT(pool_code, '_del_', id)"),
+			"update_by":   operatorID,
+			"update_time": now,
+		}).Error; err != nil {
 		return err
 	}
 
