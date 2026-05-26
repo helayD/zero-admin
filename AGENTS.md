@@ -115,6 +115,12 @@ B 端（Web Admin）不受此约束，运维人员可以看到完整链信息。
 原因：提货卡业务监管要求，C 端不得暴露底层区块链实现细节。
 ```
 
+### 发卡链路 Skill
+
+遇到以下场景时，调用 skill `zero-admin-card-issuance`：
+- 发卡链路、mint task、抽卡流程、卡片未发
+- 分享按钮、transferable、链上铸造、mint_pending
+
 ---
 
 ## 代码风格指南
