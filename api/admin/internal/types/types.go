@@ -109,6 +109,10 @@ type AddDrawActivityReq struct {
 	RealNameRequired            int32                  `json:"realNameRequired,default=0"`           // 是否实名要求
 	ParticipantConditionSummary string                 `json:"participantConditionSummary,optional"` // 参与条件摘要
 	ConsumeRuleSummary          string                 `json:"consumeRuleSummary,optional"`          // 消耗规则摘要
+	ConsumeType                 string                 `json:"consumeType,optional"`                 // 消耗类型:points-积分,free-免费
+	ConsumeAmount               int32                  `json:"consumeAmount,default=1"`              // 每次消耗积分数
+	QuotaPerMember              int32                  `json:"quotaPerMember,default=0"`             // 单用户总配额
+	DailyQuotaPerMember         int32                  `json:"dailyQuotaPerMember,default=0"`        // 单用户日配额
 	ProbabilityRule             string                 `json:"probabilityRule,optional"`             // 概率披露方式
 	ComplianceRuleSummary       string                 `json:"complianceRuleSummary,optional"`       // 合规规则摘要
 	CirculationLimitSummary     string                 `json:"circulationLimitSummary,optional"`     // 流转限制摘要
@@ -2158,6 +2162,10 @@ type QueryDrawActivityDetailData struct {
 	RealNameRequired            int32                     `json:"realNameRequired"`            // 是否实名
 	ParticipantConditionSummary string                    `json:"participantConditionSummary"` // 参与条件摘要
 	ConsumeRuleSummary          string                    `json:"consumeRuleSummary"`          // 消耗规则摘要
+	ConsumeType                 string                    `json:"consumeType"`                 // 消耗类型
+	ConsumeAmount               int32                     `json:"consumeAmount"`               // 每次消耗积分数
+	QuotaPerMember              int32                     `json:"quotaPerMember"`              // 单用户总配额
+	DailyQuotaPerMember         int32                     `json:"dailyQuotaPerMember"`         // 单用户日配额
 	ProbabilityRule             string                    `json:"probabilityRule"`             // 概率披露方式
 	ComplianceRuleSummary       string                    `json:"complianceRuleSummary"`       // 合规规则摘要
 	CirculationLimitSummary     string                    `json:"circulationLimitSummary"`     // 流转限制摘要

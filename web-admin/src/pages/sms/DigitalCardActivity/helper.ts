@@ -76,6 +76,7 @@ export const serializeDrawActivityPayload = (values: DrawActivityFormValues) => 
         templateCode: mapping.templateCode || '',
         templateName: mapping.templateName || '',
         rarity: mapping.rarity || '',
+        slotIndex: Number(mapping.slotIndex || 0),
         probability: Number(mapping.probability || 0),
         saleLimit: Number(mapping.saleLimit || 0),
         remainingLimit: Number(mapping.remainingLimit || 0),

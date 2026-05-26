@@ -713,6 +713,10 @@ message AddDrawActivityReq {
   DrawHomeEntryConfig home_entry = 21; // 首页入口配置
   repeated DrawCardTemplateData templates = 22; // 模板配置
   repeated DrawPoolData pools = 23; // 卡池配置
+  string consume_type = 24; // 消耗类型:points-积分,free-免费
+  int32 consume_amount = 25; // 每次消耗积分数
+  int32 quota_per_member = 26; // 单用户总配额
+  int32 daily_quota_per_member = 27; // 单用户日配额
 }
 
 message AddDrawActivityResp {
@@ -744,6 +748,10 @@ message UpdateDrawActivityReq {
   DrawHomeEntryConfig home_entry = 22; // 首页入口配置
   repeated DrawCardTemplateData templates = 23; // 模板配置
   repeated DrawPoolData pools = 24; // 卡池配置
+  string consume_type = 25; // 消耗类型:points-积分,free-免费
+  int32 consume_amount = 26; // 每次消耗积分数
+  int32 quota_per_member = 27; // 单用户总配额
+  int32 daily_quota_per_member = 28; // 单用户日配额
 }
 
 message UpdateDrawActivityResp {
@@ -963,6 +971,8 @@ message QueryDrawActivityLandingResp {
   repeated DrawLandingPoolPreview pools = 24; // 卡池预览
   repeated DrawLandingRecentWin recent_wins = 25; // 最近中奖记录
   repeated DrawMemberRecordData my_records = 26; // 我的参与记录
+  string consume_type = 27; // 消耗类型:points-积分,free-免费
+  int32 consume_amount = 28; // 每次消耗积分数
 }
 
 message PreviewDrawEligibilityReq {

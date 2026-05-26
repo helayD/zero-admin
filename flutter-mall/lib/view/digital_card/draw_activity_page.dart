@@ -11,7 +11,7 @@ import 'package:flutter_mall/view/digital_card/digital_card_display_text.dart';
 import 'package:flutter_mall/view/digital_card/draw_activity_rule_page.dart';
 import 'package:flutter_mall/view/digital_card/draw_result_sheet.dart';
 import 'package:flutter_mall/view/mine/login/login.dart';
-import 'package:flutter_mall/widgets/cached_image_widget.dart';
+import 'package:flutter_mall/widgets/lucky_wheel_widget.dart';
 import 'package:uuid/uuid.dart';
 
 class DrawActivityPage extends StatefulWidget {
@@ -47,6 +47,8 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
   bool _isParticipating = false;
   bool _useAnonymousLandingOnly = false;
   String? _errorMessage;
+  final GlobalKey<LuckyWheelWidgetState> _wheelKey =
+      GlobalKey<LuckyWheelWidgetState>();
 
   AppRecentContext _buildRecoveryContext([String? source]) {
     return AppRecentContext.create(
@@ -162,7 +164,7 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
         }
       }
     }
-    return '加载抽卡活动失败，请稍后重试';
+    return '加载大转盘活动失败，请稍后重试';
   }
 
   String _safeLandingMessage(
@@ -225,9 +227,18 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
         return;
     }
 
+    if (!_isWheelReady(landing)) {
+      _showSnackBar('转盘需配置 5 个格位且概率总和等于 1，请联系管理员');
+      return;
+    }
+
     setState(() {
       _isParticipating = true;
     });
+
+    final LuckyWheelWidgetState? wheelState = _wheelKey.currentState;
+    wheelState?.startSpin();
+    final DateTime spinStarted = DateTime.now();
 
     try {
       final String requestId = _uuid.v4();
@@ -244,6 +255,24 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
       if (!mounted) {
         return;
       }
+
+      final Duration elapsed = DateTime.now().difference(spinStarted);
+      final Duration remaining = const Duration(seconds: 2) - elapsed;
+      if (remaining > Duration.zero) {
+        await Future.delayed(remaining);
+      }
+      if (!mounted) {
+        return;
+      }
+
+      if (wheelState != null) {
+        final int winSlot = _findWinningSlot(parsed.data.record, landing);
+        await wheelState.stopAt(winSlot);
+      }
+      if (!mounted) {
+        return;
+      }
+
       final bool requiresRealNameForRedemption =
           parsed.data.record.resultStatus == 'won_pending_asset' &&
               landing.identity.realNameStatus.trim() != 'verified';
@@ -266,7 +295,7 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
       if (!mounted) {
         return;
       }
-      _showSnackBar('参与抽卡失败，请稍后重试');
+      _showSnackBar('参与旋转失败，请稍后重试');
     } finally {
       if (mounted) {
         setState(() {
@@ -308,7 +337,12 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
       case 'need_real_name':
         return '前往实名';
       case 'eligible':
-        return _isParticipating ? '抽卡中...' : '立即抽卡';
+        if (_isParticipating) return '旋转中...';
+        final landing = _landing;
+        if (landing != null && landing.consumeType == 'points' && landing.consumeAmount > 0) {
+          return '旋转（消耗 ${landing.consumeAmount} 积分）';
+        }
+        return '立即旋转';
       default:
         return '暂不可参与';
     }
@@ -400,9 +434,9 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
           const SizedBox(height: 12),
           _buildRuleEntry(landing),
           const SizedBox(height: 18),
-          _buildSectionTitle('卡片预览'),
+          _buildSectionTitle('格位详情'),
           const SizedBox(height: 10),
-          _buildCardPreviewList(landing),
+          _buildSlotDetailList(landing),
           const SizedBox(height: 18),
           _buildSectionTitle('卡池说明'),
           const SizedBox(height: 10),
@@ -423,7 +457,7 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
           if (landing.myRecords.isEmpty)
             _buildEmptyCard(
               landing.eligibility.eligibilityCode == 'need_login'
-                  ? '登录后可查看你的抽卡记录'
+                  ? '登录后可查看你的旋转记录'
                   : '还没有参与记录，准备好就试试手气吧',
             )
           else
@@ -435,11 +469,13 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
 
   Widget _buildHeroCard(DrawActivityLandingData landing) {
     final eligibility = landing.eligibility;
-    final DrawCardPreview? featuredCard =
-        landing.cardPreviews.isEmpty ? null : landing.cardPreviews.first;
     final String title = landing.name.trim().isEmpty
-        ? widget.activityTitle?.trim() ?? '数字卡片活动'
+        ? widget.activityTitle?.trim() ?? '大转盘活动'
         : landing.name.trim();
+    final List<DrawCardPreview> slots = landing.pools.isNotEmpty
+        ? landing.pools.first.cards
+        : const <DrawCardPreview>[];
+    final bool wheelReady = _isWheelReady(landing);
 
     return Container(
       clipBehavior: Clip.antiAlias,
@@ -487,51 +523,52 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
           Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Row(
-                            children: <Widget>[
-                              _buildStatusPill(_statusLabel(eligibility)),
-                              const SizedBox(width: 8),
-                              _buildGhostPill('限量数字卡片'),
-                            ],
-                          ),
-                          const SizedBox(height: 18),
-                          Text(
-                            title,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 25,
-                              height: 1.12,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (featuredCard != null) ...<Widget>[
-                      const SizedBox(width: 14),
-                      _buildHeroCardFace(featuredCard),
-                    ],
+                    _buildStatusPill(_statusLabel(eligibility)),
+                    const SizedBox(width: 8),
+                    _buildGhostPill('大转盘'),
                   ],
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 12),
+                Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    height: 1.15,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                if (wheelReady)
+                  Center(
+                    child: LuckyWheelWidget(
+                      key: _wheelKey,
+                      slots: slots,
+                      size: 280,
+                    ),
+                  )
+                else
+                  _buildWheelPlaceholder(),
+                const SizedBox(height: 20),
                 Semantics(
                   button: true,
-                  label: _primaryActionText(eligibility),
+                  label: wheelReady
+                      ? _primaryActionText(eligibility)
+                      : '转盘格位配置不完整',
                   child: SizedBox(
                     width: double.infinity,
                     child: FilledButton(
-                      onPressed: _isParticipating ? null : _handlePrimaryAction,
+                      onPressed:
+                          (_isParticipating || !wheelReady)
+                              ? null
+                              : _handlePrimaryAction,
                       style: FilledButton.styleFrom(
                         backgroundColor: _goldLight,
                         disabledBackgroundColor:
@@ -544,7 +581,9 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
                         ),
                       ),
                       child: Text(
-                        _primaryActionText(eligibility),
+                        wheelReady
+                            ? _primaryActionText(eligibility)
+                            : '转盘格位配置不完整',
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w800,
@@ -593,61 +632,6 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
           color: Colors.white.withValues(alpha: 0.78),
           fontSize: 12,
           fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeroCardFace(DrawCardPreview item) {
-    return Container(
-      width: 94,
-      height: 126,
-      padding: const EdgeInsets.all(5),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(14),
-        child: Stack(
-          fit: StackFit.expand,
-          children: <Widget>[
-            CachedImageWidget(
-              double.infinity,
-              double.infinity,
-              item.cardFaceImage,
-              fit: BoxFit.cover,
-              fallback: _buildCardArtFallback(item, compact: true),
-            ),
-            Align(
-              alignment: Alignment.bottomLeft,
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: <Color>[
-                      Colors.transparent,
-                      Colors.black.withValues(alpha: 0.7),
-                    ],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
-                ),
-                child: Text(
-                  item.rarity.trim().isEmpty ? '限定' : item.rarity.trim(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ),
-          ],
         ),
       ),
     );
@@ -750,182 +734,6 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildCardPreviewList(DrawActivityLandingData landing) {
-    if (landing.cardPreviews.isEmpty) {
-      return _buildEmptyCard('当前暂无卡片预览');
-    }
-    return SizedBox(
-      height: 222,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemBuilder: (_, int index) {
-          final item = landing.cardPreviews[index];
-          return Container(
-            width: 158,
-            clipBehavior: Clip.antiAlias,
-            decoration: BoxDecoration(
-              color: _surface,
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: _line),
-              boxShadow: const <BoxShadow>[
-                BoxShadow(
-                  color: Color(0x10101828),
-                  blurRadius: 16,
-                  offset: Offset(0, 8),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Expanded(
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: <Widget>[
-                      CachedImageWidget(
-                        double.infinity,
-                        double.infinity,
-                        item.cardFaceImage,
-                        fit: BoxFit.cover,
-                        fallback: _buildCardArtFallback(item),
-                      ),
-                      Positioned(
-                        left: 10,
-                        top: 10,
-                        child: _buildPreviewBadge(
-                          item.rarity.trim().isEmpty
-                              ? '限定'
-                              : item.rarity.trim(),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        item.templateName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: _ink,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        item.displayCopy.trim().isEmpty
-                            ? '限量卡片'
-                            : item.displayCopy.trim(),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: _muted,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
-        itemCount: landing.cardPreviews.length,
-      ),
-    );
-  }
-
-  Widget _buildPreviewBadge(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.58),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 11,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCardArtFallback(
-    DrawCardPreview item, {
-    bool compact = false,
-  }) {
-    final String rarity = item.rarity.trim().isEmpty
-        ? 'LIMITED'
-        : item.rarity.trim().toUpperCase();
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      padding: EdgeInsets.all(compact ? 10 : 14),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: <Color>[Color(0xFF211B2B), Color(0xFF6E4B1F)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: Stack(
-        children: <Widget>[
-          Align(
-            alignment: Alignment.topRight,
-            child: Container(
-              width: compact ? 34 : 46,
-              height: compact ? 34 : 46,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(compact ? 12 : 16),
-              ),
-            ),
-          ),
-          Center(
-            child: Container(
-              width: compact ? 42 : 58,
-              height: compact ? 42 : 58,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(compact ? 15 : 20),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.16)),
-              ),
-              child: const Icon(
-                Icons.workspace_premium_outlined,
-                color: _goldLight,
-                size: 28,
-              ),
-            ),
-          ),
-          Align(
-            alignment: Alignment.bottomLeft,
-            child: Text(
-              rarity,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: compact ? 16 : 22,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -1042,7 +850,7 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(
-                  '${item.memberNameMasked} 抽中了 ${item.templateName}'.trim(),
+                  '${item.memberNameMasked} 旋转赢得 ${item.templateName}'.trim(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -1083,7 +891,7 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
               Expanded(
                 child: Text(
                   digitalCardUserFacingText(item.resultStatusText).isEmpty
-                      ? '抽卡记录'
+                      ? '旋转记录'
                       : digitalCardUserFacingText(item.resultStatusText),
                   style: const TextStyle(
                     color: _ink,
@@ -1102,7 +910,7 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
           Text(
             item.templateName.trim().isEmpty
                 ? (digitalCardUserFacingText(item.failureReason).trim().isEmpty
-                    ? '本次未命中卡片'
+                    ? '旋转结果处理中'
                     : digitalCardUserFacingText(item.failureReason))
                 : '卡片: ${item.templateName} · ${item.rarity}',
             style: const TextStyle(
@@ -1124,10 +932,195 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
           ],
           const SizedBox(height: 6),
           Text(
-            '抽奖次数 ${item.lotteryTimesBefore} -> ${item.lotteryTimesAfter}',
+            '旋转次数 ${item.lotteryTimesBefore} -> ${item.lotteryTimesAfter}',
             style: const TextStyle(fontSize: 12, color: _muted),
           ),
         ],
+      ),
+    );
+  }
+
+  bool _isWheelReady(DrawActivityLandingData landing) {
+    if (landing.pools.isEmpty) return false;
+    final List<DrawCardPreview> cards = landing.pools.first.cards;
+    if (cards.length != 5) return false;
+    final Set<int> indices =
+        cards.map((DrawCardPreview c) => c.slotIndex).toSet();
+    if (indices.length != 5 ||
+        !indices.containsAll(<int>[1, 2, 3, 4, 5])) {
+      return false;
+    }
+    final double sum =
+        cards.fold(0.0, (double s, DrawCardPreview c) => s + c.probability);
+    return (sum - 1.0).abs() <= 0.001;
+  }
+
+  Widget _buildWheelPlaceholder() {
+    return SizedBox.square(
+      dimension: 280,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white.withValues(alpha: 0.04),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.12),
+            width: 2,
+          ),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(
+                Icons.lock_outline_rounded,
+                color: _goldLight.withValues(alpha: 0.45),
+                size: 40,
+              ),
+              const SizedBox(height: 10),
+              Text(
+                '转盘配置中\n需要 5 个格位且概率总和 = 1',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.45),
+                  fontSize: 13,
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  int _findWinningSlot(
+    DrawMemberRecord record,
+    DrawActivityLandingData landing,
+  ) {
+    if (record.slotIndex > 0) return record.slotIndex;
+    if (landing.pools.isNotEmpty) {
+      for (final DrawCardPreview card in landing.pools.first.cards) {
+        if (card.templateId == record.templateId && card.slotIndex > 0) {
+          return card.slotIndex;
+        }
+      }
+    }
+    return 1;
+  }
+
+  Widget _buildSlotDetailList(DrawActivityLandingData landing) {
+    if (landing.pools.isEmpty || landing.pools.first.cards.isEmpty) {
+      return _buildEmptyCard('当前暂无格位信息');
+    }
+    final List<DrawCardPreview> slots =
+        List<DrawCardPreview>.from(landing.pools.first.cards);
+    slots.sort(
+      (DrawCardPreview a, DrawCardPreview b) =>
+          a.slotIndex.compareTo(b.slotIndex),
+    );
+    return Column(
+      children: slots
+          .map((DrawCardPreview s) => _buildSlotTile(s))
+          .toList(),
+    );
+  }
+
+  Widget _buildSlotTile(DrawCardPreview slot) {
+    final int idx = (slot.slotIndex - 1).clamp(0, kWheelColors.length - 1);
+    final Color color = kWheelColors[idx];
+    final double prob = slot.probability * 100;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: _surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.22)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Container(width: 4, color: color),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 11,
+                ),
+                child: Row(
+                  children: <Widget>[
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.13),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${slot.slotIndex}',
+                          style: TextStyle(
+                            color: color,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: <Widget>[
+                          Text(
+                            slot.templateName.trim().isEmpty
+                                ? '格位 ${slot.slotIndex}'
+                                : slot.templateName,
+                            style: const TextStyle(
+                              color: _ink,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          if (slot.rarity.trim().isNotEmpty)
+                            Text(
+                              slot.rarity,
+                              style:
+                                  const TextStyle(color: _muted, fontSize: 12),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(20),
+                        border:
+                            Border.all(color: color.withValues(alpha: 0.32)),
+                      ),
+                      child: Text(
+                        prob > 0 ? '${prob.toStringAsFixed(1)}%' : '-',
+                        style: TextStyle(
+                          color: color,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

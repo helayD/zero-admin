@@ -51,6 +51,7 @@ message DrawPoolTemplateData {
   int64 sale_limit = 7; // 发售数量
   int64 remaining_limit = 8; // 剩余可发数量
   int64 config_limit = 9; // 配置上限
+  int32 slot_index = 10; // 格位序号(1-5)
 }
 
 message DrawPoolData {
@@ -61,6 +62,7 @@ message DrawPoolData {
   int32 sort = 5; // 排序
   int32 status = 6; // 状态
   repeated DrawPoolTemplateData templates = 7; // 卡池模板映射
+  int32 wheel_slot_count = 8; // 转盘格位数，固定为5
 }
 
 message DrawActivityAuditRecord {
@@ -98,6 +100,10 @@ message AddDrawActivityReq {
   DrawHomeEntryConfig home_entry = 21; // 首页入口配置
   repeated DrawCardTemplateData templates = 22; // 模板配置
   repeated DrawPoolData pools = 23; // 卡池配置
+  string consume_type = 24; // 消耗类型:points-积分,free-免费
+  int32 consume_amount = 25; // 每次消耗积分数
+  int32 quota_per_member = 26; // 单用户总配额
+  int32 daily_quota_per_member = 27; // 单用户日配额
 }
 
 message AddDrawActivityResp {
@@ -129,6 +135,10 @@ message UpdateDrawActivityReq {
   DrawHomeEntryConfig home_entry = 22; // 首页入口配置
   repeated DrawCardTemplateData templates = 23; // 模板配置
   repeated DrawPoolData pools = 24; // 卡池配置
+  string consume_type = 25; // 消耗类型:points-积分,free-免费
+  int32 consume_amount = 26; // 每次消耗积分数
+  int32 quota_per_member = 27; // 单用户总配额
+  int32 daily_quota_per_member = 28; // 单用户日配额
 }
 
 message UpdateDrawActivityResp {

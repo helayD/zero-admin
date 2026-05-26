@@ -10,8 +10,9 @@ import {
   Select,
   Space,
   Switch,
+  Tag,
 } from 'antd';
-import type { DrawActivityFormValues } from '../data.d';
+import type { DrawActivityFormValues, DrawPoolTemplateData } from '../data.d';
 import { toFormInitialValues } from '../helper';
 
 const { RangePicker } = DatePicker;
@@ -46,6 +47,89 @@ const assetStatusOptions = [
   { label: '已拒绝', value: 3 },
 ];
 
+const WHEEL_COLORS = ['#f5a623', '#7ed321', '#4a90e2', '#9b59b6', '#e74c3c'];
+const SLOT_COUNT = 5;
+
+const WheelPreview: React.FC<{ slots: DrawPoolTemplateData[] }> = ({ slots }) => {
+  const size = 160;
+  const cx = size / 2;
+  const cy = size / 2;
+  const r = size / 2 - 8;
+  const total = slots.reduce((acc, s) => acc + (s.probability || 0), 0);
+
+  const sectors = (() => {
+    let angle = -Math.PI / 2;
+    return slots.map((slot, i) => {
+      const prob = slot.probability || 0;
+      const sweep = total > 0 ? (prob / total) * 2 * Math.PI : (2 * Math.PI) / (slots.length || 1);
+      const endAngle = angle + sweep;
+      const x1 = cx + r * Math.cos(angle);
+      const y1 = cy + r * Math.sin(angle);
+      const x2 = cx + r * Math.cos(endAngle);
+      const y2 = cy + r * Math.sin(endAngle);
+      const largeArc = sweep > Math.PI ? 1 : 0;
+      const midAngle = angle + sweep / 2;
+      const textR = r * 0.65;
+      const result = {
+        path: `M ${cx},${cy} L ${x1.toFixed(2)},${y1.toFixed(2)} A ${r},${r} 0 ${largeArc},1 ${x2.toFixed(2)},${y2.toFixed(2)} Z`,
+        textX: cx + textR * Math.cos(midAngle),
+        textY: cy + textR * Math.sin(midAngle),
+        color: WHEEL_COLORS[i % WHEEL_COLORS.length],
+        pct: total > 0 ? Math.round((prob / total) * 100) : 0,
+        slotNum: i + 1,
+        sweep,
+      };
+      angle = endAngle;
+      return result;
+    });
+  })();
+
+  if (slots.length === 0) {
+    return (
+      <svg width={size} height={size}>
+        <circle cx={cx} cy={cy} r={r} fill="#f5f5f5" stroke="#d9d9d9" strokeWidth={1} />
+        <text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle" fill="#bbb" fontSize={12}>暂无格位</text>
+      </svg>
+    );
+  }
+
+  return (
+    <svg width={size} height={size}>
+      {sectors.map((s, i) => (
+        <g key={i}>
+          <path d={s.path} fill={s.color} stroke="white" strokeWidth={2} />
+          {s.sweep > 0.3 && (
+            <>
+              <text x={s.textX} y={s.textY - 6} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize={10} fontWeight="bold">
+                {s.slotNum}
+              </text>
+              <text x={s.textX} y={s.textY + 7} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize={9}>
+                {s.pct}%
+              </text>
+            </>
+          )}
+        </g>
+      ))}
+      <circle cx={cx} cy={cy} r={r * 0.28} fill="white" stroke="#eee" strokeWidth={1} />
+      <text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle" fill="#aaa" fontSize={10}>转盘</text>
+    </svg>
+  );
+};
+
+const ProbabilitySumTag: React.FC<{ slots: DrawPoolTemplateData[] }> = ({ slots }) => {
+  const sum = slots.reduce((acc, s) => acc + (s.probability || 0), 0);
+  const valid = Math.abs(sum - 1) <= 0.0001;
+  return (
+    <div style={{ marginTop: 8 }}>
+      <span style={{ fontSize: 12, color: '#666' }}>概率总和：</span>
+      <strong style={{ color: valid ? '#52c41a' : '#ff4d4f' }}>{sum.toFixed(4)}</strong>
+      <Tag color={valid ? 'success' : 'error'} style={{ marginLeft: 8 }}>
+        {valid ? '✓ 总和 = 1，每次必中' : '✗ 总和必须等于 1'}
+      </Tag>
+    </div>
+  );
+};
+
 const ActivityDrawer: React.FC<ActivityDrawerProps> = ({
   visible,
   title,
@@ -55,6 +139,7 @@ const ActivityDrawer: React.FC<ActivityDrawerProps> = ({
 }) => {
   const [form] = Form.useForm<DrawActivityFormValues>();
   const templates = Form.useWatch('templates', form) || [];
+  const pools: any[] = Form.useWatch('pools', form) || [];
 
   useEffect(() => {
     form.setFieldsValue(toFormInitialValues(current));
@@ -106,6 +191,14 @@ const ActivityDrawer: React.FC<ActivityDrawerProps> = ({
             <Form.Item name="consumeRuleSummary" label="消耗规则摘要">
               <Input.TextArea rows={2} />
             </Form.Item>
+            <Space size={16} style={{ display: 'flex' }}>
+              <Form.Item name="consumeType" label="消耗类型" initialValue="points">
+                <Select style={{ width: 160 }} options={[{ label: '积分消耗', value: 'points' }, { label: '免费', value: 'free' }]} />
+              </Form.Item>
+              <Form.Item name="consumeAmount" label="每次消耗积分数" initialValue={1}>
+                <InputNumber min={0} style={{ width: 160 }} />
+              </Form.Item>
+            </Space>
             <Space size={24} style={{ display: 'flex' }}>
               <Form.Item name="realNameRequired" label="实名要求" valuePropName="checked" getValueFromEvent={(checked) => (checked ? 1 : 0)}>
                 <Switch checkedChildren="需要" unCheckedChildren="可选" />
@@ -224,98 +317,137 @@ const ActivityDrawer: React.FC<ActivityDrawerProps> = ({
             </Form.List>
           </Panel>
 
-          <Panel header="卡池配置" key="pool">
+          <Panel header={`大转盘卡池配置（每池固定 ${SLOT_COUNT} 格位，总概率必须等于 1）`} key="pool">
             <Form.List name="pools">
               {(fields, { add, remove }) => (
                 <>
-                  {fields.map((field) => (
-                    <Space key={field.key} direction="vertical" style={{ width: '100%', marginBottom: 24 }}>
-                      <Space align="start" style={{ display: 'flex', width: '100%' }}>
-                        <Form.Item
-                          {...field}
-                          name={[field.name, 'poolName']}
-                          label="卡池名称"
-                          rules={[{ required: true, message: '请输入卡池名称' }]}
-                        >
-                          <Input />
+                  {fields.map((field) => {
+                    const currentSlots = (pools[field.name]?.templates || []) as DrawPoolTemplateData[];
+                    return (
+                      <div
+                        key={field.key}
+                        style={{ marginBottom: 24, border: '1px solid #f0f0f0', padding: 16, borderRadius: 8, background: '#fafafa' }}
+                      >
+                        <Space align="start" style={{ display: 'flex', width: '100%', marginBottom: 4 }}>
+                          <Form.Item
+                            {...field}
+                            name={[field.name, 'poolName']}
+                            label="卡池名称"
+                            rules={[{ required: true, message: '请输入卡池名称' }]}
+                          >
+                            <Input style={{ width: 180 }} />
+                          </Form.Item>
+                          <Form.Item
+                            {...field}
+                            name={[field.name, 'poolCode']}
+                            label="卡池编码"
+                            rules={[{ required: true, message: '请输入卡池编码' }]}
+                          >
+                            <Input style={{ width: 160 }} />
+                          </Form.Item>
+                          <Form.Item {...field} name={[field.name, 'sort']} label="排序">
+                            <InputNumber min={0} precision={0} style={{ width: 80 }} />
+                          </Form.Item>
+                          <Button danger style={{ marginTop: 30 }} onClick={() => remove(field.name)}>
+                            删除卡池
+                          </Button>
+                        </Space>
+                        <Form.Item {...field} name={[field.name, 'probabilityRule']} label="概率披露规则">
+                          <Input placeholder="例如：5 格位概率以小数表达，总和必须等于 1，每次旋转必然中奖" />
                         </Form.Item>
-                        <Form.Item
-                          {...field}
-                          name={[field.name, 'poolCode']}
-                          label="卡池编码"
-                          rules={[{ required: true, message: '请输入卡池编码' }]}
-                        >
-                          <Input />
-                        </Form.Item>
-                        <Form.Item {...field} name={[field.name, 'sort']} label="排序">
-                          <InputNumber min={0} precision={0} />
-                        </Form.Item>
-                        <Button danger style={{ marginTop: 30 }} onClick={() => remove(field.name)}>
-                          删除卡池
-                        </Button>
-                      </Space>
-                      <Form.Item {...field} name={[field.name, 'probabilityRule']} label="卡池概率披露规则">
-                        <Input placeholder="例如：概率以 0-1 小数表达，卡池总和必须为 1" />
-                      </Form.Item>
-                      <Form.List name={[field.name, 'templates']}>
-                        {(mappingFields, mappingOperator) => (
-                          <>
-                            {mappingFields.map((mappingField) => (
-                              <Space key={mappingField.key} align="start" style={{ display: 'flex', width: '100%' }}>
-                                <Form.Item
-                                  {...mappingField}
-                                  name={[mappingField.name, 'templateCode']}
-                                  label="模板编码"
-                                  rules={[{ required: true, message: '请选择模板编码' }]}
-                                >
-                                  <Select
-                                    style={{ width: 180 }}
-                                    options={(templates || []).map((item: any) => ({
-                                      label: `${item.templateName || item.templateCode || '未命名模板'} (${item.templateCode || '-'})`,
-                                      value: item.templateCode,
-                                    }))}
-                                  />
-                                </Form.Item>
-                                <Form.Item {...mappingField} name={[mappingField.name, 'rarity']} label="稀有度">
-                                  <Input style={{ width: 120 }} />
-                                </Form.Item>
-                                <Form.Item
-                                  {...mappingField}
-                                  name={[mappingField.name, 'probability']}
-                                  label="概率"
-                                  rules={[{ required: true, message: '请输入概率' }]}
-                                >
-                                  <InputNumber min={0.0001} max={1} step={0.01} />
-                                </Form.Item>
-                                <Form.Item
-                                  {...mappingField}
-                                  name={[mappingField.name, 'saleLimit']}
-                                  label="发售数量"
-                                  rules={[{ required: true, message: '请输入发售数量' }]}
-                                >
-                                  <InputNumber min={1} precision={0} />
-                                </Form.Item>
-                                <Form.Item {...mappingField} name={[mappingField.name, 'remainingLimit']} label="剩余可发">
-                                  <InputNumber min={0} precision={0} />
-                                </Form.Item>
-                                <Form.Item {...mappingField} name={[mappingField.name, 'configLimit']} label="配置上限">
-                                  <InputNumber min={0} precision={0} />
-                                </Form.Item>
-                                <Button danger style={{ marginTop: 30 }} onClick={() => mappingOperator.remove(mappingField.name)}>
-                                  删除
-                                </Button>
-                              </Space>
-                            ))}
-                            <Button type="dashed" onClick={() => mappingOperator.add({ probability: 0, saleLimit: 1, remainingLimit: 1, configLimit: 0 })} block>
-                              新增卡池模板映射
-                            </Button>
-                          </>
-                        )}
-                      </Form.List>
-                    </Space>
-                  ))}
-                  <Button type="dashed" onClick={() => add({ sort: 0, status: 0, templates: [] })} block>
-                    新增卡池
+
+                        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', gap: 8, marginBottom: 6, color: '#888', fontSize: 12, paddingLeft: 4 }}>
+                              <span style={{ minWidth: 58 }}>格位</span>
+                              <span style={{ width: 200 }}>卡片模板</span>
+                              <span style={{ width: 90 }}>中奖概率</span>
+                              <span style={{ width: 82 }}>发售数量</span>
+                              <span style={{ width: 82 }}>剩余可发</span>
+                            </div>
+                            <Form.List name={[field.name, 'templates']}>
+                              {(slotFields) => (
+                                <>
+                                  {slotFields.map((slotField, slotIdx) => (
+                                    <div
+                                      key={slotField.key}
+                                      style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}
+                                    >
+                                      <Tag
+                                        color={WHEEL_COLORS[slotIdx % WHEEL_COLORS.length]}
+                                        style={{ minWidth: 52, textAlign: 'center', fontSize: 12, margin: 0 }}
+                                      >
+                                        格位 {slotIdx + 1}
+                                      </Tag>
+                                      <Form.Item name={[slotField.name, 'slotIndex']} hidden noStyle>
+                                        <InputNumber />
+                                      </Form.Item>
+                                      <Form.Item
+                                        name={[slotField.name, 'templateCode']}
+                                        style={{ marginBottom: 0 }}
+                                        rules={[{ required: true, message: '请选择模板' }]}
+                                      >
+                                        <Select
+                                          style={{ width: 200 }}
+                                          placeholder="选择卡片模板"
+                                          options={(templates || []).map((item: any) => ({
+                                            label: `${item.templateName || '未命名'} (${item.templateCode || '-'})`,
+                                            value: item.templateCode,
+                                          }))}
+                                        />
+                                      </Form.Item>
+                                      <Form.Item
+                                        name={[slotField.name, 'probability']}
+                                        style={{ marginBottom: 0 }}
+                                        rules={[
+                                          { required: true, message: '请输入概率' },
+                                          { type: 'number', min: 0.0001, max: 1, message: '范围 0.0001~1' },
+                                        ]}
+                                      >
+                                        <InputNumber min={0.0001} max={1} step={0.01} style={{ width: 90 }} />
+                                      </Form.Item>
+                                      <Form.Item name={[slotField.name, 'saleLimit']} style={{ marginBottom: 0 }}>
+                                        <InputNumber min={1} precision={0} style={{ width: 82 }} placeholder="发售数" />
+                                      </Form.Item>
+                                      <Form.Item name={[slotField.name, 'remainingLimit']} style={{ marginBottom: 0 }}>
+                                        <InputNumber min={0} precision={0} style={{ width: 82 }} placeholder="剩余可发" />
+                                      </Form.Item>
+                                    </div>
+                                  ))}
+                                </>
+                              )}
+                            </Form.List>
+                            <ProbabilitySumTag slots={currentSlots} />
+                          </div>
+                          <div style={{ flexShrink: 0, textAlign: 'center' }}>
+                            <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>概率预览</div>
+                            <WheelPreview slots={currentSlots} />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <Button
+                    type="dashed"
+                    onClick={() =>
+                      add({
+                        sort: 0,
+                        status: 0,
+                        probabilityRule: '',
+                        templates: Array.from({ length: SLOT_COUNT }, (_, i) => ({
+                          slotIndex: i + 1,
+                          probability: parseFloat((1 / SLOT_COUNT).toFixed(4)),
+                          saleLimit: 1,
+                          remainingLimit: 1,
+                          configLimit: 0,
+                          templateCode: '',
+                          rarity: '',
+                        })),
+                      })
+                    }
+                    block
+                  >
+                    新增转盘卡池（自动初始化 {SLOT_COUNT} 格位）
                   </Button>
                 </>
               )}

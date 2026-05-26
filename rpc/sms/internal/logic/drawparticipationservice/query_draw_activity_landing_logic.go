@@ -128,5 +128,7 @@ func (l *QueryDrawActivityLandingLogic) QueryDrawActivityLanding(in *smsclient.Q
 		Pools:                       buildLandingPools(pools, poolTemplates, templateMap),
 		RecentWins:                  recentWins,
 		MyRecords:                   myRecords,
+		ConsumeType:                 activity.ConsumeType,
+		ConsumeAmount:               activity.ConsumeAmount,
 	}, nil
 }

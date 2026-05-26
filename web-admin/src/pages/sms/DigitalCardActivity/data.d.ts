@@ -43,6 +43,7 @@ export interface DrawPoolTemplateData {
   templateCode?: string;
   templateName?: string;
   rarity?: string;
+  slotIndex: number;
   probability: number;
   saleLimit: number;
   remainingLimit: number;
@@ -69,6 +70,10 @@ export interface DrawActivityListItem {
   realNameRequired?: number;
   participantConditionSummary?: string;
   consumeRuleSummary?: string;
+  consumeType?: string;
+  consumeAmount?: number;
+  quotaPerMember?: number;
+  dailyQuotaPerMember?: number;
   probabilityRule?: string;
   complianceRuleSummary?: string;
   circulationLimitSummary?: string;

@@ -44,6 +44,8 @@ class DrawActivityLandingData {
   final String ruleSummary;
   final String participantConditionSummary;
   final String consumeRuleSummary;
+  final String consumeType;
+  final int consumeAmount;
   final String probabilityRule;
   final String complianceRuleSummary;
   final String circulationLimitSummary;
@@ -64,6 +66,8 @@ class DrawActivityLandingData {
     required this.ruleSummary,
     required this.participantConditionSummary,
     required this.consumeRuleSummary,
+    required this.consumeType,
+    required this.consumeAmount,
     required this.probabilityRule,
     required this.complianceRuleSummary,
     required this.circulationLimitSummary,
@@ -87,6 +91,8 @@ class DrawActivityLandingData {
       participantConditionSummary:
           json['participantConditionSummary']?.toString() ?? '',
       consumeRuleSummary: json['consumeRuleSummary']?.toString() ?? '',
+      consumeType: json['consumeType']?.toString() ?? 'points',
+      consumeAmount: _intValue(json['consumeAmount']),
       probabilityRule: json['probabilityRule']?.toString() ?? '',
       complianceRuleSummary: json['complianceRuleSummary']?.toString() ?? '',
       circulationLimitSummary:
@@ -183,6 +189,8 @@ class DrawCardPreview {
   final String cardFaceImage;
   final String rarity;
   final String displayCopy;
+  final int slotIndex;
+  final double probability;
 
   const DrawCardPreview({
     required this.templateId,
@@ -191,6 +199,8 @@ class DrawCardPreview {
     required this.cardFaceImage,
     required this.rarity,
     required this.displayCopy,
+    this.slotIndex = 0,
+    this.probability = 0.0,
   });
 
   factory DrawCardPreview.fromJson(Map<String, dynamic> json) {
@@ -201,6 +211,8 @@ class DrawCardPreview {
       cardFaceImage: json['cardFaceImage']?.toString() ?? '',
       rarity: json['rarity']?.toString() ?? '',
       displayCopy: json['displayCopy']?.toString() ?? '',
+      slotIndex: _intValue(json['slotIndex']),
+      probability: _doubleValue(json['probability']),
     );
   }
 }
@@ -210,12 +222,14 @@ class DrawPoolPreview {
   final String poolName;
   final String probabilityRule;
   final List<DrawCardPreview> cards;
+  final int wheelSlotCount;
 
   const DrawPoolPreview({
     required this.poolId,
     required this.poolName,
     required this.probabilityRule,
     required this.cards,
+    this.wheelSlotCount = 5,
   });
 
   factory DrawPoolPreview.fromJson(Map<String, dynamic> json) {
@@ -227,6 +241,9 @@ class DrawPoolPreview {
         json['cards'],
         (item) => DrawCardPreview.fromJson(item),
       ),
+      wheelSlotCount: _intValue(json['wheelSlotCount']) > 0
+          ? _intValue(json['wheelSlotCount'])
+          : 5,
     );
   }
 }
@@ -288,6 +305,7 @@ class DrawMemberRecord {
   final String assetStatusText;
   final String assetCreatedAt;
   final String createTime;
+  final int slotIndex;
 
   const DrawMemberRecord({
     required this.id,
@@ -311,6 +329,7 @@ class DrawMemberRecord {
     required this.assetStatusText,
     required this.assetCreatedAt,
     required this.createTime,
+    this.slotIndex = 0,
   });
 
   factory DrawMemberRecord.fromJson(Map<String, dynamic> json) {
@@ -336,6 +355,7 @@ class DrawMemberRecord {
       assetStatusText: json['assetStatusText']?.toString() ?? '',
       assetCreatedAt: json['assetCreatedAt']?.toString() ?? '',
       createTime: json['createTime']?.toString() ?? '',
+      slotIndex: _intValue(json['slotIndex']),
     );
   }
 }
@@ -457,6 +477,12 @@ int _intValue(dynamic value) {
     return value.toInt();
   }
   return int.tryParse(value?.toString() ?? '') ?? 0;
+}
+
+double _doubleValue(dynamic value) {
+  if (value is double) return value;
+  if (value is int) return value.toDouble();
+  return double.tryParse(value?.toString() ?? '') ?? 0.0;
 }
 
 List<T> _listOf<T>(

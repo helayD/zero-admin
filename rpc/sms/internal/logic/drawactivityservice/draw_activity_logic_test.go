@@ -46,6 +46,11 @@ func newDrawActivityTestDB(t *testing.T) *gorm.DB {
 			content_audit_status INTEGER NOT NULL DEFAULT 0,
 			status INTEGER NOT NULL DEFAULT 0,
 			audit_status INTEGER NOT NULL DEFAULT 0,
+			consume_type TEXT NOT NULL DEFAULT 'points',
+			consume_amount INTEGER NOT NULL DEFAULT 1,
+			quota_per_member INTEGER NOT NULL DEFAULT 0,
+			daily_quota_per_member INTEGER NOT NULL DEFAULT 0,
+			eligibility_rule_json TEXT NOT NULL DEFAULT '',
 			is_enabled INTEGER NOT NULL DEFAULT 1,
 			show_on_home INTEGER NOT NULL DEFAULT 0,
 			home_entry_title TEXT NOT NULL DEFAULT '',
@@ -70,6 +75,7 @@ func newDrawActivityTestDB(t *testing.T) *gorm.DB {
 			pool_code TEXT NOT NULL,
 			pool_name TEXT NOT NULL,
 			probability_rule TEXT NOT NULL DEFAULT '',
+			wheel_slot_count INTEGER NOT NULL DEFAULT 5,
 			sort INTEGER NOT NULL DEFAULT 0,
 			status INTEGER NOT NULL DEFAULT 0,
 			audit_status INTEGER NOT NULL DEFAULT 0,
@@ -110,6 +116,7 @@ func newDrawActivityTestDB(t *testing.T) *gorm.DB {
 			activity_id INTEGER NOT NULL,
 			pool_id INTEGER NOT NULL,
 			template_id INTEGER NOT NULL,
+			slot_index INTEGER NOT NULL DEFAULT 0,
 			platform_id INTEGER NOT NULL,
 			tenant_id INTEGER NOT NULL,
 			merchant_id INTEGER NOT NULL,
@@ -234,20 +241,11 @@ func validDrawAddReq() *smsclient.AddDrawActivityReq {
 			IsEnabled:          1,
 		},
 		Templates: []*smsclient.DrawCardTemplateData{
-			{
-				TemplateName:            "SSR 兔兔",
-				TemplateCode:            "TPL-SSR-01",
-				CopyrightOwner:          "Zero Admin",
-				CopyrightProofSummary:   "版权登记号 2026-01",
-				Rarity:                  "SSR",
-				IssueLimit:              100,
-				DisplayCopy:             "限定 SSR",
-				CirculationLimitSummary: "禁止集中竞价；禁止连续挂牌；禁止收益承诺",
-				ContentAuditStatus:      2,
-				DisplayStatus:           1,
-				Status:                  0,
-				AuditStatus:             2,
-			},
+			{TemplateName: "SSR 兔兔", TemplateCode: "TPL-SSR-01", CopyrightOwner: "Zero Admin", CopyrightProofSummary: "版权登记号 2026-01", Rarity: "SSR", IssueLimit: 100, DisplayCopy: "限定 SSR", CirculationLimitSummary: "禁止集中竞价；禁止连续挂牌；禁止收益承诺", ContentAuditStatus: 2, DisplayStatus: 1, Status: 0, AuditStatus: 2},
+			{TemplateName: "SR 火雉", TemplateCode: "TPL-SR-01", CopyrightOwner: "Zero Admin", CopyrightProofSummary: "版权登记号 2026-02", Rarity: "SR", IssueLimit: 200, DisplayCopy: "SR", CirculationLimitSummary: "禁止集中竞价；禁止连续挂牌；禁止收益承诺", ContentAuditStatus: 2, DisplayStatus: 1, Status: 0, AuditStatus: 2},
+			{TemplateName: "R 小熊", TemplateCode: "TPL-R-01", CopyrightOwner: "Zero Admin", CopyrightProofSummary: "版权登记号 2026-03", Rarity: "R", IssueLimit: 300, DisplayCopy: "R", CirculationLimitSummary: "禁止集中竞价；禁止连续挂牌；禁止收益承诺", ContentAuditStatus: 2, DisplayStatus: 1, Status: 0, AuditStatus: 2},
+			{TemplateName: "N 普通1", TemplateCode: "TPL-N-01", CopyrightOwner: "Zero Admin", CopyrightProofSummary: "版权登记号 2026-04", Rarity: "N", IssueLimit: 400, DisplayCopy: "N", CirculationLimitSummary: "禁止集中竞价；禁止连续挂牌；禁止收益承诺", ContentAuditStatus: 2, DisplayStatus: 1, Status: 0, AuditStatus: 2},
+			{TemplateName: "N 普通2", TemplateCode: "TPL-N-02", CopyrightOwner: "Zero Admin", CopyrightProofSummary: "版权登记号 2026-05", Rarity: "N", IssueLimit: 400, DisplayCopy: "N", CirculationLimitSummary: "禁止集中竞价；禁止连续挂牌；禁止收益承诺", ContentAuditStatus: 2, DisplayStatus: 1, Status: 0, AuditStatus: 2},
 		},
 		Pools: []*smsclient.DrawPoolData{
 			{
@@ -255,31 +253,43 @@ func validDrawAddReq() *smsclient.AddDrawActivityReq {
 				PoolCode:        "POOL-SSR",
 				ProbabilityRule: "概率总和必须为 1",
 				Templates: []*smsclient.DrawPoolTemplateData{
-					{
-						TemplateCode:   "TPL-SSR-01",
-						TemplateName:   "SSR 兔兔",
-						Rarity:         "SSR",
-						Probability:    1,
-						SaleLimit:      100,
-						RemainingLimit: 100,
-						ConfigLimit:    100,
-					},
+					{TemplateCode: "TPL-SSR-01", TemplateName: "SSR 兔兔", Rarity: "SSR", Probability: 0.1, SaleLimit: 100, RemainingLimit: 100, ConfigLimit: 100, SlotIndex: 1},
+					{TemplateCode: "TPL-SR-01", TemplateName: "SR 火雉", Rarity: "SR", Probability: 0.2, SaleLimit: 200, RemainingLimit: 200, ConfigLimit: 200, SlotIndex: 2},
+					{TemplateCode: "TPL-R-01", TemplateName: "R 小熊", Rarity: "R", Probability: 0.3, SaleLimit: 300, RemainingLimit: 300, ConfigLimit: 300, SlotIndex: 3},
+					{TemplateCode: "TPL-N-01", TemplateName: "N 普通1", Rarity: "N", Probability: 0.2, SaleLimit: 400, RemainingLimit: 400, ConfigLimit: 400, SlotIndex: 4},
+					{TemplateCode: "TPL-N-02", TemplateName: "N 普通2", Rarity: "N", Probability: 0.2, SaleLimit: 400, RemainingLimit: 400, ConfigLimit: 400, SlotIndex: 5},
 				},
 			},
 		},
 	}
 }
 
+func TestAddDrawActivityRejectsInvalidSlotIndex(t *testing.T) {
+	logic := NewAddDrawActivityLogic(context.Background(), newDrawActivityLogicSvc(t))
+	req := validDrawAddReq()
+	req.Pools[0].Templates[0].SlotIndex = 6
+
+	_, err := logic.AddDrawActivity(req)
+	if err == nil || !strings.Contains(err.Error(), "格位序号必须在 1-5") {
+		t.Fatalf("expected slot_index out of range error, got %v", err)
+	}
+}
+
+func TestAddDrawActivityRejectsDuplicateSlotIndex(t *testing.T) {
+	logic := NewAddDrawActivityLogic(context.Background(), newDrawActivityLogicSvc(t))
+	req := validDrawAddReq()
+	req.Pools[0].Templates[1].SlotIndex = 1
+
+	_, err := logic.AddDrawActivity(req)
+	if err == nil || !strings.Contains(err.Error(), "格位序号 1 重复") {
+		t.Fatalf("expected duplicate slot_index error, got %v", err)
+	}
+}
+
 func TestAddDrawActivityRejectsInvalidProbabilitySum(t *testing.T) {
 	logic := NewAddDrawActivityLogic(context.Background(), newDrawActivityLogicSvc(t))
 	req := validDrawAddReq()
-	req.Pools[0].Templates = append(req.Pools[0].Templates, &smsclient.DrawPoolTemplateData{
-		TemplateCode:   "TPL-SSR-01",
-		Probability:    0.2,
-		SaleLimit:      10,
-		RemainingLimit: 10,
-		ConfigLimit:    10,
-	})
+	req.Pools[0].Templates[0].Probability = 0.9
 
 	_, err := logic.AddDrawActivity(req)
 	if err == nil || !strings.Contains(err.Error(), "概率总和必须为1") {
