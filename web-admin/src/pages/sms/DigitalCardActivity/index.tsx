@@ -97,7 +97,7 @@ const DigitalCardActivity: React.FC = () => {
   const handleDelete = (record: DrawActivityListItem) => {
     confirm({
       title: '是否删除当前抽卡活动？',
-      content: `当前主体：${buildGovernanceScopeLabel(scope)}。删除后会一并下线该活动下的卡池配置。`,
+      content: `活动「${record.name}」主体：${buildGovernanceScopeLabel(record)}。删除后会一并下线该活动下的卡池配置。`,
       onOk: async () => {
         try {
           await removeDrawActivity({
@@ -124,7 +124,7 @@ const DigitalCardActivity: React.FC = () => {
       if (preview?.readyToPublish) {
         confirm({
           title: '发布预检通过',
-          content: `当前主体：${buildGovernanceScopeLabel(scope)}。确认将活动发布上线吗？`,
+          content: `活动「${record.name}」主体：${buildGovernanceScopeLabel(record)}。确认将活动发布上线吗？`,
           onOk: async () => {
             await updateDrawActivityStatus({
               ids: [record.id as number],
