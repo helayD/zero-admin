@@ -390,8 +390,8 @@ func buildDrawReadiness(activity *drawActivityRow, templates []*smsclient.DrawCa
 		addItem("approvalRejected", "auditStatus", "活动审批未通过", true)
 	}
 	if activity.ShowOnHome == 1 {
-		if strings.TrimSpace(activity.HomeEntryTitle) == "" || strings.TrimSpace(activity.HomeEntryImage) == "" || strings.TrimSpace(activity.LandingTargetType) == "" {
-			addItem("missingHomeEntry", "homeEntry", "首页显著入口配置不完整", true)
+		if strings.TrimSpace(activity.HomeEntryTitle) == "" || strings.TrimSpace(activity.LandingTargetType) == "" {
+			addItem("missingHomeEntry", "homeEntry", "首页显著入口配置不完整（需填写入口标题和落地页类型）", true)
 		}
 	}
 
