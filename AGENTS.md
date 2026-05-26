@@ -121,6 +121,12 @@ B 端（Web Admin）不受此约束，运维人员可以看到完整链信息。
 - 发卡链路、mint task、抽卡流程、卡片未发
 - 分享按钮、transferable、链上铸造、mint_pending
 
+### 日志查看 Skill
+
+遇到以下场景时，调用 skill `zero-admin-log-viewer`：
+- 查日志、看日志、tail 日志、error log、服务报错、慢查询日志、日志路径
+- 需要配合数据库排查问题时（MySQL / Redis 连接信息见 skill）
+
 ---
 
 ## 代码风格指南

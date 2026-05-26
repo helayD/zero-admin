@@ -78,7 +78,7 @@ const ActivityDrawer: React.FC<ActivityDrawerProps> = ({
             type="primary"
             onClick={async () => {
               const values = await form.validateFields();
-              const success = await onSubmit(values);
+              const success = await onSubmit({ ...values, id: current?.id });
               if (success) {
                 form.resetFields();
               }

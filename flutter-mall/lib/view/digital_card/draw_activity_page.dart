@@ -210,13 +210,6 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
         _useAnonymousLandingOnly = false;
         await _loadLanding();
         return;
-      case 'need_real_name':
-        _showSnackBar(
-          landing.identity.credentialRef.trim().isEmpty
-              ? '请先完成实名认证后再兑卡'
-              : '请先根据实名提示完成认证后再兑卡',
-        );
-        return;
       case 'eligible':
         break;
       default:
@@ -274,10 +267,6 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
         return;
       }
 
-      final bool requiresRealNameForRedemption =
-          parsed.data.record.resultStatus == 'won_pending_asset' &&
-              landing.identity.realNameStatus.trim() != 'verified';
-
       await showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
@@ -288,7 +277,6 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
         builder: (_) => DrawResultSheet(
           record: parsed.data.record,
           eligibility: parsed.data.eligibility,
-          requiresRealNameForRedemption: requiresRealNameForRedemption,
         ),
       );
       await _loadLanding();
@@ -316,8 +304,6 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
     switch (eligibility.eligibilityCode) {
       case 'need_login':
         return '待登录';
-      case 'need_real_name':
-        return '待实名';
       case 'eligible':
         return '可参与';
       case 'quota_exhausted':
@@ -335,8 +321,6 @@ class _DrawActivityPageState extends State<DrawActivityPage> {
     switch (eligibility.eligibilityCode) {
       case 'need_login':
         return '登录后参与';
-      case 'need_real_name':
-        return '前往实名';
       case 'eligible':
         if (_isParticipating) return '旋转中...';
         final landing = _landing;

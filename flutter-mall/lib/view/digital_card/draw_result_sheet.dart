@@ -14,13 +14,11 @@ class DrawResultSheet extends StatelessWidget {
 
   final DrawMemberRecord record;
   final DrawEligibilitySummary eligibility;
-  final bool requiresRealNameForRedemption;
 
   const DrawResultSheet({
     super.key,
     required this.record,
     required this.eligibility,
-    this.requiresRealNameForRedemption = false,
   });
 
   DigitalCardStatusCopy get _assetStatusCopy =>
@@ -29,15 +27,10 @@ class DrawResultSheet extends StatelessWidget {
   String get _title {
     switch (record.resultStatus) {
       case 'won_pending_asset':
-        if (requiresRealNameForRedemption) {
-          return '待实名兑卡';
-        }
         if (_assetStatusCopy.label.trim().isNotEmpty) {
           return _assetStatusCopy.label;
         }
         return '已中奖待到账';
-      case 'rejected_need_real_name':
-        return '待实名';
       case 'rejected_quota_exhausted':
         return '资格不足';
       case 'rejected_inventory_exhausted':
@@ -53,14 +46,6 @@ class DrawResultSheet extends StatelessWidget {
   String get _description {
     if (record.failureReason.trim().isNotEmpty) {
       return digitalCardUserFacingText(record.failureReason);
-    }
-    if (record.resultStatus == 'won_pending_asset' &&
-        requiresRealNameForRedemption) {
-      final String cardName = record.templateName.trim();
-      final String prefix = cardName.isEmpty ? '你已中奖' : '你抽中了 $cardName';
-      final String suffix =
-          record.assetNo.trim().isEmpty ? '' : '唯一编号 ${record.assetNo}。';
-      return '$prefix，完成实名认证后可继续兑卡并发放到我的提货卡。$suffix';
     }
     if (_assetStatusCopy.description.trim().isNotEmpty) {
       if (record.assetNo.trim().isNotEmpty) {
@@ -81,8 +66,6 @@ class DrawResultSheet extends StatelessWidget {
     switch (record.resultStatus) {
       case 'won_pending_asset':
         return _gold;
-      case 'rejected_need_real_name':
-        return const Color(0xFF2563EB);
       case 'rejected_quota_exhausted':
       case 'rejected_inventory_exhausted':
         return const Color(0xFFD97706);
@@ -396,8 +379,7 @@ class DrawResultSheet extends StatelessWidget {
     if (record.createTime.trim().isNotEmpty) {
       rows.add(_buildMetaRow('抽卡时间', record.createTime.trim()));
     }
-    if (record.assetCreatedAt.trim().isNotEmpty &&
-        !requiresRealNameForRedemption) {
+    if (record.assetCreatedAt.trim().isNotEmpty) {
       rows.add(_buildMetaRow('获取时间', record.assetCreatedAt.trim()));
     }
     if (record.assetNo.trim().isNotEmpty) {

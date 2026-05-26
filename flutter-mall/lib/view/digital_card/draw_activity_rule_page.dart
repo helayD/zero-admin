@@ -52,7 +52,9 @@ class DrawActivityRulePage extends StatelessWidget {
       ),
       _RuleSection(
         title: '卡池概率',
-        content: _clean(landing.probabilityRule),
+        content: _clean(landing.probabilityRule).isNotEmpty
+            ? _clean(landing.probabilityRule)
+            : '本活动每次旋转必然中奖，各格位概率之和为 100%，不存在未中奖格位。',
         icon: Icons.percent_outlined,
         color: _gold,
       ),
@@ -148,6 +150,34 @@ class DrawActivityRulePage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
+          Row(
+            children: <Widget>[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                decoration: BoxDecoration(
+                  color: _gold.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: _gold.withValues(alpha: 0.32)),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Icon(Icons.auto_awesome, color: _goldLight, size: 13),
+                    SizedBox(width: 4),
+                    Text(
+                      '每次旋转必然中奖 · 中奖率 100%',
+                      style: TextStyle(
+                        color: _goldLight,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
           Text(
             landing.name.trim().isEmpty ? '数字卡片活动' : landing.name.trim(),
             maxLines: 2,
