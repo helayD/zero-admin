@@ -81,6 +81,10 @@ func SplitResourceScopeRows(rows []ResourceScopeRow, current GovernanceScope) (a
 		return nil, nil
 	}
 
+	if current.ScopeType == SubjectTypePlatform {
+		return rows, nil
+	}
+
 	authorized = make([]ResourceScopeRow, 0, len(rows))
 	unauthorized = make([]ResourceScopeRow, 0)
 	for _, row := range rows {
