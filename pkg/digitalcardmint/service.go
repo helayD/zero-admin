@@ -1694,7 +1694,17 @@ func (s *Service) validateMintPrerequisites(ctx context.Context, tx *gorm.DB, in
 		return errors.New("所属模板合规状态禁止发链")
 	}
 
-	// 抽卡场景不要求实名认证，中奖后直接进入 mint 流程
+	// 若活动配置了实名认证要求，必须验证用户当前实名状态才可发链
+	// 注意：使用实时查询而非抽卡时快照，防止用户认证状态变更后快照失效
+	if activity.RealNameRequired == mintEnabledStatus {
+		realNameStatus, realNameErr := s.loadMemberRealNameStatus(ctx, tx, instance.MemberID)
+		if realNameErr != nil {
+			return errors.New("实名状态查询失败，暂不可发链")
+		}
+		if realNameStatus != mintVerifiedRealNameCode {
+			return errors.New("实名未通过，需完成实名认证后才可发链")
+		}
+	}
 	return nil
 }
 
