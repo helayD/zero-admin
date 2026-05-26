@@ -27,6 +27,7 @@ import {
   updateDrawActivityStatus,
 } from './service';
 import ActivityDrawer from './components/ActivityDrawer';
+import { WheelPreview, WHEEL_COLORS } from './components/WheelPreview';
 import { buildPreviewMessages } from './helper';
 
 const { confirm, info } = Modal;
@@ -351,6 +352,67 @@ const DigitalCardActivity: React.FC = () => {
             </Descriptions.Item>
             <Descriptions.Item label="模板数量">{detailItem.templates?.length || 0}</Descriptions.Item>
             <Descriptions.Item label="卡池数量">{detailItem.pools?.length || 0}</Descriptions.Item>
+            {(detailItem.pools || []).map((pool, poolIdx) => (
+              <Descriptions.Item
+                key={pool.id || poolIdx}
+                label={`卡池 ${poolIdx + 1}：${pool.poolName}`}
+              >
+                <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+                  <div style={{ flex: 1 }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: 8,
+                        marginBottom: 4,
+                        color: '#888',
+                        fontSize: 12,
+                      }}
+                    >
+                      <span style={{ minWidth: 48 }}>格位</span>
+                      <span style={{ flex: 1 }}>模板名称</span>
+                      <span style={{ width: 50 }}>稀有度</span>
+                      <span style={{ width: 60 }}>概率</span>
+                      <span style={{ width: 60 }}>剩余可发</span>
+                    </div>
+                    {(pool.templates || [])
+                      .slice()
+                      .sort((a, b) => (a.slotIndex || 0) - (b.slotIndex || 0))
+                      .map((tpl, tplIdx) => (
+                        <div
+                          key={tpl.id || tplIdx}
+                          style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}
+                        >
+                          <Tag
+                            color={WHEEL_COLORS[(tpl.slotIndex - 1) % WHEEL_COLORS.length]}
+                            style={{ minWidth: 44, textAlign: 'center', margin: 0 }}
+                          >
+                            格{tpl.slotIndex}
+                          </Tag>
+                          <span style={{ flex: 1, fontSize: 13 }}>{tpl.templateName || '-'}</span>
+                          <Tag style={{ width: 50, textAlign: 'center', margin: 0 }}>
+                            {tpl.rarity || '-'}
+                          </Tag>
+                          <span style={{ width: 60, color: '#595959', fontSize: 13 }}>
+                            {((tpl.probability || 0) * 100).toFixed(1)}%
+                          </span>
+                          <span style={{ width: 60, color: '#595959', fontSize: 13 }}>
+                            {tpl.remainingLimit ?? '-'}
+                          </span>
+                        </div>
+                      ))}
+                  </div>
+                  <div style={{ flexShrink: 0, textAlign: 'center' }}>
+                    <div style={{ fontSize: 11, color: '#888', marginBottom: 4 }}>概率分布</div>
+                    <WheelPreview
+                      slots={(pool.templates || [])
+                        .slice()
+                        .sort((a, b) => (a.slotIndex || 0) - (b.slotIndex || 0))}
+                      size={140}
+                    />
+                  </div>
+                </div>
+              </Descriptions.Item>
+            ))}
             <Descriptions.Item label="最近失败摘要">
               {detailItem.publishFailureSummary || '-'}
             </Descriptions.Item>
