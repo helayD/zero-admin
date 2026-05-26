@@ -70,13 +70,13 @@ export const serializeDrawActivityPayload = (values: DrawActivityFormValues) => 
       probabilityRule: item.probabilityRule || '',
       sort: item.sort ?? 0,
       status: item.status ?? 0,
-      templates: (item.templates || []).map((mapping) => ({
+      templates: (item.templates || []).map((mapping, slotIdx) => ({
         id: mapping.id,
         templateId: mapping.templateId,
         templateCode: mapping.templateCode || '',
         templateName: mapping.templateName || '',
         rarity: mapping.rarity || '',
-        slotIndex: Number(mapping.slotIndex || 0),
+        slotIndex: Number(mapping.slotIndex) > 0 ? Number(mapping.slotIndex) : slotIdx + 1,
         probability: Number(mapping.probability || 0),
         saleLimit: Number(mapping.saleLimit || 0),
         remainingLimit: Number(mapping.remainingLimit || 0),

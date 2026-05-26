@@ -604,7 +604,7 @@ func loadDrawActivityAggregate(ctx context.Context, db *gorm.DB, current pkgscop
 				t.audit_status AS template_audit_status`).
 			Joins("JOIN sms_card_template t ON t.id = dpt.template_id AND t.is_deleted = 0").
 			Where("dpt.pool_id IN ? AND dpt.is_deleted = 0", poolIDs).
-			Order("dpt.id asc").
+			Order("dpt.slot_index asc").
 			Find(&joinRows).Error
 		if err != nil {
 			return nil, err
