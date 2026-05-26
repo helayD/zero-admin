@@ -1034,6 +1034,7 @@ type DrawPoolTemplateData struct {
 	TemplateCode   string  `json:"templateCode,optional"` // 模板编码
 	TemplateName   string  `json:"templateName,optional"` // 模板名称
 	Rarity         string  `json:"rarity,optional"`       // 稀有度
+	SlotIndex      int32   `json:"slotIndex"`             // 转盘格位 (1-5)
 	Probability    float64 `json:"probability"`           // 概率
 	SaleLimit      int64   `json:"saleLimit"`             // 发售数量
 	RemainingLimit int64   `json:"remainingLimit"`        // 剩余可发数量
