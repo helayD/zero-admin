@@ -83,6 +83,7 @@ func newDrawParticipationTestDB(t *testing.T) *gorm.DB {
 		`CREATE TABLE ums_member_info (
 			member_id INTEGER PRIMARY KEY,
 			lottery_times INTEGER NOT NULL DEFAULT 0,
+			points INTEGER NOT NULL DEFAULT 0,
 			is_enabled INTEGER NOT NULL DEFAULT 1,
 			nickname TEXT NOT NULL DEFAULT '',
 			update_time DATETIME NULL
@@ -170,6 +171,17 @@ func newDrawParticipationTestDB(t *testing.T) *gorm.DB {
 			payload_json TEXT,
 			create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 		)`,
+		`CREATE TABLE ums_member_points_log (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			member_id INTEGER NOT NULL,
+			change_type INTEGER NOT NULL,
+			change_points INTEGER NOT NULL,
+			source_type INTEGER NOT NULL DEFAULT 2,
+			description TEXT NOT NULL DEFAULT '',
+			operate_man TEXT NOT NULL DEFAULT '',
+			operate_note TEXT NOT NULL DEFAULT '',
+			create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+		)`,
 	}
 	for _, stmt := range stmts {
 		if err := db.Exec(stmt).Error; err != nil {
@@ -193,6 +205,88 @@ func testMerchantScope() pkgscope.GovernanceScope {
 		88,
 	)
 	return scope
+}
+
+func TestParticipateDrawWritesPointsLogOnPointsConsume(t *testing.T) {
+	svcCtx := newDrawParticipationSvc(t)
+	now := time.Now()
+	if err := svcCtx.DB.Exec(`
+		INSERT INTO sms_draw_activity
+			(id, activity_code, name, start_time, end_time, real_name_required, consume_type, consume_amount, platform_id, tenant_id, merchant_id)
+		VALUES
+			(1, 'DRAW-PTS', '积分抽奖活动', ?, ?, 0, 'points', 50, 1, 10, 88)
+	`, now.Add(-time.Hour), now.Add(time.Hour)).Error; err != nil {
+		t.Fatalf("seed activity failed: %v", err)
+	}
+	if err := svcCtx.DB.Exec(`
+		INSERT INTO ums_member_info (member_id, lottery_times, points, is_enabled, nickname)
+		VALUES (3001, 0, 200, 1, '积分用户')
+	`).Error; err != nil {
+		t.Fatalf("seed member failed: %v", err)
+	}
+	if err := svcCtx.DB.Exec(`
+		INSERT INTO ums_member_identity (member_id, real_name_status)
+		VALUES (3001, 'verified')
+	`).Error; err != nil {
+		t.Fatalf("seed identity failed: %v", err)
+	}
+	if err := svcCtx.DB.Exec(`
+		INSERT INTO sms_draw_pool (id, activity_id, pool_name, probability_rule, sort, status, is_deleted)
+		VALUES (11, 1, '积分池', '固定中签', 1, 1, 0)
+	`).Error; err != nil {
+		t.Fatalf("seed pool failed: %v", err)
+	}
+	if err := svcCtx.DB.Exec(`
+		INSERT INTO sms_card_template (id, template_code, template_name, card_face_image, rarity, display_copy, status, is_deleted)
+		VALUES (22, 'CARD-PT', '积分卡', '', 'R', '积分换好礼', 1, 0)
+	`).Error; err != nil {
+		t.Fatalf("seed template failed: %v", err)
+	}
+	if err := svcCtx.DB.Exec(`
+		INSERT INTO sms_draw_pool_template
+			(id, activity_id, pool_id, template_id, rarity, probability, sale_limit, remaining_limit, config_limit, status, is_deleted)
+		VALUES
+			(33, 1, 11, 22, 'R', 1, 10, 10, 10, 1, 0)
+	`).Error; err != nil {
+		t.Fatalf("seed pool template failed: %v", err)
+	}
+
+	scope := &smsclient.GovernanceScope{
+		ScopeType:  pkgscope.SubjectTypeMerchant,
+		PlatformId: 1,
+		TenantId:   10,
+		MerchantId: 88,
+	}
+	logic := NewParticipateDrawLogic(context.Background(), svcCtx)
+	_, err := logic.ParticipateDraw(&smsclient.ParticipateDrawReq{
+		ActivityId: 1,
+		MemberId:   3001,
+		RequestId:  "req-pts-1",
+		Scope:      scope,
+	})
+	if err != nil {
+		t.Fatalf("ParticipateDraw returned error: %v", err)
+	}
+
+	var logCount int64
+	if err := svcCtx.DB.Table("ums_member_points_log").
+		Where("member_id = ? AND change_type = ? AND change_points = ?", 3001, pointsChangeTypeDeduct, 50).
+		Count(&logCount).Error; err != nil {
+		t.Fatalf("count points log failed: %v", err)
+	}
+	if logCount != 1 {
+		t.Fatalf("expected 1 points deduct log, got %d", logCount)
+	}
+
+	var afterPoints int32
+	if err := svcCtx.DB.Table("ums_member_info").
+		Select("points").Where("member_id = ?", 3001).
+		Scan(&afterPoints).Error; err != nil {
+		t.Fatalf("query points failed: %v", err)
+	}
+	if afterPoints != 150 {
+		t.Fatalf("expected points=150 after deduct, got %d", afterPoints)
+	}
 }
 
 func TestLoadActivitySnapshotHonorsScope(t *testing.T) {

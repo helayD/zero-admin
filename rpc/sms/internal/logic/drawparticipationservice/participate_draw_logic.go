@@ -164,6 +164,11 @@ func (l *ParticipateDrawLogic) ParticipateDraw(in *smsclient.ParticipateDrawReq)
 			}
 			return errors.New(insufficientMsg)
 		}
+		if isPoints {
+			if logErr := writePointsLog(l.ctx, tx, in.MemberId, pointsChangeTypeDeduct, activity.ConsumeAmount, activity.Name, activity.ActivityCode, in.RequestId); logErr != nil {
+				return logErr
+			}
+		}
 
 		winner := chooseWinner(poolTemplates)
 		if winner != nil {
@@ -183,6 +188,11 @@ func (l *ParticipateDrawLogic) ParticipateDraw(in *smsclient.ParticipateDrawReq)
 						"update_time": time.Now(),
 					}).Error; err != nil {
 					return err
+				}
+				if isPoints {
+					if logErr := writePointsLog(l.ctx, tx, in.MemberId, pointsChangeTypeAdd, activity.ConsumeAmount, activity.Name, activity.ActivityCode, in.RequestId); logErr != nil {
+						return logErr
+					}
 				}
 				rejected := buildRejectedRecord(activity, in.MemberId, in.RequestId, drawEligibilitySummary{
 					Status:               drawEligibilityInventoryExhausted,

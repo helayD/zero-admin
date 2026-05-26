@@ -143,6 +143,46 @@ func (drawMemberIdentitySnapshot) TableName() string {
 	return "ums_member_identity"
 }
 
+const (
+	pointsChangeTypeDeduct int32 = 2 // 减少积分
+	pointsChangeTypeAdd    int32 = 1 // 增加积分
+	pointsSourceTypeActivity     = int32(2) // 来源：活动
+)
+
+type memberPointsLogRow struct {
+	MemberID    int64  `gorm:"column:member_id"`
+	ChangeType  int32  `gorm:"column:change_type"`
+	ChangePoints int32 `gorm:"column:change_points"`
+	SourceType  int32  `gorm:"column:source_type"`
+	Description string `gorm:"column:description"`
+	OperateMan  string `gorm:"column:operate_man"`
+	OperateNote string `gorm:"column:operate_note"`
+}
+
+func (memberPointsLogRow) TableName() string {
+	return "ums_member_points_log"
+}
+
+func writePointsLog(ctx context.Context, tx *gorm.DB, memberID int64, changeType int32, changePoints int32, activityName string, activityCode string, requestID string) error {
+	desc := "参与大转盘活动消耗积分"
+	if changeType == pointsChangeTypeAdd {
+		desc = "大转盘活动参与取消退还积分"
+	}
+	if activityName != "" {
+		desc = fmt.Sprintf("%s「%s」", desc, activityName)
+	}
+	row := &memberPointsLogRow{
+		MemberID:     memberID,
+		ChangeType:   changeType,
+		ChangePoints: changePoints,
+		SourceType:   pointsSourceTypeActivity,
+		Description:  desc,
+		OperateMan:   "system",
+		OperateNote:  fmt.Sprintf("活动编码:%s 请求ID:%s", activityCode, requestID),
+	}
+	return tx.WithContext(ctx).Table(row.TableName()).Create(row).Error
+}
+
 type drawParticipationRecordRow struct {
 	ID                  int64      `gorm:"column:id"`
 	ActivityID          int64      `gorm:"column:activity_id"`
