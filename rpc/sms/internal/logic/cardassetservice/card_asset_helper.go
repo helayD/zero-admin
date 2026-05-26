@@ -81,6 +81,8 @@ type cardInstanceRow struct {
 	SourceType            string     `gorm:"column:source_type"`
 	SourceID              int64      `gorm:"column:source_id"`
 	FulfillmentRuleID     int64      `gorm:"column:fulfillment_rule_id"`
+	Transferable          int32      `gorm:"column:transferable"`
+	TransferLimit         int32      `gorm:"column:transfer_limit"`
 	LastReceiptAt         *time.Time `gorm:"column:last_receipt_at"`
 	MintTaskID            int64      `gorm:"column:mint_task_id"`
 	IssuedAt              *time.Time `gorm:"column:issued_at"`
@@ -394,10 +396,25 @@ func createCardInstanceWithRetry(ctx context.Context, tx *gorm.DB, record *parti
 			// Story 10.7 Fix: 新 draw 行必须显式设置 source_type='draw' 和 source_id=participationRecordId，
 			// 这样 uk_source_type_id (source_type, source_id, is_deleted) 唯一索引才能正确防重，
 			// 与 migration_20260506 对存量 draw 行的回填语义对齐。
-			SourceType: sourceTypeDraw,
-			SourceID:   record.ID,
-			IssuedAt:   &issuedAt,
-			CreateBy:   0,
+			SourceType:    sourceTypeDraw,
+			SourceID:      record.ID,
+			Transferable:  1,
+			TransferLimit: 1,
+			IssuedAt:      &issuedAt,
+			CreateBy:      0,
+		}
+		// 从活动配置读取转赠设置，覆盖上方兜底默认值
+		var activityConfig struct {
+			Transferable  int32 `gorm:"column:transferable"`
+			TransferLimit int32 `gorm:"column:transfer_limit"`
+		}
+		if cfgErr := tx.WithContext(ctx).
+			Table("sms_draw_activity").
+			Select("transferable, transfer_limit").
+			Where("id = ? AND is_deleted = 0", record.ActivityID).
+			Take(&activityConfig).Error; cfgErr == nil {
+			row.Transferable = activityConfig.Transferable
+			row.TransferLimit = activityConfig.TransferLimit
 		}
 		err = tx.WithContext(ctx).
 			Table(row.TableName()).
