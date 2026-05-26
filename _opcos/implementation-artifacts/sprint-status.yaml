@@ -145,5 +145,5 @@ development_status:
   10-9-实体卡制作-物流履约与签收闭环: in-progress
   10-10-提货卡后台配置中心-商业化版: review  # 2026-05-09 dev-story 完成：Bug #1 修复 + sms-rpc CardTemplateService 全套（含 protoc 生成 .pb.go）+ admin-api 暴露 7 个接口 + 发卡规则 cardTemplateName JOIN + 菜单 SQL + web-admin CardTemplate 独立维护页 + RuleForm 替换硬编码 mock + ProTable 履约模式 valueEnum + 模板引用校验。整体编译通过。Task 5 拆为 10.11，Task 6 拆为 10.12，Task 7 pms-rpc 协议升级延后
   10-11-FISCO-BCOS-3x-真实上链商业化接入: in-progress  # 2026-05-11 code-review 自动修复 7/14：H1/H3/H4/H5/M3/M4/M5/L1 已修；H2(contracts subrepo)/H6(AC4 远程验证)/M2/M7/M8/L4 进入 Review Follow-ups。AC1/AC4/AC5/AC6 端到端验证仍待远程窗口。
-  10-12-抽卡消耗货币统一-按consume_type支持积分或抽卡次数: ready-for-dev  # 2026-05-26 发现 participate_draw_logic.go 硬编码扣减 lottery_times，不读 activity.ConsumeType；buildEligibility 同样硬编码。需支持 consume_type=points 扣减 ums_member_info.points。story 文件：story-10-12.md
+  10-12-抽卡货币体系统一: done  # 2026-05-26 dev-story 完成：sms.proto DrawMemberRecordData currency_before/after（重命名+重新生成pb.go）；drawConsumeTypePoints 常量；buildEligibility+participate_draw_logic 按 consume_type 分支扣减 lottery_times/points；front-api types+helper 字段重命名；Flutter model JSON key + UI 文案同步。story 文件：story-10-12.md
   epic-10-retrospective: optional
