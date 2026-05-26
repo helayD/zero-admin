@@ -11,6 +11,8 @@ message DrawLandingCardPreview {
   string card_face_image = 4; // 卡面资源
   string rarity = 5; // 稀有度
   string display_copy = 6; // 展示文案
+  int32 slot_index = 7; // 格位序号(1-5)，转盘定位用
+  double probability = 8; // 格位概率(0-1)，转盘扇形渲染用
 }
 
 message DrawLandingPoolPreview {
@@ -90,6 +92,8 @@ message QueryDrawActivityLandingResp {
   repeated DrawLandingPoolPreview pools = 24; // 卡池预览
   repeated DrawLandingRecentWin recent_wins = 25; // 最近中奖记录
   repeated DrawMemberRecordData my_records = 26; // 我的参与记录
+  string consume_type = 27; // 消耗类型:points-积分,free-免费
+  int32 consume_amount = 28; // 每次消耗积分数
 }
 
 message PreviewDrawEligibilityReq {

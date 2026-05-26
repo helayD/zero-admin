@@ -559,6 +559,8 @@ type DrawActivityLandingData struct {
 	RuleSummary                 string                 `json:"ruleSummary"`                 //规则摘要
 	ParticipantConditionSummary string                 `json:"participantConditionSummary"` //参与条件摘要
 	ConsumeRuleSummary          string                 `json:"consumeRuleSummary"`          //消耗规则摘要
+	ConsumeType                 string                 `json:"consumeType"`                 //消耗类型:points-积分,free-免费
+	ConsumeAmount               int32                  `json:"consumeAmount"`               //每次消耗积分数
 	ProbabilityRule             string                 `json:"probabilityRule"`             //概率说明
 	ComplianceRuleSummary       string                 `json:"complianceRuleSummary"`       //合规摘要
 	CirculationLimitSummary     string                 `json:"circulationLimitSummary"`     //流转限制摘要
@@ -586,12 +588,14 @@ type DrawActivityLandingResp struct {
 }
 
 type DrawCardPreview struct {
-	TemplateId    int64  `json:"templateId"`    //模板ID
-	TemplateCode  string `json:"templateCode"`  //模板编码
-	TemplateName  string `json:"templateName"`  //模板名称
-	CardFaceImage string `json:"cardFaceImage"` //卡面资源
-	Rarity        string `json:"rarity"`        //稀有度
-	DisplayCopy   string `json:"displayCopy"`   //展示文案
+	TemplateId    int64   `json:"templateId"`    //模板ID
+	TemplateCode  string  `json:"templateCode"`  //模板编码
+	TemplateName  string  `json:"templateName"`  //模板名称
+	CardFaceImage string  `json:"cardFaceImage"` //卡面资源
+	Rarity        string  `json:"rarity"`        //稀有度
+	DisplayCopy   string  `json:"displayCopy"`   //展示文案
+	SlotIndex     int32   `json:"slotIndex"`     //格位序号(1-5)，转盘定位用
+	Probability   float64 `json:"probability"`   //格位概率(0-1)，转盘扇形渲染用
 }
 
 type DrawEligibilitySummary struct {

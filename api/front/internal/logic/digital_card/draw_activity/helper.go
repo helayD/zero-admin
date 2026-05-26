@@ -85,6 +85,8 @@ func mapCardPreviews(items []*smsclient.DrawLandingCardPreview) []types.DrawCard
 			CardFaceImage: item.CardFaceImage,
 			Rarity:        item.Rarity,
 			DisplayCopy:   item.DisplayCopy,
+			SlotIndex:     item.SlotIndex,
+			Probability:   item.Probability,
 		})
 	}
 	return result
@@ -175,6 +177,8 @@ func mapLandingResponse(resp *smsclient.QueryDrawActivityLandingResp) *types.Dra
 			RuleSummary:                 resp.RuleSummary,
 			ParticipantConditionSummary: resp.ParticipantConditionSummary,
 			ConsumeRuleSummary:          resp.ConsumeRuleSummary,
+			ConsumeType:                 resp.ConsumeType,
+			ConsumeAmount:               resp.ConsumeAmount,
 			ProbabilityRule:             resp.ProbabilityRule,
 			ComplianceRuleSummary:       resp.ComplianceRuleSummary,
 			CirculationLimitSummary:     resp.CirculationLimitSummary,

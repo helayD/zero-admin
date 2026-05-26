@@ -92,6 +92,7 @@ type drawPoolTemplateSnapshot struct {
 	ActivityID     int64   `gorm:"column:activity_id"`
 	PoolID         int64   `gorm:"column:pool_id"`
 	TemplateID     int64   `gorm:"column:template_id"`
+	SlotIndex      int32   `gorm:"column:slot_index"`
 	Rarity         string  `gorm:"column:rarity"`
 	Probability    float64 `gorm:"column:probability"`
 	SaleLimit      int64   `gorm:"column:sale_limit"`
@@ -349,6 +350,8 @@ func buildLandingPools(pools []drawPoolSnapshot, poolTemplates []drawPoolTemplat
 			CardFaceImage: template.CardFaceImage,
 			Rarity:        firstNonEmpty(strings.TrimSpace(item.Rarity), template.Rarity),
 			DisplayCopy:   template.DisplayCopy,
+			SlotIndex:     item.SlotIndex,
+			Probability:   item.Probability,
 		})
 	}
 

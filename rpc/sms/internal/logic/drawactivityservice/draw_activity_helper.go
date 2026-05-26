@@ -61,6 +61,10 @@ type drawActivityRow struct {
 	ContentAuditStatus          int32      `gorm:"column:content_audit_status"`
 	Status                      int32      `gorm:"column:status"`
 	AuditStatus                 int32      `gorm:"column:audit_status"`
+	ConsumeType                 string     `gorm:"column:consume_type"`
+	ConsumeAmount               int32      `gorm:"column:consume_amount"`
+	QuotaPerMember              int32      `gorm:"column:quota_per_member"`
+	DailyQuotaPerMember         int32      `gorm:"column:daily_quota_per_member"`
 	IsEnabled                   int32      `gorm:"column:is_enabled"`
 	ShowOnHome                  int32      `gorm:"column:show_on_home"`
 	HomeEntryTitle              string     `gorm:"column:home_entry_title"`
@@ -90,6 +94,7 @@ type drawPoolRow struct {
 	PoolCode        string     `gorm:"column:pool_code"`
 	PoolName        string     `gorm:"column:pool_name"`
 	ProbabilityRule string     `gorm:"column:probability_rule"`
+	WheelSlotCount  int32      `gorm:"column:wheel_slot_count"`
 	Sort            int32      `gorm:"column:sort"`
 	Status          int32      `gorm:"column:status"`
 	AuditStatus     int32      `gorm:"column:audit_status"`
@@ -140,6 +145,7 @@ type drawPoolTemplateRow struct {
 	ActivityID     int64      `gorm:"column:activity_id"`
 	PoolID         int64      `gorm:"column:pool_id"`
 	TemplateID     int64      `gorm:"column:template_id"`
+	SlotIndex      int32      `gorm:"column:slot_index"`
 	PlatformID     int64      `gorm:"column:platform_id"`
 	TenantID       int64      `gorm:"column:tenant_id"`
 	MerchantID     int64      `gorm:"column:merchant_id"`
@@ -190,6 +196,7 @@ type drawPoolTemplateJoinRow struct {
 	PoolID                  int64   `gorm:"column:pool_id"`
 	PoolTemplateID          int64   `gorm:"column:pool_template_id"`
 	TemplateID              int64   `gorm:"column:template_id"`
+	SlotIndex               int32   `gorm:"column:slot_index"`
 	TemplateCode            string  `gorm:"column:template_code"`
 	TemplateName            string  `gorm:"column:template_name"`
 	Rarity                  string  `gorm:"column:rarity"`
@@ -292,6 +299,7 @@ func validateDrawAggregate(activity *drawActivityRow, templates []*smsclient.Dra
 			return fmt.Errorf("卡池[%s]至少需要配置一个模板", pool.PoolName)
 		}
 		var probabilitySum float64
+		slotIndexSeen := make(map[int32]struct{}, len(pool.Templates))
 		for _, mapping := range pool.Templates {
 			if strings.TrimSpace(mapping.TemplateCode) == "" && mapping.TemplateId <= 0 {
 				return fmt.Errorf("卡池[%s]存在未绑定模板的概率配置", pool.PoolName)
@@ -302,7 +310,22 @@ func validateDrawAggregate(activity *drawActivityRow, templates []*smsclient.Dra
 			if mapping.SaleLimit <= 0 || mapping.ConfigLimit < 0 {
 				return fmt.Errorf("卡池[%s]的模板数量配置非法", pool.PoolName)
 			}
+			if mapping.SlotIndex < 1 || mapping.SlotIndex > 5 {
+				return fmt.Errorf("卡池[%s]格位序号必须在 1-5 之间，当前値: %d", pool.PoolName, mapping.SlotIndex)
+			}
+			if _, ok := slotIndexSeen[mapping.SlotIndex]; ok {
+				return fmt.Errorf("卡池[%s]格位序号 %d 重复", pool.PoolName, mapping.SlotIndex)
+			}
+			slotIndexSeen[mapping.SlotIndex] = struct{}{}
 			probabilitySum += mapping.Probability
+		}
+		if len(slotIndexSeen) != 5 {
+			return fmt.Errorf("卡池[%s]必须配置5个格位（slot_index 1-5全部存在），当前配置了 %d 个", pool.PoolName, len(slotIndexSeen))
+		}
+		for idx := int32(1); idx <= 5; idx++ {
+			if _, ok := slotIndexSeen[idx]; !ok {
+				return fmt.Errorf("卡池[%s]格位序号 %d 缺失，slot_index 1-5 必须连续且全部存在", pool.PoolName, idx)
+			}
 		}
 		if math.Abs(probabilitySum-1) > 0.0001 {
 			return fmt.Errorf("卡池[%s]概率总和必须为1", pool.PoolName)
@@ -406,6 +429,9 @@ func buildDrawReadiness(activity *drawActivityRow, templates []*smsclient.DrawCa
 		}
 		if math.Abs(sum-1) > 0.0001 {
 			addItem("invalidProbabilityRule", "pools", fmt.Sprintf("卡池[%s]概率总和必须为1", pool.PoolName), true)
+		}
+		if len(pool.Templates) != 5 {
+			addItem("invalidSlotCount", "pools", fmt.Sprintf("卡池[%s]必须配置恰好5个格位，当前: %d", pool.PoolName, len(pool.Templates)), true)
 		}
 	}
 
@@ -556,6 +582,7 @@ func loadDrawActivityAggregate(ctx context.Context, db *gorm.DB, current pkgscop
 				dpt.pool_id,
 				dpt.id AS pool_template_id,
 				dpt.template_id,
+				dpt.slot_index,
 				t.template_code,
 				t.template_name,
 				COALESCE(dpt.rarity, t.rarity) AS rarity,
@@ -591,6 +618,7 @@ func loadDrawActivityAggregate(ctx context.Context, db *gorm.DB, current pkgscop
 			pool.Templates = append(pool.Templates, &smsclient.DrawPoolTemplateData{
 				Id:             row.PoolTemplateID,
 				TemplateId:     row.TemplateID,
+				SlotIndex:      row.SlotIndex,
 				TemplateCode:   row.TemplateCode,
 				TemplateName:   row.TemplateName,
 				Rarity:         row.Rarity,
@@ -778,6 +806,7 @@ func replaceDrawPools(ctx context.Context, tx *gorm.DB, activityID int64, scope 
 			PoolCode:        strings.TrimSpace(item.PoolCode),
 			PoolName:        strings.TrimSpace(item.PoolName),
 			ProbabilityRule: strings.TrimSpace(item.ProbabilityRule),
+			WheelSlotCount:  5,
 			Sort:            item.Sort,
 			Status:          item.Status,
 			AuditStatus:     drawApprovalPassed,
@@ -809,6 +838,7 @@ func replaceDrawPools(ctx context.Context, tx *gorm.DB, activityID int64, scope 
 				ActivityID:     activityID,
 				PoolID:         row.ID,
 				TemplateID:     templateID,
+				SlotIndex:      mapping.SlotIndex,
 				PlatformID:     scope.PlatformID,
 				TenantID:       scope.TenantID,
 				MerchantID:     scope.MerchantID,
@@ -899,6 +929,10 @@ func buildActivityRowFromAdd(in *smsclient.AddDrawActivityReq) (*drawActivityRow
 		RealNameRequired:            in.RealNameRequired,
 		ParticipantConditionSummary: strings.TrimSpace(in.ParticipantConditionSummary),
 		ConsumeRuleSummary:          strings.TrimSpace(in.ConsumeRuleSummary),
+		ConsumeType:                 strings.TrimSpace(in.ConsumeType),
+		ConsumeAmount:               in.ConsumeAmount,
+		QuotaPerMember:              in.QuotaPerMember,
+		DailyQuotaPerMember:         in.DailyQuotaPerMember,
 		ProbabilityRule:             strings.TrimSpace(in.ProbabilityRule),
 		ComplianceRuleSummary:       strings.TrimSpace(in.ComplianceRuleSummary),
 		CirculationLimitSummary:     strings.TrimSpace(in.CirculationLimitSummary),
@@ -933,6 +967,10 @@ func buildActivityRowFromUpdate(current *drawActivityRow, in *smsclient.UpdateDr
 	current.RealNameRequired = in.RealNameRequired
 	current.ParticipantConditionSummary = strings.TrimSpace(in.ParticipantConditionSummary)
 	current.ConsumeRuleSummary = strings.TrimSpace(in.ConsumeRuleSummary)
+	current.ConsumeType = strings.TrimSpace(in.ConsumeType)
+	current.ConsumeAmount = in.ConsumeAmount
+	current.QuotaPerMember = in.QuotaPerMember
+	current.DailyQuotaPerMember = in.DailyQuotaPerMember
 	current.ProbabilityRule = strings.TrimSpace(in.ProbabilityRule)
 	current.ComplianceRuleSummary = strings.TrimSpace(in.ComplianceRuleSummary)
 	current.CirculationLimitSummary = strings.TrimSpace(in.CirculationLimitSummary)
@@ -979,7 +1017,13 @@ func saveDrawAggregate(ctx context.Context, tx *gorm.DB, activity *drawActivityR
 	activity.TenantID = scope.TenantID
 	activity.MerchantID = scope.MerchantID
 
-	readiness := buildDrawReadiness(activity, templates, pools, 1)
+	var existingAuditCount int64
+	if !isCreate && activity.ID > 0 {
+		_ = tx.WithContext(ctx).Table(drawActivityAuditRow{}.TableName()).
+			Where("activity_id = ? AND is_deleted = 0", activity.ID).
+			Count(&existingAuditCount).Error
+	}
+	readiness := buildDrawReadiness(activity, templates, pools, existingAuditCount)
 	activity.PublishReadiness = readiness.PublishReadiness
 	activity.PublishFailureSummary = readiness.Summary
 
@@ -1000,6 +1044,10 @@ func saveDrawAggregate(ctx context.Context, tx *gorm.DB, activity *drawActivityR
 			"real_name_required":            activity.RealNameRequired,
 			"participant_condition_summary": activity.ParticipantConditionSummary,
 			"consume_rule_summary":          activity.ConsumeRuleSummary,
+			"consume_type":                  activity.ConsumeType,
+			"consume_amount":                activity.ConsumeAmount,
+			"quota_per_member":              activity.QuotaPerMember,
+			"daily_quota_per_member":        activity.DailyQuotaPerMember,
 			"probability_rule":              activity.ProbabilityRule,
 			"compliance_rule_summary":       activity.ComplianceRuleSummary,
 			"circulation_limit_summary":     activity.CirculationLimitSummary,
