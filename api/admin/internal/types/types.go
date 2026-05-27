@@ -6196,15 +6196,15 @@ type ProductFulfillmentRuleData struct {
 }
 
 type QueryProductFulfillmentRuleListReq struct {
-	RuleName       string `json:"ruleName,optional"`              // 规则名称（模糊查询）
-	CardTemplateId int64  `json:"cardTemplateId,optional"`        // 关联卡片模板ID
-	RuleStatus     int32  `json:"ruleStatus,optional,default=-1"` // 规则状态：-1-全部（默认）, 0-禁用, 1-启用 (Story 10.10 修复 C2: 默认 -1 防止 RPC 把零值当过滤条件)
-	Page           int32  `json:"page,optional"`                  // 页码
-	PageSize       int32  `json:"pageSize,optional"`              // 每页数量
-	ScopeType      string `json:"scopeType,optional"`             // 治理范围
-	PlatformId     int64  `json:"platformId,optional"`            // 平台ID
-	TenantId       int64  `json:"tenantId,optional"`              // 租户ID
-	MerchantId     int64  `json:"merchantId,optional"`            // 商户ID
+	RuleName       string `form:"ruleName,optional"`              // 规则名称（模糊查询）
+	CardTemplateId int64  `form:"cardTemplateId,optional"`        // 关联卡片模板ID
+	RuleStatus     int32  `form:"ruleStatus,optional,default=-1"` // 规则状态：-1-全部（默认）, 0-禁用, 1-启用 (Story 10.10 修复 C2: 默认 -1 防止 RPC 把零值当过滤条件)
+	Page           int32  `form:"page,optional"`                  // 页码
+	PageSize       int32  `form:"pageSize,optional"`              // 每页数量
+	ScopeType      string `form:"scopeType,optional"`             // 治理范围
+	PlatformId     int64  `form:"platformId,optional"`            // 平台ID
+	TenantId       int64  `form:"tenantId,optional"`              // 租户ID
+	MerchantId     int64  `form:"merchantId,optional"`            // 商户ID
 }
 
 type QueryProductFulfillmentRuleListResp struct {
@@ -6221,11 +6221,11 @@ type ProductFulfillmentRuleListData struct {
 }
 
 type QueryProductFulfillmentRuleDetailReq struct {
-	Id         int64  `json:"id"`                  // 规则ID
-	ScopeType  string `json:"scopeType,optional"`  // 治理范围
-	PlatformId int64  `json:"platformId,optional"` // 平台ID
-	TenantId   int64  `json:"tenantId,optional"`   // 租户ID
-	MerchantId int64  `json:"merchantId,optional"` // 商户ID
+	Id         int64  `form:"id"`                  // 规则ID
+	ScopeType  string `form:"scopeType,optional"`  // 治理范围
+	PlatformId int64  `form:"platformId,optional"` // 平台ID
+	TenantId   int64  `form:"tenantId,optional"`   // 租户ID
+	MerchantId int64  `form:"merchantId,optional"` // 商户ID
 }
 
 type QueryProductFulfillmentRuleDetailResp struct {
