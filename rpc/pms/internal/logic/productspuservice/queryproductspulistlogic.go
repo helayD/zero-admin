@@ -49,7 +49,13 @@ func (l *QueryProductSpuListLogic) QueryProductSpuList(in *pmsclient.QueryProduc
 		"",
 	).Where("is_deleted = ?", 0)
 	if len(in.Name) > 0 {
-		q = q.Where("name LIKE ?", "%"+in.Name+"%")
+		kw := "%" + in.Name + "%"
+		q = q.Where(
+			l.svcCtx.DB.Where("name LIKE ?", kw).
+				Or("brand_name LIKE ?", kw).
+				Or("category_name LIKE ?", kw).
+				Or("keywords LIKE ?", kw),
+		)
 	}
 	if in.CategoryId != 0 {
 		q = q.Where("category_id = ?", in.CategoryId)

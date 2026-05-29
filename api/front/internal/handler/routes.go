@@ -22,6 +22,7 @@ import (
 	productcategory "github.com/feihua/zero-admin/api/front/internal/handler/product/category"
 	productcomment "github.com/feihua/zero-admin/api/front/internal/handler/product/comment"
 	productproduct "github.com/feihua/zero-admin/api/front/internal/handler/product/product"
+	productsearch "github.com/feihua/zero-admin/api/front/internal/handler/product/search"
 	"github.com/feihua/zero-admin/api/front/internal/svc"
 
 	"github.com/zeromicro/go-zero/rest"
@@ -512,6 +513,17 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodGet,
 				Path:    "/queryProductList",
 				Handler: productproduct.QueryProductListHandler(serverCtx),
+			},
+		},
+		rest.WithPrefix("/api/product"),
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodGet,
+				Path:    "/search",
+				Handler: productsearch.SearchHandler(serverCtx),
 			},
 		},
 		rest.WithPrefix("/api/product"),
