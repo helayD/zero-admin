@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mall/config/service_url.dart';
+import 'package:flutter_mall/model/search_result_model.dart';
 import 'package:flutter_mall/utils/http_util.dart';
 import 'package:flutter_mall/view/category/product/product_detail.dart';
 import 'package:flutter_mall/widgets/cached_image_widget.dart';
@@ -51,32 +52,12 @@ class _ProductListState extends State<ProductList> {
       _hasError = false;
     });
     try {
-      final Map<String, dynamic> queryParameters = <String, dynamic>{};
-      if (widget.productCategoryId > 0) {
-        queryParameters['productCategoryId'] = widget.productCategoryId;
-      }
       final String keyword = widget.keyword.trim();
       if (keyword.isNotEmpty) {
-        queryParameters['keyword'] = keyword;
+        await _queryBySearch(keyword);
+      } else {
+        await _queryByCategory();
       }
-      if (widget.newStatus != null) {
-        queryParameters['newStatus'] = widget.newStatus;
-      }
-      if (widget.recommendStatus != null) {
-        queryParameters['recommendStatus'] = widget.recommendStatus;
-      }
-
-      Response result = await HttpUtil.get(
-        productListQueryUrl,
-        queryParameters: queryParameters,
-      );
-      ProductListModel collectionListModel =
-          ProductListModel.fromJson(result.data);
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-        productDataItem = collectionListModel.data;
-      });
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -84,6 +65,78 @@ class _ProductListState extends State<ProductList> {
         _hasError = true;
       });
     }
+  }
+
+  Future<void> _queryBySearch(String keyword) async {
+    final Response result = await HttpUtil.get(
+      searchUrl,
+      queryParameters: <String, dynamic>{
+        'keyword': keyword,
+        'pageNum': 1,
+        'pageSize': 20,
+      },
+    );
+    final SearchResultModel model = SearchResultModel.fromJson(result.data);
+    if (!mounted) return;
+    setState(() {
+      _isLoading = false;
+      productDataItem = model.data.map((item) => ProductListData(
+        id: item.id,
+        name: item.name,
+        productSn: '',
+        categoryId: item.categoryId,
+        categoryIds: '',
+        categoryName: item.categoryName,
+        brandId: item.brandId,
+        brandName: item.brandName,
+        unit: '',
+        weight: 0.0,
+        keywords: '',
+        albumPics: '',
+        mainPic: item.mainPic,
+        price: item.price,
+        priceRange: item.price,
+        publishStatus: 1,
+        newStatus: 0,
+        recommendStatus: 0,
+        verifyStatus: 1,
+        previewStatus: 0,
+        sort: 0,
+        newStatusSort: 0,
+        recommendStatusSort: 0,
+        sales: item.sales,
+        stock: item.stock,
+        lowStock: 0,
+        promotionType: 0,
+        subTitle: item.brief,
+        detailHtml: '',
+        detailMobileHtml: '',
+      )).toList();
+    });
+  }
+
+  Future<void> _queryByCategory() async {
+    final Map<String, dynamic> queryParameters = <String, dynamic>{};
+    if (widget.productCategoryId > 0) {
+      queryParameters['productCategoryId'] = widget.productCategoryId;
+    }
+    if (widget.newStatus != null) {
+      queryParameters['newStatus'] = widget.newStatus;
+    }
+    if (widget.recommendStatus != null) {
+      queryParameters['recommendStatus'] = widget.recommendStatus;
+    }
+
+    final Response result = await HttpUtil.get(
+      productListQueryUrl,
+      queryParameters: queryParameters,
+    );
+    final ProductListModel model = ProductListModel.fromJson(result.data);
+    if (!mounted) return;
+    setState(() {
+      _isLoading = false;
+      productDataItem = model.data;
+    });
   }
 
   @override

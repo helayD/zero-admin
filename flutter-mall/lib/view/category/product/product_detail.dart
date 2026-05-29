@@ -19,6 +19,18 @@ import 'package:flutter_mall/widgets/cached_image_widget.dart';
 import '../../../layout/main_tab.dart';
 import '../../../model/product_detail.dart';
 
+/// 规格选择弹窗的来源动作：决定点击"确定"后的行为
+enum SkuSheetAction {
+  /// 仅选择规格（点击"购买类型"行打开），确定后只关闭弹窗
+  select,
+
+  /// 加入购物车（点击"加入购物车"按钮打开），确定后关闭弹窗并加购
+  addCart,
+
+  /// 立即购买（点击"立即购买"按钮打开），确定后关闭弹窗并下单
+  buyNow,
+}
+
 ///
 /// 商品详情页面
 ///
@@ -821,7 +833,8 @@ class _ProductDetailState extends State<ProductDetail> {
                       onPressed: disabled || isAddingNow
                           ? null
                           : needSelectSku
-                              ? () => _openBottomSheetWithInfo(context, "购买类型")
+                              ? () => _openBottomSheetWithInfo(context, "购买类型",
+                                  skuAction: SkuSheetAction.addCart)
                               : () => _addCart(product!),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 11),
@@ -865,7 +878,8 @@ class _ProductDetailState extends State<ProductDetail> {
                       onPressed: disabled
                           ? null
                           : needSelectSku
-                              ? () => _openBottomSheetWithInfo(context, "购买类型")
+                              ? () => _openBottomSheetWithInfo(context, "购买类型",
+                                  skuAction: SkuSheetAction.buyNow)
                               : _buyNow,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
@@ -1272,7 +1286,11 @@ class _ProductDetailState extends State<ProductDetail> {
     );
   }
 
-  void _openBottomSheetWithInfo(BuildContext context, String title) {
+  void _openBottomSheetWithInfo(
+    BuildContext context,
+    String title, {
+    SkuSheetAction skuAction = SkuSheetAction.select,
+  }) {
     showFlexibleBottomSheet<void>(
       isExpand: false,
       initHeight: 0.8,
@@ -1280,7 +1298,7 @@ class _ProductDetailState extends State<ProductDetail> {
       context: context,
       builder: (context, controller, offset) {
         if (title.contains("购买类型")) {
-          return buildBuyType("title", "value", controller);
+          return buildBuyType("title", "value", controller, skuAction);
         }
         if (title.contains("商品参数")) {
           return buildProductParams("title", "value", controller);
@@ -1451,6 +1469,7 @@ class _ProductDetailState extends State<ProductDetail> {
     String title,
     String value,
     ScrollController controller,
+    SkuSheetAction skuAction,
   ) {
     final specOptions = _buildSpecOptions();
 
@@ -1595,6 +1614,21 @@ class _ProductDetailState extends State<ProductDetail> {
                           (selectedSku != null && selectedSku!.purchasable)
                               ? () {
                                   Navigator.of(context).pop();
+                                  // 根据弹窗来源执行后续动作：
+                                  // 加入购物车 → 直接加购；立即购买 → 下单；
+                                  // 仅选规格 → 关闭弹窗即可。
+                                  switch (skuAction) {
+                                    case SkuSheetAction.addCart:
+                                      if (product != null) {
+                                        _addCart(product!);
+                                      }
+                                      break;
+                                    case SkuSheetAction.buyNow:
+                                      _buyNow();
+                                      break;
+                                    case SkuSheetAction.select:
+                                      break;
+                                  }
                                 }
                               : null,
                       style: ElevatedButton.styleFrom(

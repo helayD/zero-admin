@@ -46,6 +46,8 @@ const generateConfirmOrderUrl = "$baseUrl/api/order/generateConfirmOrder";
 const generateOrderUrl = "$baseUrl/api/order/generateOrder";
 // 添加商品进购物车
 const cartAddUrl = "$baseUrl/api/order/addCart";
+// 商品搜索（全文检索，走 Elasticsearch）
+const searchUrl = "$baseUrl/api/product/search";
 // 商品列表
 const productListQueryUrl = "$baseUrl/api/product/queryProductList";
 const productListDataUrl =
