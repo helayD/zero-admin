@@ -58,6 +58,9 @@ dependencies:
   # 二维码渲染（Story 10.7 Review Fix：分享提货卡）
   qr_flutter: ^4.1.0
 
+  # 二维码扫描（Story 10.7 Task 10：首页扫一扫识别分享二维码）
+  mobile_scanner: ^5.2.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

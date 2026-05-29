@@ -15,6 +15,7 @@ class AppColors {
   static const Color textHint = Color(0xFF7D8592);
   static const Color success = Color(0xFF0F8A5F);
   static const Color price = Color(0xFFC2410C);
+  static const Color favorite = Color(0xFFE53935);
 }
 
 class AppSpacing {

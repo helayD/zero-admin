@@ -25,7 +25,7 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>用于拍摄评价图片和售后凭证，帮助你补充问题说明。</string>
+	<string>用于扫描提货卡分享二维码、拍摄评价图片和售后凭证，帮助你快速领取朋友分享的卡片或补充问题说明。</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>用于保存拍摄后的图片，以便你继续完成评价或售后申请。</string>
 	<key>NSPhotoLibraryUsageDescription</key>

@@ -114,6 +114,7 @@ class _ProductDetailState extends State<ProductDetail> {
       if (productDetailData.visibility.visible) {
         await _refreshCouponReceiveStatus();
         await _refreshCollectionStatus();
+        await _addReadHistory();
       }
       if (productDetailData.visibility.visible) {
         await AppRecoveryStore.saveRecentContext(
@@ -166,6 +167,25 @@ class _ProductDetailState extends State<ProductDetail> {
           currentContext?.targetId == widget.productId) {
         await AppRecoveryStore.clearRecentContext();
       }
+    }
+  }
+
+  /// 添加浏览足迹（静默调用，失败不阻塞）
+  Future<void> _addReadHistory() async {
+    if (product == null) return;
+    try {
+      // price 是 "99.00" 格式，转换为分（int）
+      final priceDouble = double.tryParse(product!.price) ?? 0.0;
+      final priceInt = (priceDouble * 100).toInt();
+      await HttpUtil.post(addReadHistoryDataUrl, data: {
+        "productId": product!.id,
+        "productName": product!.name,
+        "productPic": product!.mainPic,
+        "productSubTitle": product!.subTitle,
+        "productPrice": priceInt,
+      });
+    } catch (_) {
+      // 静默失败，不阻塞用户浏览
     }
   }
 
@@ -1138,7 +1158,7 @@ class _ProductDetailState extends State<ProductDetail> {
                             : Icons.favorite_border_rounded,
                         size: 22,
                         color: _isCollected
-                            ? AppColors.primary
+                            ? AppColors.favorite
                             : AppColors.textSecondary,
                       ),
                 const SizedBox(height: 2),
@@ -1147,7 +1167,7 @@ class _ProductDetailState extends State<ProductDetail> {
                   style: TextStyle(
                     fontSize: 11,
                     color: _isCollected
-                        ? AppColors.primary
+                        ? AppColors.favorite
                         : AppColors.textSecondary,
                     fontWeight: FontWeight.w600,
                   ),

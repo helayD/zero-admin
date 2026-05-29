@@ -112,6 +112,8 @@ const queryAddressDetailDataUrl = "$baseUrl/api/member/querAddressDetail";
 const updateAddressStatusDataUrl = "$baseUrl/api/member/updateAddressStatus";
 // 我的足迹
 const historyListDataUrl = "$baseUrl/api/member/queryReadHistoryList";
+// 添加足迹
+const addReadHistoryDataUrl = "$baseUrl/api/member/addReadHistory";
 // 删除足迹
 const deleteReadHistoryDataUrl = "$baseUrl/api/member/deleteReadHistory";
 // 清空足迹

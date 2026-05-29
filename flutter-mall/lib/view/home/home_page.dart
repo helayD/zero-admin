@@ -10,6 +10,7 @@ import 'package:flutter_mall/theme/app_theme.dart';
 import 'package:flutter_mall/utils/app_recovery_store.dart';
 import 'package:flutter_mall/utils/commerce_state_resolver.dart';
 import 'package:flutter_mall/utils/http_util.dart';
+import 'package:flutter_mall/view/digital_card/digital_card_scan_page.dart';
 import 'package:flutter_mall/view/digital_card/draw_activity_page.dart';
 import 'package:flutter_mall/view/home/brand/brand_detail.dart';
 import 'package:flutter_mall/view/home/brand/brand_list.dart';
@@ -327,6 +328,17 @@ class _HomePageState extends State<HomePage> {
   void _showFeatureInProgress(String label) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('$label 功能建设中，后续会接入完整流程')),
+    );
+  }
+
+  /// 打开扫码页（Story 10.7 Task 10，AC7）：
+  /// 识别提货卡分享二维码后跳转 [DigitalCardClaimPage] 走领取闭环；
+  /// 非提货卡链接弹窗确认是否打开浏览器；非 URL 文本提示不可识别。
+  void _openScanPage() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => const DigitalCardScanPage(),
+      ),
     );
   }
 
@@ -745,9 +757,7 @@ class _HomePageState extends State<HomePage> {
                 _TopIconButton(
                   icon: Icons.qr_code_scanner_rounded,
                   semanticLabel: '扫一扫',
-                  onTap: () {
-                    _showFeatureInProgress('扫一扫');
-                  },
+                  onTap: _openScanPage,
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 _TopIconButton(
