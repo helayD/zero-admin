@@ -24,13 +24,6 @@ modules:
     source: external
     npmPackage: bmad-builder
     repoUrl: https://github.com/bmad-code-org/bmad-builder
-  - name: cis
-    version: 0.1.8
-    installDate: 2026-03-11T07:33:04.990Z
-    lastUpdated: 2026-03-11T07:33:14.981Z
-    source: external
-    npmPackage: bmad-creative-intelligence-suite
-    repoUrl: https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite
   - name: gds
     version: 0.1.10
     installDate: 2026-03-11T07:33:06.824Z
@@ -38,13 +31,6 @@ modules:
     source: external
     npmPackage: bmad-game-dev-studio
     repoUrl: https://github.com/bmad-code-org/bmad-module-game-dev-studio.git
-  - name: tea
-    version: 1.5.3
-    installDate: 2026-03-11T07:33:08.754Z
-    lastUpdated: 2026-03-11T07:33:15.752Z
-    source: external
-    npmPackage: bmad-method-test-architecture-enterprise
-    repoUrl: https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise
 ides:
   - claude-code
   - windsurf
