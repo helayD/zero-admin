@@ -60,3 +60,6 @@ CLAUDE.md
 
 # 本地外部工具（kiro.rs 代理等），独立于项目仓库
 .external/
+
+# graphify 知识图谱生成目录
+graphify-out/
