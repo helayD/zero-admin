@@ -1436,12 +1436,12 @@ type QueryProductListResp struct {
 }
 
 type SearchReq struct {
-	Keyword    string `form:"keyword,optional" json:"keyword,optional"`       //关键字
-	PageNum    int64  `form:"pageNum,default=1" json:"pageNum"`               //页码
-	PageSize   int64  `form:"pageSize,default=20" json:"pageSize"`            //每页数量
-	Sort       int32  `form:"sort,default=0" json:"sort"`                     //排序字段:0->按相关度；1->按新品；2->按销量；3->价格从低到高；4->价格从高到低
-	CategoryId int64  `form:"categoryId,optional" json:"categoryId,optional"` //商品分类ID
-	BrandId    int64  `form:"brandId,optional" json:"brandId,optional"`       //品牌ID
+	Keyword    string `form:"keyword,optional"`       //关键字
+	PageNum    int64  `form:"pageNum,default=1"`      //页码
+	PageSize   int64  `form:"pageSize,default=20"`    //每页数量
+	Sort       int32  `form:"sort,default=0"`         //排序字段:0->按相关度；1->按新品；2->按销量；3->价格从低到高；4->价格从高到低
+	CategoryId int64  `form:"categoryId,optional"`    //商品分类ID
+	BrandId    int64  `form:"brandId,optional"`       //品牌ID
 }
 
 type ProductItem struct {
