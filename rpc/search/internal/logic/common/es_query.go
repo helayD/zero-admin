@@ -69,12 +69,29 @@ func NormalizePage(pageNum, pageSize int64) (int64, int64) {
 }
 
 func ScopeFilters(scopeType string, platformID, tenantID, merchantID int64) []interface{} {
-	return []interface{}{
-		map[string]interface{}{"term": map[string]interface{}{"scope.platform_id": platformID}},
-		map[string]interface{}{"term": map[string]interface{}{"scope.tenant_id": tenantID}},
-		map[string]interface{}{"term": map[string]interface{}{"scope.merchant_id": merchantID}},
+	filters := []interface{}{
 		map[string]interface{}{"term": map[string]interface{}{"scope.scope_type": scopeType}},
 	}
+
+	if platformID > 0 {
+		filters = append(filters, map[string]interface{}{"term": map[string]interface{}{"scope.platform_id": platformID}})
+	}
+
+	switch scopeType {
+	case "tenant":
+		if tenantID > 0 {
+			filters = append(filters, map[string]interface{}{"term": map[string]interface{}{"scope.tenant_id": tenantID}})
+		}
+	case "merchant":
+		if tenantID > 0 {
+			filters = append(filters, map[string]interface{}{"term": map[string]interface{}{"scope.tenant_id": tenantID}})
+		}
+		if merchantID > 0 {
+			filters = append(filters, map[string]interface{}{"term": map[string]interface{}{"scope.merchant_id": merchantID}})
+		}
+	}
+
+	return filters
 }
 
 func AppendTermFilter(filters []interface{}, field string, value int64) []interface{} {

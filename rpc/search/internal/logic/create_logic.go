@@ -54,7 +54,7 @@ func (l *CreateLogic) Create(in *search.CreateReq) (*search.CreateResp, error) {
 		metaLine, _ := sonic.Marshal(meta)
 		buf.Write(metaLine)
 		buf.WriteByte('\n')
-		data, _ := sonic.Marshal(p)
+		data, _ := sonic.Marshal(logiccommon.ProductDataToMap(p))
 		buf.Write(data)
 		buf.WriteByte('\n')
 	}
