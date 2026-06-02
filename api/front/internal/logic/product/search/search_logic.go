@@ -7,11 +7,9 @@ import (
 	"github.com/feihua/zero-admin/api/front/internal/logic/common"
 	"github.com/feihua/zero-admin/api/front/internal/svc"
 	"github.com/feihua/zero-admin/api/front/internal/types"
-	"github.com/feihua/zero-admin/pkg/errorx"
 	"github.com/feihua/zero-admin/rpc/search/search_client"
 	"github.com/zeromicro/go-zero/core/logc"
 	"github.com/zeromicro/go-zero/core/logx"
-	"google.golang.org/grpc/status"
 )
 
 type SearchLogic struct {
@@ -50,8 +48,7 @@ func (l *SearchLogic) Search(req *types.SearchReq) (resp *types.SearchResp, err 
 	searchResp, err := l.svcCtx.SearchClient.Search(l.ctx, searchReq)
 	if err != nil {
 		logc.Errorf(l.ctx, "搜索服务异常, 参数: %+v, 异常: %s", req, err.Error())
-		s, _ := status.FromError(err)
-		return nil, errorx.NewDefaultError(s.Message())
+		return emptySearchResp("搜索服务暂时不可用，请稍后再试"), nil
 	}
 
 	var productItems []types.ProductItem
@@ -91,4 +88,15 @@ func (l *SearchLogic) Search(req *types.SearchReq) (resp *types.SearchResp, err 
 		Empty:     isEmpty,
 		EmptyHint: emptyHint,
 	}, nil
+}
+
+func emptySearchResp(emptyHint string) *types.SearchResp {
+	return &types.SearchResp{
+		Code:      0,
+		Message:   "操作成功",
+		Data:      []types.ProductItem{},
+		Total:     0,
+		Empty:     true,
+		EmptyHint: emptyHint,
+	}
 }

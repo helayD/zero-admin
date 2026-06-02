@@ -42,7 +42,7 @@ func main() {
 		default:
 			return http.StatusOK, &errorx.CodeErrorResponse{
 				Code:    errorx.DefaultCode,
-				Message: e.Error(),
+				Message: err.Error(),
 			}
 		}
 	})
