@@ -1,19 +1,18 @@
 -- Story 3.1.1: 手机号验证码登录注册合并
 --
 -- 1) 把已有的 sms_provider_default_template metadata_config 升级为
---    包含 providerCode/expireSeconds 的完整配置，让 ums-rpc 的 SmsConfigResolver
---    能解析出 sms.Config 并路由到 pkg/sms.MockProvider（验证码固定 123456）。
+--    包含 providerCode/expireSeconds 的完整配置，并停用 mock 模板。
 --
 -- 2) 在「系统管理」菜单下新增「短信网关配置」快捷入口，URL 指向
 --    既有的 channel_integration_template 治理页并默认筛选 target_code=sms_provider。
 --
 -- 安全约束:
---   - mock provider 仅供开发/测试环境激活；生产上线前必须由运维通过后台
---     新增真实 provider 模板（aliyun / tencent ...）并切换 status='enabled'。
---   - metadata_config 内禁止保存明文 AK/SK，凭据必须通过 secret_ref_config
---     的 credential ref 引用（mock 不需要凭据）。
+--   - mock provider 仅供开发/测试环境激活，生产环境通过 sys_system_config.sms
+--     存放阿里云短信配置。
+--   - 仓库迁移文件禁止保存明文 AK/SK，AccessKey 请通过后台"系统配置"页
+--     或目标环境一次性 SQL 写入 sys_system_config。
 
--- 1. 升级现有 sms_provider_default_template 的 metadata_config，加入 providerCode='mock'
+-- 1. 升级并停用现有 sms_provider_default_template，避免生产继续走 mock
 UPDATE sys_channel_integration_template
 SET metadata_config = JSON_OBJECT(
         'providerCode', 'mock',
@@ -23,11 +22,107 @@ SET metadata_config = JSON_OBJECT(
         'timeoutSeconds', 5,
         'retryPolicy', JSON_OBJECT('maxRetry', 0)
     ),
-    remark = '前期调试默认网关，验证码固定 123456；生产环境上线前必须切换到真实 provider（aliyun/tencent）',
+    status = 'disabled',
+    remark = '前期调试默认网关，验证码固定 123456；已由阿里云真实 provider 接管，生产环境禁止启用',
     update_by = 'system',
     update_time = NOW()
 WHERE template_code = 'sms_provider_default_template'
   AND target_code = 'sms_provider';
+
+-- 1.1 生产可用的阿里云短信网关模板（保留 disabled，仅作为旧 resolver 兜底/审计模板）
+--     真实运行配置以 sys_system_config.config_group='sms' 为准。
+INSERT INTO sys_channel_integration_template (
+    template_code,
+    template_name,
+    template_type,
+    target_code,
+    scope_type,
+    platform_id,
+    tenant_id,
+    merchant_id,
+    status,
+    metadata_config,
+    secret_ref_config,
+    intent_contract_config,
+    impact_scope_config,
+    remark,
+    create_by,
+    create_time,
+    update_by,
+    update_time
+)
+VALUES (
+    'sms_provider_aliyun_template',
+    '阿里云验证码短信',
+    'integration',
+    'sms_provider',
+    'global',
+    0,
+    0,
+    0,
+    'disabled',
+    JSON_OBJECT(
+        'providerCode', 'aliyun',
+        'providerMode', 'sms',
+        'schemaVersion', 'v1',
+        'signName', '杭州山河集信息科技',
+        'templateCode', 'SMS_335160513',
+        'credentialRef', 'ref:env:ALIYUN_SMS',
+        'expireSeconds', 300,
+        'timeoutSeconds', 5,
+        'retryPolicy', JSON_OBJECT('maxRetry', 0)
+    ),
+    JSON_OBJECT(
+        'accessKeyIdRef', 'ref:env:ALIYUN_SMS_ACCESS_KEY_ID',
+        'accessKeySecretRef', 'ref:env:ALIYUN_SMS_ACCESS_KEY_SECRET'
+    ),
+    JSON_OBJECT(),
+    JSON_OBJECT(),
+    '阿里云短信验证码模板；当前运行配置以 sys_system_config.sms 为准',
+    'system',
+    NOW(),
+    'system',
+    NOW()
+)
+ON DUPLICATE KEY UPDATE
+    template_name = VALUES(template_name),
+    status = VALUES(status),
+    metadata_config = VALUES(metadata_config),
+    secret_ref_config = VALUES(secret_ref_config),
+    remark = VALUES(remark),
+    update_by = VALUES(update_by),
+    update_time = VALUES(update_time);
+
+-- 1.2 后台系统配置表：短信真实运行配置。
+--     AccessKey ID / Secret 属于敏感配置，不写入仓库迁移；请通过后台"系统配置"页保存，
+--     或在目标环境执行一次性 SQL 写入 sys_system_config.sms.accessKeyId/accessKeySecret。
+INSERT INTO sys_system_config (
+    config_group,
+    config_key,
+    config_value,
+    value_type,
+    is_secret,
+    remark,
+    create_by,
+    create_time,
+    update_by,
+    update_time,
+    is_deleted
+)
+VALUES
+    ('sms', 'enabled', 'true', 'bool', 0, '短信配置启用状态', 'system', NOW(), 'system', NOW(), 1),
+    ('sms', 'provider', 'aliyun', 'string', 0, '短信服务商', 'system', NOW(), 'system', NOW(), 1),
+    ('sms', 'endpoint', 'dysmsapi.aliyuncs.com', 'string', 0, '短信 Endpoint', 'system', NOW(), 'system', NOW(), 1),
+    ('sms', 'signName', '杭州山河集信息科技', 'string', 0, '短信签名', 'system', NOW(), 'system', NOW(), 1),
+    ('sms', 'templateCode', 'SMS_335160513', 'string', 0, '短信模板编码', 'system', NOW(), 'system', NOW(), 1)
+ON DUPLICATE KEY UPDATE
+    config_value = VALUES(config_value),
+    value_type = VALUES(value_type),
+    is_secret = VALUES(is_secret),
+    remark = VALUES(remark),
+    update_by = VALUES(update_by),
+    update_time = CURRENT_TIMESTAMP,
+    is_deleted = 1;
 
 -- 2. 在「系统管理」下新增「短信网关配置」快捷入口
 --    指向既有 channel_integration_template 页面，URL 携带 targetCode=sms_provider

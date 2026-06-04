@@ -10,7 +10,7 @@ import "context"
 // 实现约束:
 //   - 验证码生成在 Provider 内部完成（mock 固定 123456，真实 provider 用
 //     crypto/rand 生成 6 位数字）。
-//   - Provider 必须自行解析 cfg.CredentialRef 拉取凭据，禁止业务层下传明文 AK/SK。
+//   - Provider 可使用 cfg.AccessKeyID / cfg.AccessKeySecret，或自行解析 cfg.CredentialRef 拉取凭据。
 //   - 生产 provider 实现禁止打印验证码原文到日志。
 type Provider interface {
 	// Code 返回 provider 唯一标识，用于 ConfigResolver 路由匹配。

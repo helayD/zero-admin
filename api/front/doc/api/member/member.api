@@ -8,7 +8,7 @@ info (
 // 全站统一为「手机号 + 短信验证码」合并登录注册接口。
 //
 // 接口契约:
-//   POST /api/member/auth/sms/send   发送验证码（mock 固定 1234）
+//   POST /api/member/auth/sms/send   发送验证码（mock 固定 123456，生产走阿里云等真实 provider）
 //   POST /api/member/auth/login      验证码登录注册合并（已注册→登录；未注册→自动建号）
 
 type LoginData {
@@ -19,7 +19,7 @@ type LoginData {
 
 type SmsLoginReq {
 	Mobile string `json:"mobile"` //手机号
-	Code   string `json:"code"`   //6 位短信验证码（mock 模式实际为 4 位 1234）
+	Code   string `json:"code"`   //6 位短信验证码（mock 模式固定为 123456）
 	Source int32  `json:"source,default=1"` //登录来源：0-PC，1-APP，2-小程序
 }
 
@@ -104,7 +104,7 @@ type MemberResp {
 	authType: apiKey
 )
 service front-api {
-	// Story 3.1.1: 发送手机号短信验证码（mock 固定 1234）
+	// Story 3.1.1: 发送手机号短信验证码（mock 固定 123456，生产走真实 provider）
 	@handler AuthSendSmsCode
 	post /auth/sms/send (SendSmsCodeReq) returns (SendSmsCodeResp)
 

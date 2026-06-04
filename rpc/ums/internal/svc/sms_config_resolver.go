@@ -14,6 +14,7 @@ import (
 	"github.com/feihua/zero-admin/pkg/sms"
 	"github.com/feihua/zero-admin/rpc/sys/client/channelintegrationtemplateservice"
 	"github.com/feihua/zero-admin/rpc/sys/sysclient"
+	"gorm.io/gorm"
 )
 
 // smsConfigCacheTTL ConfigResolver 正向缓存有效期。
@@ -30,11 +31,14 @@ const smsConfigNegativeCacheTTL = 5 * time.Second
 // target_code='sms_provider' 的模板。
 const smsTargetCode = channeltemplate.TargetSMSProvider
 
+const smsSystemConfigGroup = "sms"
+
 // SmsConfigResolver 实现 pkg/sms.ConfigResolver。
 // 通过 sys-rpc 的 ChannelIntegrationTemplateService 拉取当前激活的
 // 短信网关模板（target_code='sms_provider' AND status='enabled'），
 // 解析其 default_config_json 字段为 sms.Config。
 type SmsConfigResolver struct {
+	db             *gorm.DB
 	templateClient channelintegrationtemplateservice.ChannelIntegrationTemplateService
 
 	mu        sync.Mutex
@@ -49,9 +53,9 @@ type SmsConfigResolver struct {
 }
 
 // NewSmsConfigResolver 构造一个新的 ConfigResolver。
-// templateClient 必须是已连接 sys-rpc 的 client；nil 会导致 Resolve 立即报错。
-func NewSmsConfigResolver(templateClient channelintegrationtemplateservice.ChannelIntegrationTemplateService) *SmsConfigResolver {
-	return &SmsConfigResolver{templateClient: templateClient}
+// db 用于优先读取 sys_system_config.sms；templateClient 用于兼容旧的渠道模板配置。
+func NewSmsConfigResolver(db *gorm.DB, templateClient channelintegrationtemplateservice.ChannelIntegrationTemplateService) *SmsConfigResolver {
+	return &SmsConfigResolver{db: db, templateClient: templateClient}
 }
 
 // Resolve 实现 pkg/sms.ConfigResolver.Resolve。
@@ -62,8 +66,8 @@ func NewSmsConfigResolver(templateClient channelintegrationtemplateservice.Chann
 //   - 正向缓存 smsConfigCacheTTL（30s）：命中直接返回 cfg
 //   - 负向缓存 smsConfigNegativeCacheTTL（5s）：失败也短时缓存以保护 sys-rpc
 func (r *SmsConfigResolver) Resolve(ctx context.Context, scene sms.Scene) (sms.Config, error) {
-	if r == nil || r.templateClient == nil {
-		return sms.Config{}, errors.New("ums-rpc: SmsConfigResolver 未注入 sys-rpc client")
+	if r == nil {
+		return sms.Config{}, errors.New("ums-rpc: SmsConfigResolver 未注入")
 	}
 
 	if cfg, ok := r.readCache(); ok {
@@ -71,6 +75,31 @@ func (r *SmsConfigResolver) Resolve(ctx context.Context, scene sms.Scene) (sms.C
 	}
 	if err, ok := r.readNegativeCache(); ok {
 		return sms.Config{}, err
+	}
+
+	if cfg, ok, err := r.resolveFromSystemConfig(ctx); ok || err != nil {
+		if err != nil {
+			r.writeNegativeCache(err)
+			return sms.Config{}, err
+		}
+		r.writeCache(cfg)
+		_ = scene
+		return cfg, nil
+	}
+
+	cfg, err := r.resolveFromTemplate(ctx)
+	if err != nil {
+		r.writeNegativeCache(err)
+		return sms.Config{}, err
+	}
+	r.writeCache(cfg)
+	_ = scene // 当前所有场景共享同一模板，预留参数以便未来按 scene 拆分
+	return cfg, nil
+}
+
+func (r *SmsConfigResolver) resolveFromTemplate(ctx context.Context) (sms.Config, error) {
+	if r.templateClient == nil {
+		return sms.Config{}, errors.New("ums-rpc: sys_system_config.sms 未启用，且未注入 sys-rpc 模板 client")
 	}
 
 	resp, err := r.templateClient.QueryChannelIntegrationTemplateList(ctx, &sysclient.QueryChannelIntegrationTemplateListReq{
@@ -81,23 +110,16 @@ func (r *SmsConfigResolver) Resolve(ctx context.Context, scene sms.Scene) (sms.C
 		Status:       channeltemplate.StatusEnabled,
 	})
 	if err != nil {
-		wrapped := fmt.Errorf("ums-rpc: 拉取 sms provider 模板失败: %w", err)
-		r.writeNegativeCache(wrapped)
-		return sms.Config{}, wrapped
+		return sms.Config{}, fmt.Errorf("ums-rpc: 拉取 sms provider 模板失败: %w", err)
 	}
 	if resp == nil || len(resp.List) == 0 {
-		wrapped := errors.New("ums-rpc: 未找到 enabled 的 sms_provider 模板，请先在系统管理→短信网关配置中启用一条")
-		r.writeNegativeCache(wrapped)
-		return sms.Config{}, wrapped
+		return sms.Config{}, errors.New("ums-rpc: sys_system_config.sms 未启用，且未找到 enabled 的 sms_provider 模板")
 	}
 
 	cfg, err := parseSmsConfig(resp.List[0])
 	if err != nil {
-		r.writeNegativeCache(err)
 		return sms.Config{}, err
 	}
-	r.writeCache(cfg)
-	_ = scene // 当前所有场景共享同一模板，预留参数以便未来按 scene 拆分
 	return cfg, nil
 }
 
@@ -153,6 +175,7 @@ func (r *SmsConfigResolver) writeNegativeCache(err error) {
 // smsConfigPayload sys_channel_integration_template.default_config_json 期望结构
 type smsConfigPayload struct {
 	ProviderCode   string `json:"providerCode"`
+	Endpoint       string `json:"endpoint"`
 	SignName       string `json:"signName"`
 	TemplateCode   string `json:"templateCode"`
 	CredentialRef  string `json:"credentialRef"`
@@ -181,6 +204,7 @@ func parseSmsConfig(template *sysclient.ChannelIntegrationTemplateData) (sms.Con
 
 	cfg := sms.Config{
 		ProviderCode:   providerCode,
+		Endpoint:       strings.TrimSpace(payload.Endpoint),
 		SignName:       strings.TrimSpace(payload.SignName),
 		TemplateCode:   strings.TrimSpace(payload.TemplateCode),
 		CredentialRef:  strings.TrimSpace(payload.CredentialRef),
@@ -194,4 +218,72 @@ func parseSmsConfig(template *sysclient.ChannelIntegrationTemplateData) (sms.Con
 		cfg.TimeoutSeconds = 5
 	}
 	return cfg, nil
+}
+
+type systemConfigRecord struct {
+	ConfigKey   string `gorm:"column:config_key"`
+	ConfigValue string `gorm:"column:config_value"`
+}
+
+func (*systemConfigRecord) TableName() string {
+	return "sys_system_config"
+}
+
+func (r *SmsConfigResolver) resolveFromSystemConfig(ctx context.Context) (sms.Config, bool, error) {
+	if r.db == nil {
+		return sms.Config{}, false, nil
+	}
+
+	var rows []systemConfigRecord
+	if err := r.db.WithContext(ctx).
+		Where("config_group = ? AND is_deleted = ?", smsSystemConfigGroup, 1).
+		Find(&rows).Error; err != nil {
+		return sms.Config{}, false, fmt.Errorf("ums-rpc: 读取 sys_system_config.sms 失败: %w", err)
+	}
+	if len(rows) == 0 {
+		return sms.Config{}, false, nil
+	}
+
+	values := make(map[string]string, len(rows))
+	for _, row := range rows {
+		values[row.ConfigKey] = strings.TrimSpace(row.ConfigValue)
+	}
+	if !parseSystemConfigBool(values["enabled"]) {
+		return sms.Config{}, false, nil
+	}
+
+	cfg := sms.Config{
+		ProviderCode:    values["provider"],
+		Endpoint:        values["endpoint"],
+		AccessKeyID:     values["accessKeyId"],
+		AccessKeySecret: values["accessKeySecret"],
+		SignName:        values["signName"],
+		TemplateCode:    values["templateCode"],
+		TimeoutSeconds:  5,
+		ExpireSeconds:   300,
+	}
+	if cfg.ProviderCode == "" {
+		cfg.ProviderCode = sms.AliyunProviderCode
+	}
+	if cfg.ProviderCode == sms.AliyunProviderCode {
+		if cfg.SignName == "" {
+			return sms.Config{}, true, errors.New("ums-rpc: sys_system_config.sms.signName 不能为空")
+		}
+		if cfg.TemplateCode == "" {
+			return sms.Config{}, true, errors.New("ums-rpc: sys_system_config.sms.templateCode 不能为空")
+		}
+		if cfg.AccessKeyID == "" || cfg.AccessKeySecret == "" {
+			return sms.Config{}, true, errors.New("ums-rpc: sys_system_config.sms AccessKey 未配置")
+		}
+	}
+	return cfg, true, nil
+}
+
+func parseSystemConfigBool(value string) bool {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "true", "1", "yes", "y", "on":
+		return true
+	default:
+		return false
+	}
 }

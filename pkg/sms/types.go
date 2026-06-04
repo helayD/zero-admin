@@ -30,11 +30,16 @@ type SendResult struct {
 	ProviderCode string
 }
 
-// Config 由 ConfigResolver 提供的运行时配置，与 sys_channel_integration_template
-// 表的 default_config_json 字段一一对应。
+// Config 由 ConfigResolver 提供的运行时配置。
 type Config struct {
 	// ProviderCode 当前激活的 provider 代码（mock / aliyun / tencent ...）
 	ProviderCode string
+	// Endpoint 网关地址（阿里云默认 dysmsapi.aliyuncs.com）
+	Endpoint string
+	// AccessKeyID / AccessKeySecret 为配置中心已解密后的运行时凭据。
+	// 业务响应和日志禁止输出这些字段。
+	AccessKeyID     string
+	AccessKeySecret string
 	// SignName 短信签名（阿里云等需要）
 	SignName string
 	// TemplateCode 短信模板代码（阿里云等需要）

@@ -68,9 +68,9 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	MemberProductCollection := model.NewMemberProductCollectionModel(c.Mongo.Datasource, c.Mongo.Db, "ums_member_product_collection")
 
 	// Story 3.1.1: 注入 SMS 抽象层
-	//   - sys-rpc client → ChannelIntegrationTemplateService 提供激活模板查询
-	//   - SmsConfigResolver 解析模板 default_config_json → sms.Config（30s 正向 / 5s 负向缓存）
-	//   - sms.NewSender 路由到对应 Provider（默认注册的 mock 验证码固定 123456）
+	//   - SmsConfigResolver 优先读取 sys_system_config.sms
+	//   - sys-rpc ChannelIntegrationTemplateService 作为旧 sms_provider 模板兜底
+	//   - sms.NewSender 路由到对应 Provider
 	//
 	// ⚠️ 部署依赖（Story 3.1.1 新增）:
 	//   ums-rpc 启动前 sys-rpc 必须已注册到 Etcd/Nacos，否则 zrpc.MustNewClient
@@ -81,7 +81,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	//   服务器部署脚本 script/ / Makefile 已按此顺序编排。
 	sysRpcClient := zrpc.MustNewClient(c.SysRpc)
 	templateService := channelintegrationtemplateservice.NewChannelIntegrationTemplateService(sysRpcClient)
-	smsResolver := NewSmsConfigResolver(templateService)
+	smsResolver := NewSmsConfigResolver(db, templateService)
 	smsSender := sms.NewSender(smsResolver)
 
 	return &ServiceContext{
