@@ -56,7 +56,7 @@ VALUES (
     '阿里云验证码短信',
     'integration',
     'sms_provider',
-    'global',
+    'platform',
     0,
     0,
     0,
